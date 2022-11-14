@@ -1,33 +1,70 @@
 ﻿@page "/register"
+@using AuthAPI.DTOs.User;
+@using System.Text.Json;
+@using System.Text;
 @inject IConfiguration _configuration;
 
 <label>Login
-    <input required/>
+    <input required @bind=Username @bind:event="oninput" />
 </label>
 <label>Password 
-    <input required type="password"/>
+    <input required type="password" @bind=Password @bind:event="oninput"/>
 </label>
 <label>
     Password confirmation
-    <input required type="password" />
+    <input required type="password" @bind=PasswordConfirmation @bind:event="oninput" />
 </label>
 
-<button @onclick="Register">
+<button @onclick="ValidateAsync">
     Register
 </button>
 
-@code {
-    public string Login { get; set; }
-    public string Password { get; set; }
-    public string Confirmation { get; set; }
+@if(isRegistered)
+{
+    <h2>
+        Registered Succesfully!
+    </h2>
+}
 
-    async Task Register()
+@code {
+    public string Username { get; set; }
+    public string Password { get; set; }
+    public string PasswordConfirmation { get; set; }
+
+    public bool isRegistered { get; set; } = false;
+
+    async Task ValidateAsync()
     {
-        HttpClient client = new();
-        client.SendAsync(new HttpRequestMessage
+        if(Password != PasswordConfirmation)
         {
-            Method = HttpMethod.Get,
-            Content 
-        });
+            Console.WriteLine("Password not match Password Confirmation!");
+        }
+        else
+        {
+            await RegisterAsync();
+        }
+    }
+
+    async Task RegisterAsync()
+    {
+        var data = new UserDTO()
+        {
+            Username = Username,
+            Password = PasswordConfirmation,
+        };
+
+        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
+
+        HttpClient client = new();
+        var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"],
+        content);
+
+        //var response = await client.PostAsJsonAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"],
+        //new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json"));
+
+        if(response.IsSuccessStatusCode)
+        {
+            isRegistered = true;
+        }
     }
 }

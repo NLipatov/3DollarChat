@@ -1,0 +1,33 @@
+﻿@page "/register"
+@inject IConfiguration _configuration;
+
+<label>Login
+    <input required/>
+</label>
+<label>Password 
+    <input required type="password"/>
+</label>
+<label>
+    Password confirmation
+    <input required type="password" />
+</label>
+
+<button @onclick="Register">
+    Register
+</button>
+
+@code {
+    public string Login { get; set; }
+    public string Password { get; set; }
+    public string Confirmation { get; set; }
+
+    async Task Register()
+    {
+        HttpClient client = new();
+        client.SendAsync(new HttpRequestMessage
+        {
+            Method = HttpMethod.Get,
+            Content 
+        });
+    }
+}

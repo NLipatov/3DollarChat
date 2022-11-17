@@ -1,0 +1,46 @@
+﻿@page "/users"
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation
+@using Limp.Shared.Models;
+
+<div style="display: flex; flex-direction: column; gap: 10px;">
+    @foreach (var connection in trackedUserConnections.Where(x=>x.ConnectionId != myConnectionId))
+    {
+        <div style="    
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border: 1px solid;">
+            <span>@connection.Username is Online (@connection.ConnectionId)</span>
+            <button>Start a chat</button>
+        </div>
+    }
+</div>
+
+@code {
+    private HubConnection? hubConnection;
+    private List<TrackedUserConnection> trackedUserConnections { get; set; } = new();
+    private string myConnectionId { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
+        .Build();
+
+        hubConnection.On<List<TrackedUserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+        {
+            trackedUserConnections = updatedTrackedUserConnections;
+            StateHasChanged();
+        });
+
+        hubConnection.On<string>("ReceiveConnectionId", conId =>
+        {
+            myConnectionId = conId;
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+}

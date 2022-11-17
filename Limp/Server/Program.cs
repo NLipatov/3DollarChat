@@ -42,6 +42,8 @@ app.UseRouting();
 app.MapRazorPages();
 app.MapControllers();
 app.MapHub<ChatHub>("/chatHub");
+app.MapHub<UsersHub>("/usersHub");
+app.MapHub<MessageDispatcherHub>("messageDispatcherHub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

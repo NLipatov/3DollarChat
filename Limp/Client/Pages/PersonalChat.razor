@@ -1,0 +1,52 @@
+﻿@page "/user/{companionConnectionId?}"
+@using Limp.Shared.Models;
+@using Microsoft.AspNetCore.SignalR.Client;
+@inject NavigationManager Navigation
+
+<h1>Your chat with @companionConnectionId</h1>
+@foreach (var message in messages)
+{
+    <div>
+        <span>@message.SenderUsername:</span><span>@message.Payload</span>
+    </div>
+}
+<div>
+    <label>You:</label>
+    <input @bind="messageInput"/>
+    <button @onclick="Dispatch">Send</button>
+</div>
+
+@code {
+    [Parameter]
+    public string? companionConnectionId { get; set; }
+    private HubConnection? hubConnection;
+    private List<Message> messages { get; set; } = new();
+    private string? messageInput;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/messageDispatcherHub"))
+        .Build();
+
+        hubConnection.On<Message>("ReceiveMessage", message =>
+        {
+            messages.Add(message);
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    private async Task Dispatch()
+    {
+        Message messageToSend = new Message
+        {
+            Payload = messageInput,
+            DateSent = DateTime.UtcNow,
+        };
+
+        await hubConnection.SendAsync("Dispatch", companionConnectionId, messageToSend);
+    }
+}

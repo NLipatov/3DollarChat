@@ -3,6 +3,7 @@
     public class Message
     {
         public string SenderConnectionId { get; set; }
+        public string CompanionConnectionId { get; set; }
         public string SenderUsername { get; set; }
         public string Payload { get; set; }
         public DateTime DateReceived { get; set; }

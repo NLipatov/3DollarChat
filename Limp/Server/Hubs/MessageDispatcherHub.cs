@@ -1,13 +1,26 @@
 ﻿using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR;
+using System;
+using System.Threading.Tasks;
 
 namespace Limp.Server.Hubs
 {
     public class MessageDispatcherHub : Hub
     {
-        public async Task Dispatch(string connectionId, Message message)
+        public void Dispatch(Message message)
         {
-            await Clients.Client(connectionId).SendAsync("ReceiveMessage", message);
+            string senderName = message.SenderUsername;
+
+            Clients.Group(senderName).SendAsync("ReceiveMessage", message);
+        }
+
+        public override async Task OnConnectedAsync()
+        {
+            string name = "Anon";
+
+            await Groups.AddToGroupAsync(Context.ConnectionId, name);
+
+            await base.OnConnectedAsync();
         }
     }
 }

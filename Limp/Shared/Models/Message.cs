@@ -2,6 +2,7 @@
 {
     public class Message
     {
+        public string TargetGroup { get; set; }
         public string SenderConnectionId { get; set; }
         public string CompanionConnectionId { get; set; }
         public string SenderUsername { get; set; }

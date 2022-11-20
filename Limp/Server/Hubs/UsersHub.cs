@@ -8,27 +8,34 @@ namespace Limp.Server.Hubs
     {
         public async override Task OnConnectedAsync()
         {
+            if (!InMemoryUsersStorage.UserConnections.Any(x => x.ConnectionIds.Contains(Context.ConnectionId)))
+            {
+                InMemoryUsersStorage.UserConnections.Add(new UserConnections { ConnectionIds = new List<string>() { Context.ConnectionId } });
+            }
+
             StaticUserStorage.TrackedUserConnections.Add(new TrackedUserConnection { ConnectionId = Context.ConnectionId });
+        }
+
+        public async Task SetUsername(string username)
+        {
+            if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
+            {
+                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
+            }
+            else
+            {
+                InMemoryUsersStorage
+                    .UserConnections
+                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
+            }
+
             await PushOnlineUsersToClients();
             await PushConId();
         }
 
-        public async override Task OnDisconnectedAsync(Exception? ex)
-        {
-            TrackedUserConnection disconnectedUser = StaticUserStorage.TrackedUserConnections.FirstOrDefault(x => x.ConnectionId == Context.ConnectionId);
-            StaticUserStorage.TrackedUserConnections.Remove(disconnectedUser);
-            await PushOnlineUsersToClients();
-        }
-
-        public void AssociateWithConnectionId(string username)
-        {
-            var connectionId = Context.ConnectionId;
-            StaticUserStorage.TrackedUserConnections.First(x => x.ConnectionId == connectionId).Username = username;
-        }
-
         public async Task PushOnlineUsersToClients()
         {
-            await Clients.All.SendAsync("ReceiveOnlineUsers", StaticUserStorage.TrackedUserConnections);
+            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryUsersStorage.UserConnections);
         }
 
         public async Task PushConId()

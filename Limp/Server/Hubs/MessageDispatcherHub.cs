@@ -1,4 +1,5 @@
-﻿using Limp.Shared.Models;
+﻿using Limp.Server.Hubs.UserStorage;
+using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR;
 using System;
 using System.Threading.Tasks;
@@ -9,18 +10,35 @@ namespace Limp.Server.Hubs
     {
         public void Dispatch(Message message)
         {
-            string senderName = message.SenderUsername;
+            string targetGroup = message.TargetGroup;
 
-            Clients.Group(senderName).SendAsync("ReceiveMessage", message);
+            Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
         }
 
-        public override async Task OnConnectedAsync()
+        //public override async Task OnConnectedAsync()
+        //{
+        //    await Groups.AddToGroupAsync(Context.ConnectionId, storedUser.Username);
+
+        //    await base.OnConnectedAsync();
+        //}
+
+        public async Task SetUsername(string username)
         {
-            string name = "Anon";
+            if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
+            {
+                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
 
-            await Groups.AddToGroupAsync(Context.ConnectionId, name);
-
-            await base.OnConnectedAsync();
+                foreach (var connection in InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds)
+                {
+                    await Groups.AddToGroupAsync(connection, username);
+                }
+            }
+            else
+            {
+                InMemoryUsersStorage
+                    .UserConnections
+                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
+            }
         }
     }
 }

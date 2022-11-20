@@ -4,7 +4,7 @@
 @using Limp.Shared.Models;
 
 <div style="display: flex; flex-direction: column; gap: 10px;">
-    @foreach (var connection in trackedUserConnections.Where(x=>x.ConnectionId != myConnectionId))
+    @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId)))
     {
         <div style="    
             display: flex;
@@ -12,16 +12,22 @@
             gap: 10px;
             padding: 10px;
             border: 1px solid;">
-            <span>@connection.Username is looking for a chat! (@connection.ConnectionId)</span>
-            <button>Start a chat</button>
+            <span>@connection.Username is looking for a chat!</span>
+            <button @onclick="()=>RedirectToChat(connection.Username)">Start a chat</button>
         </div>
     }
 </div>
 
 @code {
     private HubConnection? hubConnection;
-    private List<TrackedUserConnection> trackedUserConnections { get; set; } = new();
+    private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
+    private string myName = "";
+
+    private void RedirectToChat(string username)
+    {
+        Navigation.NavigateTo($"/user/{username}/{myName}");
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -29,9 +35,9 @@
         .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
         .Build();
 
-        hubConnection.On<List<TrackedUserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+        hubConnection.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
         {
-            trackedUserConnections = updatedTrackedUserConnections;
+            userConnections = updatedTrackedUserConnections;
             StateHasChanged();
         });
 
@@ -42,5 +48,18 @@
         });
 
         await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync("SetUsername", GetRandomName());
+    }
+
+    private string GetRandomName()
+    {
+        var names = new string[5] { "Гриша", "Саша", "Паша", "Антон", "Пётр" };
+
+        var random = new Random();
+
+        myName = names[random.Next(0, 4)];
+
+        return myName;
     }
 }

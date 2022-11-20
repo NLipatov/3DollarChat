@@ -1,9 +1,9 @@
-﻿@page "/user/{companionConnectionId?}"
+﻿@page "/user/{partnerName?}/{myName?}"
 @using Limp.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation
 
-<h1>Your chat with @companionConnectionId</h1>
+<h1>Your chat with @partnerName</h1>
 
 <div>
     <label>You:</label>
@@ -14,13 +14,15 @@
 @foreach (var message in messages)
 {
     <div>
-        <span>@GetMessageSenderAlias(message):</span><span>@message.Payload</span>
+        <span>@message.SenderUsername:</span><span>@message.Payload</span>
     </div>
 }
 
 @code {
     [Parameter]
-    public string? companionConnectionId { get; set; }
+    public string? partnerName { get; set; }
+    [Parameter]
+    public string? myName { get; set; }
     private HubConnection? hubConnection;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty;
@@ -39,6 +41,8 @@
         });
 
         await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync("SetUsername", myName!);
     }
 
     public bool IsConnected =>
@@ -50,20 +54,16 @@
         {
             Payload = messageInput,
             DateSent = DateTime.UtcNow,
-            SenderUsername = "Anon",
-            SenderConnectionId = hubConnection?.ConnectionId!,
-            CompanionConnectionId = companionConnectionId!,
+                TargetGroup = partnerName!,
+                SenderUsername = myName!,
         };
 
         await hubConnection.SendAsync("Dispatch", messageToSend);
 
         messageInput = string.Empty;
-    }
 
-    private string GetMessageSenderAlias(Message message)
-    {
-        if (message.SenderConnectionId == hubConnection!.ConnectionId)
-            return "You";
-        return message.SenderUsername;
+        messageToSend.SenderUsername = "You";
+
+        messages.Add(messageToSend);
     }
 }

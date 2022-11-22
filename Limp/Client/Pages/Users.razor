@@ -4,7 +4,7 @@
 @using Limp.Shared.Models;
 
 <div style="display: flex; flex-direction: column; gap: 10px;">
-    @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId)))
+    @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId) && x.ConnectionIds.Count > 0))
     {
         <div style="    
             display: flex;

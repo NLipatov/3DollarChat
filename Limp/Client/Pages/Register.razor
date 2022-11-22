@@ -1,4 +1,5 @@
 ﻿@page "/register"
+@using AuthAPI.DTOs.Claims;
 @using AuthAPI.DTOs.User;
 @using System.Text.Json;
 @using System.Text;
@@ -51,6 +52,14 @@
         {
             Username = Username,
             Password = PasswordConfirmation,
+            Claims = new List<UserClaimsDTO>
+            {
+                new UserClaimsDTO
+                {
+                    Name = "Name",
+                    Value = Username,
+                }
+            }
         };
 
         var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
@@ -58,9 +67,6 @@
         HttpClient client = new();
         var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"],
         content);
-
-        //var response = await client.PostAsJsonAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"],
-        //new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json"));
 
         if(response.IsSuccessStatusCode)
         {

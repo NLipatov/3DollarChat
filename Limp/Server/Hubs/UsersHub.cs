@@ -13,7 +13,17 @@ namespace Limp.Server.Hubs
                 InMemoryUsersStorage.UserConnections.Add(new UserConnections { ConnectionIds = new List<string>() { Context.ConnectionId } });
             }
 
-            StaticUserStorage.TrackedUserConnections.Add(new TrackedUserConnection { ConnectionId = Context.ConnectionId });
+            //StaticUserStorage.TrackedUserConnections.Add(new TrackedUserConnection { ConnectionId = Context.ConnectionId });
+        }
+
+        public async override Task OnDisconnectedAsync(Exception? exception)
+        {
+            var targetConnectionId = Context.ConnectionId;
+            InMemoryUsersStorage.UserConnections.First(x=>x.ConnectionIds.Contains(targetConnectionId)).ConnectionIds.Remove(targetConnectionId);
+
+            InMemoryUsersStorage.UserConnections.RemoveAll(x => x.ConnectionIds.Count == 0);
+
+            await PushOnlineUsersToClients();
         }
 
         public async Task SetUsername(string username)

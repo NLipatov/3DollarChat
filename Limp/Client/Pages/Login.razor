@@ -1,0 +1,63 @@
+﻿@using System.Text.Json;
+@using System.Text;
+@using AuthAPI.DTOs.Claims;
+@using AuthAPI.DTOs.User;
+@inject IConfiguration _configuration;
+@inject IJSRuntime js
+@page "/login"
+
+<h3>Login</h3>
+
+<label>
+    Login
+    <input required @bind=Username @bind:event="oninput" />
+</label>
+<label>
+    Password
+    <input required type="password" @bind=Password @bind:event="oninput" />
+</label>
+
+<button @onclick="LogIn">
+    Login
+</button>
+
+@if (isLoggedIn)
+{
+    <h2>
+        Logged in Succesfully!
+    </h2>
+}
+
+@code {
+    private string Username { get; set; }
+    private string Password { get; set; }
+    private bool isLoggedIn { get; set; } = false;
+
+    private async Task LogIn()
+    {
+        var data = new UserDTO()
+        {
+                Username = Username,
+                Password = Password,
+                Claims = new List<UserClaimsDTO>(),
+        };
+
+        HttpClient httpClient = new();
+
+        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
+
+        HttpClient client = new();
+        var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
+        content);
+
+        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+        {
+            isLoggedIn = true;
+        }
+
+        var accessToken = await response.Content.ReadAsStringAsync();
+
+        await js.InvokeVoidAsync("localStorage.setItem", "access-token", accessToken);
+    }
+
+}

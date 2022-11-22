@@ -15,13 +15,6 @@ namespace Limp.Server.Hubs
             Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
         }
 
-        //public override async Task OnConnectedAsync()
-        //{
-        //    await Groups.AddToGroupAsync(Context.ConnectionId, storedUser.Username);
-
-        //    await base.OnConnectedAsync();
-        //}
-
         public async Task SetUsername(string username)
         {
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))

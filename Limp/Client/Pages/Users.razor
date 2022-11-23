@@ -1,7 +1,10 @@
 ﻿@page "/users"
+@using Limp.Client.Utilities;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation
 @using Limp.Shared.Models;
+@inject IJSRuntime jS
+@inject ILimpHttpClient _limpHttpClient;
 
 <div style="display: flex; flex-direction: column; gap: 10px;">
     @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId) && x.ConnectionIds.Count > 0))
@@ -49,17 +52,18 @@
 
         await hubConnection.StartAsync();
 
-        await hubConnection.SendAsync("SetUsername", GetRandomName());
+        await hubConnection.SendAsync("SetUsername", await GetUserNameAsync());
     }
 
-    private string GetRandomName()
+    private async Task<string> GetUserNameAsync()
     {
-        var names = new string[5] { "Гриша", "Саша", "Паша", "Антон", "Пётр" };
+        string? accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
-        var random = new Random();
+        if (accessToken == null)
+            return "Anonymous";
 
-        myName = names[random.Next(0, 4)];
+        var username = await _limpHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
 
-        return myName;
+        return username;
     }
 }

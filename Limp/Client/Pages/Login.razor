@@ -2,6 +2,10 @@
 @using System.Text;
 @using AuthAPI.DTOs.Claims;
 @using AuthAPI.DTOs.User;
+@using System.Web;
+@using Limp.Client.Utilities;
+@using LimpShared.Authentification;
+@inject ILimpHttpClient _limpHttpClient;
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
 @page "/login"
@@ -42,22 +46,16 @@
                 Claims = new List<UserClaimsDTO>(),
         };
 
-        HttpClient httpClient = new();
+        var tokenPair = await _limpHttpClient.GetJWTPairAsync(data);
 
-        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
-
-        HttpClient client = new();
-        var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
-        content);
-
-        if(response.StatusCode == System.Net.HttpStatusCode.OK)
+        if(tokenPair == null)
         {
-            isLoggedIn = true;
+            return;
         }
 
-        var accessToken = await response.Content.ReadAsStringAsync();
-
-        await js.InvokeVoidAsync("localStorage.setItem", "access-token", accessToken);
+        await js.InvokeVoidAsync("localStorage.setItem", "access-token", tokenPair.AccessToken);
+        await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", tokenPair.RefreshToken.Token);
+        isLoggedIn = true;
     }
 
 }

@@ -5,7 +5,7 @@
 @using System.Web;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
-@using LimpShared.Models.Login;
+@using Limp.Shared.Models.Login;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
@@ -27,14 +27,14 @@
     Login
 </button>
 
-@if (isLoggedIn && lasttokenFetchResult.Result == TokenAquisitionResult.Success)
+@if (isLoggedIn && lasttokenFetchResult.Result == LogInStatus.Success)
 {
     <h2>
         Logged in Succesfully!
     </h2>
 }
 
-@if (lasttokenFetchResult?.Result == TokenAquisitionResult.Fail)
+@if (lasttokenFetchResult?.Result == LogInStatus.Fail)
 {
     <h2>
         @lasttokenFetchResult.Message
@@ -45,7 +45,7 @@
     private string Username { get; set; } = string.Empty;
     private string Password { get; set; } = string.Empty;
     private bool isLoggedIn { get; set; } = false;
-    private TokenFetchingResult? lasttokenFetchResult = null;
+    private LogInResult? lasttokenFetchResult = null;
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
@@ -54,11 +54,11 @@
         .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
         .Build();
 
-        hubConnection.On<TokenFetchingResult>("OnLoggingIn", async result =>
+        hubConnection.On<LogInResult>("OnLoggingIn", async result =>
         {
             lasttokenFetchResult = result;
 
-            if (lasttokenFetchResult.Result != TokenAquisitionResult.Fail)
+            if (lasttokenFetchResult.Result != LogInStatus.Fail)
             {
                 await StoreTokensAsync(result);
                 isLoggedIn = true;
@@ -81,7 +81,7 @@
         await hubConnection.SendAsync("LogIn", data);
     }
 
-    private async Task StoreTokensAsync(TokenFetchingResult result)
+    private async Task StoreTokensAsync(LogInResult result)
     {
         await js.InvokeVoidAsync("localStorage.setItem", "access-token", result.JWTPair.AccessToken);
         await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);

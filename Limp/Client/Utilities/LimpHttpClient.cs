@@ -1,6 +1,6 @@
 ﻿using AuthAPI.DTOs.User;
+using Limp.Shared.Models.Login;
 using LimpShared.Authentification;
-using LimpShared.Models.Login;
 using System.Text;
 using System.Text.Json;
 
@@ -13,7 +13,7 @@ namespace Limp.Client.Utilities
         {
             _configuration = configuration;
         }
-        public async Task<TokenFetchingResult> GetJWTPairAsync(UserDTO userDTO)
+        public async Task<LogInResult> GetJWTPairAsync(UserDTO userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
@@ -22,18 +22,18 @@ namespace Limp.Client.Utilities
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
-                return new TokenFetchingResult
+                return new LogInResult
                 {
                     Message = await response.Content.ReadAsStringAsync(),
-                    Result = TokenAquisitionResult.Fail,
+                    Result = LogInStatus.Fail,
                 };
             }
 
             var jwtPair = JsonSerializer.Deserialize<JWTPair>(await response.Content.ReadAsStringAsync());
 
-            return new TokenFetchingResult
+            return new LogInResult
             {
-                Result = TokenAquisitionResult.Success,
+                Result = LogInStatus.Success,
                 JWTPair = jwtPair,
             };
         }

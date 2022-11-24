@@ -25,11 +25,10 @@
     private HubConnection? hubConnection;
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
-    private string myName = "";
 
     private void RedirectToChat(string username)
     {
-        Navigation.NavigateTo($"/user/{username}/{myName}");
+        Navigation.NavigateTo($"/user/{username}");
     }
 
     protected override async Task OnInitializedAsync()
@@ -52,18 +51,11 @@
 
         await hubConnection.StartAsync();
 
-        await hubConnection.SendAsync("SetUsername", await GetUserNameAsync());
+        await hubConnection.SendAsync("SetUsername", await GetStoredAccessTokenAsync());
     }
 
-    private async Task<string> GetUserNameAsync()
+    private async Task<string> GetStoredAccessTokenAsync()
     {
-        string? accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
-
-        if (accessToken == null)
-            return "Anonymous";
-
-        var username = await _limpHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-
-        return username;
+        return await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
     }
 }

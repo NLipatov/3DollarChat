@@ -1,8 +1,8 @@
 ﻿using AuthAPI.DTOs.User;
-using Limp.Client.Utilities.HttpClientUtility.Models;
 using LimpShared.Authentification;
 using System.Text.Json;
 using System.Text;
+using LimpShared.Models.Login;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {

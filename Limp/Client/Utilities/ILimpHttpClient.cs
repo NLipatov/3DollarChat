@@ -1,6 +1,5 @@
 ﻿using AuthAPI.DTOs.User;
-using Limp.Client.Utilities.HttpClientUtility.Models;
-using LimpShared.Authentification;
+using LimpShared.Models.Login;
 
 namespace Limp.Client.Utilities
 {

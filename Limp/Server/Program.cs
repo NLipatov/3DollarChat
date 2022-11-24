@@ -1,3 +1,4 @@
+using Limp.Server.Extensions;
 using Limp.Server.Hubs;
 using Microsoft.AspNetCore.ResponseCompression;
 
@@ -14,6 +15,8 @@ builder.Services.AddResponseCompression(opts =>
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
         new[] { "application/octet-stream" });
 });
+
+builder.Services.UseServerHttpClient();
 
 var app = builder.Build();
 
@@ -41,6 +44,7 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
+app.MapHub<AuthHub>("/authHub");
 app.MapHub<ChatHub>("/chatHub");
 app.MapHub<UsersHub>("/usersHub");
 app.MapHub<MessageDispatcherHub>("/messageDispatcherHub");

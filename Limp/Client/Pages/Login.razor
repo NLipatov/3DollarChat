@@ -5,10 +5,12 @@
 @using System.Web;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
+@using Microsoft.AspNetCore.SignalR.Client;
 @using Utilities.HttpClientUtility.Models;
 @inject ILimpHttpClient _limpHttpClient;
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
+@inject NavigationManager Navigation
 @page "/login"
 
 <h3>Login</h3>
@@ -26,7 +28,7 @@
     Login
 </button>
 
-@if (isLoggedIn)
+@if (isLoggedIn && lasttokenFetchResult.Result == TokenAquisitionResult.Success)
 {
     <h2>
         Logged in Succesfully!
@@ -41,10 +43,32 @@
 }
 
 @code {
-    private string Username { get; set; }
-    private string Password { get; set; }
+    private string Username { get; set; } = string.Empty;
+    private string Password { get; set; } = string.Empty;
     private bool isLoggedIn { get; set; } = false;
     private TokenFetchingResult? lasttokenFetchResult = null;
+    private HubConnection? hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
+        .Build();
+
+        hubConnection.On<TokenFetchingResult>("OnLoggingIn", async result =>
+        {
+            lasttokenFetchResult = result;
+
+            if (lasttokenFetchResult.Result != TokenAquisitionResult.Fail)
+            {
+                await StoreTokensAsync(result);
+                isLoggedIn = true;
+            }
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+    }
 
     private async Task LogIn()
     {
@@ -55,14 +79,13 @@
                 Claims = new List<UserClaimsDTO>(),
         };
 
-        lasttokenFetchResult = await _limpHttpClient.GetJWTPairAsync(data);
+        await hubConnection.SendAsync("LogIn", data);
+    }
 
-        if (lasttokenFetchResult.Result != TokenAquisitionResult.Fail)
-        {
-            await js.InvokeVoidAsync("localStorage.setItem", "access-token", lasttokenFetchResult.JWTPair.AccessToken);
-            await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", lasttokenFetchResult.JWTPair.RefreshToken.Token);
-            isLoggedIn = true;
-        }
+    private async Task StoreTokensAsync(TokenFetchingResult result)
+    {
+        await js.InvokeVoidAsync("localStorage.setItem", "access-token", result.JWTPair.AccessToken);
+        await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
     }
 
 }

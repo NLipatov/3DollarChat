@@ -3,7 +3,6 @@
 @using Limp.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation
-@inject ILimpHttpClient _limpHttpClient;
 @inject IJSRuntime jS;
 
 <h1>Your chat with @partnerName</h1>
@@ -30,23 +29,8 @@
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty;
 
-    private async Task<string> GetUserNameAsync()
-    {
-        string? accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
-
-        if (accessToken == null)
-            return "Anonymous";
-
-        var username = await _limpHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-
-        return username;
-    }
-
-
     protected override async Task OnInitializedAsync()
     {
-        myName = await GetUserNameAsync();
-
         hubConnection = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/messageDispatcherHub"))
         .Build();
@@ -57,9 +41,14 @@
             StateHasChanged();
         });
 
+        hubConnection.On<string>("OnMyNameResolve", value =>
+        {
+            myName = value;
+        });
+
         await hubConnection.StartAsync();
 
-        await hubConnection.SendAsync("SetUsername", myName!);
+        await hubConnection.SendAsync("SetUsername", await jS.InvokeAsync<string>("localStorage.getItem", "access-token"));
     }
 
     public bool IsConnected =>

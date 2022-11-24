@@ -1,22 +1,28 @@
 ﻿using Limp.Server.Hubs.UserStorage;
+using Limp.Server.Utilities.HttpMessaging;
 using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR;
-using System;
-using System.Threading.Tasks;
 
 namespace Limp.Server.Hubs
 {
     public class MessageDispatcherHub : Hub
     {
-        public void Dispatch(Message message)
+        private readonly IServerHttpClient _serverHttpClient;
+        public MessageDispatcherHub(IServerHttpClient serverHttpClient)
+        {
+            _serverHttpClient = serverHttpClient;
+        }
+        public async Task Dispatch(Message message)
         {
             string targetGroup = message.TargetGroup;
 
-            Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
+            await Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
         }
 
-        public async Task SetUsername(string username)
+        public async Task SetUsername(string accessToken)
         {
+            var username = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
             {
                 InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
@@ -32,6 +38,8 @@ namespace Limp.Server.Hubs
                     .UserConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
             }
+
+            await Clients.Caller.SendAsync("OnMyNameResolve", username);
         }
     }
 }

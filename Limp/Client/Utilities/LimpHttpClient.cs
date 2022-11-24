@@ -1,9 +1,8 @@
-﻿using LimpShared.Authentification;
-using static System.Runtime.InteropServices.JavaScript.JSType;
-using System.Text.Json;
+﻿using AuthAPI.DTOs.User;
+using Limp.Client.Utilities.HttpClientUtility.Models;
+using LimpShared.Authentification;
 using System.Text;
-using AuthAPI.DTOs.User;
-using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Limp.Client.Utilities
 {
@@ -14,20 +13,34 @@ namespace Limp.Client.Utilities
         {
             _configuration = configuration;
         }
-        public async Task<JWTPair?> GetJWTPairAsync(UserDTO userDTO)
+        public async Task<TokenFetchingResult> GetJWTPairAsync(UserDTO userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
             HttpClient client = new();
-            var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
-            content);
+            var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"], content);
 
-            return JsonSerializer.Deserialize<JWTPair>(await response.Content.ReadAsStringAsync());
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                return new TokenFetchingResult
+                {
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Result = TokenAquisitionResult.Fail,
+                };
+            }
+
+            var jwtPair = JsonSerializer.Deserialize<JWTPair>(await response.Content.ReadAsStringAsync());
+
+            return new TokenFetchingResult
+            {
+                Result = TokenAquisitionResult.Success,
+                JWTPair = jwtPair,
+            };
         }
 
         public async Task<string> GetUserNameFromAccessTokenAsync(string accessToken)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken.ToString()}";
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
 
             HttpClient client = new();
 

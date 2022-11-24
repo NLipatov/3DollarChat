@@ -5,6 +5,7 @@
 @using System.Web;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
+@using Utilities.HttpClientUtility.Models;
 @inject ILimpHttpClient _limpHttpClient;
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
@@ -32,10 +33,18 @@
     </h2>
 }
 
+@if (lasttokenFetchResult?.Result == TokenAquisitionResult.Fail)
+{
+    <h2>
+        @lasttokenFetchResult.Message
+    </h2>
+}
+
 @code {
     private string Username { get; set; }
     private string Password { get; set; }
     private bool isLoggedIn { get; set; } = false;
+    private TokenFetchingResult? lasttokenFetchResult = null;
 
     private async Task LogIn()
     {
@@ -46,16 +55,14 @@
                 Claims = new List<UserClaimsDTO>(),
         };
 
-        var tokenPair = await _limpHttpClient.GetJWTPairAsync(data);
+        lasttokenFetchResult = await _limpHttpClient.GetJWTPairAsync(data);
 
-        if(tokenPair == null)
+        if (lasttokenFetchResult.Result != TokenAquisitionResult.Fail)
         {
-            return;
+            await js.InvokeVoidAsync("localStorage.setItem", "access-token", lasttokenFetchResult.JWTPair.AccessToken);
+            await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", lasttokenFetchResult.JWTPair.RefreshToken.Token);
+            isLoggedIn = true;
         }
-
-        await js.InvokeVoidAsync("localStorage.setItem", "access-token", tokenPair.AccessToken);
-        await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", tokenPair.RefreshToken.Token);
-        isLoggedIn = true;
     }
 
 }

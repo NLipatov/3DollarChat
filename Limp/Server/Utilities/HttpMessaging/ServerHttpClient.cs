@@ -91,7 +91,14 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var response = await client.GetAsync(requestUrl);
 
-            return response.StatusCode == System.Net.HttpStatusCode.OK;
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            TokenRelatedOperationResult? result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(responseContent);
+
+            if (result == null)
+                return false;
+
+            return result.ResultType == TokenRelatedOperationResultType.Success;
         }
     }
 }

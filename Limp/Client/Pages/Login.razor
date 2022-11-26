@@ -83,6 +83,15 @@
 
     private async Task StoreTokensAsync(LogInResult result)
     {
+        if (String.IsNullOrWhiteSpace(result?.JWTPair?.AccessToken) || String.IsNullOrWhiteSpace(result?.JWTPair?.RefreshToken?.Token))
+        {
+            lasttokenFetchResult = new LogInResult
+                {
+                    Message = "Authentification server response was invalid",
+                    Result = LogInStatus.Fail,
+                };
+        }
+
         await js.InvokeVoidAsync("localStorage.setItem", "access-token", result.JWTPair.AccessToken);
         await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
     }

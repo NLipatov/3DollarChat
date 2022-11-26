@@ -1,5 +1,7 @@
 ﻿using AuthAPI.DTOs.User;
 using Limp.Server.Utilities.HttpMessaging;
+using Limp.Shared.Models.Login;
+using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -16,6 +18,13 @@ namespace Limp.Server.Hubs
             var result = await _serverHttpClient.GetJWTPairAsync(userDto);
 
             await Clients.Caller.SendAsync("OnLoggingIn", result);
+        }
+
+        public async Task RefreshTokens(RefreshToken refreshToken)
+        {
+            LogInResult result = await _serverHttpClient.ExplicitJWTPairRefresh(refreshToken);
+
+            await Clients.Caller.SendAsync("OnTokensRefresh", result);
         }
     }
 }

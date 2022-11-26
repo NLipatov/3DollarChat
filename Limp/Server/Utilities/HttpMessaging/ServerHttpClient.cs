@@ -1,8 +1,8 @@
 ﻿using AuthAPI.DTOs.User;
-using LimpShared.Authentification;
-using System.Text.Json;
-using System.Text;
 using Limp.Shared.Models.Login;
+using LimpShared.Authentification;
+using System.Text;
+using System.Text.Json;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -29,7 +29,9 @@ namespace Limp.Server.Utilities.HttpMessaging
                 };
             }
 
-            var jwtPair = JsonSerializer.Deserialize<JWTPair>(await response.Content.ReadAsStringAsync());
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
 
             return new LogInResult
             {
@@ -38,7 +40,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             };
         }
 
-        public async Task<string> GetUserNameFromAccessTokenAsync(string accessToken)
+        public async Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
 
@@ -46,7 +48,50 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var response = await client.GetAsync(requestUrl);
 
-            return await response.Content.ReadAsStringAsync();
+            TokenRelatedOperationResult result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
+
+            return result;
+        }
+
+        public async Task<LogInResult> ExplicitJWTPairRefresh(RefreshToken refreshToken)
+        {
+            var content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8, "application/json");
+
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
+
+            HttpClient client = new();
+
+            var response = await client.PostAsync(requestUrl, content);
+
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                return new LogInResult
+                {
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Result = LogInStatus.Fail,
+                };
+            }
+
+            var responseContent = await response.Content.ReadAsStringAsync();
+
+            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
+
+            return new LogInResult()
+            {
+                Result = LogInStatus.Success,
+                JWTPair = jwtPair,
+            };
+        }
+
+        public async Task<bool> IsAccessTokenValid(string accessToken)
+        {
+            HttpClient client = new();
+
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateAccessToken"]}?accesstoken={accessToken}";
+
+            var response = await client.GetAsync(requestUrl);
+
+            return response.StatusCode == System.Net.HttpStatusCode.OK;
         }
     }
 }

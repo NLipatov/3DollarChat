@@ -1,5 +1,7 @@
 ﻿@page "/users"
+@using Limp.Shared.Models.Login;
 @using Limp.Client.Utilities;
+@using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation
 @using Limp.Shared.Models;
@@ -21,17 +23,41 @@
 </div>
 
 @code {
+    private HubConnection? authHub;
     private HubConnection? hubConnection;
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
 
-    private void RedirectToChat(string username)
+    private async Task RedirectToChat(string username)
     {
+        await RefreshTokensIfNeeded();
+
         Navigation.NavigateTo($"/user/{username}");
     }
 
     protected override async Task OnInitializedAsync()
     {
+        authHub = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
+        .Build();
+
+        authHub.On<LogInResult>("OnTokensRefresh", async result =>
+        {
+            JWTPair? pair = result.JWTPair;
+            if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
+                Navigation.NavigateTo("/login");
+
+            if(result.Result == LogInStatus.Success)
+            {
+                await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
+                await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
+            }
+        });
+
+        await authHub.StartAsync();
+
+        await RefreshTokensIfNeeded();
+
         hubConnection = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
         .Build();
@@ -56,5 +82,16 @@
     private async Task<string> GetStoredAccessTokenAsync()
     {
         return await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
+    }
+
+    private async Task RefreshTokensIfNeeded()
+    {
+        string accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
+
+        if (TokenReader.HasAccessTokenExpired(accessToken))
+        {
+            string refreshToken = await jS.InvokeAsync<string>("localStorage.getItem", "refresh-token");
+            await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = refreshToken });
+        }
     }
 }

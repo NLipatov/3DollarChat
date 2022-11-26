@@ -1,6 +1,7 @@
 ﻿using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Shared.Models;
+using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -21,7 +22,9 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(string accessToken)
         {
-            var username = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+            TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+
+            var username = usernameRequest.Username;
 
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
             {

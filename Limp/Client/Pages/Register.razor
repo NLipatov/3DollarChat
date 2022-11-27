@@ -1,9 +1,15 @@
 ﻿@page "/register"
 @using AuthAPI.DTOs.Claims;
 @using AuthAPI.DTOs.User;
-@using System.Text.Json;
-@using System.Text;
+@using Limp.Shared.Models.Login;
+@using Limp.Client.Utilities;
+@using LimpShared.Authentification;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Limp.Shared.Models;
 @inject IConfiguration _configuration;
+@inject NavigationManager Navigation;
+
+<PageTitle>Sign Up</PageTitle>
 
 <label>Login
     <input required @bind=Username @bind:event="oninput" />
@@ -27,18 +33,53 @@
     </h2>
 }
 
+@if(lastRegisterAttemptResult != null)
+{
+    <h2>
+        @lastRegisterAttemptResult.Message
+    </h2>
+}
+
 @code {
     public string Username { get; set; }
     public string Password { get; set; }
     public string PasswordConfirmation { get; set; }
-
+    private HubConnection? hubConnection;
     public bool isRegistered { get; set; } = false;
+    private LogInResult lastRegisterAttemptResult { get; set; } = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
+        .Build();
+
+        hubConnection.On<LogInResult>("OnRegister", result =>
+        {
+            if(result.Result == LogInStatus.Success)
+            {
+                lastRegisterAttemptResult = new LogInResult
+                {
+                    Result = LogInStatus.Success,
+                    Message = "Registered!"
+                };
+
+                StateHasChanged();
+            }
+        });
+
+        await hubConnection.StartAsync();
+    }
 
     async Task ValidateAsync()
     {
         if(Password != PasswordConfirmation)
         {
-            Console.WriteLine("Password not match Password Confirmation!");
+            lastRegisterAttemptResult = new LogInResult
+            {
+                Result = LogInStatus.Fail,
+                Message = "Password does not match Password Confirmation!"
+            };
         }
         else
         {
@@ -60,17 +101,8 @@
                     Value = Username,
                 }
             }
-        };
+            };
 
-        var content = new StringContent(JsonSerializer.Serialize(data), Encoding.UTF8, "application/json");
-
-        HttpClient client = new();
-        var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"],
-        content);
-
-        if(response.IsSuccessStatusCode)
-        {
-            isRegistered = true;
-        }
+        await hubConnection.SendAsync("Register", data);
     }
 }

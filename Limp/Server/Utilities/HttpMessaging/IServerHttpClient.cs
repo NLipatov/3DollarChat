@@ -10,5 +10,6 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<LogInResult> GetJWTPairAsync(UserDTO userDTO);
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);
+        Task<LogInResult> Register(UserDTO userDTO);
     }
 }

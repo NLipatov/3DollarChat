@@ -3,6 +3,7 @@ using Limp.Shared.Models.Login;
 using LimpShared.Authentification;
 using System.Text;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -13,6 +14,32 @@ namespace Limp.Server.Utilities.HttpMessaging
         {
             _configuration = configuration;
         }
+
+        public async Task<LogInResult> Register(UserDTO userDTO)
+        {
+            var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
+
+            HttpClient client = new();
+
+            string url = _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"];
+
+            var response = await client.PostAsync(url, content);
+
+            if(response.StatusCode != System.Net.HttpStatusCode.OK)
+            {
+                return new LogInResult
+                {
+                    Message = await response.Content.ReadAsStringAsync(),
+                    Result = LogInStatus.Fail,
+                };
+            }
+
+            return new LogInResult
+            {
+                Result = LogInStatus.Success,
+            };
+        }
+
         public async Task<LogInResult> GetJWTPairAsync(UserDTO userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");

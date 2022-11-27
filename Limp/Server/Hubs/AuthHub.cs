@@ -13,6 +13,13 @@ namespace Limp.Server.Hubs
         {
             _serverHttpClient = serverHttpClient;
         }
+
+        public async Task Register(UserDTO userDto)
+        {
+            LogInResult result = await _serverHttpClient.Register(userDto);
+
+            await Clients.Caller.SendAsync("OnRegister", result);
+        }
         public async Task LogIn(UserDTO userDto)
         {
             var result = await _serverHttpClient.GetJWTPairAsync(userDto);

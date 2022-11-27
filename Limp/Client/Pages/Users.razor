@@ -7,6 +7,8 @@
 @using Limp.Shared.Models;
 @inject IJSRuntime jS
 
+<PageTitle>Users Online</PageTitle>
+
 <div style="display: flex; flex-direction: column; gap: 10px;">
     @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId) && x.ConnectionIds.Count > 0))
     {
@@ -27,16 +29,23 @@
     private HubConnection? hubConnection;
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
+    private string? accessToken { get; set; }
 
     private async Task RedirectToChat(string username)
     {
-        await RefreshTokensIfNeeded();
+        await RefreshTokensIfNeeded(accessToken!);
 
         Navigation.NavigateTo($"/user/{username}");
     }
 
     protected override async Task OnInitializedAsync()
     {
+        accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
+
+        if (String.IsNullOrWhiteSpace(accessToken))
+            Navigation.NavigateTo("login");
+            return;
+
         authHub = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
         .Build();
@@ -56,7 +65,7 @@
 
         await authHub.StartAsync();
 
-        await RefreshTokensIfNeeded();
+        await RefreshTokensIfNeeded(accessToken!);
 
         hubConnection = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
@@ -84,14 +93,20 @@
         return await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
     }
 
-    private async Task RefreshTokensIfNeeded()
+    private async Task RefreshTokensIfNeeded(string accessToken)
     {
-        string accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
-
         if (TokenReader.HasAccessTokenExpired(accessToken))
         {
             string refreshToken = await jS.InvokeAsync<string>("localStorage.getItem", "refresh-token");
             await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = refreshToken });
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
         }
     }
 }

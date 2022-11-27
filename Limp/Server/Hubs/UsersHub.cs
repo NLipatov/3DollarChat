@@ -40,6 +40,10 @@ namespace Limp.Server.Hubs
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
             {
                 InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
+                InMemoryUsersStorage.UserConnections.Remove
+                    (InMemoryUsersStorage
+                    .UserConnections
+                    .First(x => x.ConnectionIds.Count == 1 && x.ConnectionIds.Contains(Context.ConnectionId)));
             }
             else
             {

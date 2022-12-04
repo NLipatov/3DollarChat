@@ -20,10 +20,6 @@ namespace Limp.Server.Utilities.Kafka
             })
             .Build();
         private const string TOPIC = "messages";
-        public KafkaHelper()
-        {
-
-        }
         public async Task ProduceAsync(Message message)
         {
             using (var producer = new ProducerBuilder<string, string>(
@@ -69,7 +65,7 @@ namespace Limp.Server.Utilities.Kafka
                             Console.WriteLine(message.Payload);
 
 
-                            await hubConnection.SendAsync("Dispatch", message);
+                            await hubConnection.SendAsync("Deliver", message);
                         }
                     }
                 }
@@ -80,7 +76,7 @@ namespace Limp.Server.Utilities.Kafka
         {
             Task.Run(async () =>
             {
-                _thread = await this.GetConsumerThread();
+                _thread = await GetConsumerThread();
             });
         }
 

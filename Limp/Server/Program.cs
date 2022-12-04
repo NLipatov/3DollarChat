@@ -20,7 +20,7 @@ builder.Services.AddResponseCompression(opts =>
 
 builder.Services.UseServerHttpClient();
 
-builder.Services.AddHostedService<KafkaHelper>();
+builder.Services.UseKafkaService();
 
 var app = builder.Build();
 

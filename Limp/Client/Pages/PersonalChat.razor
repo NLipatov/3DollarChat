@@ -58,12 +58,15 @@
 
     private async Task SendMessage()
     {
+        if (string.IsNullOrWhiteSpace(messageInput))
+            return;
+
         Message messageToSend = new Message
         {
             Payload = messageInput,
             DateSent = DateTime.UtcNow,
-                TargetGroup = partnerName!,
-                SenderUsername = myName!,
+            TargetGroup = partnerName!,
+            SenderUsername = myName!,
         };
 
         await hubConnection.SendAsync("Dispatch", messageToSend);

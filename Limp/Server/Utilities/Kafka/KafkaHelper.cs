@@ -2,6 +2,7 @@
 using Limp.Client.Pages;
 using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Xml.Linq;
 
@@ -10,16 +11,22 @@ namespace Limp.Server.Utilities.Kafka
     public class KafkaHelper : IMessageBrokerService, IHostedService
     {
         private Thread _thread;
-        private IConfiguration _configuration = new ConfigurationBuilder()
+        private IConfiguration _configuration;
+        private const string TOPIC = "messages";
+        public KafkaHelper(IConfiguration configuration)
+        {
+            var MessageBrokerSection = configuration.GetSection("MessageBrokerSettings");
+
+            _configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(
             new Dictionary<string, string>
             {
-                { "bootstrap.servers", "79.137.202.134:9092" },
-                { "group.id",  "kafka-dotnet-getting-started"},
-                { "auto.offset.reset", "earliest" }
+                { "bootstrap.servers", MessageBrokerSection.GetValue<string>("bootstrap.servers") },
+                { "group.id",  MessageBrokerSection.GetValue<string>("group.id")},
+                { "auto.offset.reset", MessageBrokerSection.GetValue<string>("auto.offset.reset") }
             })
-            .Build();
-        private const string TOPIC = "messages";
+            .Build(); ;
+        }
         public async Task ProduceAsync(Message message)
         {
             using (var producer = new ProducerBuilder<string, string>(
@@ -40,7 +47,7 @@ namespace Limp.Server.Utilities.Kafka
             Console.Write("Starting Apache Kafka consumer thread.\n");
 
             HubConnection hubConnection = new HubConnectionBuilder()
-            .WithUrl("https://localhost:7273/messageDispatcherHub")
+            .WithUrl(_configuration.GetSection("MessageBrokerSettings").GetValue<string>("messageDispatcherHubAddress")!)
             .Build();
 
             await Task.Delay(10000);
@@ -60,12 +67,7 @@ namespace Limp.Server.Utilities.Kafka
                         Message? message = JsonSerializer.Deserialize<Message>(cr.Message.Value);
                         if (message != null)
                         {
-                            Console.WriteLine(message.SenderUsername);
-                            Console.WriteLine(message.TargetGroup);
-                            Console.WriteLine(message.Payload);
-
-
-                            await hubConnection.SendAsync("Deliver", message);
+                            await hubConnection.SendAsync("Dispatch", message);
                         }
                     }
                 }

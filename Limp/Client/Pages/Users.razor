@@ -6,6 +6,7 @@
 @inject NavigationManager Navigation
 @using Limp.Shared.Models;
 @inject IJSRuntime jS
+@implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
 
@@ -106,9 +107,13 @@
 
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection is not null)
+        if (hubConnection != null)
         {
             await hubConnection.DisposeAsync();
+        }
+        if (authHub != null)
+        {
+            await authHub.DisposeAsync();
         }
     }
 }

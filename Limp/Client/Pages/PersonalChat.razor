@@ -1,9 +1,10 @@
 ﻿@page "/user/{partnerName?}"
 @using Limp.Client.Utilities;
 @using Limp.Shared.Models;
-@using Microsoft.AspNetCore.SignalR.Client;
+@using Microsoft.AspNetCore.SignalR.Client
 @inject NavigationManager Navigation
 @inject IJSRuntime jS;
+@implements IAsyncDisposable
 
 <PageTitle>Chat with @partnerName</PageTitle>
 
@@ -28,11 +29,34 @@
     [Parameter]
     public string? myName { get; set; }
     private HubConnection? hubConnection;
+    private HubConnection? usersHub;
     private List<Message> messages { get; set; } = new();
-    private string messageInput = string.Empty;
+    private string messageInput = string.Empty; 
+    private string myConnectionId { get; set; } = string.Empty;
+    private List<UserConnections> userConnections { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
+        usersHub = new HubConnectionBuilder()
+        .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
+        .Build();
+
+        usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+        {
+            userConnections = updatedTrackedUserConnections;
+            StateHasChanged();
+        });
+
+        usersHub.On<string>("ReceiveConnectionId", conId =>
+        {
+            myConnectionId = conId;
+            StateHasChanged();
+        });
+
+        await usersHub.StartAsync();
+
+        await usersHub.SendAsync("SetUsername", await jS.InvokeAsync<string>("localStorage.getItem", "access-token"));
+
         hubConnection = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/messageDispatcherHub"))
         .Build();
@@ -78,5 +102,13 @@
         messages.Add(messageToSend);
 
         StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if(hubConnection != null)
+        {
+            await hubConnection.DisposeAsync();
+        }
     }
 }

@@ -1,4 +1,5 @@
 ﻿@page "/user/{partnerName?}"
+@using Limp.Client.HubInteraction;
 @using Limp.Client.Utilities;
 @using Limp.Shared.Models;
 @using Microsoft.AspNetCore.SignalR.Client
@@ -19,7 +20,7 @@
 @foreach (var message in messages)
 {
     <div>
-        <span>@message.SenderUsername:</span><span>@message.Payload</span>
+        <span>@message.Sender:</span><span>@message.Payload</span>
     </div>
 }
 
@@ -28,15 +29,20 @@
     public string? partnerName { get; set; }
     [Parameter]
     public string? myName { get; set; }
-    private HubConnection? hubConnection;
+    private HubConnection? messageDispatcherConnection;
     private HubConnection? usersHub;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty; 
     private string myConnectionId { get; set; } = string.Empty;
     private List<UserConnections> userConnections { get; set; } = new();
+    private string accessToken = string.Empty;
+    public bool IsConnected => messageDispatcherConnection?.State == HubConnectionState.Connected;
+    HubInteractor? _hubInteractor;
 
     protected override async Task OnInitializedAsync()
     {
+        accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
+
         usersHub = new HubConnectionBuilder()
         .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
         .Build();
@@ -55,30 +61,25 @@
 
         await usersHub.StartAsync();
 
-        await usersHub.SendAsync("SetUsername", await jS.InvokeAsync<string>("localStorage.getItem", "access-token"));
+        await usersHub.SendAsync("SetUsername", accessToken);
 
-        hubConnection = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/messageDispatcherHub"))
-        .Build();
+        _hubInteractor = new(Navigation);
+        messageDispatcherConnection = await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken, OnMessageReceived, OnUsernameResolve);
 
-        hubConnection.On<Message>("ReceiveMessage", message =>
-        {
-            messages.Add(message);
-            StateHasChanged();
-        });
-
-        hubConnection.On<string>("OnMyNameResolve", value =>
-        {
-            myName = value;
-        });
-
-        await hubConnection.StartAsync();
-
-        await hubConnection.SendAsync("SetUsername", await jS.InvokeAsync<string>("localStorage.getItem", "access-token"));
+        var messagesFromMessageBox = _hubInteractor.LoadStoredMessages(partnerName);
+        messages.AddRange(messagesFromMessageBox);
     }
 
-    public bool IsConnected =>
-        hubConnection?.State == HubConnectionState.Connected;
+    private void OnUsernameResolve(string username)
+    {
+        myName = username;
+    }
+
+    private void OnMessageReceived(Message message)
+    {
+        messages.Add(message);
+        StateHasChanged();
+    }
 
     private async Task SendMessage()
     {
@@ -90,14 +91,14 @@
             Payload = messageInput,
             DateSent = DateTime.UtcNow,
             TargetGroup = partnerName!,
-            SenderUsername = myName!,
+            Sender = myName!,
         };
 
-        await hubConnection.SendAsync("Dispatch", messageToSend);
+        await _hubInteractor.SendMessage(messageToSend);
 
         messageInput = string.Empty;
 
-        messageToSend.SenderUsername = "You";
+        messageToSend.Sender = "You";
 
         messages.Add(messageToSend);
 
@@ -106,9 +107,17 @@
 
     public async ValueTask DisposeAsync()
     {
-        if(hubConnection != null)
+        if(usersHub != null)
         {
-            await hubConnection.DisposeAsync();
+            await usersHub.DisposeAsync();
+        }
+        if(messageDispatcherConnection != null)
+        {
+            await messageDispatcherConnection.DisposeAsync();
+        }
+        if(_hubInteractor != null)
+        {
+            await _hubInteractor.DisposeAsync();
         }
     }
 }

@@ -17,7 +17,7 @@ namespace Limp.Client.HubInteraction
 
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync(string accessToken, Action<Message>? onMessageReceive = null, Action<string>? onUsernameResolve = null)
         {
-            if(onMessageReceive != null)
+            if (onMessageReceive != null)
             {
                 Guid subscriptionId = MessageBox.Subsctibe(onMessageReceive);
                 subscriptions.Add(subscriptionId);
@@ -32,7 +32,7 @@ namespace Limp.Client.HubInteraction
                 MessageBox.AddMessage(message);
             });
 
-            if(onUsernameResolve != null)
+            if (onUsernameResolve != null)
             {
                 messageDispatcherHub.On<string>("OnMyNameResolve", username =>
                 {
@@ -54,13 +54,13 @@ namespace Limp.Client.HubInteraction
 
         public async Task SendMessage(Message message)
         {
-            if(messageDispatcherHub != null)
+            if (messageDispatcherHub != null)
                 await messageDispatcherHub.SendAsync("Dispatch", message);
         }
 
         public bool isMessageHubConnected()
         {
-            if(messageDispatcherHub == null)
+            if (messageDispatcherHub == null)
                 return false;
 
             return messageDispatcherHub.State == HubConnectionState.Connected;

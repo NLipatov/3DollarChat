@@ -1,10 +1,7 @@
 ﻿using Confluent.Kafka;
-using Limp.Client.Pages;
 using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.Extensions.Configuration;
 using System.Text.Json;
-using System.Xml.Linq;
 
 namespace Limp.Server.Utilities.Kafka
 {
@@ -57,12 +54,12 @@ namespace Limp.Server.Utilities.Kafka
                 _configuration.AsEnumerable()).Build())
             {
                 consumer.Subscribe(TOPIC);
-                
+
                 while (true)
                 {
                     Console.WriteLine("waiting for any messages from Apache Kafka...");
                     var cr = consumer.Consume();
-                    if(cr.Message.Value != null)
+                    if (cr.Message.Value != null)
                     {
                         Message? message = JsonSerializer.Deserialize<Message>(cr.Message.Value);
                         if (message != null)

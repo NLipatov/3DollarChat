@@ -15,7 +15,7 @@ namespace Limp.Client.TopicStorage
 
         public static List<Message> FetchMessagesFromMessageBox(string sender)
         {
-            List<Message> messages = Messages.Where(x=>x.Sender == sender).ToList();
+            List<Message> messages = Messages.Where(x => x.Sender == sender).ToList();
 
             return messages;
         }

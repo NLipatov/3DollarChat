@@ -1,11 +1,9 @@
-﻿using Confluent.Kafka;
-using Limp.Server.Hubs.UserStorage;
+﻿using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
 using Limp.Shared.Models;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.Json;
 
 namespace Limp.Server.Hubs.MessageDispatching
 {
@@ -38,7 +36,7 @@ namespace Limp.Server.Hubs.MessageDispatching
                 case true:
                     await Deliver(message);
                     break;
-                
+
                 case false:
                     await Ship(message);
                     break;
@@ -65,7 +63,7 @@ namespace Limp.Server.Hubs.MessageDispatching
         {
             bool isClientConncetedToHub = InMemoryUsersStorage.UserConnections.Any(x => x.Username == message.TargetGroup);
 
-            if(isClientConncetedToHub)
+            if (isClientConncetedToHub)
             {
                 string targetGroup = message.TargetGroup;
 

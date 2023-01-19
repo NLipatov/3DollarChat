@@ -3,7 +3,6 @@ using Limp.Shared.Models.Login;
 using LimpShared.Authentification;
 using System.Text;
 using System.Text.Json;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -25,7 +24,7 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var response = await client.PostAsync(url, content);
 
-            if(response.StatusCode != System.Net.HttpStatusCode.OK)
+            if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
                 return new LogInResult
                 {

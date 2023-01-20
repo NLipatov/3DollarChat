@@ -61,14 +61,13 @@ namespace Limp.Server.Hubs.MessageDispatching
         /// <param name="message">Message for delivery</param>
         public async Task Deliver(Message message)
         {
-            bool isClientConncetedToHub = InMemoryUsersStorage.UserConnections.Any(x => x.Username == message.TargetGroup);
+            string targetGroup = message.TargetGroup;
 
-            if (isClientConncetedToHub)
-            {
-                string targetGroup = message.TargetGroup;
-
-                await Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
-            }
+            message.Topic = message.Sender;
+            await Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
+            message.Topic = message.TargetGroup;
+            message.Sender = "You";
+            await Clients.Caller.SendAsync("ReceiveMessage", message);
             //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
         }
 

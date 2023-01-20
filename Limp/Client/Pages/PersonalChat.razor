@@ -9,20 +9,27 @@
 
 <PageTitle>Chat with @partnerName</PageTitle>
 
-<h1>Your chat with @partnerName</h1>
+<div class="page-container">
+    <h1>@partnerName</h1>
 
-<div>
-    <label>You:</label>
-    <input @bind="messageInput"/>
-    <button @onclick="SendMessage" disabled="@(!IsConnected)">Send</button>
-</div>
+    <div class="messages-box">
+        @foreach (var message in messages)
+        {
+            <div class="message">
+                <span>@message.Sender:</span><span>@message.Payload</span>
+            </div>
+            <div class="timestamp">
+                <span>@message.DateSent.ToString("hh:mm")</span>
+            </div>
 
-@foreach (var message in messages)
-{
-    <div>
-        <span>@message.Sender:</span><span>@message.Payload</span>
+        }
     </div>
-}
+
+    <div class="message-input-box">
+        <input @bind="messageInput" />
+        <button @onclick="SendMessage" disabled="@(!IsConnected)">Send</button>
+    </div>
+</div>
 
 @code {
     [Parameter]
@@ -97,12 +104,6 @@
         await _hubInteractor.SendMessage(messageToSend);
 
         messageInput = string.Empty;
-
-        messageToSend.Sender = "You";
-
-        messages.Add(messageToSend);
-
-        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()

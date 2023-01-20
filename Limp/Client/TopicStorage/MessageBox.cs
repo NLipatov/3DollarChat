@@ -13,9 +13,9 @@ namespace Limp.Client.TopicStorage
             PerformSubscribedCalls(message);
         }
 
-        public static List<Message> FetchMessagesFromMessageBox(string sender)
+        public static List<Message> FetchMessagesFromMessageBox(string topic)
         {
-            List<Message> messages = Messages.Where(x => x.Sender == sender).ToList();
+            List<Message> messages = Messages.Where(x => x.Topic == topic).ToList();
 
             return messages;
         }

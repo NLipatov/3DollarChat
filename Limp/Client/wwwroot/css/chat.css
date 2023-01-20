@@ -1,0 +1,31 @@
+﻿.timestamp {
+    display: flex;
+    background-color: lightgreen;
+    width: fit-content;
+    margin-left: auto;
+    padding: 5px;
+    font-size: 7pt;
+    border-radius: 5px;
+}
+
+.message {
+    background: lightgreen;
+    border-radius: 5px;
+    display: flex;
+    box-shadow: 10px 10px 5px -2px rgb(34 60 80 / 20%);
+    margin: 10px;
+    padding: 10px;
+}
+
+.message-input-box {
+    position: absolute;
+    bottom: 0;
+    padding: 10px;
+    gap: 10px;
+    display: flex;
+    left: 50%;
+}
+
+.message-input-box input {
+    border-radius: 5px;
+}

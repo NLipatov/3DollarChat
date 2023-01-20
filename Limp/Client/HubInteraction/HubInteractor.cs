@@ -47,9 +47,9 @@ namespace Limp.Client.HubInteraction
             return messageDispatcherHub;
         }
 
-        public List<Message> LoadStoredMessages(string sender)
+        public List<Message> LoadStoredMessages(string topic)
         {
-            return MessageBox.FetchMessagesFromMessageBox(sender);
+            return MessageBox.FetchMessagesFromMessageBox(topic);
         }
 
         public async Task SendMessage(Message message)

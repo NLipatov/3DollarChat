@@ -10,12 +10,16 @@
 <PageTitle>Chat with @partnerName</PageTitle>
 
 <div class="page-container">
-    <h1>@partnerName</h1>
+    <div class="header">
+        <span>@partnerName</span>
+    </div>
 
     <div class="messages-box">
         @foreach (var message in messages)
         {
-            <div class="message">
+            bool isOutcoming = message.Sender == "You";
+            string messageClass = isOutcoming ? "outcoming" : "incoming";
+            <div class="message @messageClass">
                 <span>@message.Sender:</span><span>@message.Payload</span>
             </div>
             <div class="timestamp">

@@ -1,4 +1,4 @@
-﻿@page "/user/{partnerName?}"
+﻿@page "/user/{topicName?}"
 @using Limp.Client.HubInteraction;
 @using Limp.Client.Utilities;
 @using Limp.Shared.Models;
@@ -7,11 +7,12 @@
 @inject IJSRuntime jS;
 @implements IAsyncDisposable
 
-<PageTitle>Chat with @partnerName</PageTitle>
+<PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
     <div class="header">
-        <span>@partnerName</span>
+        <span>@topicName</span>
+        <span>@myName</span>
     </div>
 
     <div class="messages-box">
@@ -24,6 +25,10 @@
             </div>
             <div class="timestamp">
                 <span>@message.DateSent.ToString("hh:mm")</span>
+                @if(message.IsReceived)
+                {
+                    <span>R</span>
+                }
             </div>
 
         }
@@ -31,59 +36,90 @@
 
     <div class="message-input-box">
         <input @bind="messageInput" />
-        <button @onclick="SendMessage" disabled="@(!IsConnected)">Send</button>
+        <button @onclick="SendMessage" disabled="@(!IsConnected || string.IsNullOrWhiteSpace(myName))">Send</button>
     </div>
 </div>
 
 @code {
     [Parameter]
-    public string? partnerName { get; set; }
+    public string? topicName { get; set; }
     [Parameter]
     public string? myName { get; set; }
-    private HubConnection? messageDispatcherConnection;
+    private HubConnection? messageDispatcherHub;
     private HubConnection? usersHub;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty; 
     private string myConnectionId { get; set; } = string.Empty;
     private List<UserConnections> userConnections { get; set; } = new();
     private string accessToken = string.Empty;
-    public bool IsConnected => messageDispatcherConnection?.State == HubConnectionState.Connected;
+    public bool IsConnected => messageDispatcherHub?.State == HubConnectionState.Connected;
     HubInteractor? _hubInteractor;
 
     protected override async Task OnInitializedAsync()
     {
+        _hubInteractor = new(Navigation);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
-        usersHub = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
-        .Build();
+        await ConnectToHubsAsync(accessToken);
 
-        usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+        LoadPreviousMessagesForThisTopic();
+    }
+
+    private async Task ConnectToHubsAsync(string accessToken)
+    {
+        ThrowErrorIfHubInteractorIsNull();
+
+        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(accessToken, onConnectionIdReceive, onOnlineUsersReceive);
+
+        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken, OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
+    }
+
+    private void onMessageReceivedByRecepient(Guid messageId)
+    {
+        Message? receivedMessage = messages.FirstOrDefault(x => x.Id == messageId);
+        if(receivedMessage != null)
         {
-            userConnections = updatedTrackedUserConnections;
+            receivedMessage.IsReceived = true;
             StateHasChanged();
-        });
+        }
+    }
 
-        usersHub.On<string>("ReceiveConnectionId", conId =>
+    private void LoadPreviousMessagesForThisTopic()
+    {
+        if (string.IsNullOrWhiteSpace(topicName))
         {
-            myConnectionId = conId;
-            StateHasChanged();
-        });
+            throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
+        }
 
-        await usersHub.StartAsync();
+        ThrowErrorIfHubInteractorIsNull();
 
-        await usersHub.SendAsync("SetUsername", accessToken);
-
-        _hubInteractor = new(Navigation);
-        messageDispatcherConnection = await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken, OnMessageReceived, OnUsernameResolve);
-
-        var messagesFromMessageBox = _hubInteractor.LoadStoredMessages(partnerName);
+        var messagesFromMessageBox = _hubInteractor!.LoadStoredMessages(topicName);
         messages.AddRange(messagesFromMessageBox);
+    }
+
+    private void ThrowErrorIfHubInteractorIsNull()
+    {
+        if (_hubInteractor == null)
+        {
+            throw new ApplicationException("Could find acceptable hub interactor entity.");
+        }
+    }
+
+    private void onConnectionIdReceive(string connectionId)
+    {
+        myConnectionId = connectionId;
+        StateHasChanged();
+    }
+
+    private void onOnlineUsersReceive(List<UserConnections> usersConnectedData)
+    {
+        userConnections = usersConnectedData;
     }
 
     private void OnUsernameResolve(string username)
     {
         myName = username;
+        StateHasChanged();
     }
 
     private void OnMessageReceived(Message message)
@@ -101,8 +137,8 @@
         {
             Payload = messageInput,
             DateSent = DateTime.UtcNow,
-            TargetGroup = partnerName!,
-            Sender = myName!,
+            TargetGroup = topicName!,
+            Sender = myName ?? throw new ApplicationException("Message was not send"),
         };
 
         await _hubInteractor.SendMessage(messageToSend);
@@ -112,14 +148,6 @@
 
     public async ValueTask DisposeAsync()
     {
-        if(usersHub != null)
-        {
-            await usersHub.DisposeAsync();
-        }
-        if(messageDispatcherConnection != null)
-        {
-            await messageDispatcherConnection.DisposeAsync();
-        }
         if(_hubInteractor != null)
         {
             await _hubInteractor.DisposeAsync();

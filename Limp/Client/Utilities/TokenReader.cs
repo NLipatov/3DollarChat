@@ -15,7 +15,7 @@ namespace Limp.Client.Utilities
 
             var now = DateTime.UtcNow;
 
-            return securityToken.ValidTo < now;
+            return securityToken.ValidTo <= now;
         }
 
         public static string GetUsername(string accessToken)

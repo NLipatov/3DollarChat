@@ -54,6 +54,12 @@ namespace Limp.Server.Hubs
 
             await PushOnlineUsersToClients();
             await PushConId();
+            await PushResolvedName(username);
+        }
+
+        private async Task PushResolvedName(string username)
+        {
+            await Clients.Caller.SendAsync("onNameResolve", username);
         }
 
         public async Task PushOnlineUsersToClients()

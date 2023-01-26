@@ -4,6 +4,7 @@ using Limp.Server.Utilities.Kafka;
 using Limp.Shared.Models;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
+using System.Text.Json;
 
 namespace Limp.Server.Hubs.MessageDispatching
 {
@@ -61,6 +62,8 @@ namespace Limp.Server.Hubs.MessageDispatching
         /// <param name="message">Message for delivery</param>
         public async Task Deliver(Message message)
         {
+            MessageStore.UnprocessedMessages.Add(message.Clone());
+
             string targetGroup = message.TargetGroup;
 
             message.Topic = message.Sender;
@@ -69,6 +72,16 @@ namespace Limp.Server.Hubs.MessageDispatching
             message.Sender = "You";
             await Clients.Caller.SendAsync("ReceiveMessage", message);
             //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
+        }
+
+        public async Task MessageReceived(Guid messageId)
+        {
+            Message? deliveredMessage = MessageStore.UnprocessedMessages.FirstOrDefault(x => x.Id == messageId);
+            if(deliveredMessage != null)
+            {
+                MessageStore.UnprocessedMessages.Remove(deliveredMessage);
+                await Clients.Group(deliveredMessage.Sender).SendAsync("MessageWasReceivedByRecepient", messageId);
+            }
         }
 
         public async Task SetUsername(string accessToken)

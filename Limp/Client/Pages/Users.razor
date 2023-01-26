@@ -28,23 +28,23 @@
 </div>
 
 @code {
-    private HubConnection? authHub;
-    private HubConnection? hubConnection;
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private string? accessToken { get; set; }
+    private string? refreshToken { get; set; }
     private HubInteractor? _hubInteractor;
 
     private async Task RedirectToChat(string username)
     {
-        await RefreshTokensIfNeeded(accessToken!);
-
         Navigation.NavigateTo($"/user/{username}");
     }
 
     protected override async Task OnInitializedAsync()
     {
+        _hubInteractor = new HubInteractor(Navigation);
+
         accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
+        refreshToken = await jS.InvokeAsync<string>("localStorage.getItem", "refresh-token");
 
         if (String.IsNullOrWhiteSpace(accessToken))
         {
@@ -52,49 +52,43 @@
             return;
         }
 
-        authHub = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
-        .Build();
+        await _hubInteractor.ConnectToAuthHubAsync(accessToken, refreshToken, OnTokensRefreshAsync);
 
-        authHub.On<LogInResult>("OnTokensRefresh", async result =>
+        await _hubInteractor.ConnectToUsersHubAsync(accessToken, onConnectionIdReceive, onOnlineUsersReceive, OnUsernameResolved);
+
+    }
+
+    private async Task OnUsernameResolved(string username)
+    {
+        if(_hubInteractor != null)
         {
-            JWTPair? pair = result.JWTPair;
-            if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
-                Navigation.NavigateTo("/login");
+            await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken);
+        }
+    }
 
-            if(result.Result == LogInStatus.Success)
-            {
-                await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
-                await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
-            }
-        });
+    private async Task OnTokensRefreshAsync(LogInResult result)
+    {
+        JWTPair? pair = result.JWTPair;
+        if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
+            Navigation.NavigateTo("/login");
 
-        await authHub.StartAsync();
-
-        await RefreshTokensIfNeeded(accessToken!);
-
-        hubConnection = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/usersHub"))
-        .Build();
-
-        hubConnection.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+        if (result.Result == LogInStatus.Success)
         {
-            userConnections = updatedTrackedUserConnections;
-            StateHasChanged();
-        });
+            await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
+            await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
+        }
+    }
 
-        hubConnection.On<string>("ReceiveConnectionId", conId =>
-        {
-            myConnectionId = conId;
-            StateHasChanged();
-        });
+    private void onConnectionIdReceive(string connectionId)
+    {
+        myConnectionId = connectionId;
+        StateHasChanged();
+    }
 
-        await hubConnection.StartAsync();
-
-        await hubConnection.SendAsync("SetUsername", await GetStoredAccessTokenAsync());
-
-        _hubInteractor = new HubInteractor(Navigation);
-        await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken);
+    private void onOnlineUsersReceive(List<UserConnections> usersConnectedData)
+    {
+        userConnections = usersConnectedData;
+        StateHasChanged();
     }
 
     private async Task<string> GetStoredAccessTokenAsync()
@@ -102,25 +96,8 @@
         return await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
     }
 
-    private async Task RefreshTokensIfNeeded(string accessToken)
-    {
-        if (TokenReader.HasAccessTokenExpired(accessToken))
-        {
-            string refreshToken = await jS.InvokeAsync<string>("localStorage.getItem", "refresh-token");
-            await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = refreshToken });
-        }
-    }
-
     public async ValueTask DisposeAsync()
     {
-        if (hubConnection != null)
-        {
-            await hubConnection.DisposeAsync();
-        }
-        if (authHub != null)
-        {
-            await authHub.DisposeAsync();
-        }
         if (_hubInteractor != null)
         {
             await _hubInteractor.DisposeAsync();

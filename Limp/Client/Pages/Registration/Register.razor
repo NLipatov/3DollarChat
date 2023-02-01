@@ -1,46 +1,66 @@
 ﻿@page "/register"
 @using AuthAPI.DTOs.Claims;
 @using AuthAPI.DTOs.User;
+@using Limp.Client.Pages.Registration.Models;
 @using Limp.Shared.Models.Login;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Shared.Models;
+@using System.ComponentModel.DataAnnotations;
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
 
 <PageTitle>Sign Up</PageTitle>
 
-<label>Login
-    <input required @bind=Username @bind:event="oninput" />
-</label>
-<label>Password 
-    <input required type="password" @bind=Password @bind:event="oninput"/>
-</label>
-<label>
-    Password confirmation
-    <input required type="password" @bind=PasswordConfirmation @bind:event="oninput" />
-</label>
+<div class="registration-page-content">
+    <EditForm Model="@Credentials" OnValidSubmit="ValidateAsync">
+    <div class="registration-form">           
+        <div>
+            <label class="input-box">
+                <span>Username:</span>
+                <input required @bind=Credentials.Username @bind:event="oninput" />
+            </label>
+        </div>
+        <div>
+            <label class="input-box">
+                <span>Password:</span>
+                <input required type="password" @bind=Credentials.Password @bind:event="oninput" />
+            </label>
+        </div>
+        <div>
+        <label>
+            <span>Password confirmation:</span>
+            <input required type="password" @bind=Credentials.PasswordConfirmation @bind:event="oninput" />
+        </label>
+        </div>
+        <button>Submit</button>
+    </div>
 
-<button @onclick="ValidateAsync">
-    Register
-</button>
+        @if(isRegistered)
+        {
+            <h2>
+                Registered Succesfully!
+            </h2>
+        }
 
-@if(isRegistered)
-{
-    <h2>
-        Registered Succesfully!
-    </h2>
-}
-
-@if(lastRegisterAttemptResult != null)
-{
-    <h2>
-        @lastRegisterAttemptResult.Message
-    </h2>
-}
+        @if(lastRegisterAttemptResult != null)
+        {
+        <h2>
+            @lastRegisterAttemptResult.Message
+        </h2>
+        }
+        <div style="    
+            position: absolute;
+            margin-left: -120px;">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+        </div>
+</EditForm>
+</div>
 
 @code {
+    Credentials Credentials = new();
     public string Username { get; set; }
     public string Password { get; set; }
     public string PasswordConfirmation { get; set; }

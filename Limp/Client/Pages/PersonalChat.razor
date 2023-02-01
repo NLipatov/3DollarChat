@@ -12,7 +12,6 @@
 <div class="page-container">
     <div class="header">
         <span>@topicName</span>
-        <span>@myName</span>
     </div>
 
     <div class="messages-box">
@@ -21,9 +20,9 @@
             bool isOutcoming = message.Sender == "You";
             string messageClass = isOutcoming ? "outcoming" : "incoming";
             <div class="message @messageClass">
-                <span>@message.Sender:</span><span>@message.Payload</span>
+                <span>@message.Payload</span>
             </div>
-            <div class="timestamp">
+            <div class="timestamp @messageClass">
                 <span>@message.DateSent.ToString("hh:mm")</span>
                 @if(message.IsReceived)
                 {

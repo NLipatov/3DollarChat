@@ -6,7 +6,6 @@
     font-size: 7pt;
     border-radius: 5px;
     margin: 5px;
-    margin-left: auto;
 }
 
 .message {
@@ -15,14 +14,22 @@
     box-shadow: 10px 10px 5px -2px rgb(34 60 80 / 20%);
     margin: 10px;
     padding: 10px;
+    min-width: 20px;
+    max-width: 80%;
 }
 
 .incoming {
     background: deepskyblue;
+    display: flex;
+    width: fit-content;
+    margin-right: auto;
 }
 
 .outcoming {
     background: lightgreen;
+    display: flex;
+    width: fit-content;
+    margin-left: auto;
 }
 
 .message-input-box {
@@ -50,7 +57,6 @@
 
 .header {
     position: fixed;
-    height: 5vh;
     background-color: white;
     display: flex;
     width: 100%;
@@ -58,4 +64,6 @@
     border-bottom: black 1px solid;
     padding-left: 10px;
     padding-right: 10px;
+    font-size: 16pt;
+    padding: 10px;
 }

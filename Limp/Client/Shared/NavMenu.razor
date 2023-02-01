@@ -1,44 +1,90 @@
-﻿<div class="top-row ps-3 navbar-dark">
-    <div class="container-fluid">
-        <a class="navbar-brand" href="">Limp Messenger</a>
-        <button title="Navigation menu" class="navbar-toggler" @onclick="ToggleNavMenu">
-            <span class="navbar-toggler-icon"></span>
-        </button>
+﻿@inject NavigationManager _navManager
+
+<div style=
+    "border-right: 1px solid black;    
+    display: flex;
+    flex-direction: column;
+    width: 200px;">
+    <div style="    
+        display: flex;
+        background-color: black;
+        color: white;
+        justify-content: center;
+        padding: 10px;
+        font-size: 16pt;">
+        <div>
+            <span style="white-space: nowrap;">Limp Messenger</span>
+        </div>
+    </div>
+
+    <div style="    
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;">
+        @foreach (var link in NavBarLinks)
+        {
+            <a class="navigation-element @(link.IsActive ? "active": "")" href=@link.URL @onclick="() => SetActive(link)">
+                <span class=@link.IconClass aria-hidden="true"></span> @link.Name
+            </a>
+        }
     </div>
 </div>
 
-<div class="@NavMenuCssClass nav-scrollable" @onclick="ToggleNavMenu">
-    <nav class="flex-column">
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="" Match="NavLinkMatch.All">
-                <span class="oi oi-home" aria-hidden="true"></span> Home
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="login">
-                <span class="oi oi-home" aria-hidden="true"></span> Login
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="register">
-                <span class="oi oi-plus" aria-hidden="true"></span> Register
-            </NavLink>
-        </div>
-        <div class="nav-item px-3">
-            <NavLink class="nav-link" href="users">
-                <span class="oi oi-list-rich" aria-hidden="true"></span> Online Users
-            </NavLink>
-        </div>
-    </nav>
-</div>
-
 @code {
-    private bool collapseNavMenu = true;
-
-    private string? NavMenuCssClass => collapseNavMenu ? "collapse" : null;
-
-    private void ToggleNavMenu()
+    void SetActive(Link link)
     {
-        collapseNavMenu = !collapseNavMenu;
+        if (NavBarLinks.Any(x => x.IsActive))
+        {
+            NavBarLinks
+            .Where(x => x.IsActive)
+            .ToList()
+            .ForEach(elem => elem.IsActive = false);
+        }
+        NavBarLinks.First(x => x.URL == link.URL).IsActive = true;
     }
+
+    protected override void OnInitialized()
+    {
+        string currentPage = _navManager.ToBaseRelativePath(_navManager.Uri);
+        Link? activeLink = NavBarLinks.FirstOrDefault(x => x.URL.ToLowerInvariant().Equals(currentPage));
+        if (activeLink != null)
+            SetActive(activeLink);
+    }
+
+    class Link
+    {
+        public string Name { get; set; } = string.Empty;
+        public string URL { get; set; } = string.Empty;
+        public string IconClass { get; set; } = string.Empty;
+        public bool IsActive { get; set; } = false;
+    }
+
+    List<Link> NavBarLinks { get; } = new List<Link>
+    {
+        new Link()
+        {
+            Name = "Home",
+            URL = "",
+            IconClass = "oi oi-home"
+        },
+        new Link()
+        {
+            Name = "Login",
+            URL = "login",
+            IconClass = "oi oi-home"
+        },
+        new Link()
+        {
+            Name = "Register",
+            URL = "register",
+            IconClass = "oi oi-plus"
+        },
+        new Link()
+        {
+            Name = "Users",
+            URL = "users",
+            IconClass = "oi oi-list-rich"
+        }
+    };
 }

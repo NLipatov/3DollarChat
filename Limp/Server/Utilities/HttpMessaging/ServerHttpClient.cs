@@ -1,6 +1,8 @@
 ﻿using AuthAPI.DTOs.User;
 using Limp.Shared.Models.Login;
 using LimpShared.Authentification;
+using LimpShared.DTOs.User;
+using LimpShared.ResultTypeEnum;
 using System.Text;
 using System.Text.Json;
 
@@ -24,18 +26,18 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var response = await client.PostAsync(url, content);
 
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            var serializedResponse = await response.Content.ReadAsStringAsync();
+            UserOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserOperationResult>(serializedResponse);
+
+            if(deserializedResponse == null)
             {
-                return new LogInResult
-                {
-                    Message = await response.Content.ReadAsStringAsync(),
-                    Result = LogInStatus.Fail,
-                };
+                throw new ApplicationException("Could not get response from AuthAPI");
             }
 
             return new LogInResult
             {
-                Result = LogInStatus.Success,
+                Message = deserializedResponse.SystemMessage,
+                Result = deserializedResponse.ResultType == OperationResultType.Success ? LogInStatus.Success : LogInStatus.Fail,
             };
         }
 
@@ -124,7 +126,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             if (result == null)
                 return false;
 
-            return result.ResultType == TokenRelatedOperationResultType.Success;
+            return result.ResultType == OperationResultType.Success;
         }
     }
 }

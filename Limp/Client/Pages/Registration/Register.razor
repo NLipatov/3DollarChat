@@ -8,6 +8,9 @@
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Shared.Models;
 @using System.ComponentModel.DataAnnotations;
+@using Limp.Client.UIComponents.SuccessOrErrorMessage;
+@using Limp.Client.UIComponents.InputBoxes;
+@using System.Text.RegularExpressions;
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
 
@@ -15,58 +18,67 @@
 
 <div class="registration-page-content">
     <EditForm Model="@Credentials" OnValidSubmit="ValidateAsync">
-    <div class="registration-form">           
-        <div>
-            <label class="input-box">
-                <span>Username:</span>
-                <input required @bind=Credentials.Username @bind:event="oninput" />
-            </label>
-        </div>
-        <div>
-            <label class="input-box">
-                <span>Password:</span>
-                <input required type="password" @bind=Credentials.Password @bind:event="oninput" />
-            </label>
-        </div>
-        <div>
-        <label>
-            <span>Password confirmation:</span>
-            <input required type="password" @bind=Credentials.PasswordConfirmation @bind:event="oninput" />
-        </label>
-        </div>
-        <button>Submit</button>
-    </div>
-
-        @if(isRegistered)
+        @if(lastRegisterAttemptResult.Result != LogInStatus.Success)
         {
-            <h2>
-                Registered Succesfully!
-            </h2>
+            <div class="registration-form-header">
+                <span>Create a Limp Messenger Account</span>
+            </div>
+            <div class="registration-form">
+                <InputBox InputText="@Credentials.Username"
+                          IconClass="fa-solid fa-user"
+                          Placeholder="Username"
+                          BindEvent="oninput"                
+                          IsRequired="true"
+                          OnInput="((value) => Credentials.Username = value)"/>
+
+                <InputBox InputText="@Credentials.Password"
+                          IconClass="fa-solid fa-key"
+                          Placeholder="Password"
+                          BindEvent="oninput"                
+                          IsRequired="true"
+                          Type="password"
+                          OnInput="((value) => Credentials.Password = value)" />
+
+                <InputBox InputText="@Credentials.PasswordConfirmation" 
+                    IconClass="fa-solid fa-key" 
+                    Placeholder="Password confirmation" 
+                    BindEvent="oninput"
+                    IsRequired="true"
+                    Type="password"
+                    OnInput="((value) => Credentials.PasswordConfirmation = value)" />
+
+                <button class="submit-button">Submit</button>
+            </div>
         }
 
-        @if(lastRegisterAttemptResult != null)
+        @if(lastRegisterAttemptResult.Result == LogInStatus.Fail)
         {
-        <h2>
-            @lastRegisterAttemptResult.Message
-        </h2>
+            <ResultMessage 
+                IsSuccess=false
+                       MessageText=@lastRegisterAttemptResult.Message />
         }
-        <div style="    
-            position: absolute;
-            margin-left: -120px;">
-            <DataAnnotationsValidator />
-            <ValidationSummary />
-        </div>
-</EditForm>
+        else if (lastRegisterAttemptResult.Result == LogInStatus.Success)
+        {
+            <ResultMessage 
+                IsSuccess=true
+                MessageText="Your account has been created. You can login now."/>
+        }
+
+        <div class="validation-results">
+                <DataAnnotationsValidator />
+            <ValidationSummary style="
+            display: flex;
+            flex-direction: column;
+            gap: 10px;" />
+            </div>
+    </EditForm>
 </div>
 
 @code {
     Credentials Credentials = new();
-    public string Username { get; set; }
-    public string Password { get; set; }
-    public string PasswordConfirmation { get; set; }
     private HubConnection? hubConnection;
     public bool isRegistered { get; set; } = false;
-    private LogInResult lastRegisterAttemptResult { get; set; } = null;
+    private LogInResult lastRegisterAttemptResult { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -76,16 +88,13 @@
 
         hubConnection.On<LogInResult>("OnRegister", result =>
         {
-            if(result.Result == LogInStatus.Success)
+            lastRegisterAttemptResult = new LogInResult
             {
-                lastRegisterAttemptResult = new LogInResult
-                {
-                    Result = LogInStatus.Success,
-                    Message = "Registered!"
-                };
+                Result = result.Result,
+                Message = result.Message,
+            };
 
-                StateHasChanged();
-            }
+            StateHasChanged();
         });
 
         await hubConnection.StartAsync();
@@ -93,7 +102,7 @@
 
     async Task ValidateAsync()
     {
-        if(Password != PasswordConfirmation)
+        if (Credentials.Password != Credentials.PasswordConfirmation)
         {
             lastRegisterAttemptResult = new LogInResult
             {
@@ -111,14 +120,14 @@
     {
         var data = new UserDTO()
         {
-            Username = Username,
-            Password = PasswordConfirmation,
+            Username = Credentials.Username,
+                Password = Credentials.PasswordConfirmation,
             Claims = new List<UserClaimsDTO>
             {
                 new UserClaimsDTO
                 {
                     Name = "Name",
-                    Value = Username,
+                    Value = Credentials.Username,
                 }
             }
             };

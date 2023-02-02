@@ -1,0 +1,33 @@
+﻿@using Limp.Client.Pages.Registration.Models;
+
+<div>
+    <label class="input-block">
+        <div class="input-box">
+            <i class="@IconClass"></i>
+            <input placeholder="@Placeholder" required="@IsRequired" type="@Type" @bind=InputText @bind:event="@BindEvent" @onchange="@(() =>OnInput.InvokeAsync(InputText))" />
+        </div>
+            </label>
+</div>
+
+@code {
+    [Parameter]
+    public string? InputText { get; set; }
+
+    [Parameter]
+    public string? IconClass { get; set; }
+
+    [Parameter]
+    public string? Placeholder { get; set; }
+
+    [Parameter]
+    public string BindEvent { get; set; } = "oninput";
+
+    [Parameter]
+    public bool IsRequired { get; set; } = false;
+
+    [Parameter]
+    public string Type { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnInput { get; set; }
+}

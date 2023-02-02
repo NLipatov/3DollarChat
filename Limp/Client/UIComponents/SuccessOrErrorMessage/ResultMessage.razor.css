@@ -1,0 +1,30 @@
+﻿.bg-red {
+    background-color: red !important;
+}
+
+.registered-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.registered-message span {
+    font-size: 16pt;
+    font-weight: bold;
+}
+
+.check-icon-container {
+    background-color: lawngreen;
+    height: 70px;
+    width: 70px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+}
+
+.check-icon-container svg {
+    font-size: xxx-large;
+    color: white;
+}

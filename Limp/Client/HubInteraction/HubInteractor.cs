@@ -17,7 +17,7 @@ namespace Limp.Client.HubInteraction
         private HubConnection? authHub;
         private HubConnection? usersHub;
         private HubConnection? messageDispatcherHub;
-        private List<Guid> subscriptions = new List<Guid>();
+        private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
 
         public async Task<HubConnection> ConnectToAuthHubAsync(string accessToken, string refreshToken, Func<AuthResult, Task>? onTokensRefresh = null)
@@ -124,7 +124,7 @@ namespace Limp.Client.HubInteraction
             return usersHub;
         }
 
-        public List<Message> LoadStoredMessages(string topic)
+        public static List<Message> LoadStoredMessages(string topic)
         {
             return MessageBox.FetchMessagesFromMessageBox(topic);
         }
@@ -135,7 +135,7 @@ namespace Limp.Client.HubInteraction
                 await messageDispatcherHub.SendAsync("Dispatch", message);
         }
 
-        public bool isMessageHubConnected()
+        public bool IsMessageHubConnected()
         {
             if (messageDispatcherHub == null)
                 return false;

@@ -92,7 +92,7 @@
 
         ThrowErrorIfHubInteractorIsNull();
 
-        var messagesFromMessageBox = _hubInteractor!.LoadStoredMessages(topicName);
+        var messagesFromMessageBox = HubInteractor.LoadStoredMessages(topicName);
         messages.AddRange(messagesFromMessageBox);
     }
 

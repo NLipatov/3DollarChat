@@ -20,7 +20,7 @@ namespace Limp.Server.Hubs.MessageDispatching
             _messageBrokerService = messageBrokerService;
         }
 
-        private bool isClientConnectedToHub(string username) => InMemoryUsersStorage.UserConnections.Any(x => x.Username == username);
+        private static bool IsClientConnectedToHub(string username) => InMemoryUsersStorage.UserConnections.Any(x => x.Username == username);
 
         /// <summary>
         /// Checks if target user is connected to the same hub.
@@ -31,7 +31,7 @@ namespace Limp.Server.Hubs.MessageDispatching
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
-            switch (isClientConnectedToHub(message.TargetGroup))
+            switch (IsClientConnectedToHub(message.TargetGroup))
             {
                 case true:
                     await Deliver(message);

@@ -1,4 +1,4 @@
-﻿using Limp.Shared.Models;
+﻿using ClientServerCommon.Models;
 
 namespace Limp.Server.Hubs.UserStorage
 {

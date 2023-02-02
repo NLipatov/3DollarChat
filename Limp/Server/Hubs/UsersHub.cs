@@ -1,7 +1,7 @@
-﻿using Limp.Client.Utilities;
+﻿using ClientServerCommon.Models;
+using Limp.Client.Utilities;
 using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
-using Limp.Shared.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs

@@ -1,4 +1,4 @@
-﻿namespace Limp.Shared.Models
+﻿namespace ClientServerCommon.Models
 {
     public class TrackedUserConnection
     {

@@ -1,11 +1,11 @@
-﻿using Limp.Shared.Models;
+﻿using ClientServerCommon.Models;
 
 namespace Limp.Client.TopicStorage
 {
     public static class MessageBox
     {
-        private static Dictionary<Guid, Action<Message>> subscriptions = new Dictionary<Guid, Action<Message>>();
-        private static List<Message> Messages = new List<Message>();
+        private static Dictionary<Guid, Action<Message>> subscriptions = new();
+        private static List<Message> Messages = new();
         public static void AddMessage(Message message)
         {
             Messages.Add(message);

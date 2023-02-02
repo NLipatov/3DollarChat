@@ -1,5 +1,5 @@
 ﻿using AuthAPI.DTOs.User;
-using Limp.Shared.Models.Login;
+using ClientServerCommon.Models.Login;
 using LimpShared.Authentification;
 using LimpShared.DTOs.User;
 using LimpShared.ResultTypeEnum;
@@ -16,7 +16,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             _configuration = configuration;
         }
 
-        public async Task<LogInResult> Register(UserDTO userDTO)
+        public async Task<AuthResult> Register(UserDTO userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
@@ -29,19 +29,19 @@ namespace Limp.Server.Utilities.HttpMessaging
             var serializedResponse = await response.Content.ReadAsStringAsync();
             UserOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserOperationResult>(serializedResponse);
 
-            if(deserializedResponse == null)
+            if (deserializedResponse == null)
             {
                 throw new ApplicationException("Could not get response from AuthAPI");
             }
 
-            return new LogInResult
+            return new AuthResult
             {
                 Message = deserializedResponse.SystemMessage,
-                Result = deserializedResponse.ResultType == OperationResultType.Success ? LogInStatus.Success : LogInStatus.Fail,
+                Result = deserializedResponse.ResultType == OperationResultType.Success ? AuthResultType.Success : AuthResultType.Fail,
             };
         }
 
-        public async Task<LogInResult> GetJWTPairAsync(UserDTO userDTO)
+        public async Task<AuthResult> GetJWTPairAsync(UserDTO userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
@@ -50,10 +50,10 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
-                return new LogInResult
+                return new AuthResult
                 {
                     Message = await response.Content.ReadAsStringAsync(),
-                    Result = LogInStatus.Fail,
+                    Result = AuthResultType.Fail,
                 };
             }
 
@@ -61,9 +61,9 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
 
-            return new LogInResult
+            return new AuthResult
             {
-                Result = LogInStatus.Success,
+                Result = AuthResultType.Success,
                 JWTPair = jwtPair,
             };
         }
@@ -81,7 +81,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             return result;
         }
 
-        public async Task<LogInResult> ExplicitJWTPairRefresh(RefreshToken refreshToken)
+        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshToken refreshToken)
         {
             var content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8, "application/json");
 
@@ -93,10 +93,10 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
-                return new LogInResult
+                return new AuthResult
                 {
                     Message = await response.Content.ReadAsStringAsync(),
-                    Result = LogInStatus.Fail,
+                    Result = AuthResultType.Fail,
                 };
             }
 
@@ -104,9 +104,9 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
 
-            return new LogInResult()
+            return new AuthResult()
             {
-                Result = LogInStatus.Success,
+                Result = AuthResultType.Success,
                 JWTPair = jwtPair,
             };
         }

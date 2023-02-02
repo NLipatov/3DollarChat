@@ -1,11 +1,11 @@
 ﻿using LimpShared.Authentification;
 
-namespace Limp.Shared.Models.Login
+namespace ClientServerCommon.Models.Login
 {
-    public class LogInResult
+    public class AuthResult
     {
         public string? Message { get; set; }
-        public LogInStatus? Result { get; set; } = null;
+        public AuthResultType? Result { get; set; } = null;
         public JWTPair? JWTPair { get; set; }
     }
 }

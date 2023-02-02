@@ -1,4 +1,4 @@
-﻿namespace Limp.Shared.Models.Contracts;
+﻿namespace ClientServerCommon.Models.Contracts;
 
 internal interface ICloneable<T>
 {

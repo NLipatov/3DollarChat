@@ -1,14 +1,19 @@
-﻿<div class="registered-message">
-    <div class="check-icon-container @(IsSuccess ? "" : "bg-red")">
-        <i class="fa-solid @(IsSuccess ? "fa-check" : "fa-xmark")"></i>
-    </div>
-    <span>@MessageText</span>
-</div>
+﻿@using ClientServerCommon.Models.Login;
+
+@if (Result.Result == AuthResultType.Fail)
+{
+    <ResultMessage 
+        IsSuccess=false
+        MessageText=@Result.Message />
+}
+else if (Result.Result == AuthResultType.Success)
+{
+    <ResultMessage 
+        IsSuccess=true
+        MessageText="Your account has been created. You can login now."/>
+}
 
 @code {
     [Parameter]
-    public bool IsSuccess { get; set; }
-
-    [Parameter]
-    public string MessageText { get; set; }
+    public AuthResult Result { get; set; }
 }

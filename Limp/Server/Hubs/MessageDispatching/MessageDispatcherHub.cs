@@ -1,10 +1,9 @@
-﻿using Limp.Server.Hubs.UserStorage;
+﻿using ClientServerCommon.Models;
+using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
-using Limp.Shared.Models;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
-using System.Text.Json;
 
 namespace Limp.Server.Hubs.MessageDispatching
 {
@@ -77,7 +76,7 @@ namespace Limp.Server.Hubs.MessageDispatching
         public async Task MessageReceived(Guid messageId)
         {
             Message? deliveredMessage = MessageStore.UnprocessedMessages.FirstOrDefault(x => x.Id == messageId);
-            if(deliveredMessage != null)
+            if (deliveredMessage != null)
             {
                 MessageStore.UnprocessedMessages.Remove(deliveredMessage);
                 await Clients.Group(deliveredMessage.Sender).SendAsync("MessageWasReceivedByRecepient", messageId);

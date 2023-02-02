@@ -1,16 +1,16 @@
 ﻿@page "/register"
-@using AuthAPI.DTOs.Claims;
 @using AuthAPI.DTOs.User;
+@using ClientServerCommon.Models.Login;
+@using AuthAPI.DTOs.Claims;
 @using Limp.Client.Pages.Registration.Models;
-@using Limp.Shared.Models.Login;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
-@using Limp.Shared.Models;
 @using System.ComponentModel.DataAnnotations;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage;
 @using Limp.Client.UIComponents.InputBoxes;
 @using System.Text.RegularExpressions;
+@using ClientServerCommon
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
 
@@ -18,7 +18,7 @@
 
 <div class="registration-page-content">
     <EditForm Model="@Credentials" OnValidSubmit="ValidateAsync">
-        @if(lastRegisterAttemptResult.Result != LogInStatus.Success)
+        @if(lastRegisterAttemptResult.Result != AuthResultType.Success)
         {
             <div class="registration-form-header">
                 <span>Create a Limp Messenger Account</span>
@@ -51,18 +51,8 @@
             </div>
         }
 
-        @if(lastRegisterAttemptResult.Result == LogInStatus.Fail)
-        {
-            <ResultMessage 
-                IsSuccess=false
-                       MessageText=@lastRegisterAttemptResult.Message />
-        }
-        else if (lastRegisterAttemptResult.Result == LogInStatus.Success)
-        {
-            <ResultMessage 
-                IsSuccess=true
-                MessageText="Your account has been created. You can login now."/>
-        }
+        <ResultMessage
+            Result="lastRegisterAttemptResult"/>
 
         <div class="validation-results">
                 <DataAnnotationsValidator />
@@ -78,7 +68,7 @@
     Credentials Credentials = new();
     private HubConnection? hubConnection;
     public bool isRegistered { get; set; } = false;
-    private LogInResult lastRegisterAttemptResult { get; set; } = new();
+    private AuthResult lastRegisterAttemptResult { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {
@@ -86,9 +76,9 @@
         .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
         .Build();
 
-        hubConnection.On<LogInResult>("OnRegister", result =>
+        hubConnection.On<AuthResult>("OnRegister", result =>
         {
-            lastRegisterAttemptResult = new LogInResult
+            lastRegisterAttemptResult = new AuthResult
             {
                 Result = result.Result,
                 Message = result.Message,
@@ -104,9 +94,9 @@
     {
         if (Credentials.Password != Credentials.PasswordConfirmation)
         {
-            lastRegisterAttemptResult = new LogInResult
+            lastRegisterAttemptResult = new AuthResult
             {
-                Result = LogInStatus.Fail,
+                Result = AuthResultType.Fail,
                 Message = "Password does not match Password Confirmation!"
             };
         }

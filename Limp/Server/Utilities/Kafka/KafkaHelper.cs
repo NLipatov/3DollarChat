@@ -1,5 +1,5 @@
-﻿using Confluent.Kafka;
-using Limp.Shared.Models;
+﻿using ClientServerCommon.Models;
+using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Text.Json;
 

@@ -1,7 +1,7 @@
-﻿using Limp.Client.TopicStorage;
+﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.Login;
+using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
-using Limp.Shared.Models;
-using Limp.Shared.Models.Login;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -20,13 +20,13 @@ namespace Limp.Client.HubInteraction
         private List<Guid> subscriptions = new List<Guid>();
         private readonly NavigationManager _navigationManager;
 
-        public async Task<HubConnection> ConnectToAuthHubAsync(string accessToken, string refreshToken, Func<LogInResult, Task>? onTokensRefresh = null)
+        public async Task<HubConnection> ConnectToAuthHubAsync(string accessToken, string refreshToken, Func<AuthResult, Task>? onTokensRefresh = null)
         {
             authHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
             .Build();
 
-            authHub.On<LogInResult>("OnTokensRefresh", async result =>
+            authHub.On<AuthResult>("OnTokensRefresh", async result =>
             {
                 if (onTokensRefresh != null)
                 {
@@ -58,7 +58,7 @@ namespace Limp.Client.HubInteraction
             messageDispatcherHub.On<Message>("ReceiveMessage", async message =>
             {
                 MessageBox.AddMessage(message);
-                if(message.Sender != "You")
+                if (message.Sender != "You")
                 {
                     await messageDispatcherHub.SendAsync("MessageReceived", message.Id);
                 }
@@ -66,7 +66,7 @@ namespace Limp.Client.HubInteraction
 
             messageDispatcherHub.On<Guid>("MessageWasReceivedByRecepient", messageId =>
             {
-                if(onMessageReceivedByRecepient!= null)
+                if (onMessageReceivedByRecepient != null)
                 {
                     onMessageReceivedByRecepient(messageId);
                 }

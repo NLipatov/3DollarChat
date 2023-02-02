@@ -1,0 +1,14 @@
+﻿<div class="registered-message">
+    <div class="check-icon-container @(IsSuccess ? "" : "bg-red")">
+        <i class="fa-solid @(IsSuccess ? "fa-check" : "fa-xmark")"></i>
+    </div>
+    <span>@MessageText</span>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsSuccess { get; set; }
+
+    [Parameter]
+    public string MessageText { get; set; }
+}

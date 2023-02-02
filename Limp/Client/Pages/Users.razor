@@ -1,11 +1,11 @@
 ﻿@page "/users"
+@using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction;
-@using Limp.Shared.Models.Login;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager Navigation
-@using Limp.Shared.Models;
+@using ClientServerCommon.Models.Login;
 @inject IJSRuntime jS
 @implements IAsyncDisposable
 
@@ -66,13 +66,13 @@
         }
     }
 
-    private async Task OnTokensRefreshAsync(LogInResult result)
+    private async Task OnTokensRefreshAsync(AuthResult result)
     {
         JWTPair? pair = result.JWTPair;
         if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
             Navigation.NavigateTo("/login");
 
-        if (result.Result == LogInStatus.Success)
+        if (result.Result == AuthResultType.Success)
         {
             await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
             await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);

@@ -1,0 +1,68 @@
+﻿.registration-form-header {
+    background-color: black;
+    color: white;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+    font-size: 16pt;
+}
+
+.registration-page-content {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    justify-content: center;
+    align-items: center;
+    border-radius: 5px;
+}
+
+.registration-form {
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    gap: 10px;
+    background-color: rgba(0, 0, 0, 0.1);
+    height: auto;
+    justify-content: center;
+}
+
+.input-block {
+    display: flex;
+    justify-content: space-between;
+}
+
+.input-block input {
+    border-radius: 5px;
+    height: 20px;
+    border: none;
+}
+
+.input-box {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+.input-box svg {
+    font-size: xx-large;
+    width: 40px;
+}
+
+.input-box input {
+    height: 40px;
+    width: 100%;
+}
+
+.validation-results {
+    position: absolute;
+    width: 347px;
+}
+
+.submit-button {
+    padding: 10px;
+    background-color: greenyellow;
+    border: 1px solid black;
+    font-weight: bold;
+    cursor: pointer;
+}

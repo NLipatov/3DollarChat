@@ -2,72 +2,26 @@
 @using AuthAPI.DTOs.User;
 @using ClientServerCommon.Models.Login;
 @using AuthAPI.DTOs.Claims;
-@using Limp.Client.Pages.Registration.Models;
+@using Limp.Client.UIComponents.InputForms.Registration
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.ComponentModel.DataAnnotations;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage;
-@using Limp.Client.UIComponents.InputBoxes;
 @using System.Text.RegularExpressions;
 @using ClientServerCommon
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
+@implements IAsyncDisposable;
 
 <PageTitle>Sign Up</PageTitle>
 
-<div class="registration-page-content">
-    <EditForm Model="@Credentials" OnValidSubmit="ValidateAsync">
-        @if(lastRegisterAttemptResult?.Result != AuthResultType.Success)
-        {
-            <div class="registration-form-header">
-                <span>Create a Limp Messenger Account</span>
-            </div>
-            <div class="registration-form">
-                <InputBox InputText="@Credentials.Username"
-                          IconClass="fa-solid fa-user"
-                          Placeholder="Username"
-                          BindEvent="oninput"                
-                          IsRequired="true"
-                          OnInput="((value) => Credentials.Username = value)"/>
-
-                <InputBox InputText="@Credentials.Password"
-                          IconClass="fa-solid fa-key"
-                          Placeholder="Password"
-                          BindEvent="oninput"                
-                          IsRequired="true"
-                          Type="password"
-                          OnInput="((value) => Credentials.Password = value)" />
-
-                <InputBox InputText="@Credentials.PasswordConfirmation" 
-                    IconClass="fa-solid fa-key" 
-                    Placeholder="Password confirmation" 
-                    BindEvent="oninput"
-                    IsRequired="true"
-                    Type="password"
-                    OnInput="((value) => Credentials.PasswordConfirmation = value)" />
-
-                <button class="submit-button">Submit</button>
-            </div>
-        }
-
-        <ResultMessage
-            Result="lastRegisterAttemptResult"/>
-
-        <div class="validation-results">
-                <DataAnnotationsValidator />
-            <ValidationSummary style="
-            display: flex;
-            flex-direction: column;
-            gap: 10px;" />
-            </div>
-    </EditForm>
-</div>
+<RegistrationForm 
+    OnRegisterEvent="async (dto) => await OnRegister(dto)"
+    RegistrationAttemptResult="lastRegisterAttemptResult" />
 
 @code {
-    Credentials Credentials = new();
     private HubConnection? hubConnection;
-    public bool isRegistered { get; set; } = false;
     private AuthResult lastRegisterAttemptResult { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
@@ -81,7 +35,7 @@
             lastRegisterAttemptResult = new AuthResult
             {
                 Result = result.Result,
-                Message = result.Message,
+                Message = result.Result == AuthResultType.Success ? "Account has been created, you can log in now." : result.Message,
             };
 
             StateHasChanged();
@@ -90,38 +44,20 @@
         await hubConnection.StartAsync();
     }
 
-    async Task ValidateAsync()
+    async Task OnRegister(UserDTO newUserDTO)
     {
-        if (Credentials.Password != Credentials.PasswordConfirmation)
-        {
-            lastRegisterAttemptResult = new AuthResult
-            {
-                Result = AuthResultType.Fail,
-                Message = "Password does not match Password Confirmation!"
-            };
-        }
-        else
-        {
-            await RegisterAsync();
-        }
+        if (hubConnection == null)
+            throw new ApplicationException("No connection with Hub.");
+
+        await hubConnection.SendAsync("Register", newUserDTO);
     }
 
-    async Task RegisterAsync()
+    public async ValueTask DisposeAsync()
     {
-        var data = new UserDTO()
+        if (hubConnection != null)
         {
-            Username = Credentials.Username,
-                Password = Credentials.PasswordConfirmation,
-            Claims = new List<UserClaimsDTO>
-            {
-                new UserClaimsDTO
-                {
-                    Name = "Name",
-                    Value = Credentials.Username,
-                }
-            }
-            };
-
-        await hubConnection.SendAsync("Register", data);
+            await hubConnection.StopAsync();
+            await hubConnection.DisposeAsync();
+        }
     }
 }

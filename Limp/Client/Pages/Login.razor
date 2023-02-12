@@ -4,6 +4,7 @@
 @using AuthAPI.DTOs.User;
 @using System.Web;
 @using ClientServerCommon.Models.Login;
+@using Limp.Client.UIComponents.InputForms.Login
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -12,40 +13,12 @@
 @inject NavigationManager Navigation
 @page "/login"
 
-<h3>Login</h3>
-
-<label>
-    Login
-    <input required @bind=Username @bind:event="oninput" />
-</label>
-<label>
-    Password
-    <input required type="password" @bind=Password @bind:event="oninput" />
-</label>
-
-<button @onclick="LogIn">
-    Login
-</button>
-
-@if (isLoggedIn && lasttokenFetchResult.Result == AuthResultType.Success)
-{
-    <h2>
-        Logged in Succesfully!
-    </h2>
-}
-
-@if (lasttokenFetchResult?.Result == AuthResultType.Fail)
-{
-    <h2>
-        @lasttokenFetchResult.Message
-    </h2>
-}
+<LoginForm 
+    OnLoginEvent="async (dto) => await OnLogIn(dto)"
+    LoginAttemptResult="lasttokenFetchResult" />
 
 @code {
-    private string Username { get; set; } = string.Empty;
-    private string Password { get; set; } = string.Empty;
-    private bool isLoggedIn { get; set; } = false;
-    private AuthResult? lasttokenFetchResult = null;
+    private AuthResult? lasttokenFetchResult = new();
     private HubConnection? hubConnection;
 
     protected override async Task OnInitializedAsync()
@@ -61,24 +34,21 @@
             if (lasttokenFetchResult.Result != AuthResultType.Fail)
             {
                 await StoreTokensAsync(result);
-                isLoggedIn = true;
+                lasttokenFetchResult.Message = "You has been logged in.";
             }
+
             StateHasChanged();
         });
 
         await hubConnection.StartAsync();
     }
 
-    private async Task LogIn()
+    private async Task OnLogIn(UserDTO loggingInUser)
     {
-        var data = new UserDTO()
-        {
-                Username = Username,
-                Password = Password,
-                Claims = new List<UserClaimsDTO>(),
-        };
+        if (hubConnection == null)
+            throw new ApplicationException("No connection with Hub.");
 
-        await hubConnection.SendAsync("LogIn", data);
+        await hubConnection.SendAsync("LogIn", loggingInUser);
     }
 
     private async Task StoreTokensAsync(AuthResult result)

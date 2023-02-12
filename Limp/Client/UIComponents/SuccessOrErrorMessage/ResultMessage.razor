@@ -2,13 +2,13 @@
 
 @if (Result.Result == AuthResultType.Fail)
 {
-    <ResultMessage 
+    <AtomicResultMessage 
         IsSuccess=false
         MessageText=@Result.Message />
 }
 else if (Result.Result == AuthResultType.Success)
 {
-    <ResultMessage 
+    <AtomicResultMessage 
         IsSuccess=true
         MessageText="Your account has been created. You can login now."/>
 }

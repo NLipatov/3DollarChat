@@ -18,7 +18,7 @@
 
 <div class="registration-page-content">
     <EditForm Model="@Credentials" OnValidSubmit="ValidateAsync">
-        @if(lastRegisterAttemptResult.Result != AuthResultType.Success)
+        @if(lastRegisterAttemptResult?.Result != AuthResultType.Success)
         {
             <div class="registration-form-header">
                 <span>Create a Limp Messenger Account</span>

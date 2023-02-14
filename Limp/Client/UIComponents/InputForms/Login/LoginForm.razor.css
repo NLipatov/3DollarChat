@@ -1,4 +1,4 @@
-﻿.registration-form-header {
+﻿.form-header {
     background-color: black;
     color: white;
     display: flex;
@@ -7,7 +7,7 @@
     font-size: 16pt;
 }
 
-.registration-page-content {
+.form-page-content {
     display: flex;
     width: 100%;
     height: 100%;
@@ -16,7 +16,7 @@
     border-radius: 5px;
 }
 
-.registration-form {
+.form {
     display: flex;
     flex-direction: column;
     padding: 10px;
@@ -65,4 +65,10 @@
     border: 1px solid black;
     font-weight: bold;
     cursor: pointer;
+}
+
+.submit-button:active {
+    background-color: #3e8e41;
+    box-shadow: 0 1px #e4d8d8;
+    transform: translateY(1px);
 }

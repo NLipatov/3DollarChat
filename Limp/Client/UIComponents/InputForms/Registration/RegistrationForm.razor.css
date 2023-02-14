@@ -66,3 +66,9 @@
     font-weight: bold;
     cursor: pointer;
 }
+
+.submit-button:active {
+    background-color: #3e8e41;
+    box-shadow: 0 1px #e4d8d8;
+    transform: translateY(1px);
+}

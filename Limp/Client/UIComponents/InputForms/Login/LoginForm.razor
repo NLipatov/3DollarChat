@@ -4,13 +4,13 @@
 @using Limp.Client.UIComponents.InputForms.Login.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
 
-<div class="registration-page-content">
+<div class="form-page-content">
     <EditForm Model="@LoginFormModel" OnSubmit="OnLogin">
         <div class="form-content" style="display: @(LoginAttemptResult.Result == AuthResultType.Success ? "none" : "unset");">            
-            <div class="registration-form-header">
+            <div class="form-header">
                 <span>Log In to your Limp Messenger Account</span>
             </div>
-            <div class="registration-form">
+            <div class="form">
                 <InputBox InputText="@LoginFormModel.Username"
                           IconClass="fa-solid fa-user"
                           Placeholder="Username"
@@ -37,9 +37,9 @@
         <div class="validation-results">
                 <DataAnnotationsValidator />
             <ValidationSummary style="
-            display: flex;
-            flex-direction: column;
-            gap: 10px;" />
+                display: flex;
+                flex-direction: column;
+                gap: 10px;" />
             </div>
     </EditForm>
 </div>

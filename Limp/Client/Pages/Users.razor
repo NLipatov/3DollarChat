@@ -44,7 +44,7 @@
         _hubInteractor = new HubInteractor(Navigation);
 
         accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
-        refreshToken = await jS.InvokeAsync<string>("localStorage.getItem", "refresh-token");
+        refreshToken = await jS.InvokeAsync<string?>("localStorage.getItem", "refresh-token");
 
         if (String.IsNullOrWhiteSpace(accessToken))
         {

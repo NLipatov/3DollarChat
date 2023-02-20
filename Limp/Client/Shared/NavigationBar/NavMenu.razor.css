@@ -6,6 +6,10 @@
     color: black;
 }
 
+.hidden {
+    display: none;
+}
+
 .active {
     background-color: black !important;
     color: white;

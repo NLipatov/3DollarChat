@@ -1,9 +1,42 @@
 ﻿@page "/"
 @inject NavigationManager Navigation
+@inject IJSRuntime _js;
 <PageTitle>Index</PageTitle>
 
 <h1>Welcome!</h1>
-@*<h5>The 'Limp' secure messenger project aims to provide a secure and private communication platform for its users. The main feature of the messenger is that it does not store any user data or messages on its servers, ensuring that user information and conversations are protected from any third-party access. The messenger employs state-of-the-art encryption technologies to secure the transmission of messages and data, ensuring that only the intended recipients have access to the information. The user-friendly interface and easy setup process make this messenger a great option for individuals and organizations looking to protect their privacy and secure their communication.</h5>
-*@
+<input @bind="inputValue" @bind:event="oninput"/>
+<button @onclick="(() => EncryptAsync(inputValue))">
+    Encrypt
+</button>
+<button @onclick="(() => DecryptAsync(inputValue))">
+    Decrypt
+</button>
+
 @code {
+    private static string PEMPublicKey { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        await _js.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+    }
+
+    [JSInvokable]
+    public static void OnPublicKeyExtracted(string publicKey)
+    {
+        PEMPublicKey = publicKey;
+        Console.WriteLine($"Public key: {PEMPublicKey}\n");
+    }
+
+    private string inputValue { get; set; } = string.Empty;
+
+    private async Task EncryptAsync(string message)
+    {
+        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, PEMPublicKey);
+        inputValue = encryptedMessage;
+    }
+    private async Task DecryptAsync(string message)
+    {
+        string decryptedMessage = await _js.InvokeAsync<string>("decryptMessage", inputValue);
+        Console.WriteLine(decryptedMessage);
+        inputValue = decryptedMessage;
+    }
 }

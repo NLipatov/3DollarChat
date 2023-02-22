@@ -3,40 +3,74 @@
 @inject IJSRuntime _js;
 <PageTitle>Index</PageTitle>
 
-<h1>Welcome!</h1>
-<input @bind="inputValue" @bind:event="oninput"/>
-<button @onclick="(() => EncryptAsync(inputValue))">
+<h1>RSA Encryption</h1>
+<input @bind="RSAinputValue" @bind:event="oninput"/>
+<button @onclick="(() => EncryptRSAAsync(RSAinputValue))">
     Encrypt
 </button>
-<button @onclick="(() => DecryptAsync(inputValue))">
+<button @onclick="(() => DecryptRSAAsync(RSAinputValue))">
     Decrypt
 </button>
 
+<h1>AES Encryption</h1>
+<input @bind="AESinputValue" @bind:event="oninput" />
+<button @onclick="(() => EncryptAESAsync(AESinputValue))">
+    Encrypt
+</button>
+<button @onclick="(() => DecryptAESAsync(AESinputValue))">
+    Decrypt
+</button>
+<button @onclick="(() => AESKeyRegeneration())">
+    Regenerate and import new AES Key
+</button>
+
 @code {
-    private static string PEMPublicKey { get; set; } = string.Empty;
+    private static string RSAPublicKey { get; set; } = string.Empty;
+    private static string AESKey { get; set; } = string.Empty;
+    private string RSAinputValue { get; set; } = string.Empty;
+    private string AESinputValue { get; set; } = string.Empty;
     protected override async Task OnInitializedAsync()
     {
         await _js.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+        await _js.InvokeVoidAsync("GenerateAESKey");
     }
 
     [JSInvokable]
     public static void OnPublicKeyExtracted(string publicKey)
     {
-        PEMPublicKey = publicKey;
-        Console.WriteLine($"Public key: {PEMPublicKey}\n");
+        RSAPublicKey = publicKey;
     }
 
-    private string inputValue { get; set; } = string.Empty;
-
-    private async Task EncryptAsync(string message)
+    [JSInvokable]
+    public static void OnAESKeyExpot(string key)
     {
-        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, PEMPublicKey);
-        inputValue = encryptedMessage;
+        AESKey = key;
     }
-    private async Task DecryptAsync(string message)
+
+    private async Task AESKeyRegeneration()
     {
-        string decryptedMessage = await _js.InvokeAsync<string>("decryptMessage", inputValue);
-        Console.WriteLine(decryptedMessage);
-        inputValue = decryptedMessage;
+        await _js.InvokeVoidAsync("AESEncryptMessage", AESKey);
+    }
+    private async Task EncryptAESAsync(string message)
+    {
+        string encryptedMessage = await _js.InvokeAsync<string>("AESEncryptMessage", message, AESKey);
+        AESinputValue = encryptedMessage;
+    }
+
+    private async Task DecryptAESAsync(string message)
+    {
+        string decryptedMessage = await _js.InvokeAsync<string>("AESDecryptMessage", AESinputValue);
+        AESinputValue = decryptedMessage;
+    }
+
+    private async Task EncryptRSAAsync(string message)
+    {
+        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, RSAPublicKey);
+        RSAinputValue = encryptedMessage;
+    }
+    private async Task DecryptRSAAsync(string message)
+    {
+        string decryptedMessage = await _js.InvokeAsync<string>("decryptMessage", RSAinputValue);
+        RSAinputValue = decryptedMessage;
     }
 }

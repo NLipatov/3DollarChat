@@ -1,12 +1,9 @@
-﻿/*
-The unwrapped signing key.
-*/
-let encryptionKey;
+﻿function ab2str(buf) {
+    return String.fromCharCode.apply(null, new Uint8Array(buf));
+}
 
-/*
-Convert a string into an ArrayBuffer
-from https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
-*/
+//Convert a string into an ArrayBuffer
+//from https://developers.google.com/web/updates/2012/06/How-to-convert-ArrayBuffer-to-and-from-String
 function str2ab(str) {
     const buf = new ArrayBuffer(str.length);
     const bufView = new Uint8Array(buf);
@@ -16,6 +13,54 @@ function str2ab(str) {
     return buf;
 }
 
+let cryptoKeyPair;
+
+function GenerateRSAOAEPKeyPair()
+{
+    window.crypto.subtle.generateKey
+    (
+        {
+            name: "RSA-OAEP",
+            modulusLength: 4096,
+            publicExponent: new Uint8Array([1, 0, 1]),
+            hash: "SHA-256",
+        },
+        true,
+        ["encrypt", "decrypt"]
+    ).then(async(keyPair) =>
+    {
+        cryptoKeyPair = keyPair;
+        await exportPublicKeyToDotnet(keyPair.publicKey, "publicKey");
+    });
+}
+
+const exportPublicKeyToDotnet = async (key) =>
+{
+    const exported = await window.crypto.subtle.exportKey(
+        "spki",
+        key
+    );
+    const exportedAsString = ab2str(exported);
+    const exportedAsBase64 = window.btoa(exportedAsString);
+    const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
+
+    DotNet.invokeMethodAsync("Limp.Client", "OnPublicKeyExtracted", pemExported);
+}
+
+async function decryptMessage(message) {
+    return new TextDecoder().decode(await window.crypto.subtle.decrypt(
+        {
+            name: "RSA-OAEP"
+        },
+        cryptoKeyPair.privateKey,
+        str2ab(message))
+    )
+}
+
+/*
+The unwrapped signing key.
+*/
+let encryptionKey;
 /*
 Import a PEM encoded RSA public key, to use for RSA-OAEP encryption.
 Takes a string containing the PEM encoded key, and returns a Promise
@@ -64,8 +109,4 @@ async function encryptMessage(message) {
 async function EncryptWithRSAPublicKey(message, RSApublicKey) {
     encryptionKey = await importPublicKey(RSApublicKey);
     return await encryptMessage(message);
-}
-
-function ab2str(buf) {
-    return String.fromCharCode.apply(null, new Uint8Array(buf));
 }

@@ -1,4 +1,5 @@
 ﻿@page "/"
+@using LimpShared.Encryption;
 @inject NavigationManager Navigation
 @inject IJSRuntime _js;
 <PageTitle>Index</PageTitle>
@@ -26,6 +27,9 @@
 
 @code {
     private static string RSAPublicKey { get; set; } = string.Empty;
+    private static Key? RSAPublic { get; set; }
+    private static Key? RSAPrivate { get; set; }
+    private static Key? AES { get; set; }
     private static string AESKey { get; set; } = string.Empty;
     private string RSAinputValue { get; set; } = string.Empty;
     private string AESinputValue { get; set; } = string.Empty;
@@ -36,9 +40,21 @@
     }
 
     [JSInvokable]
-    public static void OnPublicKeyExtracted(string publicKey)
+    public static void OnKeyExtracted(string key, int format = 0, int type = 0)
     {
-        RSAPublicKey = publicKey;
+        Key cryptoKey = new Key()
+        {
+            Value = key,
+            Format = (KeyFormat)format,
+            Type = (KeyType)type
+        };
+
+        if (cryptoKey.Type == KeyType.RSAPublic)
+            RSAPublic = cryptoKey;
+        else if (cryptoKey.Type == KeyType.RSAPrivate)
+            RSAPrivate = cryptoKey;
+        else if (cryptoKey.Type == KeyType.AES)
+            AES = cryptoKey;
     }
 
     [JSInvokable]
@@ -65,12 +81,18 @@
 
     private async Task EncryptRSAAsync(string message)
     {
-        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, RSAPublicKey);
+        if (RSAPublic?.Value == null)
+            throw new ApplicationException("RSA Public key was null");
+
+        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, RSAPublic.Value);
         RSAinputValue = encryptedMessage;
     }
     private async Task DecryptRSAAsync(string message)
     {
-        string decryptedMessage = await _js.InvokeAsync<string>("decryptMessage", RSAinputValue);
+        if(RSAPrivate?.Value == null)
+            throw new ApplicationException("RSA Private key was null");
+
+        string decryptedMessage = await _js.InvokeAsync<string>("DecryptWithRSAPrivateKey", RSAinputValue, RSAPrivate.Value);
         RSAinputValue = decryptedMessage;
     }
 }

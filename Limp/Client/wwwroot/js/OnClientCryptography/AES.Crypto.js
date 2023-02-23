@@ -1,6 +1,6 @@
 ﻿let iv;
 
-function GenerateAESKey() {
+function GenerateAESKey(contactName) {
     window.crypto.subtle.generateKey
         (
             {
@@ -10,11 +10,11 @@ function GenerateAESKey() {
             true,
             ["encrypt", "decrypt"]
     ).then(async (Key) => {
-        await exportAESKeyToDotnet(Key);
+        await exportAESKeyToDotnet(Key, contactName);
         });
 }
 
-const exportAESKeyToDotnet = async (key) => {
+const exportAESKeyToDotnet = async (key, contactName) => {
     const exported = await window.crypto.subtle.exportKey(
         "raw",
         key
@@ -22,7 +22,7 @@ const exportAESKeyToDotnet = async (key) => {
     const exportedKeyBuffer = new Uint8Array(exported);
     const exportedKeyBufferString = ab2str(exportedKeyBuffer);
 
-    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3);
+    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
 }
 
 function importSecretKey(ArrayBufferKeyString) {

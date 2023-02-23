@@ -27,7 +27,7 @@ const exportPublicKeyToDotnet = async (key) =>
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
 
-    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", pemExported, 2, 1);
+    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", pemExported, 2, 1, null);
 }
 
 /*
@@ -43,7 +43,7 @@ const exportPrivateKeyToDotnet = async (key) =>
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PRIVATE KEY-----\n${exportedAsBase64}\n-----END PRIVATE KEY-----`;
 
-    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", pemExported, 1, 2);
+    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", pemExported, 1, 2, null);
 }
 
 /*

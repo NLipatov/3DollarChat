@@ -14,13 +14,14 @@ namespace Limp.Client.Cryptography
         }
 
         [JSInvokable]
-        public static void OnKeyExtracted(string key, int format = 0, int type = 0)
+        public static void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
         {
             Key cryptoKey = new Key()
             {
                 Value = key,
                 Format = (KeyFormat)format,
-                Type = (KeyType)type
+                Type = (KeyType)type,
+                Contact = contact
             };
 
             switch (cryptoKey.Type)
@@ -32,7 +33,7 @@ namespace Limp.Client.Cryptography
                     InMemoryKeyStorage.RSAPrivate = cryptoKey;
                     break;
                 case (KeyType.AES):
-                    InMemoryKeyStorage.AES = cryptoKey;
+                    InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
                     break;
                 default:
                     throw new ApplicationException($"Unknown key type passed in: {nameof(cryptoKey.Type)}");
@@ -43,25 +44,34 @@ namespace Limp.Client.Cryptography
         {
             await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
-        public async Task GenerateAESKeyAsync()
+        public async Task GenerateAESKeyAsync(string contactName)
         {
-            await _jSRuntime.InvokeVoidAsync("GenerateAESKey");
+            await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contactName);
         }
-        public async Task<string> DecryptAsync<T>(string text) where T : ICryptoHandler
+        public void SetAESKey(string contactName, Key key)
+        {
+            Key? ExistingKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contactName);
+
+            if(ExistingKey is null)
+                InMemoryKeyStorage.AESKeyStorage.Add(contactName, key);
+            else
+                InMemoryKeyStorage.AESKeyStorage[contactName] = key;
+        }
+        public async Task<string> DecryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Decrypt(text);
+            return await cryptoHandler.Decrypt(text, contact);
         }
-        public async Task<string> EncryptAsync<T>(string text) where T : ICryptoHandler
+        public async Task<string> EncryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T),_jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(text);
+            return await cryptoHandler.Encrypt(text, contact);
         }
     }
 }

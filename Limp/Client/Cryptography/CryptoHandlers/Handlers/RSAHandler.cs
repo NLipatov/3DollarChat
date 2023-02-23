@@ -10,7 +10,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Encrypt(string text)
+        public async Task<string> Encrypt(string text, string? contact = null)
         {
             if (InMemoryKeyStorage.RSAPublic?.Value == null)
                 throw new ApplicationException("RSA Public key was null");
@@ -21,7 +21,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return encryptedMessage;
         }
 
-        public async Task<string> Decrypt(string text)
+        public async Task<string> Decrypt(string text, string? contact = null)
         {
             if (InMemoryKeyStorage.RSAPrivate?.Value == null)
                 throw new ApplicationException("RSA Private key was null");

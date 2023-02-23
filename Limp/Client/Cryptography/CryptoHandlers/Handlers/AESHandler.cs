@@ -1,4 +1,5 @@
-﻿using Microsoft.JSInterop;
+﻿using LimpShared.Encryption;
+using Microsoft.JSInterop;
 
 namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
 {
@@ -10,24 +11,26 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Decrypt(string text)
+        public async Task<string> Decrypt(string text, string? contact = null)
         {
-            if (InMemoryKeyStorage.AES?.Value == null)
+            Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
+            if (key == null)
                 throw new ApplicationException("RSA Public key was null");
 
             string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESDecryptMessage", text, InMemoryKeyStorage.AES.Value);
+                .InvokeAsync<string>("AESDecryptMessage", text, key.Value);
 
             return decryptedMessage;
         }
 
-        public async Task<string> Encrypt(string text)
+        public async Task<string> Encrypt(string text, string? contact = null)
         {
-            if (InMemoryKeyStorage.AES?.Value == null)
+            Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
+            if (key == null)
                 throw new ApplicationException("RSA Public key was null");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESEncryptMessage", text, InMemoryKeyStorage.AES.Value);
+                .InvokeAsync<string>("AESEncryptMessage", text, key.Value);
             return encryptedMessage;
         }
     }

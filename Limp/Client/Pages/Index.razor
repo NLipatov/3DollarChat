@@ -28,12 +28,13 @@
     private string RSAinputValue { get; set; } = string.Empty;
     private string AESinputValue { get; set; } = string.Empty;
     private CryptographyService _cryptographyService { get; set; }
+    private string demoContact = "demo";
 
     protected override async Task OnInitializedAsync()
     {
         _cryptographyService = new(_js);
         await _cryptographyService.GenerateRSAKeyPairAsync();
-        await _cryptographyService.GenerateAESKeyAsync();
+        await _cryptographyService.GenerateAESKeyAsync(demoContact);
     }
 
     public async Task RSAEncrypt()
@@ -48,11 +49,11 @@
 
     public async Task AESEncrypt()
     {
-        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue);
+        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue, demoContact);
     }
 
     public async Task AESDecrypt()
     {
-        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue);
+        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue, demoContact);
     }
 }

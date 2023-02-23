@@ -1,98 +1,58 @@
 ﻿@page "/"
+@using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 @using LimpShared.Encryption;
 @inject NavigationManager Navigation
 @inject IJSRuntime _js;
 <PageTitle>Index</PageTitle>
 
 <h1>RSA Encryption</h1>
-<input @bind="RSAinputValue" @bind:event="oninput"/>
-<button @onclick="(() => EncryptRSAAsync(RSAinputValue))">
+<input @bind="RSAinputValue" @bind:event="oninput" />
+<button @onclick="(() => RSAEncrypt())">
     Encrypt
 </button>
-<button @onclick="(() => DecryptRSAAsync(RSAinputValue))">
+<button @onclick="(() => RSADecrypt())">
     Decrypt
 </button>
-
 <h1>AES Encryption</h1>
 <input @bind="AESinputValue" @bind:event="oninput" />
-<button @onclick="(() => EncryptAESAsync(AESinputValue))">
+<button @onclick="(() => AESEncrypt())">
     Encrypt
 </button>
-<button @onclick="(() => DecryptAESAsync(AESinputValue))">
+<button @onclick="(() => AESDecrypt())">
     Decrypt
 </button>
-<button @onclick="(() => AESKeyRegeneration())">
-    Regenerate and import new AES Key
-</button>
+
 
 @code {
-    private static string RSAPublicKey { get; set; } = string.Empty;
-    private static Key? RSAPublic { get; set; }
-    private static Key? RSAPrivate { get; set; }
-    private static Key? AES { get; set; }
-    private static string AESKey { get; set; } = string.Empty;
     private string RSAinputValue { get; set; } = string.Empty;
     private string AESinputValue { get; set; } = string.Empty;
+    private CryptographyService _cryptographyService { get; set; }
+
     protected override async Task OnInitializedAsync()
     {
-        await _js.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
-        await _js.InvokeVoidAsync("GenerateAESKey");
+        _cryptographyService = new(_js);
+        await _cryptographyService.GenerateRSAKeyPairAsync();
+        await _cryptographyService.GenerateAESKeyAsync();
     }
 
-    [JSInvokable]
-    public static void OnKeyExtracted(string key, int format = 0, int type = 0)
+    public async Task RSAEncrypt()
     {
-        Key cryptoKey = new Key()
-        {
-            Value = key,
-            Format = (KeyFormat)format,
-            Type = (KeyType)type
-        };
-
-        if (cryptoKey.Type == KeyType.RSAPublic)
-            RSAPublic = cryptoKey;
-        else if (cryptoKey.Type == KeyType.RSAPrivate)
-            RSAPrivate = cryptoKey;
-        else if (cryptoKey.Type == KeyType.AES)
-            AES = cryptoKey;
+        RSAinputValue = await _cryptographyService.EncryptAsync<RSAHandler>(RSAinputValue);
     }
 
-    [JSInvokable]
-    public static void OnAESKeyExpot(string key)
+    public async Task RSADecrypt()
     {
-        AESKey = key;
+        RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(RSAinputValue);
     }
 
-    private async Task AESKeyRegeneration()
+    public async Task AESEncrypt()
     {
-        await _js.InvokeVoidAsync("AESEncryptMessage", AESKey);
-    }
-    private async Task EncryptAESAsync(string message)
-    {
-        string encryptedMessage = await _js.InvokeAsync<string>("AESEncryptMessage", message, AESKey);
-        AESinputValue = encryptedMessage;
+        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue);
     }
 
-    private async Task DecryptAESAsync(string message)
+    public async Task AESDecrypt()
     {
-        string decryptedMessage = await _js.InvokeAsync<string>("AESDecryptMessage", AESinputValue, AESKey);
-        AESinputValue = decryptedMessage;
-    }
-
-    private async Task EncryptRSAAsync(string message)
-    {
-        if (RSAPublic?.Value == null)
-            throw new ApplicationException("RSA Public key was null");
-
-        string encryptedMessage = await _js.InvokeAsync<string>("EncryptWithRSAPublicKey", message, RSAPublic.Value);
-        RSAinputValue = encryptedMessage;
-    }
-    private async Task DecryptRSAAsync(string message)
-    {
-        if(RSAPrivate?.Value == null)
-            throw new ApplicationException("RSA Private key was null");
-
-        string decryptedMessage = await _js.InvokeAsync<string>("DecryptWithRSAPrivateKey", RSAinputValue, RSAPrivate.Value);
-        RSAinputValue = decryptedMessage;
+        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue);
     }
 }

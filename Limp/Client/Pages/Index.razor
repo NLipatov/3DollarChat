@@ -59,7 +59,7 @@
 
     private async Task DecryptAESAsync(string message)
     {
-        string decryptedMessage = await _js.InvokeAsync<string>("AESDecryptMessage", AESinputValue);
+        string decryptedMessage = await _js.InvokeAsync<string>("AESDecryptMessage", AESinputValue, AESKey);
         AESinputValue = decryptedMessage;
     }
 

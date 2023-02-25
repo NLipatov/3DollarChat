@@ -2,6 +2,7 @@
 using Limp.Client.Utilities;
 using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -37,9 +38,13 @@ namespace Limp.Server.Hubs
 
             var username = isTokenValid ? TokenReader.GetUsername(accessToken) : $"Anonymous_{Guid.NewGuid()}";
 
+            Key publicKey = TokenReader.GetPublicKey(accessToken, username);
+
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
             {
                 InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
+                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).RSAPublicKey = publicKey;
+
                 InMemoryUsersStorage.UserConnections.Remove
                     (InMemoryUsersStorage
                     .UserConnections
@@ -50,6 +55,10 @@ namespace Limp.Server.Hubs
                 InMemoryUsersStorage
                     .UserConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
+
+                InMemoryUsersStorage
+                    .UserConnections
+                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).RSAPublicKey = publicKey;
             }
 
             await PushOnlineUsersToClients();

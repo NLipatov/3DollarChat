@@ -1,8 +1,14 @@
 ﻿@page "/user/{topicName?}"
 @using ClientServerCommon.Models;
+@using ClientServerCommon.Models.Message;
+@using Limp.Client.Cryptography;
+@using Limp.Client.HubInteraction;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.Utilities;
 @using Microsoft.AspNetCore.SignalR.Client
+@using Limp.Client.Pages;
 @inject NavigationManager Navigation
 @inject IJSRuntime jS;
 @implements IAsyncDisposable
@@ -10,33 +16,40 @@
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-    <div class="header">
-        <span>@topicName</span>
-    </div>
+    @if (!IsThereAKeyForMessageEncryption)
+    {
+        <KeyTransfer />
+    }
+    else
+    {
+        <div class="header">
+            <span>@topicName</span>
+        </div>
 
-    <div class="messages-box">
-        @foreach (var message in messages)
-        {
-            bool isOutcoming = message.Sender == "You";
-            string messageClass = isOutcoming ? "outcoming" : "incoming";
-            <div class="message @messageClass">
-                <span>@message.Payload</span>
-            </div>
-            <div class="timestamp @messageClass">
-                <span>@message.DateSent.ToString("hh:mm")</span>
-                @if(message.IsReceived)
-                {
-                    <span>R</span>
-                }
-            </div>
+        <div class="messages-box">
+            @foreach (var message in messages)
+            {
+                bool isOutcoming = message.Sender == "You";
+                string messageClass = isOutcoming ? "outcoming" : "incoming";
+                <div class="message @messageClass">
+                    <span>@message.Payload</span>
+                </div>
+                <div class="timestamp @messageClass">
+                    <span>@message.DateSent.ToString("hh:mm")</span>
+                    @if (message.IsReceived)
+                    {
+                        <span>R</span>
+                    }
+                </div>
 
-        }
-    </div>
+            }
+        </div>
 
-    <div class="message-input-box">
-        <input @bind="messageInput" />
-        <button @onclick="SendMessage" disabled="@(!IsConnected || string.IsNullOrWhiteSpace(myName))">Send</button>
-    </div>
+        <div class="message-input-box">
+            <input @bind="messageInput" />
+            <button @onclick="SendMessage" disabled="@(!IsConnected || string.IsNullOrWhiteSpace(myName))">Send</button>
+        </div>
+    }
 </div>
 
 @code {
@@ -53,9 +66,11 @@
     private string accessToken = string.Empty;
     public bool IsConnected => messageDispatcherHub?.State == HubConnectionState.Connected;
     HubInteractor? _hubInteractor;
+    private bool IsThereAKeyForMessageEncryption { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        IsThereAKeyForMessageEncryption = InMemoryKeyStorage.AESKeyStorage.Any(x => x.Key == topicName);
         _hubInteractor = new(Navigation);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 

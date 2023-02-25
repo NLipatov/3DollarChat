@@ -1,5 +1,6 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Login;
+using ClientServerCommon.Models.Message;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
 using LimpShared.Authentification;

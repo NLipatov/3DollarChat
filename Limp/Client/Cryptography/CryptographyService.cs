@@ -52,7 +52,7 @@ namespace Limp.Client.Cryptography
         {
             Key? ExistingKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contactName);
 
-            if(ExistingKey is null)
+            if (ExistingKey is null)
                 InMemoryKeyStorage.AESKeyStorage.Add(contactName, key);
             else
                 InMemoryKeyStorage.AESKeyStorage[contactName] = key;
@@ -67,7 +67,7 @@ namespace Limp.Client.Cryptography
         }
         public async Task<string> EncryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler
         {
-            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T),_jSRuntime);
+            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 

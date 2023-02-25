@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models;
+﻿using ClientServerCommon.Models.Message;
 
 namespace Limp.Server.Hubs.MessageDispatching
 {

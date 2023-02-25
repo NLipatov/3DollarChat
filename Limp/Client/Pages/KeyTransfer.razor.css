@@ -1,0 +1,24 @@
+﻿.encryption-disclaimer {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.encryption-message-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.05);
+    padding: 10px;
+}
+
+.encryption-message-header {
+    background-color: black;
+    font-size: 14pt;
+    color: white;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    padding: 10px;
+}

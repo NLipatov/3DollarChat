@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models;
+﻿using ClientServerCommon.Models.Message;
 using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;

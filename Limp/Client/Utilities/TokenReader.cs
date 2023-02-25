@@ -1,4 +1,5 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using LimpShared.Encryption;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Limp.Client.Utilities
 {
@@ -24,6 +25,20 @@ namespace Limp.Client.Utilities
             var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
 
             return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value ?? "Anonymous";
+        }
+
+        public static Key GetPublicKey(string accessToken, string contactName)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
+
+            return new Key
+            {
+                Format = KeyFormat.PEM_SPKI,
+                Type = KeyType.RSAPublic,
+                Value = securityToken?.Claims?.FirstOrDefault(claim => claim.Type == "RSA Public Key")?.Value,
+                Contact = contactName,
+            };
         }
     }
 }

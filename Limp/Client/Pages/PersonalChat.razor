@@ -2,6 +2,7 @@
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using ClientServerCommon.Models;
@@ -9,19 +10,22 @@
 @using Limp.Client.Utilities;
 @using Microsoft.AspNetCore.SignalR.Client
 @using Limp.Client.Pages;
+@using Limp.Client.Cryptography.KeyStorage;
 @inject NavigationManager Navigation
 @inject IJSRuntime jS;
+@inject ICryptographyService _cryptographyService
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-@*    @if (!IsThereAKeyForMessageEncryption)
+    @if (!IsThereAnAESKey)
     {
-        <KeyTransfer />
+        <KeyTransfer 
+            IsThereAnAESKey=IsThereAnAESKey/>
     }
     else
-    {*@
+    {
         <div class="header">
             <span>@topicName</span>
         </div>
@@ -47,36 +51,45 @@
 
         <div class="message-input-box">
             <input @bind="messageInput" />
-            <button @onclick="SendMessage" disabled="@(!IsConnected || string.IsNullOrWhiteSpace(myName))">Send</button>
+            <button @onclick="SendMessage" disabled="@(!IsConnectedToMessageDispatcherHub || string.IsNullOrWhiteSpace(myName))">Send</button>
         </div>
-    @*}*@
+    }
 </div>
 
 @code {
     [Parameter]
-    public string? topicName { get; set; }
+    public string topicName { get; set; }
     [Parameter]
     public string? myName { get; set; }
     private HubConnection? messageDispatcherHub;
+    public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private HubConnection? usersHub;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty; 
     private string myConnectionId { get; set; } = string.Empty;
     private List<UserConnections> userConnections { get; set; } = new();
     private string accessToken = string.Empty;
-    public bool IsConnected => messageDispatcherHub?.State == HubConnectionState.Connected;
     HubInteractor? _hubInteractor;
-    private bool IsThereAKeyForMessageEncryption { get; set; }
+    private bool IsThereAnAESKey { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        IsThereAKeyForMessageEncryption = InMemoryKeyStorage.AESKeyStorage.Any(x => x.Key == topicName);
+        GetAESKeyForConversation();
         _hubInteractor = new(Navigation);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
         await ConnectToHubsAsync(accessToken);
 
         LoadPreviousMessagesForThisTopic();
+    }
+
+    private void GetAESKeyForConversation()
+    {
+        IsThereAnAESKey = InMemoryKeyStorage.AESKeyStorage.Any(x => x.Key == topicName);
+        if(IsThereAnAESKey == false)
+        {
+            _cryptographyService.GenerateAESKeyAsync(topicName, (() => IsThereAnAESKey = true));
+        }
     }
 
     private async Task ConnectToHubsAsync(string accessToken)

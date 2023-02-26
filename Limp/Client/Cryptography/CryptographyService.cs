@@ -1,4 +1,5 @@
 ﻿using Limp.Client.Cryptography.CryptoHandlers;
+using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
 using Microsoft.JSInterop;
 
@@ -7,6 +8,7 @@ namespace Limp.Client.Cryptography
     public class CryptographyService : ICryptographyService
     {
         private readonly IJSRuntime _jSRuntime;
+        private static Action? OnAESGeneratedCallback { get; set; }
 
         public CryptographyService(IJSRuntime jSRuntime)
         {
@@ -15,7 +17,7 @@ namespace Limp.Client.Cryptography
         }
 
         [JSInvokable]
-        public static void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
+        public static async void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
         {
             Key cryptoKey = new Key()
             {
@@ -35,6 +37,11 @@ namespace Limp.Client.Cryptography
                     break;
                 case (KeyType.AES):
                     InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
+                    if(OnAESGeneratedCallback != null)
+                    {
+                        OnAESGeneratedCallback();
+                        OnAESGeneratedCallback = null;
+                    }
                     break;
                 default:
                     throw new ApplicationException($"Unknown key type passed in: {nameof(cryptoKey.Type)}");
@@ -46,9 +53,10 @@ namespace Limp.Client.Cryptography
             if(InMemoryKeyStorage.RSAPublic == null && InMemoryKeyStorage.RSAPrivate == null)
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
-        public async Task GenerateAESKeyAsync(string contactName)
+        public async Task GenerateAESKeyAsync(string contact, Action callback)
         {
-            await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contactName);
+            OnAESGeneratedCallback = callback;
+            await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);
         }
         public void SetAESKey(string contactName, Key key)
         {

@@ -3,11 +3,17 @@
         <span>Please, wait while we working on security and privacy of this chat</span>
     </div>
     <div class="encryption-message-body">
-        <span>We're now creating a new AES message encryption key.</span>
-        <span>We're now sending your conversant an encrypted message containing the encryption key.</span>
+        <span>
+            @(IsThereAnAESKey ? 
+            "AES Key for conversation was generated"
+            :
+            "Creating a new AES encryption key for your conversation."
+            )
+        </span>
     </div>
 </div>
 
 @code {
-
+    [Parameter]
+    public bool IsThereAnAESKey { get; set; } = false;
 }

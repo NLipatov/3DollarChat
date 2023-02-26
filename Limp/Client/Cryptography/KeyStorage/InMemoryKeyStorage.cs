@@ -1,6 +1,6 @@
 ﻿using LimpShared.Encryption;
 
-namespace Limp.Client.Cryptography;
+namespace Limp.Client.Cryptography.KeyStorage;
 
 public static class InMemoryKeyStorage
 {

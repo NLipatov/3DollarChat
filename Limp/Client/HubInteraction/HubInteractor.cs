@@ -1,7 +1,7 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography;
+using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
 using LimpShared.Authentification;
@@ -142,10 +142,11 @@ namespace Limp.Client.HubInteraction
 
         public async Task UpdateRSAPublicKeyAsync(string username)
         {
-            if (InMemoryKeyStorage.RSAPublic?.Value == null)
-                throw new ApplicationException("Connection to Users hub meant to be established when RSA Public Key is set.");
-
-            usersHub?.SendAsync("SetRSAPublicKey", InMemoryKeyStorage.RSAPublic?.Value?.ToString(), username);
+            if (!InMemoryKeyStorage.isPublicKeySet)
+            {
+                usersHub?.SendAsync("SetRSAPublicKey", InMemoryKeyStorage.RSAPublic?.Value?.ToString(), username);
+                InMemoryKeyStorage.isPublicKeySet = true;
+            }
         }
 
         public static List<Message> LoadStoredMessages(string topic)

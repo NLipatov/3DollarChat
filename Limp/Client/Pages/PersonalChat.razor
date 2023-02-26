@@ -16,12 +16,12 @@
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-    @if (!IsThereAKeyForMessageEncryption)
+@*    @if (!IsThereAKeyForMessageEncryption)
     {
         <KeyTransfer />
     }
     else
-    {
+    {*@
         <div class="header">
             <span>@topicName</span>
         </div>
@@ -49,7 +49,7 @@
             <input @bind="messageInput" />
             <button @onclick="SendMessage" disabled="@(!IsConnected || string.IsNullOrWhiteSpace(myName))">Send</button>
         </div>
-    }
+    @*}*@
 </div>
 
 @code {

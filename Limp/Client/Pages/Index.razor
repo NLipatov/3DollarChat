@@ -4,9 +4,10 @@
 @using LimpShared.Encryption;
 @inject NavigationManager Navigation
 @inject IJSRuntime _js;
+@inject ICryptographyService _cryptographyService;
 <PageTitle>Index</PageTitle>
 
-<h1>RSA Encryption</h1>
+@*<h1>RSA Encryption</h1>
 <input @bind="RSAinputValue" @bind:event="oninput" />
 <button @onclick="(() => RSAEncrypt())">
     Encrypt
@@ -21,39 +22,39 @@
 </button>
 <button @onclick="(() => AESDecrypt())">
     Decrypt
-</button>
+</button>*@
 
 
 @code {
-    private string RSAinputValue { get; set; } = string.Empty;
-    private string AESinputValue { get; set; } = string.Empty;
-    private CryptographyService _cryptographyService { get; set; }
-    private string demoContact = "demo";
+    //private string RSAinputValue { get; set; } = string.Empty;
+    //private string AESinputValue { get; set; } = string.Empty;
+    ////private CryptographyService _cryptographyService { get; set; }
+    //private string demoContact = "demo";
 
-    protected override async Task OnInitializedAsync()
-    {
-        _cryptographyService = new(_js);
-        await _cryptographyService.GenerateRSAKeyPairAsync();
-        await _cryptographyService.GenerateAESKeyAsync(demoContact);
-    }
+    //protected override async Task OnInitializedAsync()
+    //{
+    //    //_cryptographyService = new(_js);
+    //    await _cryptographyService.GenerateRSAKeyPairAsync();
+    //    await _cryptographyService.GenerateAESKeyAsync(demoContact);
+    //}
 
-    public async Task RSAEncrypt()
-    {
-        RSAinputValue = await _cryptographyService.EncryptAsync<RSAHandler>(RSAinputValue);
-    }
+    //public async Task RSAEncrypt()
+    //{
+    //    RSAinputValue = await _cryptographyService.EncryptAsync<RSAHandler>(RSAinputValue);
+    //}
 
-    public async Task RSADecrypt()
-    {
-        RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(RSAinputValue);
-    }
+    //public async Task RSADecrypt()
+    //{
+    //    RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(RSAinputValue);
+    //}
 
-    public async Task AESEncrypt()
-    {
-        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue, demoContact);
-    }
+    //public async Task AESEncrypt()
+    //{
+    //    AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue, demoContact);
+    //}
 
-    public async Task AESDecrypt()
-    {
-        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue, demoContact);
-    }
+    //public async Task AESDecrypt()
+    //{
+    //    AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue, demoContact);
+    //}
 }

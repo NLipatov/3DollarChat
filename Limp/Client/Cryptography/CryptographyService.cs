@@ -4,13 +4,14 @@ using Microsoft.JSInterop;
 
 namespace Limp.Client.Cryptography
 {
-    public class CryptographyService
+    public class CryptographyService : ICryptographyService
     {
         private readonly IJSRuntime _jSRuntime;
 
         public CryptographyService(IJSRuntime jSRuntime)
         {
             _jSRuntime = jSRuntime;
+            _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
 
         [JSInvokable]
@@ -42,7 +43,8 @@ namespace Limp.Client.Cryptography
 
         public async Task GenerateRSAKeyPairAsync()
         {
-            await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+            if(InMemoryKeyStorage.RSAPublic == null && InMemoryKeyStorage.RSAPrivate == null)
+                await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
         public async Task GenerateAESKeyAsync(string contactName)
         {

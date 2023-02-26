@@ -80,5 +80,10 @@ namespace Limp.Server.Hubs
         {
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
+
+        public async Task SetRSAPublicKey(string PEMEncodedRSAPublicKey, string username)
+        {
+            await _serverHttpClient.SetRSAPublicKey(PEMEncodedRSAPublicKey, username);
+        }
     }
 }

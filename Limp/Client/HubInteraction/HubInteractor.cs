@@ -1,6 +1,7 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
+using Limp.Client.Cryptography;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
 using LimpShared.Authentification;
@@ -21,7 +22,10 @@ namespace Limp.Client.HubInteraction
         private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
 
-        public async Task<HubConnection> ConnectToAuthHubAsync(string accessToken, string refreshToken, Func<AuthResult, Task>? onTokensRefresh = null)
+        public async Task<HubConnection> ConnectToAuthHubAsync
+            (string accessToken, 
+            string refreshToken, 
+            Func<AuthResult, Task>? onTokensRefresh = null)
         {
             authHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
@@ -44,7 +48,12 @@ namespace Limp.Client.HubInteraction
 
             return authHub;
         }
-        public async Task<HubConnection> ConnectToMessageDispatcherHubAsync(string accessToken, Action<Message>? onMessageReceive = null, Action<string>? onUsernameResolve = null, Action<Guid>? onMessageReceivedByRecepient = null)
+        
+        public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
+            (string accessToken, 
+            Action<Message>? onMessageReceive = null, 
+            Action<string>? onUsernameResolve = null, 
+            Action<Guid>? onMessageReceivedByRecepient = null)
         {
             if (onMessageReceive != null)
             {
@@ -75,9 +84,10 @@ namespace Limp.Client.HubInteraction
 
             if (onUsernameResolve != null)
             {
-                messageDispatcherHub.On<string>("OnMyNameResolve", username =>
+                messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
                 {
                     onUsernameResolve(username);
+                    await UpdateRSAPublicKeyAsync(username);
                 });
             }
 
@@ -88,7 +98,11 @@ namespace Limp.Client.HubInteraction
             return messageDispatcherHub;
         }
 
-        public async Task<HubConnection> ConnectToUsersHubAsync(string accessToken, Action<string>? onConnectionIdReceive = null, Action<List<UserConnections>>? onOnlineUsersReceive = null, Func<string, Task>? onNameResolve = null)
+        public async Task<HubConnection> ConnectToUsersHubAsync
+            (string accessToken,
+            Action<string>? onConnectionIdReceive = null,
+            Action<List<UserConnections>>? onOnlineUsersReceive = null,
+            Func<string, Task>? onNameResolve = null)
         {
             usersHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
@@ -110,11 +124,12 @@ namespace Limp.Client.HubInteraction
                 }
             });
 
-            usersHub.On<string>("onNameResolve", username =>
+            usersHub.On<string>("onNameResolve", async username =>
             {
                 if (onNameResolve != null)
                 {
                     onNameResolve(username);
+                    await UpdateRSAPublicKeyAsync(username);
                 }
             });
 
@@ -123,6 +138,14 @@ namespace Limp.Client.HubInteraction
             await usersHub.SendAsync("SetUsername", accessToken);
 
             return usersHub;
+        }
+
+        public async Task UpdateRSAPublicKeyAsync(string username)
+        {
+            if (InMemoryKeyStorage.RSAPublic?.Value == null)
+                throw new ApplicationException("Connection to Users hub meant to be established when RSA Public Key is set.");
+
+            usersHub?.SendAsync("SetRSAPublicKey", InMemoryKeyStorage.RSAPublic?.Value?.ToString(), username);
         }
 
         public static List<Message> LoadStoredMessages(string topic)

@@ -43,7 +43,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new HubInteractor(Navigation);
+        _hubInteractor = new HubInteractor(Navigation, jS);
 
         accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
         refreshToken = await jS.InvokeAsync<string?>("localStorage.getItem", "refresh-token");
@@ -54,14 +54,12 @@
             return;
         }
 
-        await _hubInteractor.ConnectToAuthHubAsync(accessToken, refreshToken, OnTokensRefreshAsync);
+        await _hubInteractor.ConnectToAuthHubAsync(OnTokensRefreshAsync);
 
         await _hubInteractor.ConnectToUsersHubAsync
-        (GetStoredAccessTokenAsync,
-        onConnectionIdReceive, 
+        (onConnectionIdReceive, 
         onOnlineUsersReceive, 
-        OnUsernameResolved, 
-        RSAPublicKey: InMemoryKeyStorage.MyRSAPublic);
+        OnUsernameResolved);
 
     }
 
@@ -69,7 +67,7 @@
     {
         if(_hubInteractor != null)
         {
-            await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken);
+            await _hubInteractor.ConnectToMessageDispatcherHubAsync();
         }
     }
 

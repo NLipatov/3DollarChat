@@ -75,7 +75,7 @@
     protected override async Task OnInitializedAsync()
     {
         await GetAESKeyForConversation();
-        _hubInteractor = new(Navigation);
+        _hubInteractor = new(Navigation, jS);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
         await ConnectToHubsAsync(accessToken);
@@ -97,9 +97,9 @@
     {
         ThrowErrorIfHubInteractorIsNull();
 
-        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(GetAccessToken, onConnectionIdReceive, onOnlineUsersReceive);
+        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(onConnectionIdReceive, onOnlineUsersReceive);
 
-        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(await GetAccessToken(), OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
+        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
     }
 
     private void onMessageReceivedByRecepient(Guid messageId)

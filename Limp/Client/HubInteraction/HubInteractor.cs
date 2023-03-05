@@ -8,25 +8,35 @@ using LimpShared.Authentification;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace Limp.Client.HubInteraction
 {
     public class HubInteractor
     {
-        public HubInteractor(NavigationManager navigationManager)
-        {
-            _navigationManager = navigationManager;
-        }
         private HubConnection? authHub;
         private HubConnection? usersHub;
         private HubConnection? messageDispatcherHub;
         private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
+        private readonly IJSRuntime _jSRuntime;
+
+        public HubInteractor
+            (NavigationManager navigationManager,
+            IJSRuntime jSRuntime)
+        {
+            _navigationManager = navigationManager;
+            _jSRuntime = jSRuntime;
+        }
+
+        private async Task<string?> GetAccessToken() 
+            => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
+
+        private async Task<string?> GetRefreshToken()
+            => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "refresh-token");
 
         public async Task<HubConnection> ConnectToAuthHubAsync
-            (string accessToken, 
-            string refreshToken, 
-            Func<AuthResult, Task>? onTokensRefresh = null)
+        (Func<AuthResult, Task>? onTokensRefresh = null)
         {
             authHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
@@ -42,19 +52,18 @@ namespace Limp.Client.HubInteraction
 
             await authHub.StartAsync();
 
-            if (TokenReader.HasAccessTokenExpired(accessToken))
+            if (TokenReader.HasAccessTokenExpired(await GetAccessToken()))
             {
-                await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = refreshToken });
+                await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = await GetRefreshToken() });
             }
 
             return authHub;
         }
         
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-            (string accessToken, 
-            Action<Message>? onMessageReceive = null, 
-            Action<string>? onUsernameResolve = null, 
-            Action<Guid>? onMessageReceivedByRecepient = null)
+        (Action<Message>? onMessageReceive = null, 
+        Action<string>? onUsernameResolve = null, 
+        Action<Guid>? onMessageReceivedByRecepient = null)
         {
             if (onMessageReceive != null)
             {
@@ -88,24 +97,22 @@ namespace Limp.Client.HubInteraction
                 messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
                 {
                     onUsernameResolve(username);
-                    await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
+                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic);
                 });
             }
 
             await messageDispatcherHub.StartAsync();
 
-            await messageDispatcherHub.SendAsync("SetUsername", accessToken);
+            await messageDispatcherHub.SendAsync("SetUsername", await GetAccessToken());
 
             return messageDispatcherHub;
         }
 
         public async Task<HubConnection> ConnectToUsersHubAsync
-            (Func<Task<string>> accessTokenProvider,
-            Action<string>? onConnectionIdReceive = null,
-            Action<List<UserConnections>>? onOnlineUsersReceive = null,
-            Func<string, Task>? onNameResolve = null,
-            Func<string, Task>? onPartnerRSAPublicKeyReceived = null,
-            Key? RSAPublicKey = null)
+        (Action<string>? onConnectionIdReceive = null,
+        Action<List<UserConnections>>? onOnlineUsersReceive = null,
+        Func<string, Task>? onNameResolve = null,
+        Func<string, Task>? onPartnerRSAPublicKeyReceived = null)
         {
             usersHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
@@ -137,14 +144,14 @@ namespace Limp.Client.HubInteraction
             {
                 if (onNameResolve != null)
                 {
-                    onNameResolve(username);
-                    await UpdateRSAPublicKeyAsync(await accessTokenProvider(), InMemoryKeyStorage.MyRSAPublic);
+                    await onNameResolve(username);
+                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic);
                 }
             });
 
             await usersHub.StartAsync();
 
-            await usersHub.SendAsync("SetUsername", await accessTokenProvider());
+            await usersHub.SendAsync("SetUsername", await GetAccessToken());
 
             return usersHub;
         }

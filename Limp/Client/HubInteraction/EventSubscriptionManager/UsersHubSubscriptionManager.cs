@@ -41,5 +41,11 @@ namespace Limp.Client.HubInteraction.EventSubscriptionManager
                 method(username);
             }
         }
+        public static void UnsubscriveAll()
+        {
+            OnConnectionIdReceived.Clear();
+            OnUsersConnectionsReceived.Clear();
+            OnUsernameResolved.Clear();
+        }
     }
 }

@@ -7,7 +7,7 @@ using Microsoft.JSInterop;
 
 namespace Limp.Client.HubInteraction.Handlers;
 
-public class UsersHandler : IHandler<UsersHandler>
+public class UsersHandler : IHandler<UsersHandler>, IDisposable
 {
     private readonly NavigationManager _navigationManager;
     private readonly IJSRuntime _jSRuntime;
@@ -46,5 +46,10 @@ public class UsersHandler : IHandler<UsersHandler>
         await usersHub.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
 
         return usersHub;
+    }
+
+    public void Dispose()
+    {
+        UsersHubSubscriptionManager.UnsubscriveAll();
     }
 }

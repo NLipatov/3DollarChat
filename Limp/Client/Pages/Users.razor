@@ -35,9 +35,8 @@
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private string? accessToken { get; set; }
-    private string? refreshToken { get; set; }
     private HubInteractor? _hubInteractor;
-    private UsersHandler _usersHubHandler;
+    private UsersHandler? _usersHubHandler;
 
     private async Task RedirectToChat(string username)
     {
@@ -50,7 +49,6 @@
         _usersHubHandler = new(_navigationManager, jS);
 
         accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
-        refreshToken = await jS.InvokeAsync<string?>("localStorage.getItem", "refresh-token");
 
         if (String.IsNullOrWhiteSpace(accessToken))
         {
@@ -96,17 +94,9 @@
         }
     }
 
-    private void onOnlineUsersReceive(List<UserConnections> usersConnectedData)
-    {
-        userConnections = usersConnectedData;
-        StateHasChanged();
-    }
-
     public async ValueTask DisposeAsync()
     {
-        if (_hubInteractor != null)
-        {
-            await _hubInteractor.DisposeAsync();
-        }
+        _usersHubHandler?.Dispose();
+        await _hubInteractor?.DisposeAsync();
     }
 }

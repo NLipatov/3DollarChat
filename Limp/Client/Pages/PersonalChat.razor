@@ -74,7 +74,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        GetAESKeyForConversation();
+        await GetAESKeyForConversation();
         _hubInteractor = new(Navigation);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
@@ -82,13 +82,14 @@
 
         LoadPreviousMessagesForThisTopic();
     }
+    private async Task<string> GetAccessToken() => await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
-    private void GetAESKeyForConversation()
+    private async Task GetAESKeyForConversation()
     {
         IsThereAnAESKey = InMemoryKeyStorage.AESKeyStorage.Any(x => x.Key == topicName);
         if(IsThereAnAESKey == false)
         {
-            _cryptographyService.GenerateAESKeyAsync(topicName, (() => IsThereAnAESKey = true));
+            await _cryptographyService.GenerateAESKeyAsync(topicName, (() => IsThereAnAESKey = true));
         }
     }
 
@@ -96,9 +97,9 @@
     {
         ThrowErrorIfHubInteractorIsNull();
 
-        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(accessToken, onConnectionIdReceive, onOnlineUsersReceive);
+        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(GetAccessToken, onConnectionIdReceive, onOnlineUsersReceive);
 
-        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken, OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
+        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(await GetAccessToken(), OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
     }
 
     private void onMessageReceivedByRecepient(Guid messageId)

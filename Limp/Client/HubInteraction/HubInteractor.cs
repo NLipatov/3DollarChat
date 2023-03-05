@@ -5,6 +5,7 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
 using LimpShared.Authentification;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -87,7 +88,7 @@ namespace Limp.Client.HubInteraction
                 messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
                 {
                     onUsernameResolve(username);
-                    await UpdateRSAPublicKeyAsync(username);
+                    await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
                 });
             }
 
@@ -99,14 +100,22 @@ namespace Limp.Client.HubInteraction
         }
 
         public async Task<HubConnection> ConnectToUsersHubAsync
-            (string accessToken,
+            (Func<Task<string>> accessTokenProvider,
             Action<string>? onConnectionIdReceive = null,
             Action<List<UserConnections>>? onOnlineUsersReceive = null,
-            Func<string, Task>? onNameResolve = null)
+            Func<string, Task>? onNameResolve = null,
+            Func<string, Task>? onPartnerRSAPublicKeyReceived = null,
+            Key? RSAPublicKey = null)
         {
             usersHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
             .Build();
+
+            usersHub.On<string>("ReceivePartnerRSAPublicKey", async PEMEncodedKey =>
+            {
+                if (onPartnerRSAPublicKeyReceived != null)
+                    await onPartnerRSAPublicKeyReceived(PEMEncodedKey);
+            });
 
             usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
@@ -129,22 +138,22 @@ namespace Limp.Client.HubInteraction
                 if (onNameResolve != null)
                 {
                     onNameResolve(username);
-                    await UpdateRSAPublicKeyAsync(username);
+                    await UpdateRSAPublicKeyAsync(await accessTokenProvider(), InMemoryKeyStorage.MyRSAPublic);
                 }
             });
 
             await usersHub.StartAsync();
 
-            await usersHub.SendAsync("SetUsername", accessToken);
+            await usersHub.SendAsync("SetUsername", await accessTokenProvider());
 
             return usersHub;
         }
 
-        public async Task UpdateRSAPublicKeyAsync(string username)
+        public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
             {
-                usersHub?.SendAsync("SetRSAPublicKey", InMemoryKeyStorage.RSAPublic?.Value?.ToString(), username);
+                usersHub?.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
                 InMemoryKeyStorage.isPublicKeySet = true;
             }
         }

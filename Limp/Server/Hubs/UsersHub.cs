@@ -32,6 +32,22 @@ namespace Limp.Server.Hubs
             await PushOnlineUsersToClients();
         }
 
+        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        {
+            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+
+            string? username = isTokenValid ? TokenReader.GetUsername(accessToken) : null;
+
+            if (isTokenValid && !string.IsNullOrWhiteSpace(username))
+            {
+                await PostAnRSAPublic(RSAPublicKey.Value.ToString(), username);
+            }
+            else
+            {
+                throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
+            }
+        }
+
         public async Task SetUsername(string accessToken)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
@@ -81,9 +97,13 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task SetRSAPublicKey(string PEMEncodedRSAPublicKey, string username)
+        public async Task PostAnRSAPublic(string PEMEncodedRSAPublicKey, string username)
         {
-            await _serverHttpClient.SetRSAPublicKey(PEMEncodedRSAPublicKey, username);
+            await _serverHttpClient.PostAnRSAPublic(PEMEncodedRSAPublicKey, username);
+        }
+        public async Task<string?> GetAnRSAPublic(string username)
+        {
+            return await _serverHttpClient.GetAnRSAPublicKey(username);
         }
     }
 }

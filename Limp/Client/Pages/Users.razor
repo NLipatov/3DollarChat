@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
 @using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
@@ -55,7 +56,12 @@
 
         await _hubInteractor.ConnectToAuthHubAsync(accessToken, refreshToken, OnTokensRefreshAsync);
 
-        await _hubInteractor.ConnectToUsersHubAsync(accessToken, onConnectionIdReceive, onOnlineUsersReceive, OnUsernameResolved);
+        await _hubInteractor.ConnectToUsersHubAsync
+        (GetStoredAccessTokenAsync,
+        onConnectionIdReceive, 
+        onOnlineUsersReceive, 
+        OnUsernameResolved, 
+        RSAPublicKey: InMemoryKeyStorage.MyRSAPublic);
 
     }
 

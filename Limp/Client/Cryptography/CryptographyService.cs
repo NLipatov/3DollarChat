@@ -30,10 +30,10 @@ namespace Limp.Client.Cryptography
             switch (cryptoKey.Type)
             {
                 case (KeyType.RSAPublic):
-                    InMemoryKeyStorage.RSAPublic = cryptoKey;
+                    InMemoryKeyStorage.MyRSAPublic = cryptoKey;
                     break;
                 case (KeyType.RSAPrivate):
-                    InMemoryKeyStorage.RSAPrivate = cryptoKey;
+                    InMemoryKeyStorage.MyRSAPrivate = cryptoKey;
                     break;
                 case (KeyType.AES):
                     InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
@@ -50,7 +50,7 @@ namespace Limp.Client.Cryptography
 
         public async Task GenerateRSAKeyPairAsync()
         {
-            if(InMemoryKeyStorage.RSAPublic == null && InMemoryKeyStorage.RSAPrivate == null)
+            if(InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
         public async Task GenerateAESKeyAsync(string contact, Action callback)

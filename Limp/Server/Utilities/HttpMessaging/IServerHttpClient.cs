@@ -11,6 +11,7 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);
         Task<AuthResult> Register(UserDTO userDTO);
-        Task SetRSAPublicKey(string PEMEncodedRSAPublicKey, string username);
+        Task PostAnRSAPublic(string pemEncodedRSAPublicKey, string username);
+        Task<string?> GetAnRSAPublicKey(string username);
     }
 }

@@ -4,6 +4,8 @@
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.EventSubscriptionManager;
+@using Limp.Client.HubInteraction.Handlers;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction;
@@ -63,7 +65,6 @@
     public string? myName { get; set; }
     private HubConnection? messageDispatcherHub;
     public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
-    private HubConnection? usersHub;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty; 
     private string myConnectionId { get; set; } = string.Empty;
@@ -71,12 +72,29 @@
     private string accessToken = string.Empty;
     HubInteractor? _hubInteractor;
     private bool IsThereAnAESKey { get; set; } = false;
+    private UsersHandler? _usersHubHandler;
 
     protected override async Task OnInitializedAsync()
     {
         await GetAESKeyForConversation();
         _hubInteractor = new(Navigation, jS);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
+
+        _usersHubHandler = new(Navigation, jS);
+
+        UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
+        {
+            myConnectionId = id;
+            StateHasChanged();
+        });
+
+        UsersHubSubscriptionManager.SubscribeToUsersConnectionsReceived((userConnectionsList) =>
+        {
+            userConnections = userConnectionsList;
+            StateHasChanged();
+        });
+
+        await _usersHubHandler.ConnectAsync();
 
         await ConnectToHubsAsync(accessToken);
 
@@ -95,10 +113,6 @@
 
     private async Task ConnectToHubsAsync(string accessToken)
     {
-        ThrowErrorIfHubInteractorIsNull();
-
-        usersHub = await _hubInteractor!.ConnectToUsersHubAsync(onConnectionIdReceive, onOnlineUsersReceive);
-
         messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient);
     }
 
@@ -119,29 +133,8 @@
             throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
         }
 
-        ThrowErrorIfHubInteractorIsNull();
-
         var messagesFromMessageBox = HubInteractor.LoadStoredMessages(topicName);
         messages.AddRange(messagesFromMessageBox);
-    }
-
-    private void ThrowErrorIfHubInteractorIsNull()
-    {
-        if (_hubInteractor == null)
-        {
-            throw new ApplicationException("Could find acceptable hub interactor entity.");
-        }
-    }
-
-    private void onConnectionIdReceive(string connectionId)
-    {
-        myConnectionId = connectionId;
-        StateHasChanged();
-    }
-
-    private void onOnlineUsersReceive(List<UserConnections> usersConnectedData)
-    {
-        userConnections = usersConnectedData;
     }
 
     private void OnUsernameResolve(string username)
@@ -176,6 +169,7 @@
 
     public async ValueTask DisposeAsync()
     {
+        _usersHubHandler?.Dispose();
         if(_hubInteractor != null)
         {
             await _hubInteractor.DisposeAsync();

@@ -80,7 +80,7 @@
         _hubInteractor = new(Navigation, jS);
         accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
-        _usersHubHandler = new(Navigation, jS);
+        _usersHubHandler = new(Navigation, jS, _cryptographyService);
 
         UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
         {

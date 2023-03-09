@@ -97,9 +97,9 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task PostAnRSAPublic(string PEMEncodedRSAPublicKey, string username)
+        public async Task PostAnRSAPublic(string username, string PEMEncodedRSAPublicKey)
         {
-            await _serverHttpClient.PostAnRSAPublic(PEMEncodedRSAPublicKey, username);
+            await _serverHttpClient.PostAnRSAPublic(username, PEMEncodedRSAPublicKey);
         }
         public async Task<string?> GetAnRSAPublic(string username)
         {

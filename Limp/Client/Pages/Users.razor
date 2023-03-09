@@ -5,12 +5,13 @@
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager _navigationManager
 @using ClientServerCommon.Models.Login;
-@inject IJSRuntime jS
+@inject IJSRuntime _jS
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -34,9 +35,9 @@
 @code {
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
-    private string? accessToken { get; set; }
-    private HubInteractor? _hubInteractor;
+    private AuthHandler? _authHubHandler;
     private UsersHandler? _usersHubHandler;
+    private HubInteractor? _hubInteractor;
 
     private async Task RedirectToChat(string username)
     {
@@ -45,18 +46,29 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new HubInteractor(_navigationManager, jS);
-        _usersHubHandler = new(_navigationManager, jS);
+        _hubInteractor = new HubInteractor(_navigationManager, _jS);
 
-        accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
+        _authHubHandler = new AuthHandler(_navigationManager, _jS);
+        _usersHubHandler = new UsersHandler(_navigationManager, _jS);
 
-        if (String.IsNullOrWhiteSpace(accessToken))
+        if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
             _navigationManager.NavigateTo("login");
             return;
         }
 
-        await _hubInteractor.ConnectToAuthHubAsync(OnTokensRefreshAsync);
+        AuthHubSubscriptionManager.SubscribeToJWTPairRefresh(async (result) =>
+        {
+            JWTPair? pair = result.JWTPair;
+            if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
+                _navigationManager.NavigateTo("/login");
+
+            if (result.Result == AuthResultType.Success)
+            {
+                await _jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
+                await _jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
+            }
+        });
 
         UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
         {
@@ -78,25 +90,14 @@
             }
         });
 
+        await _authHubHandler.ConnectAsync();
         await _usersHubHandler.ConnectAsync();
-    }
-
-    private async Task OnTokensRefreshAsync(AuthResult result)
-    {
-        JWTPair? pair = result.JWTPair;
-        if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
-            _navigationManager.NavigateTo("/login");
-
-        if (result.Result == AuthResultType.Success)
-        {
-            await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
-            await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
-        }
     }
 
     public async ValueTask DisposeAsync()
     {
         _usersHubHandler?.Dispose();
+        _authHubHandler?.Dispose();
         await _hubInteractor?.DisposeAsync();
     }
 }

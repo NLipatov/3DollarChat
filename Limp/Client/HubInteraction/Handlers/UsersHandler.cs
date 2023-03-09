@@ -7,14 +7,14 @@ using Microsoft.JSInterop;
 
 namespace Limp.Client.HubInteraction.Handlers;
 
-public class UsersHandler : IHandler<UsersHandler>, IDisposable
+public class UsersHandler : IHandler<UsersHandler>
 {
     private readonly NavigationManager _navigationManager;
     private readonly IJSRuntime _jSRuntime;
     private HubConnection? usersHub;
     public UsersHandler
-        (NavigationManager navigationManager,
-        IJSRuntime jSRuntime)
+    (NavigationManager navigationManager,
+    IJSRuntime jSRuntime)
     {
         _navigationManager = navigationManager;
         _jSRuntime = jSRuntime;

@@ -37,7 +37,7 @@ namespace Limp.Client.Cryptography
                     break;
                 case (KeyType.AES):
                     InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
-                    if(OnAESGeneratedCallback != null)
+                    if (OnAESGeneratedCallback != null)
                     {
                         OnAESGeneratedCallback();
                         OnAESGeneratedCallback = null;
@@ -46,6 +46,8 @@ namespace Limp.Client.Cryptography
                 default:
                     throw new ApplicationException($"Unknown key type passed in: {nameof(cryptoKey.Type)}");
             }
+            if (InMemoryKeyStorage.MyRSAPublic?.Value != null && InMemoryKeyStorage.MyRSAPrivate?.Value != null)
+                KeysGeneratedHandler.CallOnKeysGenerated();
         }
 
         public async Task GenerateRSAKeyPairAsync()

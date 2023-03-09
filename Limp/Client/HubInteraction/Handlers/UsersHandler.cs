@@ -44,8 +44,7 @@ public class UsersHandler : IHandler<UsersHandler>
 
         usersHub.On<string>("onNameResolve", async username =>
         {
-            UsersHubSubscriptionManager.CallUsernameResolved(username); 
-            await GuaranteeThatRSAPairWasGenerated();
+            UsersHubSubscriptionManager.CallUsernameResolved(username);
 
             await usersHub.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
         });
@@ -55,17 +54,6 @@ public class UsersHandler : IHandler<UsersHandler>
         await usersHub.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
 
         return usersHub;
-    }
-
-    public async Task GuaranteeThatRSAPairWasGenerated()
-    {
-        Key? myRSAPublic = InMemoryKeyStorage.MyRSAPublic;
-        Key? myRSAPrivate = InMemoryKeyStorage.MyRSAPrivate;
-
-        if((myRSAPublic != null && myRSAPrivate != null) == false)
-        {
-            await _cryptographyService.GenerateRSAKeyPairAsync();
-        }
     }
 
     public void Dispose()

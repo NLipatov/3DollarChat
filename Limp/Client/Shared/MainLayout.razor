@@ -1,13 +1,39 @@
-﻿@using Limp.Client.Shared.NavigationBar
+﻿@using Limp.Client.Cryptography;
+@using Limp.Client.Shared.NavigationBar
 @inherits LayoutComponentBase
+@inject ICryptographyService _cryptographyService
 
-<div style=
-    "display: flex;
+@if(isRSAGenerated)
+{
+    <div style="display: flex;
     flex-direction: row;
     height: 100vh;
     width: 100vw;">
-    <NavMenu />
-    <div style="width: 100%;">
-        @Body
+        <NavMenu />
+        <div style="width: 100%;">
+            @Body
+        </div>
     </div>
-</div>
+}
+else
+{
+    <div>
+        <p>
+            Calculating an RSA key pair...
+        </p>
+    </div>
+}
+
+@code{
+    private bool isRSAGenerated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await _cryptographyService.GenerateRSAKeyPairAsync();
+        KeysGeneratedHandler.SubscribeToRSAKeysGeneratedEvent(() =>
+        {
+            isRSAGenerated = true;
+            StateHasChanged();
+        });
+    }
+}

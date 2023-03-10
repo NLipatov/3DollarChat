@@ -81,6 +81,10 @@ namespace Limp.Client.HubInteraction
                 if (message.Sender != "You")
                 {
                     await messageDispatcherHub.SendAsync("MessageReceived", message.Id);
+                    if(InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x=>x.Key == message.TargetGroup).Value == null)
+                    {
+                        await messageDispatcherHub.SendAsync("GetAnRSAPublic", message.Sender);
+                    }
                 }
             });
 
@@ -90,6 +94,17 @@ namespace Limp.Client.HubInteraction
                 {
                     onMessageReceivedByRecepient(messageId);
                 }
+            });
+
+            messageDispatcherHub.On<string, string>("ReceivePublicKey", (username, key) =>
+            {
+                InMemoryKeyStorage.AESKeyStorage.Add(username, new Key
+                {
+                    Type = KeyType.RSAPublic,
+                    Contact = username,
+                    Format = KeyFormat.PEM_SPKI,
+                    Value = key
+                });
             });
 
             if (onUsernameResolve != null)

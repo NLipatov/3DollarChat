@@ -101,9 +101,5 @@ namespace Limp.Server.Hubs
         {
             await _serverHttpClient.PostAnRSAPublic(username, PEMEncodedRSAPublicKey);
         }
-        public async Task<string?> GetAnRSAPublic(string username)
-        {
-            return await _serverHttpClient.GetAnRSAPublicKey(username);
-        }
     }
 }

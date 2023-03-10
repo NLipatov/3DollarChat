@@ -107,5 +107,10 @@ namespace Limp.Server.Hubs.MessageDispatching
 
             await Clients.Caller.SendAsync("OnMyNameResolve", username);
         }
+        public async Task GetAnRSAPublic(string username)
+        {
+            string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
+            await Clients.Caller.SendAsync("ReceivePublicKey", username, pubKey);
+        }
     }
 }

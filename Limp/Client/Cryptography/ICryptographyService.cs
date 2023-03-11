@@ -6,8 +6,8 @@ namespace Limp.Client.Cryptography
     public interface ICryptographyService
     {
         Task<string> DecryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler;
-        Task<string> EncryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler;
-        Task GenerateAESKeyAsync(string contactName, Action callback);
+        Task<string> EncryptAsync<T>(string text, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler;
+        Task GenerateAESKeyAsync(string contactName, Action<string> callback);
         Task GenerateRSAKeyPairAsync();
         void SetAESKey(string contactName, Key key);
     }

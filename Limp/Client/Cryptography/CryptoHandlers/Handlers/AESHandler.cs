@@ -24,7 +24,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return decryptedMessage;
         }
 
-        public async Task<string> Encrypt(string text, string? contact = null)
+        public async Task<string> Encrypt(string text, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
             if (key == null)

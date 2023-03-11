@@ -8,7 +8,7 @@ namespace Limp.Client.Cryptography
     public class CryptographyService : ICryptographyService
     {
         private readonly IJSRuntime _jSRuntime;
-        private static Action? OnAESGeneratedCallback { get; set; }
+        private static Action<string>? OnAESGeneratedCallback { get; set; }
 
         public CryptographyService(IJSRuntime jSRuntime)
         {
@@ -39,7 +39,7 @@ namespace Limp.Client.Cryptography
                     InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
                     if (OnAESGeneratedCallback != null)
                     {
-                        OnAESGeneratedCallback();
+                        OnAESGeneratedCallback(cryptoKey.Value.ToString());
                         OnAESGeneratedCallback = null;
                     }
                     break;
@@ -55,7 +55,7 @@ namespace Limp.Client.Cryptography
             if(InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
-        public async Task GenerateAESKeyAsync(string contact, Action callback)
+        public async Task GenerateAESKeyAsync(string contact, Action<string> callback)
         {
             OnAESGeneratedCallback = callback;
             await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);
@@ -77,13 +77,13 @@ namespace Limp.Client.Cryptography
 
             return await cryptoHandler.Decrypt(text, contact);
         }
-        public async Task<string> EncryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler
+        public async Task<string> EncryptAsync<T>(string text, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(text, contact);
+            return await cryptoHandler.Encrypt(text, contact, PublicKeyToEncryptWith);
         }
     }
 }

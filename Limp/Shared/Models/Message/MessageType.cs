@@ -3,5 +3,5 @@
 public enum MessageType
 {
     UserMessage,
-    Handshake
+    AESOffer
 }

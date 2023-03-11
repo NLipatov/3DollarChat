@@ -1,6 +1,8 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
+using Limp.Client.Cryptography;
+using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
@@ -61,9 +63,11 @@ namespace Limp.Client.HubInteraction
         }
         
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-        (Action<Message>? onMessageReceive = null, 
+        (string myUsername,
+        Action<Message>? onMessageReceive = null, 
         Action<string>? onUsernameResolve = null, 
-        Action<Guid>? onMessageReceivedByRecepient = null)
+        Action<Guid>? onMessageReceivedByRecepient = null,
+        ICryptographyService? cryptographyService = null)
         {
             if (onMessageReceive != null)
             {
@@ -77,10 +81,44 @@ namespace Limp.Client.HubInteraction
 
             messageDispatcherHub.On<Message>("ReceiveMessage", async message =>
             {
+                if (cryptographyService == null)
+                    throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
+
+
+                if (message.Type == MessageType.AESOffer)
+                {
+                    string? encryptedAESKey = message.Payload;
+                    if (string.IsNullOrWhiteSpace(encryptedAESKey))
+                        throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
+
+                    string? decryptedAESKey = await cryptographyService.DecryptAsync<RSAHandler>(encryptedAESKey);
+
+                    if (string.IsNullOrWhiteSpace(decryptedAESKey))
+                        throw new ArgumentException("Could not decrypt an AES Key.");
+
+                    await Console.Out.WriteLineAsync($"Decrypted AES: {decryptedAESKey}");
+
+                    Key aesKeyForConversation = new()
+                    {
+                        Value = decryptedAESKey,
+                        Contact = message.Sender,
+                        Format = KeyFormat.RAW,
+                        Type = KeyType.AES
+                    };
+
+                    if(!string.IsNullOrWhiteSpace(message.Sender))
+                    {
+                        InMemoryKeyStorage.AESKeyStorage.Add(message.Sender, aesKeyForConversation);
+                    }
+                    return;
+                }
+
                 MessageBox.AddMessage(message);
                 if (message.Sender != "You")
                 {
                     await messageDispatcherHub.SendAsync("MessageReceived", message.Id);
+
+                    //If we dont yet know a partner Public Key, we will request it from server side.
                     if(InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x=>x.Key == message.TargetGroup).Value == null)
                     {
                         await messageDispatcherHub.SendAsync("GetAnRSAPublic", message.Sender);
@@ -96,14 +134,52 @@ namespace Limp.Client.HubInteraction
                 }
             });
 
-            messageDispatcherHub.On<string, string>("ReceivePublicKey", (username, key) =>
+            //Handling server side response on partners Public Key
+            messageDispatcherHub.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
             {
-                InMemoryKeyStorage.AESKeyStorage.Add(username, new Key
+                //Storing Public Key in our in-memory storage
+                InMemoryKeyStorage.RSAKeyStorage.Add(partnersUsername, new Key
                 {
                     Type = KeyType.RSAPublic,
-                    Contact = username,
+                    Contact = partnersUsername,
                     Format = KeyFormat.PEM_SPKI,
-                    Value = key
+                    Value = partnersPublicKey
+                });
+
+                //Now we can send an encrypted offer on AES Key
+                //We will encrypt our offer with a partners RSA Public Key
+                if (cryptographyService == null)
+                    throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
+                await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
+                {
+                    string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
+
+                    if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
+                        throw new ApplicationException("Could not properly generated an AES Key for conversation");
+
+                    await Console.Out.WriteLineAsync($"Plain AES Key: {offeredAESKeyForConversation}.");
+
+                    //When this callback is called, AES key for conversation is already generated
+                    //We now need to encrypt this AES key and send it to partner
+                    string encryptedAESKey = await cryptographyService
+                    .EncryptAsync<RSAHandler>
+                        (offeredAESKeyForConversation,
+                        //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
+                        PublicKeyToEncryptWith: partnersPublicKey);
+
+                    if (string.IsNullOrWhiteSpace(encryptedAESKey))
+                        throw new ApplicationException("Could not encrypt a AES Key, got empty string.");
+
+                    Message offerOnAES = new()
+                    {
+                        Type = MessageType.AESOffer,
+                        DateSent = DateTime.UtcNow,
+                        Sender = myUsername,
+                        TargetGroup = partnersUsername,
+                        Payload = encryptedAESKey
+                    };
+
+                    await SendMessage(offerOnAES);
                 });
             });
 
@@ -112,7 +188,7 @@ namespace Limp.Client.HubInteraction
                 messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
                 {
                     onUsernameResolve(username);
-                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic);
+                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic!);
                 });
             }
 

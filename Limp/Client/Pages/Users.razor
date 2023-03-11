@@ -87,7 +87,7 @@
         {
             if (_hubInteractor != null)
             {
-                await _hubInteractor.ConnectToMessageDispatcherHubAsync();
+                await _hubInteractor.ConnectToMessageDispatcherHubAsync(username, cryptographyService: _cryptographyService);
             }
         });
 

@@ -11,13 +11,16 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Encrypt(string text, string? contact = null)
+        public async Task<string> Encrypt(string text, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
-            if (InMemoryKeyStorage.MyRSAPublic?.Value == null)
-                throw new ApplicationException("RSA Public key was null");
+            if (string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
+                throw new ArgumentException("Please provide an RSA Key to Encrypt your text with.");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("EncryptWithRSAPublicKey", text, InMemoryKeyStorage.MyRSAPublic.Value);
+                .InvokeAsync<string>("EncryptWithRSAPublicKey", text, PublicKeyToEncryptWith);
+
+            if (string.IsNullOrWhiteSpace(encryptedMessage))
+                throw new ApplicationException("Could not encrypt text.");
 
             return encryptedMessage;
         }

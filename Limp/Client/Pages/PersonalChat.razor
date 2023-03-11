@@ -105,14 +105,27 @@
     private async Task ConnectToHubsAsync(string accessToken)
     {
         messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync
-        (myName, 
-        OnMessageReceived, 
+        (OnMessageReceived, 
         OnUsernameResolve, 
         onMessageReceivedByRecepient, 
         cryptographyService: _cryptographyService, 
         OnAESGeneratedCallback: OnAESKeyReady);
-        //This will get partners public key and generate an AES key for conversation
-        await _hubInteractor.GetPartnerPublicKey(topicName);
+    }
+
+    private async Task GetAnAESKeyForConversation()
+    {
+        if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value == null)
+        {
+            Console.WriteLine($"There is no existing AES key for conversation. Let's create one");
+            //This will get partners public key and generate an AES key for conversation
+            await _hubInteractor.GetPartnerPublicKey(topicName);
+        }
+        else
+        {
+            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value.Value.ToString()}");
+            isConversationAESExists = true;
+            StateHasChanged();
+        }
     }
 
     private void OnAESKeyReady()
@@ -143,9 +156,10 @@
         messages.AddRange(messagesFromMessageBox);
     }
 
-    private void OnUsernameResolve(string username)
+    private async Task OnUsernameResolve(string username)
     {
         myName = username;
+        await GetAnAESKeyForConversation();
         StateHasChanged();
     }
 

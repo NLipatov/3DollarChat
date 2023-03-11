@@ -67,7 +67,8 @@ namespace Limp.Client.HubInteraction
         Action<Message>? onMessageReceive = null, 
         Action<string>? onUsernameResolve = null, 
         Action<Guid>? onMessageReceivedByRecepient = null,
-        ICryptographyService? cryptographyService = null)
+        ICryptographyService? cryptographyService = null,
+        Action? OnAESGeneratedCallback = null)
         {
             if (onMessageReceive != null)
             {
@@ -119,10 +120,7 @@ namespace Limp.Client.HubInteraction
                     await messageDispatcherHub.SendAsync("MessageReceived", message.Id);
 
                     //If we dont yet know a partner Public Key, we will request it from server side.
-                    if(InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x=>x.Key == message.TargetGroup).Value == null)
-                    {
-                        await messageDispatcherHub.SendAsync("GetAnRSAPublic", message.Sender);
-                    }
+                    await GetPartnerPublicKey(message.Sender!);
                 }
             });
 
@@ -148,39 +146,7 @@ namespace Limp.Client.HubInteraction
 
                 //Now we can send an encrypted offer on AES Key
                 //We will encrypt our offer with a partners RSA Public Key
-                if (cryptographyService == null)
-                    throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
-                await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
-                {
-                    string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
-
-                    if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
-                        throw new ApplicationException("Could not properly generated an AES Key for conversation");
-
-                    await Console.Out.WriteLineAsync($"Plain AES Key: {offeredAESKeyForConversation}.");
-
-                    //When this callback is called, AES key for conversation is already generated
-                    //We now need to encrypt this AES key and send it to partner
-                    string encryptedAESKey = await cryptographyService
-                    .EncryptAsync<RSAHandler>
-                        (offeredAESKeyForConversation,
-                        //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                        PublicKeyToEncryptWith: partnersPublicKey);
-
-                    if (string.IsNullOrWhiteSpace(encryptedAESKey))
-                        throw new ApplicationException("Could not encrypt a AES Key, got empty string.");
-
-                    Message offerOnAES = new()
-                    {
-                        Type = MessageType.AESOffer,
-                        DateSent = DateTime.UtcNow,
-                        Sender = myUsername,
-                        TargetGroup = partnersUsername,
-                        Payload = encryptedAESKey
-                    };
-
-                    await SendMessage(offerOnAES);
-                });
+                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey, myUsername, OnAESGeneratedCallback);
             });
 
             if (onUsernameResolve != null)
@@ -197,6 +163,58 @@ namespace Limp.Client.HubInteraction
             await messageDispatcherHub.SendAsync("SetUsername", await GetAccessToken());
 
             return messageDispatcherHub;
+        }
+        public async Task GetPartnerPublicKey(string partnersUsername)
+        {
+            if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == partnersUsername).Value == null)
+            {
+                await messageDispatcherHub.SendAsync("GetAnRSAPublic", partnersUsername);
+            }
+        }
+
+        private async Task GenerateAESAndSendItToPartner
+        (ICryptographyService cryptographyService, 
+        string partnersUsername, 
+        string partnersPublicKey, 
+        string myUsername,
+        Action? OnAESGeneratedCallback = null)
+        {
+            await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
+            {
+                string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
+
+                if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
+                    throw new ApplicationException("Could not properly generated an AES Key for conversation");
+
+                await Console.Out.WriteLineAsync($"Plain AES Key: {offeredAESKeyForConversation}.");
+
+                //When this callback is called, AES key for conversation is already generated
+                //We now need to encrypt this AES key and send it to partner
+                string encryptedAESKey = await cryptographyService
+                .EncryptAsync<RSAHandler>
+                    (offeredAESKeyForConversation,
+                    //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
+                    PublicKeyToEncryptWith: partnersPublicKey);
+
+                if (string.IsNullOrWhiteSpace(encryptedAESKey))
+                    throw new ApplicationException("Could not encrypt a AES Key, got empty string.");
+
+                Message offerOnAES = new()
+                {
+                    Type = MessageType.AESOffer,
+                    DateSent = DateTime.UtcNow,
+                    Sender = myUsername,
+                    TargetGroup = partnersUsername,
+                    Payload = encryptedAESKey
+                };
+
+                await SendMessage(offerOnAES);
+
+                if(OnAESGeneratedCallback != null)
+                {
+                    OnAESGeneratedCallback();
+                }
+            });
         }
 
         public async Task<HubConnection> ConnectToUsersHubAsync

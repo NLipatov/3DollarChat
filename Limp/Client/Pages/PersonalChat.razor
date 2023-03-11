@@ -6,6 +6,7 @@
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
+@using LimpShared.Encryption;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction;
@@ -21,10 +22,10 @@
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-    @if (!IsThereAnAESKey)
+    @if (!isConversationAESExists)
     {
         <KeyTransfer 
-            IsThereAnAESKey=IsThereAnAESKey/>
+            IsThereAnAESKey=isConversationAESExists/>
     }
     else
     {
@@ -71,7 +72,7 @@
     private List<UserConnections> userConnections { get; set; } = new();
     private string accessToken = string.Empty;
     HubInteractor? _hubInteractor;
-    private bool IsThereAnAESKey { get; set; } = true;
+    private bool isConversationAESExists { get; set; } = false;
     private UsersHandler? _usersHubHandler;
 
     protected override async Task OnInitializedAsync()
@@ -103,7 +104,22 @@
 
     private async Task ConnectToHubsAsync(string accessToken)
     {
-        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync(myName, OnMessageReceived, OnUsernameResolve, onMessageReceivedByRecepient, cryptographyService: _cryptographyService);
+        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync
+        (myName, 
+        OnMessageReceived, 
+        OnUsernameResolve, 
+        onMessageReceivedByRecepient, 
+        cryptographyService: _cryptographyService, 
+        OnAESGeneratedCallback: OnAESKeyReady);
+        //This will get partners public key and generate an AES key for conversation
+        await _hubInteractor.GetPartnerPublicKey(topicName);
+    }
+
+    private void OnAESKeyReady()
+    {
+        string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString();
+        isConversationAESExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        StateHasChanged();
     }
 
     private void onMessageReceivedByRecepient(Guid messageId)

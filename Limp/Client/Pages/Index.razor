@@ -1,9 +1,10 @@
 ﻿@page "/"
+@using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-@using Limp.Client.Cryptography.CryptoHandlers.Models;
 @using Limp.Client.Cryptography.KeyStorage;
 @using LimpShared.Encryption;
+    using ClientServerCommon.Models.Message;
 @inject NavigationManager Navigation
 @inject IJSRuntime _js;
 @inject ICryptographyService _cryptographyService;

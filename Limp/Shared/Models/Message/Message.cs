@@ -12,6 +12,7 @@ public class Message : ICloneable
     public string? Sender { get; set; }
     public string? Topic { get; set; }
     public string? Payload { get; set; }
+    public Cryptogramm? Cryptogramm { get; set; }
     public bool IsReceived { get; set; }
     public DateTime DateReceived { get; set; }
     public DateTime DateSent { get; set; }

@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Cryptography.CryptoHandlers.Models
+﻿namespace ClientServerCommon.Models.Message
 {
     public class Cryptogramm
     {

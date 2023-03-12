@@ -1,4 +1,4 @@
-﻿using Limp.Client.Cryptography.CryptoHandlers.Models;
+﻿using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography.KeyStorage;
 using Microsoft.JSInterop;
 

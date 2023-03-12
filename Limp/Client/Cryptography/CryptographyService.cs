@@ -1,5 +1,5 @@
-﻿using Limp.Client.Cryptography.CryptoHandlers;
-using Limp.Client.Cryptography.CryptoHandlers.Models;
+﻿using ClientServerCommon.Models.Message;
+using Limp.Client.Cryptography.CryptoHandlers;
 using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
 using Microsoft.JSInterop;

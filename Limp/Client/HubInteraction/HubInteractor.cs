@@ -3,7 +3,6 @@ using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using Limp.Client.Cryptography.CryptoHandlers.Models;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;

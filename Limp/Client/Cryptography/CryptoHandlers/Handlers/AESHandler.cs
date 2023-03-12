@@ -1,4 +1,5 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.Cryptography.CryptoHandlers.Models;
+using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
 using Microsoft.JSInterop;
 
@@ -12,24 +13,24 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Decrypt(string text, string? contact = null, string? IV = null)
+        public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            if (string.IsNullOrWhiteSpace(IV))
+            if (string.IsNullOrWhiteSpace(cryptogramm.IV))
                 throw new ArgumentException("Please provide an IV");
 
-            await _jSRuntime.InvokeVoidAsync("importSecretKey", IV);
+            await _jSRuntime.InvokeVoidAsync("importSecretKey", cryptogramm.IV);
 
             Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
             if (key == null)
                 throw new ApplicationException("RSA Public key was null");
 
             string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESDecryptMessage", text, key.Value.ToString());
+                .InvokeAsync<string>("AESDecryptMessage", cryptogramm.Cyphertext, key.Value.ToString());
 
             return decryptedMessage;
         }
 
-        public async Task<string> Encrypt(string text, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<string> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             string? aesKey = string.Empty;
 
@@ -42,7 +43,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
                 throw new ApplicationException("Could not resolve a AES key for encryption.");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESEncryptMessage", text, aesKey);
+                .InvokeAsync<string>("AESEncryptMessage", cryptogramm.Cyphertext, aesKey);
 
             string iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
             await Console.Out.WriteLineAsync($"Got IV along with cyphertext: {iv}");

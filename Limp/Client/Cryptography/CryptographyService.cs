@@ -1,4 +1,5 @@
 ﻿using Limp.Client.Cryptography.CryptoHandlers;
+using Limp.Client.Cryptography.CryptoHandlers.Models;
 using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
 using Microsoft.JSInterop;
@@ -69,21 +70,21 @@ namespace Limp.Client.Cryptography
             else
                 InMemoryKeyStorage.AESKeyStorage[contactName] = key;
         }
-        public async Task<string> DecryptAsync<T>(string text, string? contact = null) where T : ICryptoHandler
+        public async Task<string> DecryptAsync<T>(Cryptogramm cryptogramm, string? contact = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Decrypt(text, contact);
+            return await cryptoHandler.Decrypt(cryptogramm, contact);
         }
-        public async Task<string> EncryptAsync<T>(string text, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler
+        public async Task<string> EncryptAsync<T>(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(text, contact, PublicKeyToEncryptWith);
+            return await cryptoHandler.Encrypt(cryptogramm, contact, PublicKeyToEncryptWith);
         }
     }
 }

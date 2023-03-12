@@ -1,4 +1,5 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.Cryptography.CryptoHandlers.Models;
+using Limp.Client.Cryptography.KeyStorage;
 using Microsoft.JSInterop;
 
 namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
@@ -11,13 +12,13 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Encrypt(string text, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<string> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             if (string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
                 throw new ArgumentException("Please provide an RSA Key to Encrypt your text with.");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("EncryptWithRSAPublicKey", text, PublicKeyToEncryptWith);
+                .InvokeAsync<string>("EncryptWithRSAPublicKey", cryptogramm.Cyphertext, PublicKeyToEncryptWith);
 
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ApplicationException("Could not encrypt text.");
@@ -25,13 +26,13 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return encryptedMessage;
         }
 
-        public async Task<string> Decrypt(string text, string? contact = null, string? IV = null)
+        public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
             if (InMemoryKeyStorage.MyRSAPrivate?.Value == null)
                 throw new ApplicationException("RSA Private key was null");
 
             string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("DecryptWithRSAPrivateKey", text, InMemoryKeyStorage.MyRSAPrivate.Value);
+                .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
 
             return decryptedMessage;
         }

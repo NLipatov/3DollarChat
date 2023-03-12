@@ -3,6 +3,7 @@ using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+using Limp.Client.Cryptography.CryptoHandlers.Models;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
 using Limp.Client.Utilities;
@@ -93,7 +94,7 @@ namespace Limp.Client.HubInteraction
                         if (string.IsNullOrWhiteSpace(encryptedAESKey))
                             throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-                        string? decryptedAESKey = await cryptographyService.DecryptAsync<RSAHandler>(encryptedAESKey);
+                        string? decryptedAESKey = await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey});
 
                         if (string.IsNullOrWhiteSpace(decryptedAESKey))
                             throw new ArgumentException("Could not decrypt an AES Key.");
@@ -201,7 +202,7 @@ namespace Limp.Client.HubInteraction
                 //We now need to encrypt this AES key and send it to partner
                 string encryptedAESKey = await cryptographyService
                 .EncryptAsync<RSAHandler>
-                    (offeredAESKeyForConversation,
+                    (new Cryptogramm { Cyphertext = offeredAESKeyForConversation },
                     //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
                     PublicKeyToEncryptWith: partnersPublicKey);
 

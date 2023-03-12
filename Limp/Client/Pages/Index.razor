@@ -1,6 +1,7 @@
 ﻿@page "/"
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+@using Limp.Client.Cryptography.CryptoHandlers.Models;
 @using Limp.Client.Cryptography.KeyStorage;
 @using LimpShared.Encryption;
 @inject NavigationManager Navigation
@@ -44,21 +45,21 @@
 
     public async Task RSAEncrypt()
     {
-        RSAinputValue = await _cryptographyService.EncryptAsync<RSAHandler>(RSAinputValue);
+        RSAinputValue = await _cryptographyService.EncryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue });
     }
 
     public async Task RSADecrypt()
     {
-        RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(RSAinputValue);
+        RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue });
     }
 
     public async Task AESEncrypt()
     {
-        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(AESinputValue, demoContact);
+        AESinputValue = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact);
     }
 
     public async Task AESDecrypt()
     {
-        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(AESinputValue, demoContact);
+        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact);
     }
 }

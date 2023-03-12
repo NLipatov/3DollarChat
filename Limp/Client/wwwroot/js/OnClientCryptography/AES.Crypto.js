@@ -48,8 +48,16 @@ async function AESEncryptMessage(message, key) {
         encoded
     );
 
-    console.log(ciphertext);
     return ab2str(ciphertext);
+}
+
+function ExportIV() {
+    console.log(`returning as iv: ${ab2str(iv)}`);
+    return ab2str(iv);
+}
+
+function ImportIV(ivArrayBufferAsString) {
+    iv = str2ab(ivArrayBufferAsString);
 }
 
 async function AESDecryptMessage(message, key) {

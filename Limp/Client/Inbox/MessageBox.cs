@@ -4,7 +4,7 @@ namespace Limp.Client.TopicStorage
 {
     public static class MessageBox
     {
-        private static Dictionary<Guid, Action<Message>> subscriptions = new();
+        private static Dictionary<Guid, Func<Message, Task>> subscriptions = new();
         private static List<Message> Messages = new();
         public static void AddMessage(Message message)
         {
@@ -28,7 +28,7 @@ namespace Limp.Client.TopicStorage
             }
         }
 
-        public static Guid Subsctibe(Action<Message> newMessageHandler)
+        public static Guid Subsctibe(Func<Message, Task> newMessageHandler)
         {
             Guid subscriptionId = Guid.NewGuid();
             subscriptions.Add(subscriptionId, newMessageHandler);

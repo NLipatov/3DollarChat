@@ -25,7 +25,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return encryptedMessage;
         }
 
-        public async Task<string> Decrypt(string text, string? contact = null)
+        public async Task<string> Decrypt(string text, string? contact = null, string? IV = null)
         {
             if (InMemoryKeyStorage.MyRSAPrivate?.Value == null)
                 throw new ApplicationException("RSA Private key was null");

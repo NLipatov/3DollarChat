@@ -2,6 +2,7 @@
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
@@ -34,12 +35,12 @@
         </div>
 
         <div class="messages-box">
-            @foreach (var message in messages)
+            @foreach (var message in messages.Where(x=>x.Type == MessageType.UserMessage))
             {
                 bool isOutcoming = message.Sender == "You";
                 string messageClass = isOutcoming ? "outcoming" : "incoming";
                 <div class="message @messageClass">
-                    <span>@message.Payload</span>
+                    <span>@(message.Payload)</span>
                 </div>
                 <div class="timestamp @messageClass">
                     <span>@message.DateSent.ToString("hh:mm")</span>
@@ -163,16 +164,25 @@
         StateHasChanged();
     }
 
-    private void OnMessageReceived(Message message)
+    private async Task OnMessageReceived(Message message)
     {
-        messages.Add(message);
-        StateHasChanged();
+        if(message.Type == MessageType.UserMessage)
+        {
+            string key = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == topicName).Value.Value.ToString();
+            message.Payload = await _cryptographyService.DecryptAsync<AESHandler>(text: message.Payload, contact: topicName);
+            messages.Add(message);
+            StateHasChanged();
+        }
     }
 
     private async Task SendMessage()
     {
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
+
+        messageInput = await _cryptographyService.EncryptAsync<AESHandler>
+        (messageInput, 
+        contact: topicName);
 
         Message messageToSend = new Message
         {

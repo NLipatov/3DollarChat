@@ -64,7 +64,7 @@ namespace Limp.Client.HubInteraction
         }
         
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-        (Action<Message>? onMessageReceive = null, 
+        (Func<Message, Task>? onMessageReceive = null, 
         Func<string, Task>? onUsernameResolve = null, 
         Action<Guid>? onMessageReceivedByRecepient = null,
         ICryptographyService? cryptographyService = null,

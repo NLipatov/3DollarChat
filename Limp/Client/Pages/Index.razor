@@ -32,6 +32,7 @@
     private string AESinputValue { get; set; } = string.Empty;
     //private CryptographyService _cryptographyService { get; set; }
     private string demoContact = "demo";
+    private string IV = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -55,11 +56,14 @@
 
     public async Task AESEncrypt()
     {
-        AESinputValue = (await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact)).Cyphertext;
+        Cryptogramm encryptionResult = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact);
+        IV = encryptionResult.IV;
+
+        AESinputValue = encryptionResult.Cyphertext;
     }
 
     public async Task AESDecrypt()
     {
-        AESinputValue = (await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact)).PlainText;
+        AESinputValue = (await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue, IV = IV }, demoContact)).PlainText;
     }
 }

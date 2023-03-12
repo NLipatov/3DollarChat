@@ -18,11 +18,13 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             if (string.IsNullOrWhiteSpace(cryptogramm.IV))
                 throw new ArgumentException("Please provide an IV");
 
-            await _jSRuntime.InvokeVoidAsync("importSecretKey", cryptogramm.IV);
+            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.IV);
 
             Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
             if (key == null)
                 throw new ApplicationException("RSA Public key was null");
+
+            await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
 
             string decryptedMessage = await _jSRuntime
                 .InvokeAsync<string>("AESDecryptMessage", cryptogramm.Cyphertext, key.Value.ToString());

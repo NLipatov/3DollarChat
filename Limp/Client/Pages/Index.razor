@@ -50,7 +50,7 @@
 
     public async Task RSADecrypt()
     {
-        RSAinputValue = await _cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue });
+        RSAinputValue = (await _cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue })).PlainText;
     }
 
     public async Task AESEncrypt()
@@ -60,6 +60,6 @@
 
     public async Task AESDecrypt()
     {
-        AESinputValue = await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact);
+        AESinputValue = (await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact)).PlainText;
     }
 }

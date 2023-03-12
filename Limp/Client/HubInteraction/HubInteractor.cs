@@ -94,7 +94,7 @@ namespace Limp.Client.HubInteraction
                         if (string.IsNullOrWhiteSpace(encryptedAESKey))
                             throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-                        string? decryptedAESKey = await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey});
+                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey})).PlainText;
 
                         if (string.IsNullOrWhiteSpace(decryptedAESKey))
                             throw new ArgumentException("Could not decrypt an AES Key.");

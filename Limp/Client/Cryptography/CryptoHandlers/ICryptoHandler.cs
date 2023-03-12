@@ -5,6 +5,6 @@ namespace Limp.Client.Cryptography.CryptoHandlers;
 
 public interface ICryptoHandler
 {
-    public Task<string> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null);
+    public Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null);
     public Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null);
 }

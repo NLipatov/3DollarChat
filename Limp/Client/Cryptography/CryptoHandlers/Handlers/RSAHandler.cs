@@ -12,7 +12,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             if (string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
                 throw new ArgumentException("Please provide an RSA Key to Encrypt your text with.");
@@ -23,7 +23,10 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ApplicationException("Could not encrypt text.");
 
-            return encryptedMessage;
+            return new Cryptogramm
+            {
+                Cyphertext = encryptedMessage,
+            };
         }
 
         public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)

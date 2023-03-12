@@ -181,9 +181,9 @@
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
 
-        messageInput = await _cryptographyService.EncryptAsync<AESHandler>
+        messageInput = (await _cryptographyService.EncryptAsync<AESHandler>
         (new Cryptogramm() { Cyphertext = messageInput }, 
-        contact: topicName);
+        contact: topicName)).Cyphertext;
 
         Message messageToSend = new Message
         {

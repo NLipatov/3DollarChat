@@ -200,11 +200,11 @@ namespace Limp.Client.HubInteraction
 
                 //When this callback is called, AES key for conversation is already generated
                 //We now need to encrypt this AES key and send it to partner
-                string encryptedAESKey = await cryptographyService
+                string encryptedAESKey = (await cryptographyService
                 .EncryptAsync<RSAHandler>
                     (new Cryptogramm { Cyphertext = offeredAESKeyForConversation },
                     //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                    PublicKeyToEncryptWith: partnersPublicKey);
+                    PublicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
 
                 if (string.IsNullOrWhiteSpace(encryptedAESKey))
                     throw new ApplicationException("Could not encrypt a AES Key, got empty string.");

@@ -30,7 +30,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return decryptedMessage;
         }
 
-        public async Task<string> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             string? aesKey = string.Empty;
 
@@ -48,7 +48,11 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             string iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
             await Console.Out.WriteLineAsync($"Got IV along with cyphertext: {iv}");
 
-            return encryptedMessage;
+            return new Cryptogramm
+            {
+                Cyphertext = encryptedMessage,
+                IV = iv,
+            };
         }
     }
 }

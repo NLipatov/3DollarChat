@@ -168,8 +168,8 @@
     {
         if(message.Type == MessageType.UserMessage)
         {
-            string key = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == topicName).Value.Value.ToString();
-            message.Payload = (await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = message.Payload }, contact: topicName)).PlainText;
+            message.Cryptogramm = await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm, contact: topicName);
+            message.Payload = message.Cryptogramm.PlainText;
             messages.Add(message);
             StateHasChanged();
         }
@@ -180,13 +180,12 @@
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
 
-        messageInput = (await _cryptographyService.EncryptAsync<AESHandler>
-        (new Cryptogramm() { Cyphertext = messageInput }, 
-        contact: topicName)).Cyphertext;
+        Cryptogramm cryptogramm = await _cryptographyService
+        .EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = messageInput }, contact: topicName);
 
         Message messageToSend = new Message
         {
-            Payload = messageInput,
+            Cryptogramm = cryptogramm,
             DateSent = DateTime.UtcNow,
             TargetGroup = topicName!,
             Sender = myName ?? throw new ApplicationException("Message was not send"),

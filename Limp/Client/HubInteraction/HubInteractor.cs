@@ -22,14 +22,17 @@ namespace Limp.Client.HubInteraction
         private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
         private readonly IJSRuntime _jSRuntime;
+        private readonly IMessageBox _messageBox;
         private string myName = string.Empty;
 
         public HubInteractor
-            (NavigationManager navigationManager,
-            IJSRuntime jSRuntime)
+        (NavigationManager navigationManager,
+        IJSRuntime jSRuntime,
+        IMessageBox messageBox)
         {
             _navigationManager = navigationManager;
             _jSRuntime = jSRuntime;
+            _messageBox = messageBox;
         }
 
         private async Task<string?> GetAccessToken() 
@@ -72,7 +75,7 @@ namespace Limp.Client.HubInteraction
         {
             if (onMessageReceive != null)
             {
-                Guid subscriptionId = MessageBox.Subsctibe(onMessageReceive);
+                Guid subscriptionId = _messageBox.Subsctibe(onMessageReceive);
                 subscriptions.Add(subscriptionId);
             }
 
@@ -118,7 +121,7 @@ namespace Limp.Client.HubInteraction
                     }
                 }
 
-                MessageBox.AddMessage(message);
+                await _messageBox.AddMessageAsync(message);
 
                 await messageDispatcherHub.SendAsync("MessageReceived", message.Id);
 
@@ -285,9 +288,9 @@ namespace Limp.Client.HubInteraction
             }
         }
 
-        public static List<Message> LoadStoredMessages(string topic)
+        public List<Message> LoadStoredMessages(string topic)
         {
-            return MessageBox.FetchMessagesFromMessageBox(topic);
+            return _messageBox.FetchMessagesFromMessageBox(topic);
         }
 
         public async Task SendMessage(Message message)
@@ -320,7 +323,7 @@ namespace Limp.Client.HubInteraction
             }
             foreach (var subscription in subscriptions)
             {
-                MessageBox.Unsubscribe(subscription);
+                _messageBox.Unsubscribe(subscription);
             }
         }
     }

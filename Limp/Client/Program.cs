@@ -1,6 +1,7 @@
 using Limp.Client;
 using Limp.Client.Cryptography;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -10,6 +11,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();
+builder.Services.AddSingleton<IMessageBox, MessageBox>();
 builder.Services.AddTransient<IMessageDecryptor, MessageDecryptor>();
 
 await builder.Build().RunAsync();

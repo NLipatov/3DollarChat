@@ -8,6 +8,7 @@
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+@using Limp.Client.TopicStorage;
 @using LimpShared.Encryption;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Utilities;
@@ -16,6 +17,7 @@
 @inject IJSRuntime jS;
 @inject ICryptographyService _cryptographyService
 @inject IMessageDecryptor _messageDecryptor
+@inject IMessageBox _messageBox
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -53,7 +55,7 @@
 
         <div class="message-input-box">
             <input @bind="messageInput" />
-            <button @onclick="SendMessage" disabled="@(!IsConnectedToMessageDispatcherHub || string.IsNullOrWhiteSpace(myName))">Send</button>
+            <button @onclick="async () => await SendMessage()" disabled="@(!IsConnectedToMessageDispatcherHub || string.IsNullOrWhiteSpace(myName))">Send</button>
         </div>
     }
 </div>
@@ -74,7 +76,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new(Navigation, jS);
+        _hubInteractor = new(Navigation, jS, _messageBox);
 
         _usersHubHandler = new(Navigation, jS, _cryptographyService);
 
@@ -141,7 +143,7 @@
             throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
         }
 
-        var messagesFromMessageBox = HubInteractor.LoadStoredMessages(topicName);
+        var messagesFromMessageBox = _hubInteractor.LoadStoredMessages(topicName);
         messages.AddRange(messagesFromMessageBox);
     }
 
@@ -154,11 +156,12 @@
 
     private async Task OnMessageReceived(Message message)
     {
+        if (message.Sender == "You")
+            return;
+
         if(message.Type == MessageType.UserMessage)
         {
-            var decryptedMessage = await _messageDecryptor.DecryptAsync(message);
-
-            messages.Add(decryptedMessage);
+            messages.Add(message);
             StateHasChanged();
         }
     }
@@ -180,6 +183,11 @@
         };
 
         await _hubInteractor.SendMessage(messageToSend);
+
+        messageToSend.Payload = messageInput;
+        messageToSend.Sender = "You";
+        messages.Add(messageToSend);
+        await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;
     }

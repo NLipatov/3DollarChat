@@ -6,11 +6,13 @@
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.TopicStorage;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject NavigationManager _navigationManager
 @inject ICryptographyService _cryptographyService
+@inject IMessageBox _messageBox
 @using ClientServerCommon.Models.Login;
 @inject IJSRuntime _jS
 @implements IAsyncDisposable
@@ -47,7 +49,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new HubInteractor(_navigationManager, _jS);
+        _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox);
 
         _authHubHandler = new AuthHandler(_navigationManager, _jS);
         _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService);

@@ -7,17 +7,15 @@
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 @using LimpShared.Encryption;
 @using Microsoft.AspNetCore.SignalR.Client;
-@using ClientServerCommon.Models;
-@using Limp.Client.HubInteraction;
 @using Limp.Client.Utilities;
-@using Microsoft.AspNetCore.SignalR.Client
 @using Limp.Client.Pages;
-@using Limp.Client.Cryptography.KeyStorage;
 @inject NavigationManager Navigation
 @inject IJSRuntime jS;
 @inject ICryptographyService _cryptographyService
+@inject IMessageDecryptor _messageDecryptor
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -68,10 +66,8 @@
     private HubConnection? messageDispatcherHub;
     public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private List<Message> messages { get; set; } = new();
-    private string messageInput = string.Empty; 
-    private string myConnectionId { get; set; } = string.Empty;
+    private string messageInput = string.Empty;
     private List<UserConnections> userConnections { get; set; } = new();
-    private string accessToken = string.Empty;
     HubInteractor? _hubInteractor;
     private bool isConversationAESExists { get; set; } = false;
     private UsersHandler? _usersHubHandler;
@@ -79,15 +75,8 @@
     protected override async Task OnInitializedAsync()
     {
         _hubInteractor = new(Navigation, jS);
-        accessToken = await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
         _usersHubHandler = new(Navigation, jS, _cryptographyService);
-
-        UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
-        {
-            myConnectionId = id;
-            StateHasChanged();
-        });
 
         UsersHubSubscriptionManager.SubscribeToUsersConnectionsReceived((userConnectionsList) =>
         {
@@ -97,13 +86,12 @@
 
         await _usersHubHandler.ConnectAsync();
 
-        await ConnectToHubsAsync(accessToken);
+        await ConnectToHubsAsync();
 
         LoadPreviousMessagesForThisTopic();
     }
-    private async Task<string> GetAccessToken() => await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
 
-    private async Task ConnectToHubsAsync(string accessToken)
+    private async Task ConnectToHubsAsync()
     {
         messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync
         (OnMessageReceived, 
@@ -168,9 +156,9 @@
     {
         if(message.Type == MessageType.UserMessage)
         {
-            message.Cryptogramm = await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm, contact: topicName);
-            message.Payload = message.Cryptogramm.PlainText;
-            messages.Add(message);
+            var decryptedMessage = await _messageDecryptor.DecryptAsync(message);
+
+            messages.Add(decryptedMessage);
             StateHasChanged();
         }
     }

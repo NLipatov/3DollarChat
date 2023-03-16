@@ -1,0 +1,19 @@
+﻿<div class="encryption-disclaimer">
+    <div class="encryption-message-header">
+        <span>Please, wait while we working on security and privacy of this chat</span>
+    </div>
+    <div class="encryption-message-body">
+        <span>
+            @(IsThereAnAESKey ? 
+            "AES Key for conversation was generated"
+            :
+            "Creating a new AES encryption key for your conversation."
+            )
+        </span>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool IsThereAnAESKey { get; set; } = false;
+}

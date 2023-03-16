@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models;
+﻿using ClientServerCommon.Models.Message;
 using Confluent.Kafka;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Text.Json;

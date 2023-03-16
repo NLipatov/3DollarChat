@@ -2,6 +2,7 @@
 using ClientServerCommon.Models.Login;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Authentification;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs

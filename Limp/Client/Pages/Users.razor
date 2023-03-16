@@ -1,12 +1,20 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
+@using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.EventSubscriptionManager;
+@using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.TopicStorage;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
-@inject NavigationManager Navigation
+@inject NavigationManager _navigationManager
+@inject ICryptographyService _cryptographyService
+@inject IMessageBox _messageBox
 @using ClientServerCommon.Models.Login;
-@inject IJSRuntime jS
+@inject IJSRuntime _jS
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -30,77 +38,69 @@
 @code {
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
-    private string? accessToken { get; set; }
-    private string? refreshToken { get; set; }
+    private AuthHandler? _authHubHandler;
+    private UsersHandler? _usersHubHandler;
     private HubInteractor? _hubInteractor;
 
     private async Task RedirectToChat(string username)
     {
-        Navigation.NavigateTo($"/user/{username}");
+        _navigationManager.NavigateTo($"/user/{username}");
     }
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new HubInteractor(Navigation);
+        _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox);
 
-        accessToken = await jS.InvokeAsync<string?>("localStorage.getItem", "access-token");
-        refreshToken = await jS.InvokeAsync<string?>("localStorage.getItem", "refresh-token");
+        _authHubHandler = new AuthHandler(_navigationManager, _jS);
+        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService);
 
-        if (String.IsNullOrWhiteSpace(accessToken))
+        if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
-            Navigation.NavigateTo("login");
+            _navigationManager.NavigateTo("login");
             return;
         }
 
-        await _hubInteractor.ConnectToAuthHubAsync(accessToken, refreshToken, OnTokensRefreshAsync);
-
-        await _hubInteractor.ConnectToUsersHubAsync(accessToken, onConnectionIdReceive, onOnlineUsersReceive, OnUsernameResolved);
-
-    }
-
-    private async Task OnUsernameResolved(string username)
-    {
-        if(_hubInteractor != null)
+        AuthHubSubscriptionManager.SubscribeToJWTPairRefresh(async (result) =>
         {
-            await _hubInteractor.ConnectToMessageDispatcherHubAsync(accessToken);
-        }
-    }
+            JWTPair? pair = result.JWTPair;
+            if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
+                _navigationManager.NavigateTo("/login");
 
-    private async Task OnTokensRefreshAsync(AuthResult result)
-    {
-        JWTPair? pair = result.JWTPair;
-        if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
-            Navigation.NavigateTo("/login");
+            if (result.Result == AuthResultType.Success)
+            {
+                await _jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
+                await _jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
+            }
+        });
 
-        if (result.Result == AuthResultType.Success)
+        UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
         {
-            await jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
-            await jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
-        }
-    }
+            myConnectionId = id;
+            StateHasChanged();
+        });
 
-    private void onConnectionIdReceive(string connectionId)
-    {
-        myConnectionId = connectionId;
-        StateHasChanged();
-    }
+        UsersHubSubscriptionManager.SubscribeToUsersConnectionsReceived((userConnectionsList) =>
+        {
+            userConnections = userConnectionsList;
+            StateHasChanged();
+        });
 
-    private void onOnlineUsersReceive(List<UserConnections> usersConnectedData)
-    {
-        userConnections = usersConnectedData;
-        StateHasChanged();
-    }
+        UsersHubSubscriptionManager.SubscribeToUsernameResolved(async (username) =>
+        {
+            if (_hubInteractor != null)
+            {
+                await _hubInteractor.ConnectToMessageDispatcherHubAsync(cryptographyService: _cryptographyService);
+            }
+        });
 
-    private async Task<string> GetStoredAccessTokenAsync()
-    {
-        return await jS.InvokeAsync<string>("localStorage.getItem", "access-token");
+        await _authHubHandler.ConnectAsync();
+        await _usersHubHandler.ConnectAsync();
     }
 
     public async ValueTask DisposeAsync()
     {
-        if (_hubInteractor != null)
-        {
-            await _hubInteractor.DisposeAsync();
-        }
+        _usersHubHandler?.Dispose();
+        _authHubHandler?.Dispose();
+        await _hubInteractor?.DisposeAsync();
     }
 }

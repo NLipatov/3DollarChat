@@ -2,6 +2,7 @@
 using Limp.Client.Utilities;
 using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -31,15 +32,35 @@ namespace Limp.Server.Hubs
             await PushOnlineUsersToClients();
         }
 
+        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        {
+            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+
+            string? username = isTokenValid ? TokenReader.GetUsername(accessToken) : null;
+
+            if (isTokenValid && !string.IsNullOrWhiteSpace(username))
+            {
+                await PostAnRSAPublic(RSAPublicKey.Value.ToString(), username);
+            }
+            else
+            {
+                throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
+            }
+        }
+
         public async Task SetUsername(string accessToken)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
 
             var username = isTokenValid ? TokenReader.GetUsername(accessToken) : $"Anonymous_{Guid.NewGuid()}";
 
+            Key publicKey = TokenReader.GetPublicKey(accessToken, username);
+
             if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
             {
                 InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
+                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).RSAPublicKey = publicKey;
+
                 InMemoryUsersStorage.UserConnections.Remove
                     (InMemoryUsersStorage
                     .UserConnections
@@ -50,6 +71,10 @@ namespace Limp.Server.Hubs
                 InMemoryUsersStorage
                     .UserConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
+
+                InMemoryUsersStorage
+                    .UserConnections
+                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).RSAPublicKey = publicKey;
             }
 
             await PushOnlineUsersToClients();
@@ -70,6 +95,11 @@ namespace Limp.Server.Hubs
         public async Task PushConId()
         {
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
+        }
+
+        public async Task PostAnRSAPublic(string username, string PEMEncodedRSAPublicKey)
+        {
+            await _serverHttpClient.PostAnRSAPublic(username, PEMEncodedRSAPublicKey);
         }
     }
 }

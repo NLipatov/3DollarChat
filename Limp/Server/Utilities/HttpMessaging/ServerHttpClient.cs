@@ -1,6 +1,7 @@
 ﻿using AuthAPI.DTOs.User;
 using ClientServerCommon.Models.Login;
 using LimpShared.Authentification;
+using LimpShared.DTOs.PublicKey;
 using LimpShared.DTOs.User;
 using LimpShared.ResultTypeEnum;
 using System.Text;
@@ -127,6 +128,28 @@ namespace Limp.Server.Utilities.HttpMessaging
                 return false;
 
             return result.ResultType == OperationResultType.Success;
+        }
+
+        public async Task PostAnRSAPublic(string PEMEncodedRSAPublicKey, string username)
+        {
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
+
+            using(HttpClient client = new())
+            {
+                await client.PostAsJsonAsync(requestUrl, new PublicKeyDTO { Username = username, Key = PEMEncodedRSAPublicKey});
+            }
+        }
+
+        public async Task<string?> GetAnRSAPublicKey(string username)
+        {
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
+
+            using(HttpClient client = new())
+            {
+                var response = await client.GetAsync(requestUrl);
+                var pemEncodedKey = await response.Content.ReadAsStringAsync();
+                return pemEncodedKey;
+            }
         }
     }
 }

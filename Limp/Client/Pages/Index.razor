@@ -30,17 +30,14 @@
 @code {
     private string RSAinputValue { get; set; } = string.Empty;
     private string AESinputValue { get; set; } = string.Empty;
-    //private CryptographyService _cryptographyService { get; set; }
     private string demoContact = "demo";
     private string IV = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
-        //_cryptographyService = new(_js);
         await _cryptographyService.GenerateRSAKeyPairAsync();
         await _cryptographyService.GenerateAESKeyAsync(demoContact, (key) =>
         {
-            Console.WriteLine(key);
         });
     }
 

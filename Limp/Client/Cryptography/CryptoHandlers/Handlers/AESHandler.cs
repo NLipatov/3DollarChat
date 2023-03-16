@@ -51,7 +51,6 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
                 .InvokeAsync<string>("AESEncryptMessage", cryptogramm.Cyphertext, aesKey);
 
             string iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
-            await Console.Out.WriteLineAsync($"Got IV along with cyphertext: {iv}");
 
             return new Cryptogramm
             {

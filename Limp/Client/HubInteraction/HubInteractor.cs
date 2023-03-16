@@ -220,8 +220,6 @@ namespace Limp.Client.HubInteraction
                     Payload = encryptedAESKey
                 };
 
-                await Console.Out.WriteLineAsync($"{partnersUsername} will receive {encryptedAESKey} as a key.");
-
                 await SendMessage(offerOnAES);
 
                 if(OnAESGeneratedCallback != null)

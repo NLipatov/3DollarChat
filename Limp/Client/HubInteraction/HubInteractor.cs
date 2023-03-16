@@ -71,7 +71,7 @@ namespace Limp.Client.HubInteraction
         Func<string, Task>? onUsernameResolve = null, 
         Action<Guid>? onMessageReceivedByRecepient = null,
         ICryptographyService? cryptographyService = null,
-        Action? OnAESGeneratedCallback = null)
+        Func<Task>? OnAESAcceptedCallback = null)
         {
             if (onMessageReceive != null)
             {
@@ -87,6 +87,15 @@ namespace Limp.Client.HubInteraction
             {
                 if(message.Sender != "You")
                 {
+                    if(message.Type == MessageType.AESAccept)
+                    {
+                        if(OnAESAcceptedCallback != null)
+                        {
+                            await OnAESAcceptedCallback();
+                        }
+                        return;
+                    }
+
                     if (cryptographyService == null)
                         throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
 
@@ -108,14 +117,22 @@ namespace Limp.Client.HubInteraction
                             Value = decryptedAESKey,
                             Contact = message.Sender,
                             Format = KeyFormat.RAW,
-                            Type = KeyType.AES
+                            Type = KeyType.AES,
+                            Author = "You"
                         };
 
                         if (!string.IsNullOrWhiteSpace(message.Sender))
                         {
-                            InMemoryKeyStorage.AESKeyStorage.Add(message.Sender, aesKeyForConversation);
+                            InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
                             await Console.Out.WriteLineAsync($"Added an AES key for {message.Sender}");
                             await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString()}");
+
+                            await SendMessage(new Message
+                            {
+                                Sender = message.TargetGroup,
+                                Type = MessageType.AESAccept,
+                                TargetGroup = message.Sender,
+                            });
                         }
                         return;
                     }
@@ -143,7 +160,7 @@ namespace Limp.Client.HubInteraction
                 if (partnersUsername == "You")
                     return;
                 //Storing Public Key in our in-memory storage
-                InMemoryKeyStorage.RSAKeyStorage.Add(partnersUsername, new Key
+                InMemoryKeyStorage.RSAKeyStorage.TryAdd(partnersUsername, new Key
                 {
                     Type = KeyType.RSAPublic,
                     Contact = partnersUsername,
@@ -153,7 +170,7 @@ namespace Limp.Client.HubInteraction
 
                 //Now we can send an encrypted offer on AES Key
                 //We will encrypt our offer with a partners RSA Public Key
-                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey, OnAESGeneratedCallback);
+                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
             if (onUsernameResolve != null)
@@ -183,8 +200,7 @@ namespace Limp.Client.HubInteraction
         private async Task GenerateAESAndSendItToPartner
         (ICryptographyService cryptographyService, 
         string partnersUsername, 
-        string partnersPublicKey,
-        Action? OnAESGeneratedCallback = null)
+        string partnersPublicKey)
         {
             if(InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x=>x.Key == partnersUsername).Value != null)
             {
@@ -221,11 +237,6 @@ namespace Limp.Client.HubInteraction
                 };
 
                 await SendMessage(offerOnAES);
-
-                if(OnAESGeneratedCallback != null)
-                {
-                    OnAESGeneratedCallback();
-                }
             });
         }
 

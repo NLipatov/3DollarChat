@@ -3,5 +3,6 @@
 public enum MessageType
 {
     UserMessage,
-    AESOffer
+    AESOffer,
+    AESAccept
 }

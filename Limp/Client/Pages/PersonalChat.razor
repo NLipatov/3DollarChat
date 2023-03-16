@@ -23,10 +23,10 @@
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-    @if (!isConversationAESExists)
+    @if (!isAcceptedAESKeyExists)
     {
         <KeyTransfer 
-            IsThereAnAESKey=isConversationAESExists/>
+            IsThereAnAESKey=isAcceptedAESKeyExists/>
     }
     else
     {
@@ -71,7 +71,7 @@
     private string messageInput = string.Empty;
     private List<UserConnections> userConnections { get; set; } = new();
     HubInteractor? _hubInteractor;
-    private bool isConversationAESExists { get; set; } = false;
+    private bool isAcceptedAESKeyExists { get; set; } = false;
     private UsersHandler? _usersHubHandler;
 
     protected override async Task OnInitializedAsync()
@@ -100,7 +100,7 @@
         OnUsernameResolve, 
         onMessageReceivedByRecepient, 
         cryptographyService: _cryptographyService, 
-        OnAESGeneratedCallback: OnAESKeyReady);
+        OnAESAcceptedCallback: OnAESKeyReadyAsync);
     }
 
     private async Task GetAnAESKeyForConversation()
@@ -114,15 +114,16 @@
         else
         {
             Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value.Value.ToString()}");
-            isConversationAESExists = true;
+            isAcceptedAESKeyExists = true;
             StateHasChanged();
         }
     }
 
-    private void OnAESKeyReady()
+    private async Task OnAESKeyReadyAsync()
     {
+        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == topicName).Value.IsAccepted = true;
         string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString();
-        isConversationAESExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        isAcceptedAESKeyExists = !string.IsNullOrWhiteSpace(keyForConversation);
         StateHasChanged();
     }
 

@@ -20,7 +20,7 @@ namespace Limp.Server.Hubs.MessageDispatching
             _messageBrokerService = messageBrokerService;
         }
 
-        private static bool IsClientConnectedToHub(string username) => InMemoryUsersStorage.UserConnections.Any(x => x.Username == username);
+        private static bool IsClientConnectedToHub(string username) => InMemoryUsersStorage.UsersHubConnections.Any(x => x.Username == username);
 
         /// <summary>
         /// Checks if target user is connected to the same hub.
@@ -89,11 +89,9 @@ namespace Limp.Server.Hubs.MessageDispatching
 
             var username = usernameRequest.Username;
 
-            if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
+            if (InMemoryUsersStorage.UsersHubConnections.Any(x => x.Username == username))
             {
-                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
-
-                foreach (var connection in InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds)
+                foreach (var connection in InMemoryUsersStorage.UsersHubConnections.First(x => x.Username == username).ConnectionIds)
                 {
                     await Groups.AddToGroupAsync(connection, username);
                 }
@@ -101,7 +99,7 @@ namespace Limp.Server.Hubs.MessageDispatching
             else
             {
                 InMemoryUsersStorage
-                    .UserConnections
+                    .UsersHubConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
             }
 

@@ -1,6 +1,5 @@
 using Limp.Server.Extensions;
 using Limp.Server.Hubs;
-using Limp.Server.Hubs.MessageDispatching;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);

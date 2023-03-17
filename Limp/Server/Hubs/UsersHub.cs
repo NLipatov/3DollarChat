@@ -16,23 +16,23 @@ namespace Limp.Server.Hubs
         }
         public async override Task OnConnectedAsync()
         {
-            lock(InMemoryUsersStorage.UsersHubConnections)
+            lock(InMemoryHubConnectionStorage.UsersHubConnections)
             {
-                if (!InMemoryUsersStorage.UsersHubConnections.Any(x => x.ConnectionIds.Contains(Context.ConnectionId)))
+                if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.ConnectionIds.Contains(Context.ConnectionId)))
                 {
-                    InMemoryUsersStorage.UsersHubConnections.Add(new UserConnections { ConnectionIds = new List<string>() { Context.ConnectionId } });
+                    InMemoryHubConnectionStorage.UsersHubConnections.Add(new UserConnections { ConnectionIds = new List<string>() { Context.ConnectionId } });
                 }
             }
         }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
         {
-            lock(InMemoryUsersStorage.UsersHubConnections)
+            lock(InMemoryHubConnectionStorage.UsersHubConnections)
             {
                 var targetConnectionId = Context.ConnectionId;
-                InMemoryUsersStorage.UsersHubConnections.First(x => x.ConnectionIds.Contains(targetConnectionId)).ConnectionIds.Remove(targetConnectionId);
+                InMemoryHubConnectionStorage.UsersHubConnections.First(x => x.ConnectionIds.Contains(targetConnectionId)).ConnectionIds.Remove(targetConnectionId);
 
-                InMemoryUsersStorage.UsersHubConnections.RemoveAll(x => x.ConnectionIds.Count == 0);
+                InMemoryHubConnectionStorage.UsersHubConnections.RemoveAll(x => x.ConnectionIds.Count == 0);
             }
 
             await PushOnlineUsersToClients();
@@ -62,23 +62,23 @@ namespace Limp.Server.Hubs
 
             Key publicKey = TokenReader.GetPublicKey(accessToken, username);
 
-            if (InMemoryUsersStorage.UsersHubConnections.Any(x => x.Username == username))
+            if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Username == username))
             {
-                InMemoryUsersStorage.UsersHubConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
-                InMemoryUsersStorage.UsersHubConnections.First(x => x.Username == username).RSAPublicKey = publicKey;
+                InMemoryHubConnectionStorage.UsersHubConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
+                InMemoryHubConnectionStorage.UsersHubConnections.First(x => x.Username == username).RSAPublicKey = publicKey;
 
-                InMemoryUsersStorage.UsersHubConnections.Remove
-                    (InMemoryUsersStorage
+                InMemoryHubConnectionStorage.UsersHubConnections.Remove
+                    (InMemoryHubConnectionStorage
                     .UsersHubConnections
                     .First(x => x.ConnectionIds.Count == 1 && x.ConnectionIds.Contains(Context.ConnectionId)));
             }
             else
             {
-                InMemoryUsersStorage
+                InMemoryHubConnectionStorage
                     .UsersHubConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
 
-                InMemoryUsersStorage
+                InMemoryHubConnectionStorage
                     .UsersHubConnections
                     .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).RSAPublicKey = publicKey;
             }
@@ -95,7 +95,7 @@ namespace Limp.Server.Hubs
 
         public async Task PushOnlineUsersToClients()
         {
-            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryUsersStorage.UsersHubConnections);
+            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryHubConnectionStorage.UsersHubConnections);
         }
 
         public async Task PushConId()

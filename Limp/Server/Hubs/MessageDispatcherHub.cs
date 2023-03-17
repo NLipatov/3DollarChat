@@ -1,11 +1,12 @@
 ﻿using ClientServerCommon.Models.Message;
+using Limp.Server.Hubs.MessageDispatching;
 using Limp.Server.Hubs.UserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs.MessageDispatching
+namespace Limp.Server.Hubs
 {
     public class MessageDispatcherHub : Hub
     {
@@ -20,7 +21,7 @@ namespace Limp.Server.Hubs.MessageDispatching
             _messageBrokerService = messageBrokerService;
         }
 
-        private static bool IsClientConnectedToHub(string username) => InMemoryUsersStorage.UsersHubConnections.Any(x => x.Username == username);
+        private static bool IsClientConnectedToHub(string username) => InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
 
         /// <summary>
         /// Checks if target user is connected to the same hub.
@@ -89,18 +90,28 @@ namespace Limp.Server.Hubs.MessageDispatching
 
             var username = usernameRequest.Username;
 
-            if (InMemoryUsersStorage.UsersHubConnections.Any(x => x.Username == username))
+            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username))
             {
-                foreach (var connection in InMemoryUsersStorage.UsersHubConnections.First(x => x.Username == username).ConnectionIds)
-                {
-                    await Groups.AddToGroupAsync(connection, username);
-                }
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                    .First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
             }
             else
             {
-                InMemoryUsersStorage
-                    .UsersHubConnections
-                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
+                InMemoryHubConnectionStorage
+                    .MessageDispatcherHubConnections
+                    .Add(new ClientServerCommon.Models.UserConnections
+                    {
+                        Username = username,
+                        ConnectionIds = new List<string> { Context.ConnectionId }
+                    });
+            }
+
+            foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x=>!string.IsNullOrWhiteSpace(x.Username)))
+            {
+                foreach (var connectionId in connection.ConnectionIds)
+                {
+                    await Groups.AddToGroupAsync(connectionId, username);
+                }
             }
 
             await Clients.Caller.SendAsync("OnMyNameResolve", username);

@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models;
 
-namespace Limp.Server.Hubs.UserStorage
+namespace Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage
 {
     public static class InMemoryHubConnectionStorage
     {

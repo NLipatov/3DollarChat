@@ -37,7 +37,7 @@ namespace Limp.Client.Cryptography
                     InMemoryKeyStorage.MyRSAPrivate = cryptoKey;
                     break;
                 case (KeyType.AES):
-                    InMemoryKeyStorage.AESKeyStorage.Add(contact!, cryptoKey);
+                    InMemoryKeyStorage.AESKeyStorage.TryAdd(contact!, cryptoKey);
                     if (OnAESGeneratedCallback != null)
                     {
                         OnAESGeneratedCallback(cryptoKey.Value.ToString());
@@ -66,7 +66,7 @@ namespace Limp.Client.Cryptography
             Key? ExistingKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contactName);
 
             if (ExistingKey is null)
-                InMemoryKeyStorage.AESKeyStorage.Add(contactName, key);
+                InMemoryKeyStorage.AESKeyStorage.TryAdd(contactName, key);
             else
                 InMemoryKeyStorage.AESKeyStorage[contactName] = key;
         }

@@ -1,6 +1,7 @@
 ﻿using ClientServerCommon.Models;
 using Limp.Client.Utilities;
-using Limp.Server.Hubs.UserStorage;
+using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
@@ -10,27 +11,24 @@ namespace Limp.Server.Hubs
     public class UsersHub : Hub
     {
         private readonly IServerHttpClient _serverHttpClient;
-        public UsersHub(IServerHttpClient serverHttpClient)
+        private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
+
+        public UsersHub
+        (IServerHttpClient serverHttpClient,
+        IUserConnectedHandler<UsersHub> userConnectedHandler)
         {
             _serverHttpClient = serverHttpClient;
+            _userConnectedHandler = userConnectedHandler;
         }
-        public async override Task OnConnectedAsync()
-        {
-            if (!InMemoryUsersStorage.UserConnections.Any(x => x.ConnectionIds.Contains(Context.ConnectionId)))
-            {
-                InMemoryUsersStorage.UserConnections.Add(new UserConnections { ConnectionIds = new List<string>() { Context.ConnectionId } });
-            }
-        }
+        public async override Task OnConnectedAsync() => _userConnectedHandler.OnConnect(Context.ConnectionId);
 
-        public async override Task OnDisconnectedAsync(Exception? exception)
-        {
-            var targetConnectionId = Context.ConnectionId;
-            InMemoryUsersStorage.UserConnections.First(x => x.ConnectionIds.Contains(targetConnectionId)).ConnectionIds.Remove(targetConnectionId);
-
-            InMemoryUsersStorage.UserConnections.RemoveAll(x => x.ConnectionIds.Count == 0);
-
-            await PushOnlineUsersToClients();
-        }
+        public async override Task OnDisconnectedAsync(Exception? exception) => _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
+        
+        public async Task SetUsername(string accessToken) => await _userConnectedHandler
+            .OnUsernameResolved
+            (Context.ConnectionId,
+            accessToken,
+            CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {
@@ -48,35 +46,8 @@ namespace Limp.Server.Hubs
             }
         }
 
-        public async Task SetUsername(string accessToken)
+        private async Task OnUsernameResolvedHandlers(string username)
         {
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
-
-            var username = isTokenValid ? TokenReader.GetUsername(accessToken) : $"Anonymous_{Guid.NewGuid()}";
-
-            Key publicKey = TokenReader.GetPublicKey(accessToken, username);
-
-            if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
-            {
-                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
-                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).RSAPublicKey = publicKey;
-
-                InMemoryUsersStorage.UserConnections.Remove
-                    (InMemoryUsersStorage
-                    .UserConnections
-                    .First(x => x.ConnectionIds.Count == 1 && x.ConnectionIds.Contains(Context.ConnectionId)));
-            }
-            else
-            {
-                InMemoryUsersStorage
-                    .UserConnections
-                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
-
-                InMemoryUsersStorage
-                    .UserConnections
-                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).RSAPublicKey = publicKey;
-            }
-
             await PushOnlineUsersToClients();
             await PushConId();
             await PushResolvedName(username);
@@ -89,7 +60,7 @@ namespace Limp.Server.Hubs
 
         public async Task PushOnlineUsersToClients()
         {
-            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryUsersStorage.UserConnections);
+            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryHubConnectionStorage.UsersHubConnections);
         }
 
         public async Task PushConId()

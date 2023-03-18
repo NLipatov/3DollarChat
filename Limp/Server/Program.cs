@@ -1,6 +1,7 @@
 using Limp.Server.Extensions;
 using Limp.Server.Hubs;
-using Limp.Server.Hubs.MessageDispatching;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,6 +21,9 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.UseServerHttpClient();
 
 builder.Services.UseKafkaService();
+
+builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>();
+builder.Services.AddScoped<IUserConnectedHandler<MessageDispatcherHub>, MDConnectionHandler>();
 
 var app = builder.Build();
 

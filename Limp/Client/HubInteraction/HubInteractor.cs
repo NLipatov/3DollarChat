@@ -35,7 +35,7 @@ namespace Limp.Client.HubInteraction
             _messageBox = messageBox;
         }
 
-        private async Task<string?> GetAccessToken() 
+        private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
 
         private async Task<string?> GetRefreshToken()
@@ -65,13 +65,13 @@ namespace Limp.Client.HubInteraction
 
             return authHub;
         }
-        
+
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-        (Func<Message, Task>? onMessageReceive = null, 
-        Func<string, Task>? onUsernameResolve = null, 
+        (Func<Message, Task>? onMessageReceive = null,
+        Func<string, Task>? onUsernameResolve = null,
         Action<Guid>? onMessageReceivedByRecepient = null,
         ICryptographyService? cryptographyService = null,
-        Action? OnAESGeneratedCallback = null)
+        Func<Task>? OnAESAcceptedCallback = null)
         {
             if (onMessageReceive != null)
             {
@@ -85,18 +85,29 @@ namespace Limp.Client.HubInteraction
 
             messageDispatcherHub.On<Message>("ReceiveMessage", async message =>
             {
-                if(message.Sender != "You")
+                if (message.Sender != "You")
                 {
+                    if (message.Type == MessageType.AESAccept)
+                    {
+                        if (OnAESAcceptedCallback != null)
+                        {
+                            await OnAESAcceptedCallback();
+                        }
+                        return;
+                    }
+
                     if (cryptographyService == null)
                         throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
 
                     if (message.Type == MessageType.AESOffer)
                     {
+                        Console.WriteLine("Got AES Key offer.");
+
                         string? encryptedAESKey = message.Payload;
                         if (string.IsNullOrWhiteSpace(encryptedAESKey))
                             throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey})).PlainText;
+                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey })).PlainText;
 
                         if (string.IsNullOrWhiteSpace(decryptedAESKey))
                             throw new ArgumentException("Could not decrypt an AES Key.");
@@ -108,14 +119,25 @@ namespace Limp.Client.HubInteraction
                             Value = decryptedAESKey,
                             Contact = message.Sender,
                             Format = KeyFormat.RAW,
-                            Type = KeyType.AES
+                            Type = KeyType.AES,
+                            Author = message.Sender
                         };
 
                         if (!string.IsNullOrWhiteSpace(message.Sender))
                         {
-                            InMemoryKeyStorage.AESKeyStorage.Add(message.Sender, aesKeyForConversation);
+                            bool keyAdditionResult = InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
+                            if (!keyAdditionResult)
+                                throw new ApplicationException($"Could not add AES Key for {message.Sender} due to unhandled exception.");
+
                             await Console.Out.WriteLineAsync($"Added an AES key for {message.Sender}");
                             await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString()}");
+
+                            await SendMessage(new Message
+                            {
+                                Sender = message.TargetGroup,
+                                Type = MessageType.AESAccept,
+                                TargetGroup = message.Sender,
+                            });
                         }
                         return;
                     }
@@ -143,7 +165,7 @@ namespace Limp.Client.HubInteraction
                 if (partnersUsername == "You")
                     return;
                 //Storing Public Key in our in-memory storage
-                InMemoryKeyStorage.RSAKeyStorage.Add(partnersUsername, new Key
+                InMemoryKeyStorage.RSAKeyStorage.TryAdd(partnersUsername, new Key
                 {
                     Type = KeyType.RSAPublic,
                     Contact = partnersUsername,
@@ -153,7 +175,7 @@ namespace Limp.Client.HubInteraction
 
                 //Now we can send an encrypted offer on AES Key
                 //We will encrypt our offer with a partners RSA Public Key
-                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey, OnAESGeneratedCallback);
+                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
             if (onUsernameResolve != null)
@@ -181,12 +203,11 @@ namespace Limp.Client.HubInteraction
         }
 
         private async Task GenerateAESAndSendItToPartner
-        (ICryptographyService cryptographyService, 
-        string partnersUsername, 
-        string partnersPublicKey,
-        Action? OnAESGeneratedCallback = null)
+        (ICryptographyService cryptographyService,
+        string partnersUsername,
+        string partnersPublicKey)
         {
-            if(InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x=>x.Key == partnersUsername).Value != null)
+            if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnersUsername).Value != null)
             {
                 return;
             }
@@ -202,7 +223,7 @@ namespace Limp.Client.HubInteraction
 
                 //When this callback is called, AES key for conversation is already generated
                 //We now need to encrypt this AES key and send it to partner
-                string encryptedAESKey = (await cryptographyService
+                string? encryptedAESKey = (await cryptographyService
                 .EncryptAsync<RSAHandler>
                     (new Cryptogramm { Cyphertext = offeredAESKeyForConversation },
                     //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
@@ -220,14 +241,7 @@ namespace Limp.Client.HubInteraction
                     Payload = encryptedAESKey
                 };
 
-                await Console.Out.WriteLineAsync($"{partnersUsername} will receive {encryptedAESKey} as a key.");
-
                 await SendMessage(offerOnAES);
-
-                if(OnAESGeneratedCallback != null)
-                {
-                    OnAESGeneratedCallback();
-                }
             });
         }
 

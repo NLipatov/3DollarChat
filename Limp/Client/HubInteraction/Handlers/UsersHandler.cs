@@ -59,5 +59,15 @@ public class UsersHandler : IHandler<UsersHandler>
     public void Dispose()
     {
         UsersHubSubscriptionManager.UnsubscriveAll();
+        DisposeUsersHub();
+    }
+
+    private async Task DisposeUsersHub()
+    {
+        if(usersHub != null)
+        {
+            await usersHub.StopAsync();
+            await usersHub.DisposeAsync();
+        }
     }
 }

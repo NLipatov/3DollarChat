@@ -1,26 +1,46 @@
 ﻿using ClientServerCommon.Models.Message;
-using Limp.Server.Hubs.UserStorage;
+using Limp.Server.Hubs.MessageDispatching;
+using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
-using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs.MessageDispatching
+namespace Limp.Server.Hubs
 {
     public class MessageDispatcherHub : Hub
     {
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IMessageBrokerService _messageBrokerService;
+        private readonly IUserConnectedHandler<MessageDispatcherHub> _userConnectedHandler;
 
         public MessageDispatcherHub
-            (IServerHttpClient serverHttpClient,
-            IMessageBrokerService messageBrokerService)
+        (IServerHttpClient serverHttpClient,
+        IMessageBrokerService messageBrokerService,
+        IUserConnectedHandler<MessageDispatcherHub> userConnectedHandler)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
+            _userConnectedHandler = userConnectedHandler;
         }
 
-        private static bool IsClientConnectedToHub(string username) => InMemoryUsersStorage.UserConnections.Any(x => x.Username == username);
+        private static bool IsClientConnectedToHub(string username)
+        {
+            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            {
+                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
+            }
+        }
+
+        public async override Task OnConnectedAsync()
+            => _userConnectedHandler.OnConnect(Context.ConnectionId);
+
+        public async override Task OnDisconnectedAsync(Exception? exception)
+            => _userConnectedHandler.OnDisconnect(Context.ConnectionId);
+
+        public async Task SetUsername(string accessToken)
+            => await _userConnectedHandler.OnUsernameResolved(Context.ConnectionId, accessToken, Groups.AddToGroupAsync, Clients.Caller.SendAsync);
+
 
         /// <summary>
         /// Checks if target user is connected to the same hub.
@@ -31,6 +51,9 @@ namespace Limp.Server.Hubs.MessageDispatching
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
+            if (string.IsNullOrWhiteSpace(message.TargetGroup))
+                throw new ArgumentException("Invalid target group of a message.");
+
             switch (IsClientConnectedToHub(message.TargetGroup))
             {
                 case true:
@@ -38,7 +61,8 @@ namespace Limp.Server.Hubs.MessageDispatching
                     break;
 
                 case false:
-                    await Ship(message);
+                    await Task.Delay(1000);
+                    await Dispatch(message);
                     break;
 
                 default:
@@ -81,31 +105,6 @@ namespace Limp.Server.Hubs.MessageDispatching
                 MessageStore.UnprocessedMessages.Remove(deliveredMessage);
                 await Clients.Group(deliveredMessage.Sender).SendAsync("MessageWasReceivedByRecepient", messageId);
             }
-        }
-
-        public async Task SetUsername(string accessToken)
-        {
-            TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-
-            var username = usernameRequest.Username;
-
-            if (InMemoryUsersStorage.UserConnections.Any(x => x.Username == username))
-            {
-                InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds.Add(Context.ConnectionId);
-
-                foreach (var connection in InMemoryUsersStorage.UserConnections.First(x => x.Username == username).ConnectionIds)
-                {
-                    await Groups.AddToGroupAsync(connection, username);
-                }
-            }
-            else
-            {
-                InMemoryUsersStorage
-                    .UserConnections
-                    .First(x => x.ConnectionIds.Contains(Context.ConnectionId)).Username = username;
-            }
-
-            await Clients.Caller.SendAsync("OnMyNameResolve", username);
         }
         public async Task GetAnRSAPublic(string username)
         {

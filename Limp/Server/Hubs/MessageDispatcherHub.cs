@@ -4,7 +4,6 @@ using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
-using LimpShared.Authentification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -25,7 +24,13 @@ namespace Limp.Server.Hubs
             _userConnectedHandler = userConnectedHandler;
         }
 
-        private static bool IsClientConnectedToHub(string username) => InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
+        private static bool IsClientConnectedToHub(string username)
+        {
+            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            {
+                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
+            }
+        }
 
         public async override Task OnConnectedAsync()
             => _userConnectedHandler.OnConnect(Context.ConnectionId);
@@ -46,6 +51,9 @@ namespace Limp.Server.Hubs
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
+            if (string.IsNullOrWhiteSpace(message.TargetGroup))
+                throw new ArgumentException("Invalid target group of a message.");
+
             switch (IsClientConnectedToHub(message.TargetGroup))
             {
                 case true:
@@ -53,7 +61,8 @@ namespace Limp.Server.Hubs
                     break;
 
                 case false:
-                    await Ship(message);
+                    await Task.Delay(1000);
+                    await Dispatch(message);
                     break;
 
                 default:

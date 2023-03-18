@@ -35,7 +35,7 @@ namespace Limp.Client.HubInteraction
             _messageBox = messageBox;
         }
 
-        private async Task<string?> GetAccessToken() 
+        private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
 
         private async Task<string?> GetRefreshToken()
@@ -65,10 +65,10 @@ namespace Limp.Client.HubInteraction
 
             return authHub;
         }
-        
+
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-        (Func<Message, Task>? onMessageReceive = null, 
-        Func<string, Task>? onUsernameResolve = null, 
+        (Func<Message, Task>? onMessageReceive = null,
+        Func<string, Task>? onUsernameResolve = null,
         Action<Guid>? onMessageReceivedByRecepient = null,
         ICryptographyService? cryptographyService = null,
         Func<Task>? OnAESAcceptedCallback = null)
@@ -85,11 +85,11 @@ namespace Limp.Client.HubInteraction
 
             messageDispatcherHub.On<Message>("ReceiveMessage", async message =>
             {
-                if(message.Sender != "You")
+                if (message.Sender != "You")
                 {
-                    if(message.Type == MessageType.AESAccept)
+                    if (message.Type == MessageType.AESAccept)
                     {
-                        if(OnAESAcceptedCallback != null)
+                        if (OnAESAcceptedCallback != null)
                         {
                             await OnAESAcceptedCallback();
                         }
@@ -101,11 +101,13 @@ namespace Limp.Client.HubInteraction
 
                     if (message.Type == MessageType.AESOffer)
                     {
+                        Console.WriteLine("Got AES Key offer.");
+
                         string? encryptedAESKey = message.Payload;
                         if (string.IsNullOrWhiteSpace(encryptedAESKey))
                             throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey})).PlainText;
+                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey })).PlainText;
 
                         if (string.IsNullOrWhiteSpace(decryptedAESKey))
                             throw new ArgumentException("Could not decrypt an AES Key.");
@@ -118,7 +120,7 @@ namespace Limp.Client.HubInteraction
                             Contact = message.Sender,
                             Format = KeyFormat.RAW,
                             Type = KeyType.AES,
-                            Author = "You"
+                            Author = message.Sender
                         };
 
                         if (!string.IsNullOrWhiteSpace(message.Sender))
@@ -201,11 +203,11 @@ namespace Limp.Client.HubInteraction
         }
 
         private async Task GenerateAESAndSendItToPartner
-        (ICryptographyService cryptographyService, 
-        string partnersUsername, 
+        (ICryptographyService cryptographyService,
+        string partnersUsername,
         string partnersPublicKey)
         {
-            if(InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x=>x.Key == partnersUsername).Value != null)
+            if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnersUsername).Value != null)
             {
                 return;
             }

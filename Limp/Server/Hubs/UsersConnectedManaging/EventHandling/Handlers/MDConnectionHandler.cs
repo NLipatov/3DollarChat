@@ -61,23 +61,40 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
             string username = await GetUsername(accessToken);
 
-            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username))
+            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
             {
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                    .First(x => x.Username == username).ConnectionIds.Add(connectionId);
-            }
-            else
-            {
-                InMemoryHubConnectionStorage
-                .MessageDispatcherHubConnections
-                .Add(new ClientServerCommon.Models.UserConnections
+                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username))
                 {
-                    Username = username,
-                    ConnectionIds = new List<string> 
-                    { 
-                        connectionId 
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                        .First(x => x.Username == username).ConnectionIds.Add(connectionId);
+                }
+                else
+                {
+                    var targetConnection = InMemoryHubConnectionStorage
+                    .MessageDispatcherHubConnections
+                    .FirstOrDefault(x => x.ConnectionIds.Contains(connectionId));
+
+                    if (targetConnection != null)
+                    {
+                        InMemoryHubConnectionStorage
+                        .MessageDispatcherHubConnections
+                        .First(x => x.ConnectionIds.Contains(connectionId))
+                        .Username = username;
                     }
-                });
+                    else
+                    {
+                        InMemoryHubConnectionStorage
+                        .MessageDispatcherHubConnections
+                        .Add(new ClientServerCommon.Models.UserConnections
+                        {
+                            Username = username,
+                            ConnectionIds = new List<string>
+                            {
+                        connectionId
+                            }
+                        });
+                    }
+                }
             }
 
             foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections

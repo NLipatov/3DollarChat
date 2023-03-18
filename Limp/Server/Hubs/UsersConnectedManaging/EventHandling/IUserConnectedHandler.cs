@@ -9,8 +9,8 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
         Task OnUsernameResolved
             (string connectionId,
             string accessToken, 
-            Func<string, string, CancellationToken, Task>? AddUserToGroup = null, 
-            Func<string, string, CancellationToken, Task>? CallOnMyNameResolveOnClient = null,
+            Func<string, string, CancellationToken, Task>? AddToUserGroup = null, 
+            Func<string, string, CancellationToken, Task>? PassUsernameToClient = null,
             Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null);
     }
 }

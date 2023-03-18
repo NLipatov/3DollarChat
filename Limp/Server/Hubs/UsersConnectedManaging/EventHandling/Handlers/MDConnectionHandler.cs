@@ -57,9 +57,9 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             Func<string, string, CancellationToken, Task>? callback,
             Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
-            TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+            GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, callback });
 
-            var username = usernameRequest.Username;
+            string username = await GetUsername(accessToken);
 
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username))
             {
@@ -80,7 +80,8 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 });
             }
 
-            foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => !string.IsNullOrWhiteSpace(x.Username)))
+            foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => !string.IsNullOrWhiteSpace(x.Username)))
             {
                 foreach (var connectionIdentifier in connection.ConnectionIds)
                 {
@@ -89,6 +90,29 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             }
 
             await callback("OnMyNameResolve", username, default);
+        }
+
+        private async Task<string> GetUsername(string accessToken)
+        {
+            TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+                        
+            string? username = usernameRequest.Username;
+
+            if (string.IsNullOrWhiteSpace(username))
+                throw new ApplicationException($"Could not resolve a username by given user JWT token.");
+
+            return username;
+        }
+
+        private void GuaranteeDelegatesNotNull(params object?[] delegateObjects)
+        {
+            foreach (var delegateObject in delegateObjects)
+            {
+                if (delegateObject == null)
+                    throw new ArgumentException
+                        ($"Value of {nameof(delegateObject)} was null." +
+                        $" This event handler requires non-null delegate to perform event handling.");
+            }
         }
     }
 }

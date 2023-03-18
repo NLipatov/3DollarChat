@@ -123,7 +123,10 @@ namespace Limp.Client.HubInteraction
 
                         if (!string.IsNullOrWhiteSpace(message.Sender))
                         {
-                            InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
+                            bool keyAdditionResult = InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
+                            if (!keyAdditionResult)
+                                throw new ApplicationException($"Could not add AES Key for {message.Sender} due to unhandled exception.");
+
                             await Console.Out.WriteLineAsync($"Added an AES key for {message.Sender}");
                             await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString()}");
 

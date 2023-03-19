@@ -8,6 +8,7 @@
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+@using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 @using Limp.Client.TopicStorage;
 @using LimpShared.Encryption;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -18,6 +19,7 @@
 @inject ICryptographyService _cryptographyService
 @inject IMessageDecryptor _messageDecryptor
 @inject IMessageBox _messageBox
+@inject IAESOfferHandler _aesOfferHandler
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -76,7 +78,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new(Navigation, jS, _messageBox);
+        _hubInteractor = new(Navigation, jS, _messageBox, _aesOfferHandler);
 
         _usersHubHandler = new(Navigation, jS, _cryptographyService);
 

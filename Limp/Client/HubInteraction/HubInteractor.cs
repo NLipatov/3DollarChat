@@ -3,6 +3,7 @@ using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
+using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.TopicStorage;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
@@ -19,23 +20,23 @@ namespace Limp.Client.HubInteraction
         private readonly NavigationManager _navigationManager;
         private readonly IJSRuntime _jSRuntime;
         private readonly IMessageBox _messageBox;
+        private readonly IAESOfferHandler _aesOfferHandler;
         private string myName = string.Empty;
 
         public HubInteractor
         (NavigationManager navigationManager,
         IJSRuntime jSRuntime,
-        IMessageBox messageBox)
+        IMessageBox messageBox,
+        IAESOfferHandler aESOfferHandler)
         {
             _navigationManager = navigationManager;
             _jSRuntime = jSRuntime;
             _messageBox = messageBox;
+            _aesOfferHandler = aESOfferHandler;
         }
 
         private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
-
-        private async Task<string?> GetRefreshToken()
-            => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "refresh-token");
 
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
         (Func<Message, Task>? onMessageReceive = null,
@@ -81,45 +82,7 @@ namespace Limp.Client.HubInteraction
 
                     if (message.Type == MessageType.AESOffer)
                     {
-                        Console.WriteLine("Got AES Key offer.");
-
-                        string? encryptedAESKey = message.Payload;
-                        if (string.IsNullOrWhiteSpace(encryptedAESKey))
-                            throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
-
-                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey })).PlainText;
-
-                        if (string.IsNullOrWhiteSpace(decryptedAESKey))
-                            throw new ArgumentException("Could not decrypt an AES Key.");
-
-                        await Console.Out.WriteLineAsync($"Decrypted AES: {decryptedAESKey}");
-
-                        Key aesKeyForConversation = new()
-                        {
-                            Value = decryptedAESKey,
-                            Contact = message.Sender,
-                            Format = KeyFormat.RAW,
-                            Type = KeyType.AES,
-                            Author = message.Sender
-                        };
-
-                        if (!string.IsNullOrWhiteSpace(message.Sender))
-                        {
-                            bool keyAdditionResult = InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
-                            if (!keyAdditionResult)
-                                throw new ApplicationException($"Could not add AES Key for {message.Sender} due to unhandled exception.");
-
-                            await Console.Out.WriteLineAsync($"Added an AES key for {message.Sender}");
-                            await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString()}");
-
-                            await SendMessage(new Message
-                            {
-                                Sender = message.TargetGroup,
-                                Type = MessageType.AESAccept,
-                                TargetGroup = message.Sender,
-                            });
-                        }
-                        return;
+                        await SendMessage(await _aesOfferHandler.GetAESOfferResponse(message));
                     }
                 }
 

@@ -2,6 +2,7 @@
 using Limp.Client.Utilities;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
@@ -12,13 +13,16 @@ namespace Limp.Server.Hubs
     {
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
+        private readonly IOnlineUsersManager _onlineUsersManager;
 
         public UsersHub
         (IServerHttpClient serverHttpClient,
-        IUserConnectedHandler<UsersHub> userConnectedHandler)
+        IUserConnectedHandler<UsersHub> userConnectedHandler,
+        IOnlineUsersManager onlineUsersManager)
         {
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
+            _onlineUsersManager = onlineUsersManager;
         }
         public async override Task OnConnectedAsync() => _userConnectedHandler.OnConnect(Context.ConnectionId);
 
@@ -60,7 +64,7 @@ namespace Limp.Server.Hubs
 
         public async Task PushOnlineUsersToClients()
         {
-            await Clients.All.SendAsync("ReceiveOnlineUsers", InMemoryHubConnectionStorage.UsersHubConnections);
+            await Clients.All.SendAsync("ReceiveOnlineUsers", _onlineUsersManager.GetOnlineUsers());
         }
 
         public async Task PushConId()

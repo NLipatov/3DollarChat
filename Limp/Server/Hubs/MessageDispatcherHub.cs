@@ -2,6 +2,7 @@
 using Limp.Server.Hubs.MessageDispatching;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
 using Microsoft.AspNetCore.SignalR;
@@ -13,15 +14,18 @@ namespace Limp.Server.Hubs
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageDispatcherHub> _userConnectedHandler;
+        private readonly IOnlineUsersManager _onlineUsersManager;
 
         public MessageDispatcherHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
-        IUserConnectedHandler<MessageDispatcherHub> userConnectedHandler)
+        IUserConnectedHandler<MessageDispatcherHub> userConnectedHandler,
+        IOnlineUsersManager onlineUsersManager)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
+            _onlineUsersManager = onlineUsersManager;
         }
 
         private static bool IsClientConnectedToHub(string username)
@@ -39,8 +43,15 @@ namespace Limp.Server.Hubs
             => _userConnectedHandler.OnDisconnect(Context.ConnectionId);
 
         public async Task SetUsername(string accessToken)
-            => await _userConnectedHandler.OnUsernameResolved(Context.ConnectionId, accessToken, Groups.AddToGroupAsync, Clients.Caller.SendAsync);
+        {
+            await _userConnectedHandler.OnUsernameResolved(Context.ConnectionId, accessToken, Groups.AddToGroupAsync, Clients.Caller.SendAsync);
+            await PushOnlineUsersToClients();
+        }
 
+        public async Task PushOnlineUsersToClients()
+        {
+            await Clients.All.SendAsync("ReceiveOnlineUsers", _onlineUsersManager.GetOnlineUsers());
+        }
 
         /// <summary>
         /// Checks if target user is connected to the same hub.

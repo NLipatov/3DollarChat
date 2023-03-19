@@ -1,12 +1,9 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.TopicStorage;
-using Limp.Client.Utilities;
-using LimpShared.Authentification;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -16,7 +13,6 @@ namespace Limp.Client.HubInteraction
 {
     public class HubInteractor
     {
-        private HubConnection? authHub;
         private HubConnection? usersHub;
         private HubConnection? messageDispatcherHub;
         private List<Guid> subscriptions = new();
@@ -40,31 +36,6 @@ namespace Limp.Client.HubInteraction
 
         private async Task<string?> GetRefreshToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "refresh-token");
-
-        public async Task<HubConnection> ConnectToAuthHubAsync
-        (Func<AuthResult, Task>? onTokensRefresh = null)
-        {
-            authHub = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
-            .Build();
-
-            authHub.On<AuthResult>("OnTokensRefresh", async result =>
-            {
-                if (onTokensRefresh != null)
-                {
-                    await onTokensRefresh(result);
-                }
-            });
-
-            await authHub.StartAsync();
-
-            if (TokenReader.HasAccessTokenExpired(await GetAccessToken()))
-            {
-                await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = await GetRefreshToken() });
-            }
-
-            return authHub;
-        }
 
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
         (Func<Message, Task>? onMessageReceive = null,
@@ -254,54 +225,6 @@ namespace Limp.Client.HubInteraction
             });
         }
 
-        public async Task<HubConnection> ConnectToUsersHubAsync
-        (Action<string>? onConnectionIdReceive = null,
-        Action<List<UserConnections>>? onOnlineUsersReceive = null,
-        Func<string, Task>? onNameResolve = null,
-        Func<string, Task>? onPartnerRSAPublicKeyReceived = null)
-        {
-            usersHub = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
-            .Build();
-
-            usersHub.On<string>("ReceivePartnerRSAPublicKey", async PEMEncodedKey =>
-            {
-                if (onPartnerRSAPublicKeyReceived != null)
-                    await onPartnerRSAPublicKeyReceived(PEMEncodedKey);
-            });
-
-            usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
-            {
-                if (onOnlineUsersReceive != null)
-                {
-                    onOnlineUsersReceive(updatedTrackedUserConnections);
-                }
-            });
-
-            usersHub.On<string>("ReceiveConnectionId", conId =>
-            {
-                if (onConnectionIdReceive != null)
-                {
-                    onConnectionIdReceive(conId);
-                }
-            });
-
-            usersHub.On<string>("onNameResolve", async username =>
-            {
-                if (onNameResolve != null)
-                {
-                    await onNameResolve(username);
-                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic);
-                }
-            });
-
-            await usersHub.StartAsync();
-
-            await usersHub.SendAsync("SetUsername", await GetAccessToken());
-
-            return usersHub;
-        }
-
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
@@ -322,14 +245,6 @@ namespace Limp.Client.HubInteraction
                 await messageDispatcherHub.SendAsync("Dispatch", message);
         }
 
-        public bool IsMessageHubConnected()
-        {
-            if (messageDispatcherHub == null)
-                return false;
-
-            return messageDispatcherHub.State == HubConnectionState.Connected;
-        }
-
         public async Task DisposeAsync()
         {
             if (usersHub != null)
@@ -339,10 +254,6 @@ namespace Limp.Client.HubInteraction
             if (messageDispatcherHub != null)
             {
                 await messageDispatcherHub.DisposeAsync();
-            }
-            if (authHub != null)
-            {
-                await authHub.DisposeAsync();
             }
             foreach (var subscription in subscriptions)
             {

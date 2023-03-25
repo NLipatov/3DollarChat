@@ -1,9 +1,16 @@
 ﻿@page "/users"
+@using HubInteraction.EventSubscriptionManager.UsersHub.EventTypes;
+@using Limp.Client.HubInteraction.EventSubscriptionManager;
+@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub.Contract;
+@using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using ClientServerCommon.Models;
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.EventSubscriptionManager;
+@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
@@ -17,6 +24,7 @@
 @inject IAESOfferHandler _aesOfferHandler
 @using ClientServerCommon.Models.Login;
 @inject IJSRuntime _jS
+@inject IUsersHubSubscriptionManager _usersHubSubscriptionManager
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -54,7 +62,7 @@
         _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox, _aesOfferHandler);
 
         _authHubHandler = new AuthHandler(_navigationManager, _jS);
-        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService);
+        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService, _usersHubSubscriptionManager);
 
         if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
@@ -75,19 +83,21 @@
             }
         });
 
-        UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
+        _usersHubSubscriptionManager.AddHandler<string>(UserHubEventType.ConnectionIdReceived, 
+        async (id) =>
         {
             myConnectionId = id;
-            StateHasChanged();
         });
 
-        UsersHubSubscriptionManager.SubscribeToUsersConnectionsReceived((userConnectionsList) =>
+        _usersHubSubscriptionManager.AddHandler<List<UserConnections>>(UserHubEventType.ConnectedUsersListReceived, 
+        async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;
             StateHasChanged();
         });
 
-        UsersHubSubscriptionManager.SubscribeToUsernameResolved(async (username) =>
+        _usersHubSubscriptionManager.AddHandler<string>(UserHubEventType.MyUsernameResolved,
+        async (username) =>
         {
             if (_hubInteractor != null)
             {

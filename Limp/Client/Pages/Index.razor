@@ -9,58 +9,20 @@
 @inject ICryptographyService _cryptographyService;
 <PageTitle>Index</PageTitle>
 
-<h1>RSA Encryption</h1>
-<input @bind="RSAinputValue" @bind:event="oninput" />
-<button @onclick="(() => RSAEncrypt())">
-    Encrypt
-</button>
-<button @onclick="(() => RSADecrypt())">
-    Decrypt
-</button>
-<h1>AES Encryption</h1>
-<input @bind="AESinputValue" @bind:event="oninput" />
-<button @onclick="(() => AESEncrypt())">
-    Encrypt
-</button>
-<button @onclick="(() => AESDecrypt())">
-    Decrypt
-</button>
+<h1>Limp Messenger — an open source secure chat app.</h1>
+<p>
+    Keep your conversations private and secure with our chat app featuring Client-side encryption and open-source code for complete transparency.
+</p>
+<p>
+    Trust in the security of your messages with our chat app's Client-side encryption and open-source code, available to all for ultimate peace of mind.
+</p>
+<p>
+    Chat with confidence using our app's unbeatable combination of Client-side encryption and open-source code, ensuring the utmost privacy and trustworthiness for all.
+
+
+
+</p>
 
 
 @code {
-    private string RSAinputValue { get; set; } = string.Empty;
-    private string AESinputValue { get; set; } = string.Empty;
-    private string demoContact = "demo";
-    private string IV = string.Empty;
-
-    protected override async Task OnInitializedAsync()
-    {
-        await _cryptographyService.GenerateRSAKeyPairAsync();
-        await _cryptographyService.GenerateAESKeyAsync(demoContact, (key) =>
-        {
-        });
-    }
-
-    public async Task RSAEncrypt()
-    {
-        RSAinputValue = (await _cryptographyService.EncryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue })).Cyphertext;
-    }
-
-    public async Task RSADecrypt()
-    {
-        RSAinputValue = (await _cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm() { Cyphertext = RSAinputValue })).PlainText;
-    }
-
-    public async Task AESEncrypt()
-    {
-        Cryptogramm encryptionResult = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue }, demoContact);
-        IV = encryptionResult.IV;
-
-        AESinputValue = encryptionResult.Cyphertext;
-    }
-
-    public async Task AESDecrypt()
-    {
-        AESinputValue = (await _cryptographyService.DecryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = AESinputValue, IV = IV }, demoContact)).PlainText;
-    }
 }

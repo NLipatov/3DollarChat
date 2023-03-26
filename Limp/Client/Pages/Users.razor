@@ -44,7 +44,7 @@
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private AuthHandler? _authHubHandler;
-    private UsersHandler? _usersHubHandler;
+    private UsersHubInteractor? _usersHubHandler;
     private HubInteractor? _hubInteractor;
     private List<Guid> ActiveHandlers = new();
 
@@ -58,7 +58,7 @@
         _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox, _aesOfferHandler);
 
         _authHubHandler = new AuthHandler(_navigationManager, _jS);
-        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _usersHubObserver);
+        _usersHubHandler = new UsersHubInteractor(_navigationManager, _jS, _usersHubObserver);
 
         if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
@@ -113,8 +113,8 @@
     {
         _usersHubObserver.RemoveHandlers(ActiveHandlers);
 
-        _usersHubHandler?.Dispose();
-        _authHubHandler?.Dispose();
+        await _usersHubHandler.DisposeAsync();
+        await _authHubHandler.DisposeAsync();
         await _hubInteractor?.DisposeAsync();
     }
 }

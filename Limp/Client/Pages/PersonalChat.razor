@@ -76,7 +76,7 @@
     private List<UserConnections> userConnections { get; set; } = new();
     HubInteractor? _hubInteractor;
     private bool isAcceptedAESKeyExists { get; set; } = false;
-    private UsersHandler? _usersHubHandler;
+    private UsersHubInteractor? _usersHubHandler;
 
     protected override async Task OnInitializedAsync()
     {
@@ -201,7 +201,7 @@
 
     public async ValueTask DisposeAsync()
     {
-        _usersHubHandler?.Dispose();
+        _usersHubHandler?.DisposeAsync();
         if(_hubInteractor != null)
         {
             await _hubInteractor.DisposeAsync();

@@ -2,7 +2,7 @@
 
 namespace Limp.Client.HubInteraction.Handlers
 {
-    public interface IHandler<T> : IDisposable
+    public interface IHandler<T> : IAsyncDisposable
     {
         Task<HubConnection> ConnectAsync();
     }

@@ -9,14 +9,14 @@ using Microsoft.JSInterop;
 
 namespace Limp.Client.HubInteraction.Handlers;
 
-public class UsersHandler : IHandler<UsersHandler>
+public class UsersHubInteractor : IHandler<UsersHubInteractor>
 {
     private readonly NavigationManager _navigationManager;
     private readonly IJSRuntime _jSRuntime;
     private readonly IHubObserver<UsersHubEvent> _usersHubObserver;
     private HubConnection? usersHub;
 
-    public UsersHandler
+    public UsersHubInteractor
     (NavigationManager navigationManager,
     IJSRuntime jSRuntime,
     IHubObserver<UsersHubEvent> usersHubSubscriptionManager)
@@ -56,14 +56,9 @@ public class UsersHandler : IHandler<UsersHandler>
         return usersHub;
     }
 
-    public void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        _usersHubObserver.UnsubscriveAll();
-        DisposeUsersHub();
-    }
-
-    private async Task DisposeUsersHub()
-    {
+        _usersHubObserver.UnsubscriveAll(); 
         if (usersHub != null)
         {
             await usersHub.StopAsync();

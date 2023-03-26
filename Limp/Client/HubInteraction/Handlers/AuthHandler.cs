@@ -44,7 +44,7 @@ namespace Limp.Client.HubInteraction.Handlers
             return authHub;
         }
 
-        public void Dispose()
+        public async ValueTask DisposeAsync()
         {
             AuthHubSubscriptionManager.UnsubscriveAll();
         }

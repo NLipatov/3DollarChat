@@ -16,12 +16,7 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
         }
         public async Task<Message> GetAESOfferResponse(Message offerMessage)
         {
-            if (string.IsNullOrWhiteSpace(offerMessage.Sender))
-                throw new ArgumentException($"AES offer was not containing a {nameof(Message.Sender)}");
-
-            string decryptedAESKey = await GetDecryptedAESKeyFromMessage(offerMessage);
-
-            await Console.Out.WriteLineAsync($"Decrypted AES: {decryptedAESKey}");
+            string decryptedAESKey = await DecryptAESKeyFromMessage(offerMessage);
 
             Key aesKeyForConversation = new()
             {
@@ -38,9 +33,6 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
                 {
                     InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender] = aesKeyForConversation;
                 }
-
-                await Console.Out.WriteLineAsync($"Added an AES key for {offerMessage.Sender}");
-                await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == offerMessage.Sender).Value.Value.ToString()}");
             }
 
             return new Message
@@ -49,6 +41,17 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
                 Type = MessageType.AESAccept,
                 TargetGroup = offerMessage.Sender,
             };
+        }
+
+        private async Task<string> DecryptAESKeyFromMessage(Message message)
+        {
+
+            if (string.IsNullOrWhiteSpace(message.Sender))
+                throw new ArgumentException($"AES offer was not containing a {nameof(Message.Sender)}");
+
+            string decryptedAESKey = await GetDecryptedAESKeyFromMessage(message);
+
+            return decryptedAESKey;
         }
 
         private async Task<string> GetDecryptedAESKeyFromMessage(Message message)

@@ -7,12 +7,11 @@ namespace Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserv
 
 public class UsersHubObserver : IHubObserver<UsersHubEvent>
 {
-    private readonly IEventCallbackExecutor _eventCallbackExecutor;
-
     public UsersHubObserver(IEventCallbackExecutor eventCallbackExecutor)
     {
         _eventCallbackExecutor = eventCallbackExecutor;
     }
+    private readonly IEventCallbackExecutor _eventCallbackExecutor;
     private ConcurrentDictionary<Guid, Func<string, Task>> OnConnectionIdReceived { get; set; } = new();
     private ConcurrentDictionary<Guid, Func<List<UserConnections>, Task>> OnActiveUsersReceived { get; set; } = new();
     private ConcurrentDictionary<Guid, Func<string, Task>> OnUsernameResolved { get; set; } = new();

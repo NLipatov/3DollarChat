@@ -7,9 +7,9 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.HubInteraction.Handlers;
+namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations;
 
-public class UsersHubInteractor : IHandler<UsersHubInteractor>
+public class UsersHubInteractor : IHubInteractor<UsersHubInteractor>
 {
     private readonly NavigationManager _navigationManager;
     private readonly IJSRuntime _jSRuntime;
@@ -32,6 +32,10 @@ public class UsersHubInteractor : IHandler<UsersHubInteractor>
         .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
         .Build();
 
+        #region Event handlers registration
+        //Here we are registering a callbacks for specific server-triggered events.
+        //Events are being triggered from SignalR hubs in server project.
+
         usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
         {
             await _usersHubObserver.CallHandler(UsersHubEvent.ConnectedUsersListReceived, updatedTrackedUserConnections);
@@ -48,6 +52,7 @@ public class UsersHubInteractor : IHandler<UsersHubInteractor>
 
             await usersHub.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
         });
+        #endregion
 
         await usersHub.StartAsync();
 
@@ -58,7 +63,7 @@ public class UsersHubInteractor : IHandler<UsersHubInteractor>
 
     public async ValueTask DisposeAsync()
     {
-        _usersHubObserver.UnsubscriveAll(); 
+        _usersHubObserver.UnsubscriveAll();
         if (usersHub != null)
         {
             await usersHub.StopAsync();

@@ -1,12 +1,10 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.Login;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
+using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.TopicStorage;
-using Limp.Client.Utilities;
-using LimpShared.Authentification;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -16,55 +14,29 @@ namespace Limp.Client.HubInteraction
 {
     public class HubInteractor
     {
-        private HubConnection? authHub;
         private HubConnection? usersHub;
         private HubConnection? messageDispatcherHub;
         private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
         private readonly IJSRuntime _jSRuntime;
         private readonly IMessageBox _messageBox;
+        private readonly IAESOfferHandler _aesOfferHandler;
         private string myName = string.Empty;
 
         public HubInteractor
         (NavigationManager navigationManager,
         IJSRuntime jSRuntime,
-        IMessageBox messageBox)
+        IMessageBox messageBox,
+        IAESOfferHandler aESOfferHandler)
         {
             _navigationManager = navigationManager;
             _jSRuntime = jSRuntime;
             _messageBox = messageBox;
+            _aesOfferHandler = aESOfferHandler;
         }
 
         private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
-
-        private async Task<string?> GetRefreshToken()
-            => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "refresh-token");
-
-        public async Task<HubConnection> ConnectToAuthHubAsync
-        (Func<AuthResult, Task>? onTokensRefresh = null)
-        {
-            authHub = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
-            .Build();
-
-            authHub.On<AuthResult>("OnTokensRefresh", async result =>
-            {
-                if (onTokensRefresh != null)
-                {
-                    await onTokensRefresh(result);
-                }
-            });
-
-            await authHub.StartAsync();
-
-            if (TokenReader.HasAccessTokenExpired(await GetAccessToken()))
-            {
-                await authHub.SendAsync("RefreshTokens", new RefreshToken { Token = await GetRefreshToken() });
-            }
-
-            return authHub;
-        }
 
         public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
         (Func<Message, Task>? onMessageReceive = null,
@@ -110,45 +82,7 @@ namespace Limp.Client.HubInteraction
 
                     if (message.Type == MessageType.AESOffer)
                     {
-                        Console.WriteLine("Got AES Key offer.");
-
-                        string? encryptedAESKey = message.Payload;
-                        if (string.IsNullOrWhiteSpace(encryptedAESKey))
-                            throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
-
-                        string? decryptedAESKey = (await cryptographyService.DecryptAsync<RSAHandler>(new Cryptogramm { Cyphertext = encryptedAESKey })).PlainText;
-
-                        if (string.IsNullOrWhiteSpace(decryptedAESKey))
-                            throw new ArgumentException("Could not decrypt an AES Key.");
-
-                        await Console.Out.WriteLineAsync($"Decrypted AES: {decryptedAESKey}");
-
-                        Key aesKeyForConversation = new()
-                        {
-                            Value = decryptedAESKey,
-                            Contact = message.Sender,
-                            Format = KeyFormat.RAW,
-                            Type = KeyType.AES,
-                            Author = message.Sender
-                        };
-
-                        if (!string.IsNullOrWhiteSpace(message.Sender))
-                        {
-                            bool keyAdditionResult = InMemoryKeyStorage.AESKeyStorage.TryAdd(message.Sender, aesKeyForConversation);
-                            if (!keyAdditionResult)
-                                throw new ApplicationException($"Could not add AES Key for {message.Sender} due to unhandled exception.");
-
-                            await Console.Out.WriteLineAsync($"Added an AES key for {message.Sender}");
-                            await Console.Out.WriteLineAsync($"Key value: {InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString()}");
-
-                            await SendMessage(new Message
-                            {
-                                Sender = message.TargetGroup,
-                                Type = MessageType.AESAccept,
-                                TargetGroup = message.Sender,
-                            });
-                        }
-                        return;
+                        await SendMessage(await _aesOfferHandler.GetAESOfferResponse(message));
                     }
                 }
 
@@ -254,54 +188,6 @@ namespace Limp.Client.HubInteraction
             });
         }
 
-        public async Task<HubConnection> ConnectToUsersHubAsync
-        (Action<string>? onConnectionIdReceive = null,
-        Action<List<UserConnections>>? onOnlineUsersReceive = null,
-        Func<string, Task>? onNameResolve = null,
-        Func<string, Task>? onPartnerRSAPublicKeyReceived = null)
-        {
-            usersHub = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
-            .Build();
-
-            usersHub.On<string>("ReceivePartnerRSAPublicKey", async PEMEncodedKey =>
-            {
-                if (onPartnerRSAPublicKeyReceived != null)
-                    await onPartnerRSAPublicKeyReceived(PEMEncodedKey);
-            });
-
-            usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
-            {
-                if (onOnlineUsersReceive != null)
-                {
-                    onOnlineUsersReceive(updatedTrackedUserConnections);
-                }
-            });
-
-            usersHub.On<string>("ReceiveConnectionId", conId =>
-            {
-                if (onConnectionIdReceive != null)
-                {
-                    onConnectionIdReceive(conId);
-                }
-            });
-
-            usersHub.On<string>("onNameResolve", async username =>
-            {
-                if (onNameResolve != null)
-                {
-                    await onNameResolve(username);
-                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic);
-                }
-            });
-
-            await usersHub.StartAsync();
-
-            await usersHub.SendAsync("SetUsername", await GetAccessToken());
-
-            return usersHub;
-        }
-
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
@@ -322,14 +208,6 @@ namespace Limp.Client.HubInteraction
                 await messageDispatcherHub.SendAsync("Dispatch", message);
         }
 
-        public bool IsMessageHubConnected()
-        {
-            if (messageDispatcherHub == null)
-                return false;
-
-            return messageDispatcherHub.State == HubConnectionState.Connected;
-        }
-
         public async Task DisposeAsync()
         {
             if (usersHub != null)
@@ -339,10 +217,6 @@ namespace Limp.Client.HubInteraction
             if (messageDispatcherHub != null)
             {
                 await messageDispatcherHub.DisposeAsync();
-            }
-            if (authHub != null)
-            {
-                await authHub.DisposeAsync();
             }
             foreach (var subscription in subscriptions)
             {

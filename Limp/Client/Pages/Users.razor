@@ -1,11 +1,16 @@
 ﻿@page "/users"
+@using Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations;
+@using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction;
 @using ClientServerCommon.Models;
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.KeyStorage;
-@using Limp.Client.HubInteraction;
-@using Limp.Client.HubInteraction.EventSubscriptionManager;
-@using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
+@using Limp.Client.HubInteraction.HubObservers;
 @using Limp.Client.TopicStorage;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
@@ -13,8 +18,11 @@
 @inject NavigationManager _navigationManager
 @inject ICryptographyService _cryptographyService
 @inject IMessageBox _messageBox
+@inject IAESOfferHandler _aesOfferHandler
 @using ClientServerCommon.Models.Login;
 @inject IJSRuntime _jS
+@inject IHubObserver<UsersHubEvent> _usersHubObserver
+@inject IHubObserver<AuthHubEvent> _authHubObserver
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -38,9 +46,11 @@
 @code {
     private List<UserConnections> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
-    private AuthHandler? _authHubHandler;
-    private UsersHandler? _usersHubHandler;
+    private AuthHubInteractor? _authHubHandler;
+    private UsersHubInteractor? _usersHubHandler;
     private HubInteractor? _hubInteractor;
+    private List<Guid> usersHubHandlers = new();
+    private List<Guid> authHubHandlers = new();
 
     private async Task RedirectToChat(string username)
     {
@@ -49,10 +59,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox);
+        _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox, _aesOfferHandler);
 
-        _authHubHandler = new AuthHandler(_navigationManager, _jS);
-        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService);
+        _authHubHandler = new AuthHubInteractor(_navigationManager, _jS, _authHubObserver);
+        _usersHubHandler = new UsersHubInteractor(_navigationManager, _jS, _usersHubObserver);
 
         if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
@@ -60,32 +70,21 @@
             return;
         }
 
-        AuthHubSubscriptionManager.SubscribeToJWTPairRefresh(async (result) =>
-        {
-            JWTPair? pair = result.JWTPair;
-            if (pair == null || String.IsNullOrWhiteSpace(pair.AccessToken) || String.IsNullOrWhiteSpace(pair.RefreshToken.Token))
-                _navigationManager.NavigateTo("/login");
-
-            if (result.Result == AuthResultType.Success)
-            {
-                await _jS.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
-                await _jS.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
-            }
-        });
-
-        UsersHubSubscriptionManager.SubscribeToConnectionIdReceived((id) =>
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.ConnectionIdReceived,
+        async (id) =>
         {
             myConnectionId = id;
-            StateHasChanged();
-        });
+        }));
 
-        UsersHubSubscriptionManager.SubscribeToUsersConnectionsReceived((userConnectionsList) =>
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived,
+        async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;
             StateHasChanged();
-        });
+        }));
 
-        UsersHubSubscriptionManager.SubscribeToUsernameResolved(async (username) =>
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.MyUsernameResolved,
+        async (username) =>
         {
             if (_hubInteractor != null)
             {
@@ -95,7 +94,7 @@
                     StateHasChanged();
                 });
             }
-        });
+        }));
 
         await _authHubHandler.ConnectAsync();
         await _usersHubHandler.ConnectAsync();
@@ -103,8 +102,10 @@
 
     public async ValueTask DisposeAsync()
     {
-        _usersHubHandler?.Dispose();
-        _authHubHandler?.Dispose();
+        _usersHubObserver.RemoveHandlers(usersHubHandlers);
+
+        await _usersHubHandler.DisposeAsync();
+        await _authHubHandler.DisposeAsync();
         await _hubInteractor?.DisposeAsync();
     }
 }

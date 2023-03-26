@@ -1,26 +1,18 @@
 ﻿@page "/user/{topicName?}"
-@using HubInteraction.EventSubscriptionManager.UsersHub.EventTypes;
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
-@using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub.Contract;
-@using Limp.Client.HubInteraction.Handlers;
-@using Limp.Client.HubInteraction;
-@using Microsoft.AspNetCore.SignalR.Client;
-@using ClientServerCommon.Models;
-@using ClientServerCommon.Models.Message;
-@using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 @using Limp.Client.Cryptography.KeyStorage;
-@using Limp.Client.HubInteraction;
-@using Limp.Client.HubInteraction.EventSubscriptionManager;
-@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub;
 @using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
+@using Limp.Client.HubInteraction.HubObservers;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Limp.Client.Cryptography;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 @using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 @using Limp.Client.TopicStorage;
 @using LimpShared.Encryption;
-@using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Utilities;
 @using Limp.Client.Pages;
 @inject NavigationManager Navigation
@@ -29,7 +21,7 @@
 @inject IMessageDecryptor _messageDecryptor
 @inject IMessageBox _messageBox
 @inject IAESOfferHandler _aesOfferHandler
-@inject IUsersHubSubscriptionManager _usersHubSubscriptionManager
+@inject IHubObserver<UsersHubEvent> _usersHubSubscriptionManager
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -90,9 +82,9 @@
     {
         _hubInteractor = new(Navigation, jS, _messageBox, _aesOfferHandler);
 
-        _usersHubHandler = new(Navigation, jS, _cryptographyService, _usersHubSubscriptionManager);
+        _usersHubHandler = new(Navigation, jS, _usersHubSubscriptionManager);
 
-        _usersHubSubscriptionManager.AddHandler<List<UserConnections>>(UserHubEventType.ConnectedUsersListReceived, 
+        _usersHubSubscriptionManager.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived, 
         async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;

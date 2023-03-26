@@ -1,19 +1,14 @@
 ﻿@page "/users"
-@using HubInteraction.EventSubscriptionManager.UsersHub.EventTypes;
-@using Limp.Client.HubInteraction.EventSubscriptionManager;
-@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub.Contract;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
-@using Limp.Client.HubInteraction.EventSubscriptionManager;
 @using ClientServerCommon.Models;
 @using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.KeyStorage;
-@using Limp.Client.HubInteraction;
-@using Limp.Client.HubInteraction.EventSubscriptionManager;
-@using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub;
-@using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub;
+@using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
+@using Limp.Client.HubInteraction.HubObservers;
 @using Limp.Client.TopicStorage;
 @using Limp.Client.Utilities;
 @using LimpShared.Authentification;
@@ -24,7 +19,7 @@
 @inject IAESOfferHandler _aesOfferHandler
 @using ClientServerCommon.Models.Login;
 @inject IJSRuntime _jS
-@inject IUsersHubSubscriptionManager _usersHubSubscriptionManager
+@inject IHubObserver<UsersHubEvent> _usersHubObserver
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -51,6 +46,7 @@
     private AuthHandler? _authHubHandler;
     private UsersHandler? _usersHubHandler;
     private HubInteractor? _hubInteractor;
+    private List<Guid> ActiveHandlers = new();
 
     private async Task RedirectToChat(string username)
     {
@@ -62,7 +58,7 @@
         _hubInteractor = new HubInteractor(_navigationManager, _jS, _messageBox, _aesOfferHandler);
 
         _authHubHandler = new AuthHandler(_navigationManager, _jS);
-        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _cryptographyService, _usersHubSubscriptionManager);
+        _usersHubHandler = new UsersHandler(_navigationManager, _jS, _usersHubObserver);
 
         if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
         {
@@ -83,20 +79,20 @@
             }
         });
 
-        _usersHubSubscriptionManager.AddHandler<string>(UserHubEventType.ConnectionIdReceived, 
+        ActiveHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.ConnectionIdReceived,
         async (id) =>
         {
             myConnectionId = id;
-        });
+        }));
 
-        _usersHubSubscriptionManager.AddHandler<List<UserConnections>>(UserHubEventType.ConnectedUsersListReceived, 
+        ActiveHandlers.Add(_usersHubObserver.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;
             StateHasChanged();
-        });
+        }));
 
-        _usersHubSubscriptionManager.AddHandler<string>(UserHubEventType.MyUsernameResolved,
+        ActiveHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.MyUsernameResolved,
         async (username) =>
         {
             if (_hubInteractor != null)
@@ -107,7 +103,7 @@
                     StateHasChanged();
                 });
             }
-        });
+        }));
 
         await _authHubHandler.ConnectAsync();
         await _usersHubHandler.ConnectAsync();
@@ -115,6 +111,8 @@
 
     public async ValueTask DisposeAsync()
     {
+        _usersHubObserver.RemoveHandlers(ActiveHandlers);
+
         _usersHubHandler?.Dispose();
         _authHubHandler?.Dispose();
         await _hubInteractor?.DisposeAsync();

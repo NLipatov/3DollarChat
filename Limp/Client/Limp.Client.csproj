@@ -34,7 +34,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="HubInteraction\NewFolder\" />
+    <Folder Include="HubInteraction\HubObservers\Implementations\UsersHubObserver\Contract\" />
   </ItemGroup>
 
 </Project>

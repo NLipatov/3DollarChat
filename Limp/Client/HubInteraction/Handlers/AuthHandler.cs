@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models.Login;
-using Limp.Client.HubInteraction.EventSubscriptionManager;
 using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub;
 using Limp.Client.Utilities;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;

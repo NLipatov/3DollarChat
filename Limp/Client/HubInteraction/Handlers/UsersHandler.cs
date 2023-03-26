@@ -1,10 +1,8 @@
 ﻿using ClientServerCommon.Models;
-using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub.Contract;
-using Limp.Client.HubInteraction.EventSubscriptionManager.UsersHub.EventTypes;
 using Limp.Client.HubInteraction.Handlers.Helpers;
-using LimpShared.Encryption;
+using Limp.Client.HubInteraction.HubObservers;
+using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -15,19 +13,17 @@ public class UsersHandler : IHandler<UsersHandler>
 {
     private readonly NavigationManager _navigationManager;
     private readonly IJSRuntime _jSRuntime;
-    private readonly ICryptographyService _cryptographyService;
-    private readonly IUsersHubSubscriptionManager _usersHubSubscriptionManager;
+    private readonly IHubObserver<UsersHubEvent> _usersHubObserver;
     private HubConnection? usersHub;
+
     public UsersHandler
     (NavigationManager navigationManager,
     IJSRuntime jSRuntime,
-    ICryptographyService cryptographyService,
-    IUsersHubSubscriptionManager usersHubSubscriptionManager)
+    IHubObserver<UsersHubEvent> usersHubSubscriptionManager)
     {
         _navigationManager = navigationManager;
         _jSRuntime = jSRuntime;
-        _cryptographyService = cryptographyService;
-        _usersHubSubscriptionManager = usersHubSubscriptionManager;
+        _usersHubObserver = usersHubSubscriptionManager;
     }
 
     public async Task<HubConnection> ConnectAsync()
@@ -38,17 +34,17 @@ public class UsersHandler : IHandler<UsersHandler>
 
         usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
         {
-            await _usersHubSubscriptionManager.CallHandler(UserHubEventType.ConnectedUsersListReceived, updatedTrackedUserConnections);
+            await _usersHubObserver.CallHandler(UsersHubEvent.ConnectedUsersListReceived, updatedTrackedUserConnections);
         });
 
         usersHub.On<string>("ReceiveConnectionId", async connectionId =>
         {
-            await _usersHubSubscriptionManager.CallHandler(UserHubEventType.ConnectionIdReceived ,connectionId);
+            await _usersHubObserver.CallHandler(UsersHubEvent.ConnectionIdReceived, connectionId);
         });
 
         usersHub.On<string>("onNameResolve", async username =>
         {
-            await _usersHubSubscriptionManager.CallHandler(UserHubEventType.MyUsernameResolved, username);
+            await _usersHubObserver.CallHandler(UsersHubEvent.MyUsernameResolved, username);
 
             await usersHub.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
         });
@@ -62,13 +58,13 @@ public class UsersHandler : IHandler<UsersHandler>
 
     public void Dispose()
     {
-        _usersHubSubscriptionManager.UnsubscriveAll();
+        _usersHubObserver.UnsubscriveAll();
         DisposeUsersHub();
     }
 
     private async Task DisposeUsersHub()
     {
-        if(usersHub != null)
+        if (usersHub != null)
         {
             await usersHub.StopAsync();
             await usersHub.DisposeAsync();

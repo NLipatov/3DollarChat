@@ -1,10 +1,11 @@
-﻿namespace Limp.Client.HubInteraction.EventExecution
+﻿using System.Collections.Concurrent;
+
+namespace Limp.Client.HubInteraction.EventExecution;
+
+public class EventCallbackExecutor : IEventCallbackExecutor
 {
-    public class EventCallbackExecutor : IEventCallbackExecutor
+    public async Task ExecuteAllAsync<T>(T eventArgument, ConcurrentDictionary<Guid, Func<T, Task>> callbackDictionary)
     {
-        public async Task ExecuteAllAsync<T>(T eventArgument, List<Func<T, Task>> callbacks)
-        {
-            await Task.WhenAll(callbacks.Select(callback => callback(eventArgument)));
-        }
+        await Task.WhenAll(callbackDictionary.Values.Select(callback => callback(eventArgument)));
     }
 }

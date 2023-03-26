@@ -1,89 +1,49 @@
 ﻿@inject NavigationManager _navManager
 
-<div style="border-right: 1px solid black;
-    display: flex;
-    flex-direction: column;
-    width: 200px;">
-    <div style="
-        display: flex;
-        background-color: black;
-        color: white;
-        justify-content: center;
-        padding: 10px;
-        font-size: 16pt;">
-        <div>
-            <span style="white-space: nowrap;">Limp Messenger</span>
-        </div>
-    </div>
+<div class="bb-page">
 
-    <div style="
-    display: flex;
-    flex-direction: column;
-    padding: 10px;
-    gap: 10px;">
-        @foreach (var link in NavBarLinks)
-        {
-            <a class="navigation-element @(link.IsActive ? "active": "")" href=@link.URL @onclick="() => SetActive(link)">
-                <span class=@link.IconClass aria-hidden="true"></span> @link.Name
-            </a>
-        }
-    </div>
+    <Sidebar @ref="sidebar"
+             CustomIconName="bi bi-file-lock2-fill"
+             Title="Three Dollar Chat"
+             DataProvider="SidebarDataProvider" />
+
+@*    <main>
+        <div class="bb-top-row px-4 d-flex justify-content-between">
+            <Icon Name="IconName.List" role="button" @onclick="ToogleSidebar" />
+            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
+        </div>
+
+        <article class="content px-4">
+            <div class="py-2">Page content goes here</div>
+        </article>
+    </main>*@
+
 </div>
 
 @code {
-    void SetActive(Link link)
+    Sidebar sidebar;
+    IEnumerable<NavItem> navItems;
+
+    private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
     {
-        if (NavBarLinks.Any(x => x.IsActive))
-        {
-            NavBarLinks
-            .Where(x => x.IsActive)
-            .ToList()
-            .ForEach(elem => elem.IsActive = false);
-        }
-        NavBarLinks.First(x => x.URL == link.URL).IsActive = true;
+        if (navItems is null)
+            navItems = GetNavItems();
+
+        return await Task.FromResult(request.ApplyTo(navItems));
     }
 
-    protected override void OnInitialized()
+    private IEnumerable<NavItem> GetNavItems()
     {
-        string currentPage = _navManager.ToBaseRelativePath(_navManager.Uri);
-        Link? activeLink = NavBarLinks.FirstOrDefault(x => x.URL.ToLowerInvariant().Equals(currentPage));
-        if (activeLink != null)
-            SetActive(activeLink);
+        navItems = new List<NavItem>
+        {
+            new NavItem { Id = "1", Href="/", IconName = IconName.InfoCircleFill, Text = "About 3$Chat"},
+            new NavItem { Id = "2", IconName = IconName.ChatFill, Text = "Chat"},
+            new NavItem { Id = "3", Href="/contacts", ParentId = "2", Text = "My Contacts", IconName = IconName.PersonFill },
+            new NavItem { Id = "4", Href="/users", ParentId = "2", Text = "Find A Chat", IconName = IconName.PeopleFill },
+        };
+
+        return navItems;
     }
 
-    class Link
-    {
-        public string Name { get; set; } = string.Empty;
-        public string URL { get; set; } = string.Empty;
-        public string IconClass { get; set; } = string.Empty;
-        public bool IsActive { get; set; } = false;
-    }
-
-    List<Link> NavBarLinks { get; } = new List<Link>
-    {
-        new Link()
-        {
-            Name = "Home",
-            URL = "",
-            IconClass = "oi oi-home"
-        },
-        new Link()
-        {
-            Name = "Login",
-            URL = "login",
-            IconClass = "oi oi-home"
-        },
-        new Link()
-        {
-            Name = "Register",
-            URL = "register",
-            IconClass = "oi oi-plus"
-        },
-        new Link()
-        {
-            Name = "Users",
-            URL = "users",
-            IconClass = "oi oi-list-rich"
-        }
-    };
+    private void ToogleSidebar() => sidebar.ToggleSidebar();
 }

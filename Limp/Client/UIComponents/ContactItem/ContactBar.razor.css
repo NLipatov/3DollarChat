@@ -1,0 +1,22 @@
+﻿.user-card {
+    padding: 1.25rem;
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-left: 0.25rem solid rgba(0, 10, 0, 1);
+    background-color: rgba(var(--bs-dark-rgb), .075);
+    border-radius: 0.25rem;
+}
+
+.user-card a {
+    text-decoration: none;
+    color: black;
+    display: flex;
+    justify-content: left;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+}
+
+.online {
+    border-left: 0.25rem solid lawngreen !important;
+}

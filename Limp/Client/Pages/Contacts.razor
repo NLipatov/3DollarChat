@@ -1,0 +1,195 @@
+﻿@page "/contacts"
+@using Limp.Client.UIComponents.ContactItem;
+
+<div style="
+    padding: 0.5rem 1rem;    
+    width: 100%;
+    height: 100%;
+    overflow: auto;">
+    <div>
+        <div>
+            <div class="input-group mb-3">
+                <div class="input-group-prepend">
+                    <span class="input-group-text" id="basic-addon1">@("@")</span>
+                </div>
+                <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1" @bind-value="NewContactUsername">
+            </div>
+            <Button Color="ButtonColor.Primary" @onclick="OnAddContactAttempt">
+                Search
+                <Icon Name="IconName.Search" />
+            </Button>
+        </div>
+
+        <Callout Type="CalloutType.Info">
+            Add a new user to your contact book
+        </Callout>
+
+        <h1>Your contacts:</h1>
+        <div>
+            @foreach (var contact in ContactsList.OrderByDescending(x => x.LastMessage))
+            {
+                <ContactBar Username=@contact.Username
+                        IsOnline=@contact.IsOnline />
+            }
+        </div>
+    </div>
+</div>
+
+<Modal @ref="modal" Title="Add user to contacts">
+    <BodyTemplate>
+        @ModalBody
+    </BodyTemplate>
+    <FooterTemplate>
+        @if(IsUserExists)
+        {
+            <Button Color="ButtonColor.Danger" @onclick="HideModal">Cancel</Button>
+            <Button Color="ButtonColor.Success">Confirm</Button>
+        }
+        else
+        {
+            <Button Color="ButtonColor.Secondary" @onclick="HideModal">Hide</Button>
+        }
+    </FooterTemplate>
+</Modal>
+
+@code {
+    private Modal modal = default!;
+    private string ModalBody = string.Empty;
+    private bool IsUserExists = false;
+    private string NewContactUsername = string.Empty;
+
+    private async Task ShowModal()
+    {
+        await modal.ShowAsync();
+    }
+
+    private async Task HideModal()
+    {
+        await modal.HideAsync();
+    }
+
+    private async Task OnAddContactAttempt()
+    {
+        if (!string.IsNullOrWhiteSpace(NewContactUsername))
+        {
+            IsUserExists = false;
+            if (IsUserExists)
+            {
+                ModalBody = $"Confirm adding '{NewContactUsername}' as new contact";
+                await ShowModal();
+            }
+            else
+            {
+                ModalBody = $"There is no user with such username"; 
+                await ShowModal();
+            }
+        }
+    }
+
+    private List<Contact> ContactsList =  new()
+    {
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Lesha",
+            IsOnline = true,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        },
+        new Contact
+        {
+            Username = "Pavel",
+            IsOnline = false,
+            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
+        }
+    };
+
+    public class Contact
+    {
+        public string Username { get; set; }
+        public bool IsOnline { get; set; } = false;
+        public DateTime LastMessage { get; set; } = DateTime.UtcNow;
+    }
+}

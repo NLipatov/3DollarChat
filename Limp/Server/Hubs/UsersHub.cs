@@ -23,9 +23,11 @@ namespace Limp.Server.Hubs
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
         }
-        public async override Task OnConnectedAsync() => _userConnectedHandler.OnConnect(Context.ConnectionId);
+        public async override Task OnConnectedAsync() => 
+            _userConnectedHandler.OnConnect(Context.ConnectionId);
 
-        public async override Task OnDisconnectedAsync(Exception? exception) => _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
+        public async override Task OnDisconnectedAsync(Exception? exception) => 
+            _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
 
         public async Task SetUsername(string accessToken) => await _userConnectedHandler
             .OnUsernameResolved

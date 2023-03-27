@@ -17,6 +17,7 @@
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.UIComponents.ContactItem;
 @using ClientServerCommon.Models.Login;
+@using System.Collections.Concurrent;
 @inject NavigationManager _navigationManager
 @inject ICryptographyService _cryptographyService
 @inject IMessageBox _messageBox
@@ -74,8 +75,7 @@
         usersHubHandlers.Add(_usersHubObserver.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
-            userConnections = userConnectionsList;
-            StateHasChanged();
+            HandleUserConnectionsUpdate(userConnectionsList);
         }));
 
         usersHubHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.MyUsernameResolved,
@@ -85,14 +85,22 @@
             {
                 await _hubInteractor.ConnectToMessageDispatcherHubAsync(cryptographyService: _cryptographyService, onOnlineUsersReceive: (userConnectionsList) =>
                 {
-                    userConnections = userConnectionsList;
-                    StateHasChanged();
+                    HandleUserConnectionsUpdate(userConnectionsList);
                 });
             }
         }));
 
         await _authHubHandler.ConnectAsync();
         await _usersHubHandler.ConnectAsync();
+    }
+
+    private void HandleUserConnectionsUpdate(List<UserConnections> updatedUserConnections)
+    {
+        lock(updatedUserConnections)
+        {
+            userConnections = updatedUserConnections;
+        }
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()

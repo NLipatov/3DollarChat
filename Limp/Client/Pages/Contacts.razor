@@ -1,5 +1,6 @@
 ﻿@page "/contacts"
 @using Limp.Client.UIComponents.ContactItem;
+@inject NavigationManager _navigationManager;
 
 <div style="
     padding: 0.5rem 1rem;    
@@ -29,7 +30,8 @@
             @foreach (var contact in ContactsList.OrderByDescending(x => x.LastMessage))
             {
                 <ContactBar Username=@contact.Username
-                        IsOnline=@contact.IsOnline />
+                        IsOnline=@contact.IsOnline
+                        OnClickCallback=@(() => _navigationManager.NavigateTo($"/user/{contact.Username}")) />
             }
         </div>
     </div>

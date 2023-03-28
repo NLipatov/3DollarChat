@@ -1,7 +1,7 @@
 ﻿using LimpShared.Encryption;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace Limp.Client.Utilities
+namespace Limp.Client.Services
 {
     public static class TokenReader
     {

@@ -1,5 +1,5 @@
 ﻿using ClientServerCommon.Models;
-using Limp.Client.Utilities;
+using Limp.Client.Services;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;

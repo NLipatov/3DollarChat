@@ -12,6 +12,8 @@ using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorBootstrap;
+using Limp.Client.Services.ContactsProvider;
+using Limp.Client.Services.ContactsProvider.Implementations;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -26,5 +28,6 @@ builder.Services.AddTransient<IAESOfferHandler, AESOfferHandler>();
 builder.Services.AddTransient<IEventCallbackExecutor, EventCallbackExecutor>();
 builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
 builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();
+builder.Services.AddTransient<IContactsProvider, ContactsProvider>();
 
 await builder.Build().RunAsync();

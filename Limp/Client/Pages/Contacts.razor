@@ -1,6 +1,9 @@
 ﻿@page "/contacts"
+@using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.UIComponents.ContactItem;
 @inject NavigationManager _navigationManager;
+@inject IContactsProvider _contactsProvider;
+@inject IJSRuntime _jSRuntime;
 
 <div style="
     padding: 0.5rem 1rem;    
@@ -8,7 +11,11 @@
     height: 100%;
     overflow: auto;">
     <div>
-        <div>
+        <div style="
+        padding: 1rem;
+        background-color: whitesmoke;
+        margin: 10px;">
+            <h1>Search for a new contact!</h1>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
                     <span class="input-group-text" id="basic-addon1">@("@")</span>
@@ -16,24 +23,60 @@
                 <input type="text" class="form-control" placeholder="Username" aria-label="Username" aria-describedby="basic-addon1" @bind-value="NewContactUsername">
             </div>
             <Button Color="ButtonColor.Primary" @onclick="OnAddContactAttempt">
-                Search
+                <span>Search for a user</span>
                 <Icon Name="IconName.Search" />
             </Button>
         </div>
 
-        <Callout Type="CalloutType.Info">
-            Add a new user to your contact book
-        </Callout>
-
-        <h1>Your contacts:</h1>
-        <div>
-            @foreach (var contact in ContactsList.OrderByDescending(x => x.LastMessage))
-            {
-                <ContactBar Username=@contact.Username
-                        IsOnline=@contact.IsOnline
-                        OnClickCallback=@(() => _navigationManager.NavigateTo($"/user/{contact.Username}")) />
-            }
-        </div>
+        @if(ContactsList.Any())
+        {
+            <div style="    
+                    padding: 1rem;
+                    background-color: whitesmoke;
+                    margin: 10px;">
+                <div style="    
+                        display: flex;
+                        justify-content: space-between;">
+                    <h1>Your contacts:</h1>
+                    @if(!contactEditionMode)
+                    {
+                        <Button Color="ButtonColor.Primary" Outline="true" @onclick="ToggleContactEditionMode">Edit</Button>
+                    }
+                    else
+                    {
+                        <Button Color="ButtonColor.Success" Outline="true" @onclick="ToggleContactEditionMode">Done</Button>
+                    }
+                </div>
+                <div>
+                    @foreach (var contact in ContactsList.OrderByDescending(x => x.LastMessage))
+                    {
+                        <div style="
+                                display: flex;
+                                align-items: center;
+                                gap: 10px;">
+                            @if(contactEditionMode)
+                            {
+                                <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
+                          @onclick="(async() => await RemoveContact(contact.Username))"></Icon>
+                            }
+                            <ContactBar Username=@contact.Username
+                                IsOnline=@contact.IsOnline
+                                OnClickCallback=@(() => _navigationManager.NavigateTo($"/user/{contact.Username}")) 
+                                Style="width: 100%;"/>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+        else
+        {
+            <Callout Type="CalloutType.Tip">
+                <div style="display: flex; flex-direction: column;">
+                    <h3>Your contact book is empty</h3>
+                    <span>Add someone and start a new chat!</span>
+                </div>
+            </Callout>
+        }
     </div>
 </div>
 
@@ -45,7 +88,7 @@
         @if(IsUserExists)
         {
             <Button Color="ButtonColor.Danger" @onclick="HideModal">Cancel</Button>
-            <Button Color="ButtonColor.Success">Confirm</Button>
+            <Button Color="ButtonColor.Success" @onclick="(async ()=>await HandleContactAddition(NewContactUsername))">Confirm</Button>
         }
         else
         {
@@ -59,6 +102,20 @@
     private string ModalBody = string.Empty;
     private bool IsUserExists = false;
     private string NewContactUsername = string.Empty;
+    private List<Contact> ContactsList = new();
+    private bool contactEditionMode = false;
+
+    private async Task ToggleContactEditionMode()
+    {
+        contactEditionMode = !contactEditionMode;
+        StateHasChanged();
+    }
+
+    private async Task RemoveContact(string username)
+    {
+        await _contactsProvider.RemoveContact(username, _jSRuntime);
+        await UpdateContacts();
+    }
 
     private async Task ShowModal()
     {
@@ -74,7 +131,7 @@
     {
         if (!string.IsNullOrWhiteSpace(NewContactUsername))
         {
-            IsUserExists = false;
+            IsUserExists = true;
             if (IsUserExists)
             {
                 ModalBody = $"Confirm adding '{NewContactUsername}' as new contact";
@@ -88,110 +145,37 @@
         }
     }
 
-    private List<Contact> ContactsList =  new()
+    private async Task HandleContactAddition(string username)
     {
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Lesha",
-            IsOnline = true,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2023, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        },
-        new Contact
-        {
-            Username = "Pavel",
-            IsOnline = false,
-            LastMessage = new DateTime(day: 25, month: 03, year: 2022, kind: DateTimeKind.Utc, hour: 15, minute: 23, second: 02)
-        }
-    };
+        await _contactsProvider.AddContact(NewContactUsername, _jSRuntime);
+        await HideModal();
+        await UpdateContacts();
+    }
 
     public class Contact
     {
         public string Username { get; set; }
         public bool IsOnline { get; set; } = false;
         public DateTime LastMessage { get; set; } = DateTime.UtcNow;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateContacts();
+    }
+
+    private async Task UpdateContacts()
+    {
+        List<string> contacts = await _contactsProvider.GetContacts(_jSRuntime);
+        ContactsList = contacts.Select(x =>
+        new Contact
+            {
+                Username = x,
+                IsOnline = false,
+                LastMessage = DateTime.UtcNow
+            }).ToList();
+
+        StateHasChanged();
+        
     }
 }

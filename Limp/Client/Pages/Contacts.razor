@@ -82,13 +82,29 @@
 
 <Modal @ref="modal" Title="Add user to contacts">
     <BodyTemplate>
-        @ModalBody
+        @if (ContactsList.Any(x => x.Username == NewContactUsername))
+        {
+            <span>
+                @NewContactUsername is already in your contact book
+            </span>
+        }
+        else
+        {
+            @ModalBody
+        }
     </BodyTemplate>
     <FooterTemplate>
         @if(IsUserExists)
         {
-            <Button Color="ButtonColor.Danger" @onclick="HideModal">Cancel</Button>
-            <Button Color="ButtonColor.Success" @onclick="(async ()=>await HandleContactAddition(NewContactUsername))">Confirm</Button>
+            @if(ContactsList.Any(x=>x.Username == NewContactUsername))
+            {
+                <Button Color="ButtonColor.Secondary" @onclick="HideModal">Hide</Button>
+            }
+            else
+            {
+                <Button Color="ButtonColor.Danger" @onclick="HideModal">Cancel</Button>
+                <Button Color="ButtonColor.Success" @onclick="(async ()=>await HandleContactAddition(NewContactUsername))">Confirm</Button>
+            }
         }
         else
         {
@@ -113,7 +129,16 @@
 
     private async Task RemoveContact(string username)
     {
+        //Get contact out of client's browser local storage
         await _contactsProvider.RemoveContact(username, _jSRuntime);
+
+        //If there is no one in contact book left, toggle change mode back to false automatically
+        if(!(await _contactsProvider.GetContacts(_jSRuntime)).Any())
+        {
+            await ToggleContactEditionMode();
+        }
+
+        //update displayed contacts in UI component
         await UpdateContacts();
     }
 

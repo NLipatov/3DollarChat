@@ -36,7 +36,7 @@ public class UsersHubInteractor : IHubInteractor<UsersHubInteractor>
         //Here we are registering a callbacks for specific server-triggered events.
         //Events are being triggered from SignalR hubs in server project.
 
-        usersHub.On<List<UserConnections>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
+        usersHub.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
         {
             await _usersHubObserver.CallHandler(UsersHubEvent.ConnectedUsersListReceived, updatedTrackedUserConnections);
         });

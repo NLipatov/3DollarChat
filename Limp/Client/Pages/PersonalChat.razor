@@ -74,7 +74,7 @@
     public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty;
-    private List<UserConnections> userConnections { get; set; } = new();
+    private List<UserConnection> userConnections { get; set; } = new();
     HubInteractor? _hubInteractor;
     private bool isAcceptedAESKeyExists { get; set; } = false;
     private UsersHubInteractor? _usersHubHandler;
@@ -85,7 +85,7 @@
 
         _usersHubHandler = new(Navigation, jS, _usersHubSubscriptionManager);
 
-        _usersHubSubscriptionManager.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived, 
+        _usersHubSubscriptionManager.AddHandler<List<UserConnection>>(UsersHubEvent.ConnectedUsersListReceived, 
         async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;

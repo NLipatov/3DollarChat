@@ -44,7 +44,7 @@ namespace Limp.Client.HubInteraction
         Action<Guid>? onMessageReceivedByRecepient = null,
         ICryptographyService? cryptographyService = null,
         Func<Task>? OnAESAcceptedCallback = null,
-        Action<List<UserConnections>>? onOnlineUsersReceive = null)
+        Action<List<UserConnection>>? onOnlineUsersReceive = null)
         {
             if (onMessageReceive != null)
             {
@@ -56,7 +56,7 @@ namespace Limp.Client.HubInteraction
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
             .Build();
 
-            messageDispatcherHub.On<List<UserConnections>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            messageDispatcherHub.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 if (onOnlineUsersReceive != null)
                 {

@@ -20,7 +20,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.ConnectionIds.Contains(connectionId)))
                 {
                     InMemoryHubConnectionStorage.UsersHubConnections.Add(
-                    new UserConnections
+                    new UserConnection
                     {
                         ConnectionIds = new List<string>()
                         {

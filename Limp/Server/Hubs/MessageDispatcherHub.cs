@@ -51,7 +51,7 @@ namespace Limp.Server.Hubs
 
         public async Task PushOnlineUsersToClients()
         {
-            List<UserConnections> userConnections = _onlineUsersManager.GetOnlineUsers();
+            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 

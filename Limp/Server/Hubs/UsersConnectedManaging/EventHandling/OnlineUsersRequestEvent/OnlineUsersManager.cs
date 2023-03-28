@@ -5,17 +5,17 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
 {
     public class OnlineUsersManager : IOnlineUsersManager
     {
-        public List<UserConnections> GetOnlineUsers()
+        public List<UserConnection> GetOnlineUsers()
         {
-            List<UserConnections> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+            List<UserConnection> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .Where(x => x.Username != null && x.ConnectionIds.Count > 0)
                 .ToList();
 
-            List<UserConnections> uConnections = InMemoryHubConnectionStorage.UsersHubConnections
+            List<UserConnection> uConnections = InMemoryHubConnectionStorage.UsersHubConnections
                 .Where(x => x.Username != null && x.ConnectionIds.Count > 0)
                 .ToList();
 
-            List<UserConnections> commonConnections = uConnections.Where(u=>mdConnections.Any(md=>md.Username == u.Username)).ToList();
+            List<UserConnection> commonConnections = uConnections.Where(u=>mdConnections.Any(md=>md.Username == u.Username)).ToList();
 
             return commonConnections;
         }

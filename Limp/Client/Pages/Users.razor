@@ -40,7 +40,7 @@
 </div>
 
 @code {
-    private List<UserConnections> userConnections { get; set; } = new();
+    private List<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private AuthHubInteractor? _authHubHandler;
     private UsersHubInteractor? _usersHubHandler;
@@ -72,7 +72,7 @@
             myConnectionId = id;
         }));
 
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<List<UserConnections>>(UsersHubEvent.ConnectedUsersListReceived,
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<List<UserConnection>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
             HandleUserConnectionsUpdate(userConnectionsList);
@@ -94,7 +94,7 @@
         await _usersHubHandler.ConnectAsync();
     }
 
-    private void HandleUserConnectionsUpdate(List<UserConnections> updatedUserConnections)
+    private void HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
     {
         lock(updatedUserConnections)
         {

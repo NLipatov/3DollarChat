@@ -98,6 +98,11 @@
     {
         lock(updatedUserConnections)
         {
+            userConnections.Clear();
+            foreach (var connection in updatedUserConnections)
+            {
+                userConnections.Add(connection);
+            }
             userConnections = updatedUserConnections;
         }
         StateHasChanged();

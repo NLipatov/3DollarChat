@@ -2,6 +2,11 @@
 {
     public enum MessageHubEvent
     {
-        AESAccept
+        AESAccept,
+        MessageReceived,
+        OnlineUsersReceived,
+        MessageReceivedByRecepient,
+        PublicKeyReceived,
+        MyUsernameResolved
     }
 }

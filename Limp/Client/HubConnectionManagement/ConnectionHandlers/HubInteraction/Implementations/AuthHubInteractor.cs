@@ -60,6 +60,11 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
         public async ValueTask DisposeAsync()
         {
             _authHubObserver.UnsubscriveAll();
+            if(authHub != null)
+            {
+                await authHub.StopAsync();
+                await authHub.DisposeAsync();
+            }
         }
     }
 }

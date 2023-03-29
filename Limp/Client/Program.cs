@@ -16,6 +16,8 @@ using Limp.Client.Services.ContactsProvider;
 using Limp.Client.Services.ContactsProvider.Implementations;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
+using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
+using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -28,9 +30,12 @@ builder.Services.AddSingleton<IMessageBox, MessageBox>();
 builder.Services.AddTransient<IMessageDecryptor, MessageDecryptor>();
 builder.Services.AddTransient<IAESOfferHandler, AESOfferHandler>();
 builder.Services.AddTransient<IEventCallbackExecutor, EventCallbackExecutor>();
-builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
-builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();
 builder.Services.AddTransient<IContactsProvider, ContactsProvider>();
 builder.Services.AddTransient<IConcurrentCollectionManager, ConcurrentCollectionManager>();
+#region HubObservers DI Registration
+builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
+builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();
+builder.Services.AddSingleton<IHubObserver<MessageHubEvent>, MessageHubObserver>();
+#endregion
 
 await builder.Build().RunAsync();

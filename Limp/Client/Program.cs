@@ -14,6 +14,8 @@ using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using BlazorBootstrap;
 using Limp.Client.Services.ContactsProvider;
 using Limp.Client.Services.ContactsProvider.Implementations;
+using Limp.Client.Services.ConcurrentCollectionManager;
+using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -29,5 +31,6 @@ builder.Services.AddTransient<IEventCallbackExecutor, EventCallbackExecutor>();
 builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
 builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();
 builder.Services.AddTransient<IContactsProvider, ContactsProvider>();
+builder.Services.AddTransient<IConcurrentCollectionManager, ConcurrentCollectionManager>();
 
 await builder.Build().RunAsync();

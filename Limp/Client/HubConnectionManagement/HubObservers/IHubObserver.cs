@@ -5,7 +5,7 @@
         /// <summary>
         /// Adds handler for event type
         /// </summary>
-        Guid AddHandler<T>(EventEnum eventType, Func<T, Task> callback);
+        Guid AddHandler<T>(EventEnum eventType, T callback);
         /// <summary>
         /// Removes handler by handler id
         /// </summary>

@@ -65,19 +65,19 @@
             return;
         }
 
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.ConnectionIdReceived,
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.ConnectionIdReceived,
         async (id) =>
         {
             myConnectionId = id;
         }));
 
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<List<UserConnection>>(UsersHubEvent.ConnectedUsersListReceived,
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
             HandleUserConnectionsUpdate(userConnectionsList);
         }));
 
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<string>(UsersHubEvent.MyUsernameResolved,
+        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
         async (username) =>
         {
             if (_hubInteractor != null)

@@ -84,7 +84,7 @@
 
         _usersHubHandler = new(Navigation, jS, _usersHubSubscriptionManager);
 
-        _usersHubSubscriptionManager.AddHandler<List<UserConnection>>(UsersHubEvent.ConnectedUsersListReceived, 
+        _usersHubSubscriptionManager.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
             userConnections = userConnectionsList;

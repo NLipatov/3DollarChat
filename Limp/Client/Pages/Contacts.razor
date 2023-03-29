@@ -5,16 +5,13 @@
 @inject IContactsProvider _contactsProvider;
 @inject IJSRuntime _jSRuntime;
 
-<div style="
-    padding: 0.5rem 1rem;    
+<div class="p-2" style="  
     width: 100%;
     height: 100%;
     overflow: auto;">
     <div>
-        <div style="
-        padding: 1rem;
-        background-color: whitesmoke;
-        margin: 10px;">
+        <div class="m-2 p-2" style="
+        background-color: whitesmoke;">
             <h1>Search for a new contact!</h1>
             <div class="input-group mb-3">
                 <div class="input-group-prepend">
@@ -30,10 +27,8 @@
 
         @if(ContactsList.Any())
         {
-            <div style="    
-                    padding: 1rem;
-                    background-color: whitesmoke;
-                    margin: 10px;">
+            <div class="m-2 p-2" style="
+                    background-color: whitesmoke;">
                 <div style="    
                         display: flex;
                         justify-content: space-between;">
@@ -70,7 +65,7 @@
         }
         else
         {
-            <Callout Type="CalloutType.Tip">
+            <Callout Class="m-2" Type="CalloutType.Tip">
                 <div style="display: flex; flex-direction: column;">
                     <h3>Your contact book is empty</h3>
                     <span>Add someone and start a new chat!</span>

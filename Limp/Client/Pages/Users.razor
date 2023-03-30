@@ -12,6 +12,7 @@
 @using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
 @using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 @using Limp.Client.HubInteraction.HubObservers;
+@using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.TopicStorage;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -26,6 +27,7 @@
 @inject IHubObserver<UsersHubEvent> _usersHubObserver
 @inject IHubObserver<AuthHubEvent> _authHubObserver
 @inject IHubObserver<MessageHubEvent> _messageDispatcherHubObserver 
+@inject IHubConnectionProvider _hubConnectionProvider
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -43,12 +45,6 @@
 @code {
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
-    private AuthHubInteractor? _authHubInteractor;
-    private UsersHubInteractor? _usersHubInteractor;
-    private MessageDispatcherHubInteractor? _messageDispatcherHubInteractor;
-    private List<Guid> usersHubHandlers = new();
-    private List<Guid> authHubHandlers = new();
-    private List<Guid> messageDispatcherHandlers = new();
     private HubConnection? usersHubConnection;
 
     private async Task RedirectToChat(string username)
@@ -56,51 +52,16 @@
         _navigationManager.NavigateTo($"/user/{username}");
     }
 
+    private async Task HandleMyConnectionIdUpdate(string id)
+    {
+        myConnectionId = id;
+    }
+
     protected override async Task OnInitializedAsync()
     {
-        _authHubInteractor = new AuthHubInteractor(_navigationManager, _jS, _authHubObserver);
-        _usersHubInteractor = new UsersHubInteractor(_navigationManager, _jS, _usersHubObserver);
-
-        if (String.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
-        {
-            _navigationManager.NavigateTo("login");
-            return;
-        }
-
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.ConnectionIdReceived,
-        async (id) =>
-        {
-            myConnectionId = id;
-        }));
-
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
-        async (userConnectionsList) =>
-        {
-            await HandleUserConnectionsUpdate(userConnectionsList);
-        }));
-
-        usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
-        async (username) =>
-        {
-            if (_messageDispatcherHubInteractor == null)
-            {
-                throw new ApplicationException($"{nameof(_messageDispatcherHubInteractor)} cannot be null.");
-            }
-            await _messageDispatcherHubInteractor.ConnectAsync();
-            messageDispatcherHandlers.Add(_messageDispatcherHubObserver.AddHandler(MessageHubEvent.OnlineUsersReceived, HandleUserConnectionsUpdate));
-            StateHasChanged();
-        }));
-
-        await _authHubInteractor.ConnectAsync();
-        usersHubConnection = await _usersHubInteractor.ConnectAsync();
-        _messageDispatcherHubInteractor = new MessageDispatcherHubInteractor
-            (_navigationManager, 
-            _jS, 
-            _messageDispatcherHubObserver, 
-            _cryptographyService, 
-            _aesOfferHandler, 
-            _messageBox, 
-            usersHubConnection);
+        await _hubConnectionProvider.ConnectToHubs
+        (OnUserConnectionsUpdate: HandleUserConnectionsUpdate,
+        OnConnectionIdUpdate: HandleMyConnectionIdUpdate);
     }
 
     private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
@@ -113,12 +74,13 @@
         StateHasChanged();
     }
 
+    private void Rerender()
+    {
+        StateHasChanged();
+    }
+
     public async ValueTask DisposeAsync()
     {
-        _usersHubObserver.RemoveHandlers(usersHubHandlers);
-
-        await _usersHubInteractor.DisposeAsync();
-        await _authHubInteractor.DisposeAsync();
-        await _messageDispatcherHubInteractor.DisposeAsync();
+        await _hubConnectionProvider.DisposeAsync();
     }
 }

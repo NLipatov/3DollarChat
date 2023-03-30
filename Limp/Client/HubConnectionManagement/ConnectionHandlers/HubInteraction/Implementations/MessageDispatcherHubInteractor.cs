@@ -197,7 +197,10 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
 
         public async ValueTask DisposeAsync()
         {
-            _messageDispatcherHubObserver.UnsubscriveAll();
+            if(_messageDispatcherHubObserver != null)
+            {
+                _messageDispatcherHubObserver.UnsubscriveAll();
+            }
             if (messageDispatcherHub != null)
             {
                 await messageDispatcherHub.StopAsync();

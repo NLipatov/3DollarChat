@@ -88,6 +88,7 @@
             }
             await _messageDispatcherHubInteractor.ConnectAsync();
             messageDispatcherHandlers.Add(_messageDispatcherHubObserver.AddHandler(MessageHubEvent.OnlineUsersReceived, HandleUserConnectionsUpdate));
+            StateHasChanged();
         }));
 
         await _authHubInteractor.ConnectAsync();

@@ -1,5 +1,6 @@
 ﻿using ClientServerCommon.Models;
-using Limp.Client.Utilities;
+using Limp.Client.Services;
+using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
@@ -23,9 +24,11 @@ namespace Limp.Server.Hubs
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
         }
-        public async override Task OnConnectedAsync() => _userConnectedHandler.OnConnect(Context.ConnectionId);
+        public async override Task OnConnectedAsync() => 
+            _userConnectedHandler.OnConnect(Context.ConnectionId);
 
-        public async override Task OnDisconnectedAsync(Exception? exception) => _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
+        public async override Task OnDisconnectedAsync(Exception? exception) => 
+            _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
 
         public async Task SetUsername(string accessToken) => await _userConnectedHandler
             .OnUsernameResolved
@@ -63,7 +66,7 @@ namespace Limp.Server.Hubs
 
         public async Task PushOnlineUsersToClients()
         {
-            List<UserConnections> userConnections = _onlineUsersManager.GetOnlineUsers();
+            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 
@@ -75,6 +78,19 @@ namespace Limp.Server.Hubs
         public async Task PostAnRSAPublic(string username, string PEMEncodedRSAPublicKey)
         {
             await _serverHttpClient.PostAnRSAPublic(username, PEMEncodedRSAPublicKey);
+        }
+
+        public async Task IsUserOnline(string username)
+        {
+            bool isUserConnectedToUsersHub =
+                InMemoryHubConnectionStorage.UsersHubConnections.Any(x=>x.Username == username);
+
+            bool isUserConnectedToMessageDispatcherHub =
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
+
+            bool isUserOnline = isUserConnectedToUsersHub && isUserConnectedToMessageDispatcherHub;
+
+            await Clients.Caller.SendAsync("IsUserOnlineResponse", username, isUserOnline);
         }
     }
 }

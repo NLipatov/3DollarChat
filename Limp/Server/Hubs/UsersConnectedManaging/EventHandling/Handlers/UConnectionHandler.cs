@@ -1,5 +1,5 @@
 ﻿using ClientServerCommon.Models;
-using Limp.Client.Utilities;
+using Limp.Client.Services;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
@@ -20,7 +20,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.ConnectionIds.Contains(connectionId)))
                 {
                     InMemoryHubConnectionStorage.UsersHubConnections.Add(
-                    new UserConnections
+                    new UserConnection
                     {
                         ConnectionIds = new List<string>()
                         {

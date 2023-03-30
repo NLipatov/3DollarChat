@@ -4,6 +4,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
 {
     public interface IOnlineUsersManager
     {
-        List<UserConnections> GetOnlineUsers();
+        List<UserConnection> GetOnlineUsers();
     }
 }

@@ -7,17 +7,6 @@
              Title="Three Dollar Chat"
              DataProvider="SidebarDataProvider" />
 
-@*    <main>
-        <div class="bb-top-row px-4 d-flex justify-content-between">
-            <Icon Name="IconName.List" role="button" @onclick="ToogleSidebar" />
-            <a href="https://docs.microsoft.com/aspnet/" target="_blank">About</a>
-        </div>
-
-        <article class="content px-4">
-            <div class="py-2">Page content goes here</div>
-        </article>
-    </main>*@
-
 </div>
 
 @code {
@@ -36,10 +25,13 @@
     {
         navItems = new List<NavItem>
         {
-            new NavItem { Id = "1", Href="/", IconName = IconName.InfoCircleFill, Text = "About 3$Chat"},
-            new NavItem { Id = "2", IconName = IconName.ChatFill, Text = "Chat"},
-            new NavItem { Id = "3", Href="/contacts", ParentId = "2", Text = "My Contacts", IconName = IconName.PersonFill },
-            new NavItem { Id = "4", Href="/users", ParentId = "2", Text = "Find A Chat", IconName = IconName.PeopleFill },
+            new NavItem { Id = "1", IconName = IconName.ChatFill, IconColor = IconColor.Success, Text = "Chat"},
+                new NavItem { Id = "2", Href="/contacts", ParentId = "1", Text = "Contacts", IconName = IconName.PeopleFill },
+                new NavItem { Id = "3", Href="/users", ParentId = "1", Text = "Users Online", IconName = IconName.PeopleFill },
+            new NavItem { Id = "4", Href="/settings", Text="Settings", IconName = IconName.GearWideConnected },
+                new NavItem { Id = "5", ParentId="4", Href="/settings/ui", Text="Appearance", IconName = IconName.PaletteFill },
+                new NavItem { Id = "6", ParentId="4", Href="settings/core", Text="Core", IconName = IconName.Box2Fill },
+            new NavItem { Id = "7", Href="/", IconName = IconName.InfoCircleFill, Text = "About 3$Chat"},
         };
 
         return navItems;

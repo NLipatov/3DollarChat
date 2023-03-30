@@ -3,65 +3,61 @@ using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
+using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.TopicStorage;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.HubInteraction
+namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations
 {
-    public class HubInteractor
+    public class MessageDispatcherHubInteractor : IHubInteractor<MessageDispatcherHubInteractor>
     {
-        private HubConnection? usersHub;
-        private HubConnection? messageDispatcherHub;
-        private List<Guid> subscriptions = new();
         private readonly NavigationManager _navigationManager;
         private readonly IJSRuntime _jSRuntime;
+        private readonly IHubObserver<MessageHubEvent> _messageDispatcherHubObserver;
+        private readonly ICryptographyService _cryptographyService;
+        private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IMessageBox _messageBox;
-        private readonly IAESOfferHandler _aesOfferHandler;
+        private readonly HubConnection _usersHub;
+        private HubConnection? messageDispatcherHub;
         private string myName = string.Empty;
-
-        public HubInteractor
+        private Guid? messageBoxSubscriptionId;
+        public MessageDispatcherHubInteractor
         (NavigationManager navigationManager,
         IJSRuntime jSRuntime,
+        IHubObserver<MessageHubEvent> messageDispatcherHubObserver,
+        ICryptographyService cryptographyService,
+        IAESOfferHandler aESOfferHandler,
         IMessageBox messageBox,
-        IAESOfferHandler aESOfferHandler)
+        HubConnection usersHub)
         {
             _navigationManager = navigationManager;
             _jSRuntime = jSRuntime;
+            _messageDispatcherHubObserver = messageDispatcherHubObserver;
+            _cryptographyService = cryptographyService;
+            _aESOfferHandler = aESOfferHandler;
             _messageBox = messageBox;
-            _aesOfferHandler = aESOfferHandler;
+            _usersHub = usersHub;
         }
-
         private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
-
-        public async Task<HubConnection> ConnectToMessageDispatcherHubAsync
-        (Func<Message, Task>? onMessageReceive = null,
-        Func<string, Task>? onUsernameResolve = null,
-        Action<Guid>? onMessageReceivedByRecepient = null,
-        ICryptographyService? cryptographyService = null,
-        Func<Task>? OnAESAcceptedCallback = null,
-        Action<List<UserConnection>>? onOnlineUsersReceive = null)
+        public async Task<HubConnection> ConnectAsync()
         {
-            if (onMessageReceive != null)
-            {
-                Guid subscriptionId = _messageBox.Subsctibe(onMessageReceive);
-                subscriptions.Add(subscriptionId);
-            }
+            Guid subscriptionId = _messageBox.Subsctibe(OnMessageReceived);
+            messageBoxSubscriptionId = subscriptionId;
 
             messageDispatcherHub = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
             .Build();
 
-            messageDispatcherHub.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            #region Event handlers registration
+            messageDispatcherHub.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
             {
-                if (onOnlineUsersReceive != null)
-                {
-                    onOnlineUsersReceive(updatedTrackedUserConnections);
-                }
+                await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.OnlineUsersReceived, updatedTrackedUserConnections);
             });
 
             messageDispatcherHub.On<Message>("ReceiveMessage", async message =>
@@ -70,19 +66,16 @@ namespace Limp.Client.HubInteraction
                 {
                     if (message.Type == MessageType.AESAccept)
                     {
-                        if (OnAESAcceptedCallback != null)
-                        {
-                            await OnAESAcceptedCallback();
-                        }
+                        await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.AESAccept, message);
                         return;
                     }
 
-                    if (cryptographyService == null)
+                    if (_cryptographyService == null)
                         throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
 
                     if (message.Type == MessageType.AESOffer)
                     {
-                        await SendMessage(await _aesOfferHandler.GetAESOfferResponse(message));
+                        await SendMessage(await _aESOfferHandler.GetAESOfferResponse(message));
                     }
                 }
 
@@ -94,12 +87,9 @@ namespace Limp.Client.HubInteraction
                 await GetPartnerPublicKey(message.Sender!);
             });
 
-            messageDispatcherHub.On<Guid>("MessageWasReceivedByRecepient", messageId =>
+            messageDispatcherHub.On<Guid>("MessageWasReceivedByRecepient", async messageId =>
             {
-                if (onMessageReceivedByRecepient != null)
-                {
-                    onMessageReceivedByRecepient(messageId);
-                }
+                await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MessageReceivedByRecepient, messageId);
             });
 
             //Handling server side response on partners Public Key
@@ -118,26 +108,35 @@ namespace Limp.Client.HubInteraction
 
                 //Now we can send an encrypted offer on AES Key
                 //We will encrypt our offer with a partners RSA Public Key
-                await GenerateAESAndSendItToPartner(cryptographyService!, partnersUsername, partnersPublicKey);
+                await GenerateAESAndSendItToPartner(_cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
-            if (onUsernameResolve != null)
+            messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
             {
-                messageDispatcherHub.On<string>("OnMyNameResolve", async username =>
-                {
-                    myName = username;
-                    await onUsernameResolve(username);
-                    await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic!);
-                });
-            }
+                myName = username;
+                await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MyUsernameResolved, myName);
+                await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic!);
+            });
+            #endregion
 
             await messageDispatcherHub.StartAsync();
-
             await messageDispatcherHub.SendAsync("SetUsername", await GetAccessToken());
 
             return messageDispatcherHub;
         }
-        public async Task GetPartnerPublicKey(string partnersUsername)
+
+        private async Task OnMessageReceived(Message message)
+        {
+            await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MessageReceived, message);
+        }
+
+        private async Task SendMessage(Message message)
+        {
+            if (messageDispatcherHub != null)
+                await messageDispatcherHub.SendAsync("Dispatch", message);
+        }
+
+        private async Task GetPartnerPublicKey(string partnersUsername)
         {
             if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == partnersUsername).Value == null)
             {
@@ -187,40 +186,26 @@ namespace Limp.Client.HubInteraction
                 await SendMessage(offerOnAES);
             });
         }
-
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
             {
-                usersHub?.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
+                _usersHub?.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
                 InMemoryKeyStorage.isPublicKeySet = true;
             }
         }
 
-        public List<Message> LoadStoredMessages(string topic)
+        public async ValueTask DisposeAsync()
         {
-            return _messageBox.FetchMessagesFromMessageBox(topic);
-        }
-
-        public async Task SendMessage(Message message)
-        {
-            if (messageDispatcherHub != null)
-                await messageDispatcherHub.SendAsync("Dispatch", message);
-        }
-
-        public async Task DisposeAsync()
-        {
-            if (usersHub != null)
-            {
-                await usersHub.DisposeAsync();
-            }
+            _messageDispatcherHubObserver.UnsubscriveAll();
             if (messageDispatcherHub != null)
             {
+                await messageDispatcherHub.StopAsync();
                 await messageDispatcherHub.DisposeAsync();
             }
-            foreach (var subscription in subscriptions)
+            if(messageBoxSubscriptionId != null)
             {
-                _messageBox.Unsubscribe(subscription);
+                _messageBox.Unsubscribe(messageBoxSubscriptionId.Value);
             }
         }
     }

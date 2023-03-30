@@ -23,7 +23,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.ConnectionIds.Contains(connectionId)))
                 {
                     InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Add(
-                    new UserConnections
+                    new UserConnection
                     {
                         ConnectionIds = new List<string>()
                         {
@@ -85,7 +85,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                     {
                         InMemoryHubConnectionStorage
                         .MessageDispatcherHubConnections
-                        .Add(new ClientServerCommon.Models.UserConnections
+                        .Add(new ClientServerCommon.Models.UserConnection
                         {
                             Username = username,
                             ConnectionIds = new List<string>

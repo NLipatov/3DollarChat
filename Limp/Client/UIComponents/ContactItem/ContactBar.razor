@@ -1,4 +1,4 @@
-﻿<div style="cursor: pointer;" @onclick="()=>OnClickCallback()">
+﻿<div style="cursor: pointer; @Style" @onclick="()=>OnClickCallback()">
     <div class="user-card @(IsOnline ? "online" : "")">
         <a class="bi bi-person-fill" href="/user/@Username">@Username</a>
     </div>
@@ -12,5 +12,8 @@
     public bool IsOnline { get; set; }
 
     [Parameter]
-    public Func<Task> OnClickCallback { get; set; }
+    public Action OnClickCallback { get; set; }
+
+    [Parameter]
+    public string Style { get; set; } = string.Empty;
 }

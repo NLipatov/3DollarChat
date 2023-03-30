@@ -41,7 +41,7 @@
 </div>
 
 @code {
-    private List<UserConnection> userConnections { get; set; } = new();
+    private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private AuthHubInteractor? _authHubInteractor;
     private UsersHubInteractor? _usersHubInteractor;
@@ -76,17 +76,18 @@
         usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
         async (userConnectionsList) =>
         {
-            HandleUserConnectionsUpdate(userConnectionsList);
+            await HandleUserConnectionsUpdate(userConnectionsList);
         }));
 
         usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
         async (username) =>
         {
-            if (_messageDispatcherHubInteractor != null)
+            if (_messageDispatcherHubInteractor == null)
             {
-                await _messageDispatcherHubInteractor.ConnectAsync();
-                messageDispatcherHandlers.Add(_messageDispatcherHubObserver.AddHandler(MessageHubEvent.OnlineUsersReceived, HandleUserConnectionsUpdate));
+                throw new ApplicationException($"{nameof(_messageDispatcherHubInteractor)} cannot be null.");
             }
+            await _messageDispatcherHubInteractor.ConnectAsync();
+            messageDispatcherHandlers.Add(_messageDispatcherHubObserver.AddHandler(MessageHubEvent.OnlineUsersReceived, HandleUserConnectionsUpdate));
         }));
 
         await _authHubInteractor.ConnectAsync();
@@ -103,14 +104,10 @@
 
     private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
     {
-        lock(updatedUserConnections)
+        userConnections.Clear();
+        foreach (var connection in updatedUserConnections)
         {
-            userConnections.Clear();
-            foreach (var connection in updatedUserConnections)
-            {
-                userConnections.Add(connection);
-            }
-            userConnections = updatedUserConnections;
+            userConnections.Add(connection);
         }
         StateHasChanged();
     }

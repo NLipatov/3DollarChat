@@ -18,93 +18,53 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         }
         public void OnConnect(string connectionId)
         {
-            lock (InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.ConnectionIds.Contains(connectionId)))
-                {
-                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Add(
-                    new UserConnection
-                    {
-                        ConnectionIds = new List<string>()
-                        {
-                            connectionId
-                        }
-                    });
-                }
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(connectionId, new List<string>() { connectionId });
             }
         }
 
-        public void OnDisconnect(string connectionId, Func<Task> callback)
+        public async void OnDisconnect(string connectionId, Func<Task> callback, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
-            lock (InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            var targetConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .First(x => x.Value.Contains(connectionId));
+            
+            await RemoveUserFromGroup(connectionId, targetConnection.Key, default);
+
+            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.ConnectionIds.Contains(connectionId)))
-                {
-                    var connectionToBeDeleted = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                        .First(x => x.ConnectionIds.Contains(connectionId));
+                targetConnection.Value.Remove(connectionId);
+            }
 
-                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Remove(connectionToBeDeleted);
-                }
-
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.RemoveAll(x=>x.ConnectionIds.Count() == 0);
+            foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Count == 0))
+            {
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connection);
             }
         }
 
         public async Task OnUsernameResolved
-            (string connectionId, 
-            string accessToken, 
-            Func<string, string, CancellationToken, Task>? AddUserToGroup, 
-            Func<string, string, CancellationToken, Task>? callback,
-            Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
+        (string connectionId, 
+        string accessToken, 
+        Func<string, string, CancellationToken, Task>? AddUserToGroup, 
+        Func<string, string, CancellationToken, Task>? callback,
+        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, callback });
 
             string username = await GetUsername(accessToken);
 
-            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            //If there is a connection that has its connection id as a key, than its a unnamed connection.
+            //we already have an proper username for this connection, so lets change a connection key
+            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == connectionId))
             {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username))
-                {
-                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                        .First(x => x.Username == username).ConnectionIds.Add(connectionId);
-                }
-                else
-                {
-                    var targetConnection = InMemoryHubConnectionStorage
-                    .MessageDispatcherHubConnections
-                    .FirstOrDefault(x => x.ConnectionIds.Contains(connectionId));
-
-                    if (targetConnection != null)
-                    {
-                        InMemoryHubConnectionStorage
-                        .MessageDispatcherHubConnections
-                        .First(x => x.ConnectionIds.Contains(connectionId))
-                        .Username = username;
-                    }
-                    else
-                    {
-                        InMemoryHubConnectionStorage
-                        .MessageDispatcherHubConnections
-                        .Add(new ClientServerCommon.Models.UserConnection
-                        {
-                            Username = username,
-                            ConnectionIds = new List<string>
-                            {
-                        connectionId
-                            }
-                        });
-                    }
-                }
+                //setup a new item with all the old connections
+                var connectionToBeDeleted = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.FirstOrDefault(x => x.Key == connectionId);
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(username, connectionToBeDeleted.Value);
+                //remove the old item
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connectionToBeDeleted);
             }
 
-            foreach (var connection in InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                .Where(x => !string.IsNullOrWhiteSpace(x.Username)))
-            {
-                foreach (var connectionIdentifier in connection.ConnectionIds)
-                {
-                    await AddUserToGroup(connectionIdentifier, username, default);
-                }
-            }
+            await AddUserToGroup(connectionId, username, default);
 
             await callback("OnMyNameResolve", username, default);
         }

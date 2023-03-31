@@ -5,7 +5,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
     public interface IUserConnectedHandler<T> where T : Hub
     {
         void OnConnect(string connectionId);
-        void OnDisconnect(string connectionId, Func<Task>? callback = null);
+        void OnDisconnect(string connectionId, Func<Task>? callback = null, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null);
         Task OnUsernameResolved
             (string connectionId,
             string accessToken, 

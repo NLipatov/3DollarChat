@@ -21,7 +21,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             }
         }
 
-        public void OnDisconnect(string connectionId, Func<Task> callback)
+        public void OnDisconnect(string connectionId, Func<Task> callback, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
             if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
             {

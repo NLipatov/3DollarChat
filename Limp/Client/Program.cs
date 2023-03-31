@@ -18,6 +18,8 @@ using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
 using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub;
+using Limp.Client.Services.HubConnectionProvider;
+using Limp.Client.Services.HubConnectionProvider.Implementation;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -32,6 +34,7 @@ builder.Services.AddTransient<IAESOfferHandler, AESOfferHandler>();
 builder.Services.AddTransient<IEventCallbackExecutor, EventCallbackExecutor>();
 builder.Services.AddTransient<IContactsProvider, ContactsProvider>();
 builder.Services.AddTransient<IConcurrentCollectionManager, ConcurrentCollectionManager>();
+builder.Services.AddScoped<IHubConnectionProvider, HubConnectionProvider>();
 #region HubObservers DI Registration
 builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
 builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();

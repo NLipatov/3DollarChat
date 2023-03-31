@@ -33,7 +33,7 @@ namespace Limp.Server.Hubs
         {
             lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
             {
-                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);
+                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == username);
             }
         }
 
@@ -41,7 +41,8 @@ namespace Limp.Server.Hubs
             => _userConnectedHandler.OnConnect(Context.ConnectionId);
 
         public async override Task OnDisconnectedAsync(Exception? exception)
-            => _userConnectedHandler.OnDisconnect(Context.ConnectionId);
+            => _userConnectedHandler.OnDisconnect(Context.ConnectionId, RemoveUserFromGroup: Groups.RemoveFromGroupAsync);
+
 
         public async Task SetUsername(string accessToken)
         {

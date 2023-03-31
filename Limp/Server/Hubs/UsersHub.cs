@@ -83,7 +83,7 @@ namespace Limp.Server.Hubs
         public async Task IsUserOnline(string username)
         {
             bool isUserConnectedToUsersHub =
-                InMemoryHubConnectionStorage.UsersHubConnections.Any(x=>x.Username == username);
+                InMemoryHubConnectionStorage.UsersHubConnections.Any(x=>x.Key == username);
 
             bool isUserConnectedToMessageDispatcherHub =
                 InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Username == username);

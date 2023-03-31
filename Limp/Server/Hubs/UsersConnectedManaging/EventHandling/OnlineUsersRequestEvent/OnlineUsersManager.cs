@@ -12,7 +12,12 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
                 .ToList();
 
             List<UserConnection> uConnections = InMemoryHubConnectionStorage.UsersHubConnections
-                .Where(x => x.Username != null && x.ConnectionIds.Count > 0)
+                .Where(x => x.Value.Count > 0)
+                .Select(x => new UserConnection
+                {
+                    Username = x.Key,
+                    ConnectionIds = x.Value,
+                })
                 .ToList();
 
             List<UserConnection> commonConnections = uConnections.Where(u=>mdConnections.Any(md=>md.Username == u.Username)).ToList();

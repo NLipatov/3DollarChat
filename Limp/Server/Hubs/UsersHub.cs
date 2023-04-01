@@ -4,6 +4,7 @@ using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
+using LimpShared.DTOs.PublicKey;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR;
 
@@ -24,11 +25,17 @@ namespace Limp.Server.Hubs
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
         }
-        public async override Task OnConnectedAsync() => 
+        public async override Task OnConnectedAsync()
+        {
             _userConnectedHandler.OnConnect(Context.ConnectionId);
+            await PushOnlineUsersToClients();
+        }
 
-        public async override Task OnDisconnectedAsync(Exception? exception) => 
-            _userConnectedHandler.OnDisconnect(Context.ConnectionId, PushOnlineUsersToClients);
+        public async override Task OnDisconnectedAsync(Exception? exception)
+        {
+            _userConnectedHandler.OnDisconnect(Context.ConnectionId);
+            await PushOnlineUsersToClients();
+        }
 
         public async Task SetUsername(string accessToken) => await _userConnectedHandler
             .OnUsernameResolved
@@ -44,7 +51,11 @@ namespace Limp.Server.Hubs
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
-                await PostAnRSAPublic(RSAPublicKey.Value.ToString(), username);
+                await PostAnRSAPublic(new PublicKeyDTO 
+                { 
+                    Key = RSAPublicKey.Value!.ToString(), 
+                    Username = username 
+                });
             }
             else
             {
@@ -64,9 +75,11 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("onNameResolve", username);
         }
 
-        public async Task PushOnlineUsersToClients()
+        private async Task PushOnlineUsersToClients()
         {
+            //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
             List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
+            //Pushes set of clients to all the clients
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 
@@ -75,9 +88,9 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task PostAnRSAPublic(string username, string PEMEncodedRSAPublicKey)
+        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
         {
-            await _serverHttpClient.PostAnRSAPublic(username, PEMEncodedRSAPublicKey);
+            await _serverHttpClient.PostAnRSAPublic(publicKeyDTO);
         }
 
         public async Task IsUserOnline(string username)

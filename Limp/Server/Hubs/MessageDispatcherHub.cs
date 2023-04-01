@@ -46,7 +46,10 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(string accessToken)
         {
-            await _userConnectedHandler.OnUsernameResolved(Context.ConnectionId, accessToken, Groups.AddToGroupAsync, Clients.Caller.SendAsync);
+            await _userConnectedHandler.OnUsernameResolved
+            (Context.ConnectionId, accessToken, 
+            Groups.AddToGroupAsync, 
+            Clients.Caller.SendAsync);
             await PushOnlineUsersToClients();
         }
 

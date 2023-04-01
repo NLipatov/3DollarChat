@@ -1,8 +1,6 @@
-﻿using ClientServerCommon.Models;
-using Limp.Client.Services;
+﻿using Limp.Client.Services;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Encryption;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
@@ -17,11 +15,13 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         {
             if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(connectionId, new List<string>() { connectionId});
+                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(connectionId, new List<string>() { connectionId });
             }
         }
 
-        public void OnDisconnect(string connectionId, Func<Task> callback, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
+        public void OnDisconnect
+        (string connectionId,
+        Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
             if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
@@ -35,13 +35,11 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             {
                 InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(connection);
             }
-
-            callback();
         }
 
         public async Task OnUsernameResolved
-        (string connectionId, 
-        string accessToken, 
+        (string connectionId,
+        string accessToken,
         Func<string, string, CancellationToken, Task>? AddUserToGroup = null,
         Func<string, string, CancellationToken, Task>? callback = null,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
@@ -52,10 +50,10 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
-            if(InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Key == connectionId))
+            if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Key == connectionId))
             {
                 //setup a new item with all the old connections
-                var connectionToBeDeleted = InMemoryHubConnectionStorage.UsersHubConnections.FirstOrDefault(x=>x.Key == connectionId);
+                var connectionToBeDeleted = InMemoryHubConnectionStorage.UsersHubConnections.FirstOrDefault(x => x.Key == connectionId);
                 InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(username, connectionToBeDeleted.Value);
                 //remove the old item
                 InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(connectionToBeDeleted);

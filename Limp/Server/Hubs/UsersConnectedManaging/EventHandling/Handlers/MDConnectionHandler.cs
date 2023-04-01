@@ -16,11 +16,16 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         {
             if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(connectionId, new List<string>() { connectionId });
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(connectionId, new List<string>() 
+                { 
+                    connectionId
+                });
             }
         }
 
-        public async void OnDisconnect(string connectionId, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
+        public async void OnDisconnect
+        (string connectionId, 
+        Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
             var targetConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .First(x => x.Value.Contains(connectionId));
@@ -42,10 +47,10 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         (string connectionId,
         string accessToken,
         Func<string, string, CancellationToken, Task>? AddUserToGroup,
-        Func<string, string, CancellationToken, Task>? callback,
+        Func<string, string, CancellationToken, Task>? SendToCaller,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
-            GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, callback });
+            GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
 
             string username = await GetUsername(accessToken);
 
@@ -62,7 +67,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
             await AddUserToGroup(connectionId, username, default);
 
-            await callback("OnMyNameResolve", username, default);
+            await SendToCaller("OnMyNameResolve", username, default);
         }
 
         private async Task<string> GetUsername(string accessToken)

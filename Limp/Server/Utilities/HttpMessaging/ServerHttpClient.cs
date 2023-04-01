@@ -130,13 +130,13 @@ namespace Limp.Server.Utilities.HttpMessaging
             return result.ResultType == OperationResultType.Success;
         }
 
-        public async Task PostAnRSAPublic(string PEMEncodedRSAPublicKey, string username)
+        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
 
             using(HttpClient client = new())
             {
-                await client.PostAsJsonAsync(requestUrl, new PublicKeyDTO { Username = username, Key = PEMEncodedRSAPublicKey});
+                await client.PostAsJsonAsync(requestUrl, new PublicKeyDTO { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key});
             }
         }
 

@@ -1,10 +1,6 @@
-﻿using ClientServerCommon.Models;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
+﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Authentification;
-using Microsoft.AspNetCore.SignalR;
-using System.Text.RegularExpressions;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
@@ -24,11 +20,11 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             }
         }
 
-        public async void OnDisconnect(string connectionId, Func<Task> callback, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
+        public async void OnDisconnect(string connectionId, Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
             var targetConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .First(x => x.Value.Contains(connectionId));
-            
+
             await RemoveUserFromGroup(connectionId, targetConnection.Key, default);
 
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
@@ -43,9 +39,9 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         }
 
         public async Task OnUsernameResolved
-        (string connectionId, 
-        string accessToken, 
-        Func<string, string, CancellationToken, Task>? AddUserToGroup, 
+        (string connectionId,
+        string accessToken,
+        Func<string, string, CancellationToken, Task>? AddUserToGroup,
         Func<string, string, CancellationToken, Task>? callback,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
@@ -72,7 +68,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         private async Task<string> GetUsername(string accessToken)
         {
             TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-                        
+
             string? username = usernameRequest.Username;
 
             if (string.IsNullOrWhiteSpace(username))

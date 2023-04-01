@@ -1,6 +1,7 @@
 ﻿using AuthAPI.DTOs.User;
 using ClientServerCommon.Models.Login;
 using LimpShared.Authentification;
+using LimpShared.DTOs.PublicKey;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -11,7 +12,7 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);
         Task<AuthResult> Register(UserDTO userDTO);
-        Task PostAnRSAPublic(string pemEncodedRSAPublicKey, string username);
+        Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO);
         Task<string?> GetAnRSAPublicKey(string username);
     }
 }

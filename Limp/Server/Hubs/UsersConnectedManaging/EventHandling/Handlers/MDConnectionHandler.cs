@@ -59,10 +59,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
             if(usernameRequestResult.ResultType == LimpShared.ResultTypeEnum.OperationResultType.Fail)
             {
-                var connectionToBeDeleted = InMemoryHubConnectionStorage
-                    .MessageDispatcherHubConnections.FirstOrDefault(x => x.Key == connectionId);
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connectionToBeDeleted);
-                //2 - RefreshToken
                 await OnFaultTokenRelatedOperation("OnFailedTokenRelatedOperation", usernameRequestResult, default);
                 return;
             }

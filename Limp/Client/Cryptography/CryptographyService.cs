@@ -53,7 +53,7 @@ namespace Limp.Client.Cryptography
 
         public async Task GenerateRSAKeyPairAsync()
         {
-            if(InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
+            if (InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
         public async Task GenerateAESKeyAsync(string contact, Action<string> callback)

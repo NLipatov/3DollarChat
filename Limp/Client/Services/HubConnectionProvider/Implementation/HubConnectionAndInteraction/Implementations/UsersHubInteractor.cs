@@ -7,7 +7,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations;
+namespace Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 
 public class UsersHubInteractor : IHubInteractor<UsersHubInteractor>
 {

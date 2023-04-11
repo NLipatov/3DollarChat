@@ -12,8 +12,8 @@ namespace Limp.Client.Services.HubConnectionProvider
         /// <param name="RerenderComponent">Delegate invoked when ui component must be rerendered</param>
         /// <returns></returns>
         Task ConnectToHubs
-        (Func<List<UserConnection>, Task>? OnUserConnectionsUpdate, 
-        Func<string, Task>? OnConnectionIdUpdate = null, 
+        (Func<List<UserConnection>, Task>? OnUserConnectionsUpdate,
+        Func<string, Task>? OnConnectionIdUpdate = null,
         Action? RerenderComponent = null);
 
         /// <summary>

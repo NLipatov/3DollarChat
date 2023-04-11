@@ -9,7 +9,7 @@ namespace Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub
     public class AuthHubObserver : IHubObserver<AuthHubEvent>
     {
         public AuthHubObserver
-        (IEventCallbackExecutor eventCallbackExecutor, 
+        (IEventCallbackExecutor eventCallbackExecutor,
         IConcurrentCollectionManager concurrentCollectionManager)
         {
             _eventCallbackExecutor = eventCallbackExecutor;

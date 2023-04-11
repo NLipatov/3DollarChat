@@ -1,12 +1,12 @@
 ﻿using ClientServerCommon.Models;
 using Limp.Client.Cryptography;
-using Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations;
 using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
 using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
+using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -119,15 +119,15 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         public async ValueTask DisposeAsync()
         {
-            if(_authHubInteractor != null)
+            if (_authHubInteractor != null)
             {
                 await _authHubInteractor.DisposeAsync();
             }
-            if(_usersHubInteractor != null)
+            if (_usersHubInteractor != null)
             {
                 await _usersHubInteractor.DisposeAsync();
             }
-            if(_messageDispatcherHubInteractor != null)
+            if (_messageDispatcherHubInteractor != null)
             {
                 await _messageDispatcherHubInteractor.DisposeAsync();
             }

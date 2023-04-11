@@ -4,17 +4,15 @@ using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
-using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.TopicStorage;
-using LimpShared.Authentification;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations
+namespace Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations
 {
     public class MessageDispatcherHubInteractor : IHubInteractor<MessageDispatcherHubInteractor>
     {
@@ -203,7 +201,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
 
         public async ValueTask DisposeAsync()
         {
-            if(_messageDispatcherHubObserver != null)
+            if (_messageDispatcherHubObserver != null)
             {
                 _messageDispatcherHubObserver.UnsubscriveAll();
             }
@@ -212,7 +210,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
                 await messageDispatcherHub.StopAsync();
                 await messageDispatcherHub.DisposeAsync();
             }
-            if(messageBoxSubscriptionId != null)
+            if (messageBoxSubscriptionId != null)
             {
                 _messageBox.Unsubscribe(messageBoxSubscriptionId.Value);
             }

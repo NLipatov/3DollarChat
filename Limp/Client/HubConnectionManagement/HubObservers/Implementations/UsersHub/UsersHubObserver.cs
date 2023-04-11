@@ -9,7 +9,7 @@ namespace Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserv
 public class UsersHubObserver : IHubObserver<UsersHubEvent>
 {
     public UsersHubObserver
-    (IEventCallbackExecutor eventCallbackExecutor, 
+    (IEventCallbackExecutor eventCallbackExecutor,
     IConcurrentCollectionManager concurrentCollectionManager)
     {
         _eventCallbackExecutor = eventCallbackExecutor;

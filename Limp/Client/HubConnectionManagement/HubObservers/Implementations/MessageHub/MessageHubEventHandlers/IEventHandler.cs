@@ -1,6 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
-
-namespace Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.MessageHubEventHandlers
+﻿namespace Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.MessageHubEventHandlers
 {
     public interface IEventHandler<T>
     {

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction;
+namespace Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction;
 
 public interface IHubInteractor<T> : IAsyncDisposable
 {

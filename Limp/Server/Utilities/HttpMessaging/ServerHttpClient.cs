@@ -144,7 +144,7 @@ namespace Limp.Server.Utilities.HttpMessaging
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
 
-            using(HttpClient client = new())
+        using(HttpClient client = new())
             {
                 var response = await client.GetAsync(requestUrl);
                 var pemEncodedKey = await response.Content.ReadAsStringAsync();

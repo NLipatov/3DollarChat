@@ -2,13 +2,12 @@
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
-using Limp.Client.Services;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations
+namespace Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations
 {
     public class AuthHubInteractor : IHubInteractor<AuthHubInteractor>
     {
@@ -66,7 +65,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
         public async ValueTask DisposeAsync()
         {
             _authHubObserver.UnsubscriveAll();
-            if(authHub != null)
+            if (authHub != null)
             {
                 await authHub.StopAsync();
                 await authHub.DisposeAsync();

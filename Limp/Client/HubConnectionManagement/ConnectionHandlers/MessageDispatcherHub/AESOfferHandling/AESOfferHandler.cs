@@ -1,7 +1,7 @@
 ﻿using ClientServerCommon.Models.Message;
+using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Cryptography;
 using LimpShared.Encryption;
 
 namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling
@@ -29,7 +29,7 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
 
             if (!string.IsNullOrWhiteSpace(offerMessage.Sender))
             {
-                lock(InMemoryKeyStorage.AESKeyStorage)
+                lock (InMemoryKeyStorage.AESKeyStorage)
                 {
                     InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender] = aesKeyForConversation;
                 }
@@ -61,9 +61,9 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
                 throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
             string? decryptedAESKey = (await _cryptographyService.DecryptAsync<RSAHandler>
-                (new Cryptogramm 
-                { 
-                    Cyphertext = encryptedAESKey 
+                (new Cryptogramm
+                {
+                    Cyphertext = encryptedAESKey
                 })).PlainText;
 
             if (string.IsNullOrWhiteSpace(decryptedAESKey))

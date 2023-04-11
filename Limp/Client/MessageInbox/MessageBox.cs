@@ -14,7 +14,7 @@ namespace Limp.Client.TopicStorage
         }
         public async Task AddMessageAsync(Message message, bool isEncrypted = true)
         {
-            if(isEncrypted)
+            if (isEncrypted)
                 message = await _messageDecryptor.DecryptAsync(message);
 
             Messages.Add(message);

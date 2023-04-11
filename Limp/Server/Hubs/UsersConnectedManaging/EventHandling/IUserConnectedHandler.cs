@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using LimpShared.Authentification;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
 {
@@ -13,6 +14,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
         string accessToken, 
         Func<string, string, CancellationToken, Task>? AddToUserGroup = null, 
         Func<string, string, CancellationToken, Task>? SendToCaller = null,
+        Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null);
     }
 }

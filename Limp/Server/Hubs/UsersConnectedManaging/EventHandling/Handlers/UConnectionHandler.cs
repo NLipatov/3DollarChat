@@ -1,6 +1,7 @@
 ﻿using Limp.Client.Services;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
+using LimpShared.Authentification;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
@@ -42,6 +43,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         string accessToken,
         Func<string, string, CancellationToken, Task>? AddUserToGroup = null,
         Func<string, string, CancellationToken, Task>? callback = null,
+        Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);

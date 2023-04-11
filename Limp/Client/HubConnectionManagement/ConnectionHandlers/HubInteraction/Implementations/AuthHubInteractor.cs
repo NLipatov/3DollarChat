@@ -33,28 +33,34 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
 
             authHub.On<AuthResult>("OnTokensRefresh", async result =>
             {
-                JWTPair? pair = result.JWTPair;
-                if (pair == null || string.IsNullOrWhiteSpace(pair.AccessToken) || string.IsNullOrWhiteSpace(pair.RefreshToken.Token))
-                    _navigationManager.NavigateTo("/login");
-
                 if (result.Result == AuthResultType.Success)
                 {
-                    await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", pair!.AccessToken);
-                    await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", pair!.RefreshToken.Token);
+                    JWTPair? jwtPair = result.JWTPair;
+                    await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", jwtPair!.AccessToken);
+                    await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", jwtPair!.RefreshToken.Token);
+                }
+                else
+                {
+                    _navigationManager.NavigateTo("/login");
                 }
             });
 
             await authHub.StartAsync();
 
-            if (TokenReader.HasAccessTokenExpired(await JWTHelper.GetAccessToken(_jSRuntime)))
-            {
-                await authHub.SendAsync("RefreshTokens", new RefreshToken
-                {
-                    Token = await JWTHelper.GetRefreshToken(_jSRuntime)
-                });
-            }
+            await RefreshTokenPairIfExpired();
 
             return authHub;
+        }
+
+        private async Task RefreshTokenPairIfExpired()
+        {
+            if (TokenReader.HasAccessTokenExpired((await JWTHelper.GetAccessToken(_jSRuntime))!))
+            {
+                await authHub!.SendAsync("RefreshTokens", new RefreshToken
+                {
+                    Token = (await JWTHelper.GetRefreshToken(_jSRuntime))!
+                });
+            }
         }
 
         public async ValueTask DisposeAsync()

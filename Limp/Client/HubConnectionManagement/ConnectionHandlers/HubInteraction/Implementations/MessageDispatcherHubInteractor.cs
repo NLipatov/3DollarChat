@@ -4,9 +4,11 @@ using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
+using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.TopicStorage;
+using LimpShared.Authentification;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -23,6 +25,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IMessageBox _messageBox;
         private readonly HubConnection _usersHub;
+        private readonly HubConnection _authHub;
         private HubConnection? messageDispatcherHub;
         private string myName = string.Empty;
         private Guid? messageBoxSubscriptionId;
@@ -33,7 +36,8 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
         ICryptographyService cryptographyService,
         IAESOfferHandler aESOfferHandler,
         IMessageBox messageBox,
-        HubConnection usersHub)
+        HubConnection usersHub,
+        HubConnection authHub)
         {
             _navigationManager = navigationManager;
             _jSRuntime = jSRuntime;
@@ -42,6 +46,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
             _aESOfferHandler = aESOfferHandler;
             _messageBox = messageBox;
             _usersHub = usersHub;
+            _authHub = authHub;
         }
         private async Task<string?> GetAccessToken()
             => await _jSRuntime.InvokeAsync<string>("localStorage.getItem", "access-token");
@@ -116,6 +121,15 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
                 myName = username;
                 await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MyUsernameResolved, myName);
                 await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic!);
+            });
+
+            messageDispatcherHub.On<TokenRelatedOperationResult>("OnFailedTokenRelatedOperation", async failedOperationDetails =>
+            {
+                await Console.Out.WriteLineAsync(failedOperationDetails.Username);
+                await _authHub!.SendAsync("RefreshTokens", new RefreshToken
+                {
+                    Token = (await JWTHelper.GetRefreshToken(_jSRuntime))!
+                });
             });
             #endregion
 

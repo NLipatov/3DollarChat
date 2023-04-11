@@ -49,6 +49,7 @@ namespace Limp.Server.Hubs
             await _userConnectedHandler.OnUsernameResolved
             (Context.ConnectionId, accessToken, 
             Groups.AddToGroupAsync, 
+            Clients.Caller.SendAsync,
             Clients.Caller.SendAsync);
             await PushOnlineUsersToClients();
         }

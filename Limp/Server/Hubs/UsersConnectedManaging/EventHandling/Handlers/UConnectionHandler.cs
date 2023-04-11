@@ -47,8 +47,12 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            if(!isTokenValid)
+            {
+                throw new ArgumentException("Access-token is not valid.");
+            }
 
-            var username = isTokenValid ? TokenReader.GetUsername(accessToken) : $"Anonymous_{Guid.NewGuid()}";
+            var username = TokenReader.GetUsername(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key

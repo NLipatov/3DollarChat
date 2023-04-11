@@ -57,6 +57,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         Func<string, Task>? OnConnectionId = null,
         Action? RerenderComponent = null)
         {
+            //If user does not have at least one token from JWT pair, ask him to login
             string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
             if (string.IsNullOrWhiteSpace(accessToken)
                 ||
@@ -86,11 +87,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
             async (username) =>
             {
-                if (_messageDispatcherHubInteractor == null)
-                {
-                    throw new ApplicationException($"{nameof(_messageDispatcherHubInteractor)} cannot be null.");
-                }
-                await _messageDispatcherHubInteractor.ConnectAsync();
+                await _messageDispatcherHubInteractor!.ConnectAsync();
                 messageDispatcherHandlers.Add(_messageDispatcherHubObserver
                     .AddHandler(MessageHubEvent.OnlineUsersReceived, OnUserConnectionsUpdate));
 

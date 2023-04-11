@@ -54,14 +54,13 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
 
-            TokenRelatedOperationResult usernameRequestResult = await GetUsername(accessToken);
-            string username = usernameRequestResult.Username;
-
-            if(usernameRequestResult.ResultType == LimpShared.ResultTypeEnum.OperationResultType.Fail)
+            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            if (!isTokenValid)
             {
-                await OnFaultTokenRelatedOperation("OnFailedTokenRelatedOperation", usernameRequestResult, default);
-                return;
+                throw new ArgumentException("Access-token is not valid.");
             }
+
+            var username = TokenReader.GetUsername(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key

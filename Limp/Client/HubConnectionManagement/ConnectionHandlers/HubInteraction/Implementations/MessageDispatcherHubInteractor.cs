@@ -123,14 +123,6 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.
                 await UpdateRSAPublicKeyAsync(await GetAccessToken(), InMemoryKeyStorage.MyRSAPublic!);
             });
 
-            messageDispatcherHub.On<TokenRelatedOperationResult>("OnFailedTokenRelatedOperation", async failedOperationDetails =>
-            {
-                await Console.Out.WriteLineAsync(failedOperationDetails.Username);
-                await _authHub!.SendAsync("RefreshTokens", new RefreshToken
-                {
-                    Token = (await JWTHelper.GetRefreshToken(_jSRuntime))!
-                });
-            });
             #endregion
 
             await messageDispatcherHub.StartAsync();

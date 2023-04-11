@@ -38,7 +38,7 @@
         <ContactBar
             Username="@connection.Username"
             IsOnline="true"
-            OnClickCallback="()=>RedirectToChat(connection.Username)"/>
+            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))"/>
     }
 </div>
 
@@ -46,11 +46,6 @@
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private HubConnection? usersHubConnection;
-
-    private async Task RedirectToChat(string username)
-    {
-        _navigationManager.NavigateTo($"/user/{username}");
-    }
 
     private async Task HandleMyConnectionIdUpdate(string id)
     {

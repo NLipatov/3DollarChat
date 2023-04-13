@@ -28,6 +28,13 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("OnLoggingIn", result);
         }
 
+        public async Task IsTokenValid(string accessToken)
+        {
+            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+
+            await Clients.Caller.SendAsync("OnTokenValidation", isTokenValid);
+        }
+
         public async Task RefreshTokens(RefreshToken refreshToken)
         {
             AuthResult result = await _serverHttpClient.ExplicitJWTPairRefresh(refreshToken);

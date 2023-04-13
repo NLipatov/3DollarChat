@@ -7,6 +7,7 @@ using Limp.Client.HubInteraction.HubObservers;
 using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
 using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
+using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -24,7 +25,8 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         IHubObserver<MessageHubEvent> messageDispatcherHubObserver,
         ICryptographyService cryptographyService,
         IAESOfferHandler aESOfferHandler,
-        IMessageBox messageBox)
+        IMessageBox messageBox,
+        IAuthService authService)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
@@ -34,6 +36,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             _cryptographyService = cryptographyService;
             _aESOfferHandler = aESOfferHandler;
             _messageBox = messageBox;
+            _authService = authService;
         }
         private AuthHubInteractor? _authHubInteractor;
         private UsersHubInteractor? _usersHubInteractor;
@@ -46,6 +49,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private readonly ICryptographyService _cryptographyService;
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IMessageBox _messageBox;
+        private readonly IAuthService _authService;
         private List<Guid> usersHubHandlers = new();
         private List<Guid> authHubHandlers = new();
         private List<Guid> messageDispatcherHandlers = new();
@@ -67,7 +71,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                 return;
             }
 
-            _authHubInteractor = new AuthHubInteractor(_navigationManager, _jSRuntime, _authHubObserver);
+            //_authHubInteractor = new AuthHubInteractor(_navigationManager, _jSRuntime, _authHubObserver);
             _usersHubInteractor = new UsersHubInteractor(_navigationManager, _jSRuntime, _usersHubObserver);
 
             usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.ConnectionIdReceived,
@@ -95,7 +99,47 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                     RerenderComponent();
             }));
 
-            authHubConnection = await _authHubInteractor.ConnectAsync(); //Connecting to authHub
+            //authHubConnection = await _authHubInteractor.ConnectAsync(); //Connecting to authHub
+            authHubConnection = await _authService.ConnectAsync();
+            await RefreshTokenIfNeededAsync();
+        }
+
+        private async Task RefreshTokenIfNeededAsync()
+        {
+            await _authService.RefreshTokenIfNeededAsync(async (isRefreshSucceeded)=>
+            {
+                if(isRefreshSucceeded)
+                {
+                    await DecideOnToken();
+                }
+                else
+                {
+                    await DenyHandle();
+                }
+            });
+        }
+
+        private async Task DecideOnToken()
+        {
+            await _authService.ValidateTokenAsync(async (isTokenValid) =>
+            {
+                if(isTokenValid)
+                {
+                    await ProceedHandle();
+                }
+                else
+                {
+                    await DenyHandle();
+                }
+            });
+        }
+
+        private async Task DenyHandle()
+        {
+            _navigationManager.NavigateTo("/login");
+        }
+        private async Task ProceedHandle()
+        {
             usersHubConnection = await _usersHubInteractor.ConnectAsync(); //Connection to usersHub
 
             //Creating interactor, but not connecting to hub

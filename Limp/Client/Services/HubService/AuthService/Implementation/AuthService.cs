@@ -5,7 +5,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
-using System.Reflection.Metadata.Ecma335;
 
 namespace Limp.Client.Services.HubService.AuthService.Implementation
 {
@@ -63,7 +62,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         }
 
         private void ExecuteCallbackQueue<T>
-        (T arg, 
+        (T arg,
         ConcurrentQueue<Func<T, Task>> callbackCollection)
         {
             foreach (var callback in callbackCollection)
@@ -113,7 +112,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         public async Task ValidateTokenAsync(Func<bool, Task> callback)
         {
             JWTPair? jWTPair = await GetJWTPairAsync();
-            if(jWTPair == null)
+            if (jWTPair == null)
             {
                 await callback(false);
             }

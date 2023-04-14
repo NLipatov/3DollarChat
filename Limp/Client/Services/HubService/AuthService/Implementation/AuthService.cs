@@ -1,5 +1,6 @@
 ﻿using ClientServerCommon.Models.Login;
 using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.Services.HubService.CommonServices;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -48,30 +49,17 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
                     isRefreshSucceeded = true;
                 }
-                ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
+                CallbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
             });
 
             authHubConnection.On<bool>("OnTokenValidation", isTokenValid =>
             {
-                ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
+                CallbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
             });
 
             await authHubConnection.StartAsync();
 
             return authHubConnection;
-        }
-
-        private void ExecuteCallbackQueue<T>
-        (T arg,
-        ConcurrentQueue<Func<T, Task>> callbackCollection)
-        {
-            foreach (var callback in callbackCollection)
-            {
-                callback(arg);
-            }
-
-            Func<T, Task>? callbackToDequeue;
-            callbackCollection.TryDequeue(out callbackToDequeue);
         }
 
         public async Task DisconnectAsync()

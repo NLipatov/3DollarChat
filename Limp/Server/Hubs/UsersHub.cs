@@ -37,11 +37,14 @@ namespace Limp.Server.Hubs
             await PushOnlineUsersToClients();
         }
 
-        public async Task SetUsername(string accessToken) => await _userConnectedHandler
+        public async Task SetUsername(string accessToken)
+        {
+            await _userConnectedHandler
             .OnUsernameResolved
             (Context.ConnectionId,
             accessToken,
             CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
+        }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {

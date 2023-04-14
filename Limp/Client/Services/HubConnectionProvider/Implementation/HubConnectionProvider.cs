@@ -8,6 +8,7 @@ using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes
 using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 using Limp.Client.Services.HubService.AuthService;
+using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -26,7 +27,8 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         ICryptographyService cryptographyService,
         IAESOfferHandler aESOfferHandler,
         IMessageBox messageBox,
-        IAuthService authService)
+        IAuthService authService,
+        IUsersService usersService)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
@@ -37,6 +39,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             _aESOfferHandler = aESOfferHandler;
             _messageBox = messageBox;
             _authService = authService;
+            _usersService = usersService;
         }
         private AuthHubInteractor? _authHubInteractor;
         private UsersHubInteractor? _usersHubInteractor;
@@ -50,6 +53,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IMessageBox _messageBox;
         private readonly IAuthService _authService;
+        private readonly IUsersService _usersService;
         private List<Guid> usersHubHandlers = new();
         private List<Guid> authHubHandlers = new();
         private List<Guid> messageDispatcherHandlers = new();
@@ -74,22 +78,31 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             //_authHubInteractor = new AuthHubInteractor(_navigationManager, _jSRuntime, _authHubObserver);
             _usersHubInteractor = new UsersHubInteractor(_navigationManager, _jSRuntime, _usersHubObserver);
 
-            usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.ConnectionIdReceived,
-            async (id) =>
+            _usersService.SubscribeToConnectionIdReceived(async id =>
             {
                 await InvokeCallbackIfExists(OnConnectionId, id);
-            }));
+            });
+            //usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.ConnectionIdReceived,
+            //async (id) =>
+            //{
+            //    await InvokeCallbackIfExists(OnConnectionId, id);
+            //}));
 
-            usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
-            async (userConnectionsList) =>
+            _usersService.SubscribeToUsersOnlineUpdate(async (userConnectionsList) =>
             {
                 await InvokeCallbackIfExists(OnUserConnectionsUpdate, userConnectionsList);
                 if (RerenderComponent != null)
                     RerenderComponent();
-            }));
+            });
+            //usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
+            //async (userConnectionsList) =>
+            //{
+            //    await InvokeCallbackIfExists(OnUserConnectionsUpdate, userConnectionsList);
+            //    if (RerenderComponent != null)
+            //        RerenderComponent();
+            //}));
 
-            usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
-            async (username) =>
+            _usersService.SubscribeToUsernameResolved(async (username) =>
             {
                 await _messageDispatcherHubInteractor!.ConnectAsync();
                 messageDispatcherHandlers.Add(_messageDispatcherHubObserver
@@ -97,7 +110,17 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
                 if (RerenderComponent != null)
                     RerenderComponent();
-            }));
+            });
+            //usersHubHandlers.Add(_usersHubObserver.AddHandler<Func<string, Task>>(UsersHubEvent.MyUsernameResolved,
+            //async (username) =>
+            //{
+            //    await _messageDispatcherHubInteractor!.ConnectAsync();
+            //    messageDispatcherHandlers.Add(_messageDispatcherHubObserver
+            //        .AddHandler(MessageHubEvent.OnlineUsersReceived, OnUserConnectionsUpdate));
+
+            //    if (RerenderComponent != null)
+            //        RerenderComponent();
+            //}));
 
             //authHubConnection = await _authHubInteractor.ConnectAsync(); //Connecting to authHub
             authHubConnection = await _authService.ConnectAsync();
@@ -140,7 +163,8 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         }
         private async Task ProceedHandle()
         {
-            usersHubConnection = await _usersHubInteractor.ConnectAsync(); //Connection to usersHub
+            await _usersService.ConnectAsync();
+            //usersHubConnection = await _usersHubInteractor.ConnectAsync(); //Connection to usersHub
 
             //Creating interactor, but not connecting to hub
             //We will connect to this hub only when client's username is resolved

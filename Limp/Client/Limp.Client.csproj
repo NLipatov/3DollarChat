@@ -35,7 +35,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Services\HubService\MessageService\" />
+    <Folder Include="Services\HubServices\MessageService\" />
   </ItemGroup>
 
 </Project>

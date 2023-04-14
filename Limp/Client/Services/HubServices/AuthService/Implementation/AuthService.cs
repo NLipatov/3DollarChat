@@ -132,5 +132,11 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 }
             };
         }
+        public async Task DisconnectedAsync()
+        {
+            await authHubConnection.StopAsync();
+            await authHubConnection.DisposeAsync();
+            authHubConnection = null;
+        }
     }
 }

@@ -6,6 +6,7 @@ namespace Limp.Client.Services.HubService.UsersService
     public interface IUsersService
     {
         Task<HubConnection> ConnectAsync();
+        Task DisconnectAsync();
         Guid SubscribeToUsersOnlineUpdate(Func<List<UserConnection>, Task> callback);
         void RemoveSubsctiptionToUsersOnlineUpdate(Guid subscriptionId);
         Guid SubscribeToConnectionIdReceived(Func<string, Task> callback);

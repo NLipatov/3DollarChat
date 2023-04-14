@@ -187,14 +187,9 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         public async ValueTask DisposeAsync()
         {
-            if (_authHubInteractor != null)
-            {
-                await _authHubInteractor.DisposeAsync();
-            }
-            if (_usersHubInteractor != null)
-            {
-                await _usersHubInteractor.DisposeAsync();
-            }
+            await _usersService.DisconnectAsync();
+            await _authService.DisconnectAsync();
+
             if (_messageDispatcherHubInteractor != null)
             {
                 await _messageDispatcherHubInteractor.DisposeAsync();

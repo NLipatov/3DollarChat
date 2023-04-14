@@ -128,5 +128,12 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 RemoveUsernameResolved(subscriptionId);
             }
         }
+
+        public async Task DisconnectAsync()
+        {
+            await usersHubConnection.StopAsync();
+            await usersHubConnection.DisposeAsync();
+            usersHubConnection = null;
+        }
     }
 }

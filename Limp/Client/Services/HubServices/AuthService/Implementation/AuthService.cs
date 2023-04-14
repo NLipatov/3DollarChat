@@ -1,6 +1,7 @@
 ﻿using ClientServerCommon.Models.Login;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubService.CommonServices;
+using Limp.Client.Services.HubServices.CommonServices;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -13,7 +14,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
-        private HubConnection? authHubConnection = null;
+        private HubConnection? hubConnection = null;
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         private ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue = new();
         public AuthService
@@ -25,20 +26,17 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         }
         public async Task<HubConnection> ConnectAsync()
         {
-            if (authHubConnection != null)
+            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
+            if (existingHubConnection != null)
             {
-                if (authHubConnection.State != HubConnectionState.Connected)
-                {
-                    await authHubConnection.StopAsync();
-                    await authHubConnection.StartAsync();
-                }
-                return authHubConnection;
+                return existingHubConnection;
             }
-            authHubConnection = new HubConnectionBuilder()
+
+            hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
             .Build();
 
-            authHubConnection.On<AuthResult>("OnTokensRefresh", async result =>
+            hubConnection.On<AuthResult>("OnTokensRefresh", async result =>
             {
                 bool isRefreshSucceeded = false;
                 if (result.Result == AuthResultType.Success)
@@ -52,23 +50,37 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 CallbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
             });
 
-            authHubConnection.On<bool>("OnTokenValidation", isTokenValid =>
+            hubConnection.On<bool>("OnTokenValidation", isTokenValid =>
             {
                 CallbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
             });
 
-            await authHubConnection.StartAsync();
+            await hubConnection.StartAsync();
 
-            return authHubConnection;
+            return hubConnection;
+        }
+
+        private async Task<HubConnection?> TryGetExistingHubConnection()
+        {
+            if (hubConnection != null)
+            {
+                if (hubConnection.State != HubConnectionState.Connected)
+                {
+                    await hubConnection.StopAsync();
+                    await hubConnection.StartAsync();
+                }
+                return hubConnection;
+            }
+            return null;
         }
 
         public async Task DisconnectAsync()
         {
-            if (authHubConnection != null)
+            if (hubConnection != null)
             {
-                if (authHubConnection.State != HubConnectionState.Disconnected)
+                if (hubConnection.State != HubConnectionState.Disconnected)
                 {
-                    await authHubConnection.StopAsync();
+                    await hubConnection.StopAsync();
                 }
             }
         }
@@ -85,7 +97,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 if (TokenReader.HasAccessTokenExpired(jwtPair.AccessToken))
                 {
                     RefreshTokenCallbackQueue.Enqueue(callback);
-                    await authHubConnection!.SendAsync("RefreshTokens", new RefreshToken
+                    await hubConnection!.SendAsync("RefreshTokens", new RefreshToken
                     {
                         Token = (jwtPair.RefreshToken.Token)
                     });
@@ -107,7 +119,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             else
             {
                 IsTokenValidCallbackQueue.Enqueue(callback);
-                await authHubConnection!.SendAsync("IsTokenValid", jWTPair.AccessToken);
+                await hubConnection!.SendAsync("IsTokenValid", jWTPair.AccessToken);
             }
         }
 
@@ -134,9 +146,8 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         }
         public async Task DisconnectedAsync()
         {
-            await authHubConnection.StopAsync();
-            await authHubConnection.DisposeAsync();
-            authHubConnection = null;
+            await HubDisconnecter.DisconnectAsync(hubConnection);
+            hubConnection = null;
         }
     }
 }

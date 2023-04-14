@@ -2,11 +2,11 @@
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubService.CommonServices;
+using Limp.Client.Services.HubServices.CommonServices;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Limp.Client.Services.HubService.UsersService.Implementation
 {
@@ -14,7 +14,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
-        private HubConnection? usersHubConnection = null;
+        private HubConnection? hubConnection = null;
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> UsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
@@ -27,47 +27,53 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         }
         public async Task<HubConnection> ConnectAsync()
         {
-            if (usersHubConnection != null)
+            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
+            if (existingHubConnection != null)
             {
-                if (usersHubConnection.State != HubConnectionState.Connected)
-                {
-                    await usersHubConnection.StopAsync();
-                    await usersHubConnection.StartAsync();
-                }
-                return usersHubConnection;
+                return existingHubConnection;
             }
 
-            usersHubConnection = new HubConnectionBuilder()
+            hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
             .Build();
 
             //Here we are registering a callbacks for specific server-triggered events.
             //Events are being triggered from SignalR hubs in server project.
-            usersHubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 CallbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, UsersOnlineUpdateCallbacks);
-                //await _usersHubObserver.CallHandler(UsersHubEvent.ConnectedUsersListReceived, updatedTrackedUserConnections);
             });
 
-            usersHubConnection.On<string>("ReceiveConnectionId", connectionId =>
+            hubConnection.On<string>("ReceiveConnectionId", connectionId =>
             {
                 CallbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
-                //await _usersHubObserver.CallHandler(UsersHubEvent.ConnectionIdReceived, connectionId);
             });
 
-            usersHubConnection.On<string>("onNameResolve", async username =>
+            hubConnection.On<string>("onNameResolve", async username =>
             {
                 CallbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
-                //await _usersHubObserver.CallHandler(UsersHubEvent.MyUsernameResolved, username);
 
-                await usersHubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
+                await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
             });
 
-            await usersHubConnection.StartAsync();
+            await hubConnection.StartAsync();
 
-            await usersHubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
+            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
 
-            return usersHubConnection;
+            return hubConnection;
+        }
+        private async Task<HubConnection?> TryGetExistingHubConnection()
+        {
+            if (hubConnection != null)
+            {
+                if (hubConnection.State != HubConnectionState.Connected)
+                {
+                    await hubConnection.StopAsync();
+                    await hubConnection.StartAsync();
+                }
+                return hubConnection;
+            }
+            return null;
         }
 
         public void RemoveConnectionIdReceived(Guid subscriptionId)
@@ -131,9 +137,8 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task DisconnectAsync()
         {
-            await usersHubConnection.StopAsync();
-            await usersHubConnection.DisposeAsync();
-            usersHubConnection = null;
+            await HubDisconnecter.DisconnectAsync(hubConnection);
+            hubConnection = null;
         }
     }
 }

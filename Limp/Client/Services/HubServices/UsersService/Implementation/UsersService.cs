@@ -144,8 +144,33 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {
-            await hubConnection?.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
-            InMemoryKeyStorage.isPublicKeySet = true;
+            if(hubConnection != null)
+            {
+                await hubConnection.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
+                InMemoryKeyStorage.isPublicKeySet = true;
+            }
+            else
+            {
+                await ReconnectAsync();
+            }
+        }
+
+        public async Task ActualizeConnectedUsersAsync()
+        {
+            if(hubConnection != null)
+            {
+                await hubConnection.SendAsync("PushOnlineUsersToClient");
+            }
+            else
+            {
+                await ReconnectAsync();
+            }
+        }
+
+        public async Task ReconnectAsync()
+        {
+            await DisconnectAsync();
+            await ConnectAsync();
         }
     }
 }

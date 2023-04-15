@@ -78,12 +78,19 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("onNameResolve", username);
         }
 
-        private async Task PushOnlineUsersToClients()
+        public async Task PushOnlineUsersToClients()
         {
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
             List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
             //Pushes set of clients to all the clients
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
+        }
+        public async Task PushOnlineUsersToClient()
+        {
+            //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
+            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
+            //Pushes set of clients to all the clients
+            await Clients.Caller.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 
         public async Task PushConId()

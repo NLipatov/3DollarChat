@@ -14,6 +14,7 @@
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services;
 @using Limp.Client.TopicStorage;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -32,7 +33,7 @@
 <PageTitle>Users Online</PageTitle>
 
 <div style="padding: 0.5rem 1rem;">
-    @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId) && x.ConnectionIds.Count > 0))
+    @foreach (var connection in userConnections.Where(x=>x.Username != myUsername && x.ConnectionIds.Count > 0))
     {
         <ContactBar
             Username="@connection.Username"
@@ -44,6 +45,7 @@
 @code {
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
+    private string myUsername { get; set; } = string.Empty;
     private HubConnection? usersHubConnection;
     private Guid? UsersUsersOnlineSubscriptionId { get; set; }
     private Guid? MessageUsersOnlineSubscriptionId { get; set; }
@@ -53,10 +55,23 @@
         myConnectionId = id;
     }
 
+    private async Task ResolveMyUsername()
+    {
+        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        if(!string.IsNullOrWhiteSpace(accessToken))
+        {
+            myUsername = TokenReader.GetUsername(accessToken);
+        }
+    }
+
     protected override async Task OnInitializedAsync()
     {
+        await ResolveMyUsername();
+
         UsersUsersOnlineSubscriptionId = _usersService.SubscribeToUsersOnlineUpdate(HandleUserConnectionsUpdate);
         MessageUsersOnlineSubscriptionId = _messageService.SubscribeToUsersOnline(HandleUserConnectionsUpdate);
+
+        await _usersService.ActualizeConnectedUsersAsync();
     }
 
     private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)

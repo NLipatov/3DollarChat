@@ -1,6 +1,8 @@
 ﻿@using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Shared.NavigationBar
+@using LimpShared.Encryption;
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
 @inject IHubConnectionProvider _hubConnectionProvider
@@ -33,8 +35,7 @@ else
         {
             isRSAGenerated = true;
             StateHasChanged();
+            _hubConnectionProvider.ConnectToHubs();
         });
-
-        await _hubConnectionProvider.ConnectToHubs();
     }
 }

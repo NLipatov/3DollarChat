@@ -3,6 +3,7 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubService.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -139,6 +140,12 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             await HubDisconnecter.DisconnectAsync(hubConnection);
             hubConnection = null;
+        }
+
+        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        {
+            await hubConnection?.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
+            InMemoryKeyStorage.isPublicKeySet = true;
         }
     }
 }

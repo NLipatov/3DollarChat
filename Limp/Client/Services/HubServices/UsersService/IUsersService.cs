@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using LimpShared.Encryption;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubService.UsersService
@@ -7,6 +8,7 @@ namespace Limp.Client.Services.HubService.UsersService
     {
         Task<HubConnection> ConnectAsync();
         Task DisconnectAsync();
+        Task SetRSAPublicKey(string accessToken, Key RSAPublicKey);
         Guid SubscribeToUsersOnlineUpdate(Func<List<UserConnection>, Task> callback);
         void RemoveSubsctiptionToUsersOnlineUpdate(Guid subscriptionId);
         Guid SubscribeToConnectionIdReceived(Func<string, Task> callback);

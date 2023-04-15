@@ -21,6 +21,8 @@ using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.AuthService.Implementation;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubService.UsersService.Implementation;
+using Limp.Client.Services.HubServices.MessageService;
+using Limp.Client.Services.HubServices.MessageService.Implementation;
 using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -41,6 +43,7 @@ builder.Services.AddTransient<IConcurrentCollectionManager, ConcurrentCollection
 builder.Services.AddScoped<IHubConnectionProvider, HubConnectionProvider>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IUsersService, UsersService>();
+builder.Services.AddSingleton<IMessageService, MessageService>();
 #region HubObservers DI Registration
 builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
 builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();

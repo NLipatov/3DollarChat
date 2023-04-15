@@ -8,6 +8,7 @@ using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.E
 using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.UsersService;
+using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.TopicStorage;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -25,7 +26,8 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         IAESOfferHandler aESOfferHandler,
         IMessageBox messageBox,
         IAuthService authService,
-        IUsersService usersService)
+        IUsersService usersService,
+        IMessageService messageService)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
@@ -35,6 +37,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             _messageBox = messageBox;
             _authService = authService;
             _usersService = usersService;
+            _messageService = messageService;
         }
         private MessageDispatcherHubInteractor? _messageDispatcherHubInteractor;
         private readonly IJSRuntime _jSRuntime;
@@ -45,6 +48,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private readonly IMessageBox _messageBox;
         private readonly IAuthService _authService;
         private readonly IUsersService _usersService;
+        private readonly IMessageService _messageService;
         private List<Guid> messageDispatcherHandlers = new();
         private HubConnection authHubConnection;
         private HubConnection? usersHubConnection;
@@ -102,18 +106,18 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private async Task ProceedHandle()
         {
             await _usersService.ConnectAsync();
-
-            //Creating interactor, but not connecting to hub
-            //We will connect to this hub only when client's username is resolved
-            _messageDispatcherHubInteractor = new MessageDispatcherHubInteractor
-                (_navigationManager,
-                _jSRuntime,
-                _messageDispatcherHubObserver,
-                _cryptographyService,
-                _aESOfferHandler,
-                _messageBox,
-                usersHubConnection,
-                authHubConnection);
+            await _messageService.ConnectAsync();
+            ////Creating interactor, but not connecting to hub
+            ////We will connect to this hub only when client's username is resolved
+            //_messageDispatcherHubInteractor = new MessageDispatcherHubInteractor
+            //    (_navigationManager,
+            //    _jSRuntime,
+            //    _messageDispatcherHubObserver,
+            //    _cryptographyService,
+            //    _aESOfferHandler,
+            //    _messageBox,
+            //    usersHubConnection,
+            //    authHubConnection);
         }
 
         private async Task InvokeCallbackIfExists<T>(Func<T, Task>? callback, T parameter)

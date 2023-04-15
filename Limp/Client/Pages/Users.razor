@@ -13,6 +13,7 @@
 @using Limp.Client.HubInteraction.HubObservers;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.TopicStorage;
 @using LimpShared.Authentification;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -25,6 +26,7 @@
 @inject IAESOfferHandler _aesOfferHandler
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
+@inject IMessageService _messageService
 @implements IAsyncDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -43,7 +45,8 @@
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
     private string myConnectionId { get; set; } = string.Empty;
     private HubConnection? usersHubConnection;
-    private Guid? UsersOnlineSubscriptionId { get; set; }
+    private Guid? UsersUsersOnlineSubscriptionId { get; set; }
+    private Guid? MessageUsersOnlineSubscriptionId { get; set; }
 
     private async Task HandleMyConnectionIdUpdate(string id)
     {
@@ -52,7 +55,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        UsersOnlineSubscriptionId = _usersService.SubscribeToUsersOnlineUpdate(HandleUserConnectionsUpdate);
+        UsersUsersOnlineSubscriptionId = _usersService.SubscribeToUsersOnlineUpdate(HandleUserConnectionsUpdate);
+        MessageUsersOnlineSubscriptionId = _messageService.SubscribeToUsersOnline(HandleUserConnectionsUpdate);
     }
 
     private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
@@ -72,9 +76,9 @@
 
     public async ValueTask DisposeAsync()
     {
-        if(UsersOnlineSubscriptionId.HasValue)
+        if(UsersUsersOnlineSubscriptionId.HasValue)
         {
-            _usersService.RemoveSubsctiptionToUsersOnlineUpdate(UsersOnlineSubscriptionId.Value);
+            _usersService.RemoveSubsctiptionToUsersOnlineUpdate(UsersUsersOnlineSubscriptionId.Value);
         }
     }
 }

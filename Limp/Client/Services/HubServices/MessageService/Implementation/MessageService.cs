@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Limp.Client.Services.HubServices.MessageService.Implementation
 {
@@ -30,6 +29,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
         private string myName;
+        public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
         private HubConnection? hubConnection { get; set; }
 
@@ -208,7 +208,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
         public async Task RequestForPartnerPublicKey(string partnerUsername)
         {
-            if(hubConnection != null)
+            if (hubConnection != null)
             {
                 if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == partnerUsername).Value == null)
                 {
@@ -245,6 +245,20 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 RemoveSubscriptionToPartnerAESAccept(subscriptionId);
             }
+        }
+
+        public async Task SendMessage(Message message)
+        {
+            if(hubConnection != null)
+            {
+                await hubConnection.SendAsync("Dispatch", message);
+            }
+            else
+            {
+                await ReconnectAsync();
+                await SendMessage(message);
+            }
+
         }
     }
 }

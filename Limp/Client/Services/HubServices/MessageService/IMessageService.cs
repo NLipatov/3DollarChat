@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubServices.MessageService
@@ -8,6 +9,8 @@ namespace Limp.Client.Services.HubServices.MessageService
         Task<HubConnection> ConnectAsync();
         Task DisconnectAsync();
         Task ReconnectAsync();
+        bool IsConnected();
+        Task SendMessage(Message message);
         Task RequestForPartnerPublicKey(string partnerUsername);
         Guid SubscribeToUsersOnline(Func<List<UserConnection>, Task> callback);
         void RemoveSubscriptionToUsersOnline(Guid subscriptionId);

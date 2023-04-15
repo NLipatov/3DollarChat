@@ -5,10 +5,12 @@
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 @using Limp.Client.HubInteraction.HubObservers;
 @using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 @using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Cryptography;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
@@ -60,7 +62,7 @@
 
         <div class="message-input-box">
             <input @bind="messageInput" />
-            <button @onclick="async () => await SendMessage()" disabled="@(!IsConnectedToMessageDispatcherHub || string.IsNullOrWhiteSpace(myName))">Send</button>
+            <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
         </div>
     }
 </div>
@@ -78,20 +80,27 @@
     HubInteractor? _hubInteractor;
     private bool isAcceptedAESKeyExists { get; set; } = false;
     private UsersHubInteractor? _usersHubHandler;
+    private bool isSendButtonDisabled { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
-        _messageService.SubscribeToPartnerAESAccept(async(userAcceptedAES) =>
-        {
-            isAcceptedAESKeyExists = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value != null;
-            if (!isAcceptedAESKeyExists)
-                throw new ApplicationException("Critical error occured: Could not make a deal on AES Key for chat.");
+        await ResolveMyUsername();
 
-            StateHasChanged();
-        });
+        _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
 
         LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();
+    }
+
+    private async Task ResolveMyUsername()
+    {
+        string? accessToken = await JWTHelper.GetAccessToken(jS);
+        if (string.IsNullOrWhiteSpace(accessToken))
+        {
+            Navigation.NavigateTo("/login");
+            return;
+        }
+        myName = TokenReader.GetUsername(accessToken);
     }
 
     private async Task GetAnAESKeyForConversation()
@@ -110,10 +119,10 @@
         }
     }
 
-    private async Task OnAESKeyReadyAsync()
+    private async Task OnAESKeyReadyAsync(string partnerName)
     {
-        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == topicName).Value.IsAccepted = true;
-        string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString();
+        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
+        string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
         isAcceptedAESKeyExists = !string.IsNullOrWhiteSpace(keyForConversation);
         StateHasChanged();
     }
@@ -175,7 +184,7 @@
             Sender = myName ?? throw new ApplicationException("Message was not send"),
         };
 
-        await _hubInteractor.SendMessage(messageToSend);
+        await _messageService.SendMessage(messageToSend);
 
         messageToSend.Payload = messageInput;
         messageToSend.Sender = "You";

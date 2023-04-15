@@ -25,9 +25,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly ICryptographyService _cryptographyService;
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
-        private ConcurrentDictionary<Guid, Func<Message, Task>> OnMessageReceiveCallbacks = new();
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
+        private ConcurrentDictionary<Guid, Func<Message, Task>> OnMessageReceivedCallbacks = new();
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -50,6 +50,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         }
         public async Task<HubConnection> ConnectAsync()
         {
+            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
+            if (existingHubConnection != null)
+            {
+                return existingHubConnection;
+            }
+
             hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
             .Build();
@@ -128,6 +134,19 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
 
             return hubConnection;
+        }
+        private async Task<HubConnection?> TryGetExistingHubConnection()
+        {
+            if (hubConnection != null)
+            {
+                if (hubConnection.State != HubConnectionState.Connected)
+                {
+                    await hubConnection.StopAsync();
+                    await hubConnection.StartAsync();
+                }
+                return hubConnection;
+            }
+            return null;
         }
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
@@ -249,7 +268,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
         public async Task SendMessage(Message message)
         {
-            if(hubConnection != null)
+            if (hubConnection != null)
             {
                 await hubConnection.SendAsync("Dispatch", message);
             }
@@ -258,7 +277,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 await ReconnectAsync();
                 await SendMessage(message);
             }
-
         }
     }
 }

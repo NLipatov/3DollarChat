@@ -95,5 +95,9 @@
         {
             _usersService.RemoveSubsctiptionToUsersOnlineUpdate(UsersUsersOnlineSubscriptionId.Value);
         }
+        if (MessageUsersOnlineSubscriptionId.HasValue)
+        {
+            _messageService.RemoveSubscriptionToUsersOnline(MessageUsersOnlineSubscriptionId.Value);
+        }
     }
 }

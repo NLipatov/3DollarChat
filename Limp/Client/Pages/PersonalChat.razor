@@ -77,16 +77,17 @@
     private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
-    HubInteractor? _hubInteractor;
     private bool isAcceptedAESKeyExists { get; set; } = false;
-    private UsersHubInteractor? _usersHubHandler;
     private bool isSendButtonDisabled { get; set; } = false;
+    private Guid? MessageService_SubscriptionToPartnerAESAccept { get; set; }
+    private Guid? MessageBox_OnMessageReceived { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await ResolveMyUsername();
 
-        _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
+        MessageService_SubscriptionToPartnerAESAccept = _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
+        MessageBox_OnMessageReceived = _messageBox.Subsctibe(OnMessageReceived);
 
         LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();
@@ -196,10 +197,13 @@
 
     public async ValueTask DisposeAsync()
     {
-        _usersHubHandler?.DisposeAsync();
-        if(_hubInteractor != null)
+        if (MessageService_SubscriptionToPartnerAESAccept.HasValue)
         {
-            await _hubInteractor.DisposeAsync();
+            _messageService.RemoveSubscriptionToPartnerAESAccept(MessageService_SubscriptionToPartnerAESAccept.Value);
+        }
+        if (MessageBox_OnMessageReceived.HasValue)
+        {
+            _messageBox.Unsubscribe(MessageBox_OnMessageReceived.Value);
         }
     }
 }

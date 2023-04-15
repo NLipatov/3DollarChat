@@ -7,12 +7,14 @@ using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.Services.HubService.CommonServices;
 using Limp.Client.Services.HubService.UsersService;
+using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.TopicStorage;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Limp.Client.Services.HubServices.MessageService.Implementation
 {
@@ -26,9 +28,10 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly IUsersService _usersService;
         private ConcurrentDictionary<Guid, Func<Message, Task>> OnMessageReceiveCallbacks = new();
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
+        private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
         private string myName;
 
-        private HubConnection? HubConnection { get; set; }
+        private HubConnection? hubConnection { get; set; }
 
         public MessageService
         (IMessageBox messageBox,
@@ -47,23 +50,23 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         }
         public async Task<HubConnection> ConnectAsync()
         {
-            HubConnection = new HubConnectionBuilder()
+            hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
             .Build();
 
             #region Event handlers registration
-            HubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
+            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
             {
                 CallbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, OnUsersOnlineUpdateCallbacks);
             });
 
-            HubConnection.On<Message>("ReceiveMessage", async message =>
+            hubConnection.On<Message>("ReceiveMessage", async message =>
             {
                 if (message.Sender != "You")
                 {
                     if (message.Type == MessageType.AESAccept)
                     {
-                        //await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.AESAccept, message);
+                        CallbackExecutor.ExecuteCallbackDictionary(message.Sender, OnPartnerAESAcceptCallbacks);
                         return;
                     }
 
@@ -72,29 +75,29 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                     if (message.Type == MessageType.AESOffer)
                     {
-                        if (HubConnection != null)
-                            await HubConnection.SendAsync("Dispatch", await _aESOfferHandler.GetAESOfferResponse(message));
+                        if (hubConnection != null)
+                            await hubConnection.SendAsync("Dispatch", await _aESOfferHandler.GetAESOfferResponse(message));
                     }
                 }
 
                 await _messageBox.AddMessageAsync(message);
 
-                await HubConnection.SendAsync("MessageReceived", message.Id);
+                await hubConnection.SendAsync("MessageReceived", message.Id);
 
                 //If we dont yet know a partner Public Key, we will request it from server side.
                 if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null)
                 {
-                    await HubConnection.SendAsync("GetAnRSAPublic", message.Sender);
+                    await hubConnection.SendAsync("GetAnRSAPublic", message.Sender);
                 }
             });
 
-            HubConnection.On<Guid>("MessageWasReceivedByRecepient", async messageId =>
+            hubConnection.On<Guid>("MessageWasReceivedByRecepient", async messageId =>
             {
                 //await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MessageReceivedByRecepient, messageId);
             });
 
             //Handling server side response on partners Public Key
-            HubConnection.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
+            hubConnection.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
             {
                 if (partnersUsername == "You")
                     return;
@@ -112,7 +115,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 await GenerateAESAndSendItToPartner(_cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
-            HubConnection.On<string>("OnMyNameResolve", async username =>
+            hubConnection.On<string>("OnMyNameResolve", async username =>
             {
                 myName = username;
                 //await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MyUsernameResolved, myName);
@@ -121,10 +124,10 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
             #endregion
 
-            await HubConnection.StartAsync();
-            await HubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
+            await hubConnection.StartAsync();
+            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
 
-            return HubConnection;
+            return hubConnection;
         }
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
@@ -172,14 +175,15 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     Payload = encryptedAESKey
                 };
 
-                if (HubConnection != null)
-                    await HubConnection.SendAsync("Dispatch", offerOnAES);
+                if (hubConnection != null)
+                    await hubConnection.SendAsync("Dispatch", offerOnAES);
             });
         }
 
-        public Task DisconnectAsync()
+        public async Task DisconnectAsync()
         {
-            throw new NotImplementedException();
+            await HubDisconnecter.DisconnectAsync(hubConnection);
+            hubConnection = null;
         }
 
         public Guid SubscribeToUsersOnline(Func<List<UserConnection>, Task> callback)
@@ -199,6 +203,47 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             if (!isRemoved)
             {
                 RemoveSubscriptionToUsersOnline(subscriptionId);
+            }
+        }
+
+        public async Task RequestForPartnerPublicKey(string partnerUsername)
+        {
+            if(hubConnection != null)
+            {
+                if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == partnerUsername).Value == null)
+                {
+                    await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
+                }
+            }
+            else
+            {
+                await ReconnectAsync();
+            }
+        }
+
+        public async Task ReconnectAsync()
+        {
+            await DisconnectAsync();
+            await ConnectAsync();
+        }
+
+        public Guid SubscribeToPartnerAESAccept(Func<string, Task> callback)
+        {
+            Guid subscriptionId = Guid.NewGuid();
+            bool isAdded = OnPartnerAESAcceptCallbacks.TryAdd(subscriptionId, callback);
+            if (!isAdded)
+            {
+                SubscribeToPartnerAESAccept(callback);
+            }
+            return subscriptionId;
+        }
+
+        public void RemoveSubscriptionToPartnerAESAccept(Guid subscriptionId)
+        {
+            bool isRemoved = OnPartnerAESAcceptCallbacks.Remove(subscriptionId, out _);
+            if (!isRemoved)
+            {
+                RemoveSubscriptionToPartnerAESAccept(subscriptionId);
             }
         }
     }

@@ -8,6 +8,7 @@
 @using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 @using Limp.Client.HubInteraction.HubObservers;
 @using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
+@using Limp.Client.Services.HubServices.MessageService;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Cryptography;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
@@ -21,7 +22,7 @@
 @inject IMessageDecryptor _messageDecryptor
 @inject IMessageBox _messageBox
 @inject IAESOfferHandler _aesOfferHandler
-@inject IHubObserver<UsersHubEvent> _usersHubSubscriptionManager
+@inject IMessageService _messageService
 @implements IAsyncDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -80,32 +81,17 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _hubInteractor = new(Navigation, jS, _messageBox, _aesOfferHandler);
-
-        _usersHubHandler = new(Navigation, jS, _usersHubSubscriptionManager);
-
-        _usersHubSubscriptionManager.AddHandler<Func<List<UserConnection>, Task>>(UsersHubEvent.ConnectedUsersListReceived,
-        async (userConnectionsList) =>
+        _messageService.SubscribeToPartnerAESAccept(async(userAcceptedAES) =>
         {
-            userConnections = userConnectionsList;
+            isAcceptedAESKeyExists = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value != null;
+            if (!isAcceptedAESKeyExists)
+                throw new ApplicationException("Critical error occured: Could not make a deal on AES Key for chat.");
+
             StateHasChanged();
         });
 
-        await _usersHubHandler.ConnectAsync();
-
-        await ConnectToHubsAsync();
-
         LoadPreviousMessagesForThisTopic();
-    }
-
-    private async Task ConnectToHubsAsync()
-    {
-        messageDispatcherHub = await _hubInteractor.ConnectToMessageDispatcherHubAsync
-        (OnMessageReceived, 
-        OnUsernameResolve, 
-        onMessageReceivedByRecepient, 
-        cryptographyService: _cryptographyService, 
-        OnAESAcceptedCallback: OnAESKeyReadyAsync);
+        await GetAnAESKeyForConversation();
     }
 
     private async Task GetAnAESKeyForConversation()
@@ -114,7 +100,7 @@
         {
             Console.WriteLine($"There is no existing AES key for conversation. Let's create one");
             //This will get partners public key and generate an AES key for conversation
-            await _hubInteractor.GetPartnerPublicKey(topicName);
+            await _messageService.RequestForPartnerPublicKey(topicName);
         }
         else
         {
@@ -149,7 +135,7 @@
             throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
         }
 
-        var messagesFromMessageBox = _hubInteractor.LoadStoredMessages(topicName);
+        var messagesFromMessageBox = _messageBox.FetchMessagesFromMessageBox(topicName);
         messages.AddRange(messagesFromMessageBox);
     }
 

@@ -11,10 +11,7 @@ namespace Limp.Client.Services.HubConnectionProvider
         /// <param name="OnConnectionIdUpdate">Delegate invoked when server-side sends a usersHub connection Id to client</param>
         /// <param name="RerenderComponent">Delegate invoked when ui component must be rerendered</param>
         /// <returns></returns>
-        Task ConnectToHubs
-        (Func<List<UserConnection>, Task>? OnUserConnectionsUpdate,
-        Func<string, Task>? OnConnectionIdUpdate = null,
-        Action? RerenderComponent = null);
+        Task ConnectToHubs();
 
         /// <summary>
         /// Closes connection to all hubs

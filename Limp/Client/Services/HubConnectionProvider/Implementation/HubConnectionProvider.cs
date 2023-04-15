@@ -49,10 +49,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private HubConnection authHubConnection;
         private HubConnection? usersHubConnection;
 
-        public async Task ConnectToHubs
-        (Func<List<UserConnection>, Task>? OnUserConnectionsUpdate,
-        Func<string, Task>? OnConnectionId = null,
-        Action? RerenderComponent = null)
+        public async Task ConnectToHubs()
         {
             //If user does not have at least one token from JWT pair, ask him to login
             string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
@@ -63,28 +60,6 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                 _navigationManager.NavigateTo("login");
                 return;
             }
-
-            _usersService.SubscribeToConnectionIdReceived(async id =>
-            {
-                await InvokeCallbackIfExists(OnConnectionId, id);
-            });
-
-            _usersService.SubscribeToUsersOnlineUpdate(async (userConnectionsList) =>
-            {
-                await InvokeCallbackIfExists(OnUserConnectionsUpdate, userConnectionsList);
-                if (RerenderComponent != null)
-                    RerenderComponent();
-            });
-
-            _usersService.SubscribeToUsernameResolved(async (username) =>
-            {
-                await _messageDispatcherHubInteractor!.ConnectAsync();
-                messageDispatcherHandlers.Add(_messageDispatcherHubObserver
-                    .AddHandler(MessageHubEvent.OnlineUsersReceived, OnUserConnectionsUpdate));
-
-                if (RerenderComponent != null)
-                    RerenderComponent();
-            });
 
             authHubConnection = await _authService.ConnectAsync();
             await RefreshTokenIfNeededAsync();

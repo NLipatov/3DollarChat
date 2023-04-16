@@ -1,13 +1,13 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Limp.Client.Services.HubService.CommonServices
+namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
 {
-    public static class CallbackExecutor
+    public class CallbackExecutor : ICallbackExecutor
     {
         /// <summary>
         /// Executes each one callback in dictionary values without removing callback from dictionary
         /// </summary>
-        public static void ExecuteCallbackDictionary<T>
+        public void ExecuteCallbackDictionary<T>
         (T arg,
         ConcurrentDictionary<Guid, Func<T, Task>> callbackCollection)
         {
@@ -17,7 +17,7 @@ namespace Limp.Client.Services.HubService.CommonServices
             }
         }
 
-        public static void ExecuteCallbackDictionary<T>
+        public void ExecuteCallbackDictionary<T>
         (T arg,
         ConcurrentDictionary<Guid, Action<T>> callbackCollection)
         {
@@ -30,7 +30,7 @@ namespace Limp.Client.Services.HubService.CommonServices
         /// <summary>
         /// Executes each one callback in queue and removes callback from queue
         /// </summary>
-        public static void ExecuteCallbackQueue<T>
+        public void ExecuteCallbackQueue<T>
         (T arg,
         ConcurrentQueue<Func<T, Task>> callbackCollection)
         {

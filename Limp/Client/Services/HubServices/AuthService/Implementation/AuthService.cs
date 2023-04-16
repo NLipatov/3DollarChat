@@ -1,7 +1,7 @@
 ﻿using ClientServerCommon.Models.Login;
 using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubService.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using LimpShared.Authentification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -14,15 +14,18 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
+        private readonly ICallbackExecutor _callbackExecutor;
         private HubConnection? hubConnection = null;
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         private ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue = new();
         public AuthService
         (IJSRuntime jSRuntime,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        ICallbackExecutor callbackExecutor)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
+            _callbackExecutor = callbackExecutor;
         }
         public async Task<HubConnection> ConnectAsync()
         {
@@ -47,12 +50,12 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
                     isRefreshSucceeded = true;
                 }
-                CallbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
+                _callbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
             });
 
             hubConnection.On<bool>("OnTokenValidation", isTokenValid =>
             {
-                CallbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
+                _callbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
             });
 
             await hubConnection.StartAsync();

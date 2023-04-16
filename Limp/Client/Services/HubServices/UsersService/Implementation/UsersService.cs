@@ -1,8 +1,8 @@
 ﻿using ClientServerCommon.Models;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubService.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -15,16 +15,19 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
+        private readonly ICallbackExecutor _callbackExecutor;
         private HubConnection? hubConnection = null;
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> UsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
         public UsersService
         (IJSRuntime jSRuntime,
-        NavigationManager navigationManager)
+        NavigationManager navigationManager,
+        ICallbackExecutor callbackExecutor)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
+            _callbackExecutor = callbackExecutor;
         }
         public async Task<HubConnection> ConnectAsync()
         {
@@ -42,17 +45,17 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             //Events are being triggered from SignalR hubs in server project.
             hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
-                CallbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, UsersOnlineUpdateCallbacks);
+                _callbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, UsersOnlineUpdateCallbacks);
             });
 
             hubConnection.On<string>("ReceiveConnectionId", connectionId =>
             {
-                CallbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
+                _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
             });
 
             hubConnection.On<string>("onNameResolve", async username =>
             {
-                CallbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
+                _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
 
                 await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
             });

@@ -14,6 +14,7 @@ using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.AuthService.Implementation;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubService.UsersService.Implementation;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.Services.HubServices.MessageService.Implementation;
 using Limp.Client.TopicStorage;
@@ -37,5 +38,6 @@ builder.Services.AddScoped<IHubConnectionProvider, HubConnectionProvider>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IUsersService, UsersService>();
 builder.Services.AddSingleton<IMessageService, MessageService>();
+builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 
 await builder.Build().RunAsync();

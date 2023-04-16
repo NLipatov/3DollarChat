@@ -5,9 +5,9 @@ using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
-using Limp.Client.Services.HubService.CommonServices;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.TopicStorage;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
@@ -26,6 +26,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly ICryptographyService _cryptographyService;
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
+        private readonly ICallbackExecutor _callbackExecutor;
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
         private ConcurrentDictionary<Guid, Action<Guid>> OnMessageReceivedCallbacks = new();
@@ -40,7 +41,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         NavigationManager navigationManager,
         ICryptographyService cryptographyService,
         IAESOfferHandler aESOfferHandler,
-        IUsersService usersService)
+        IUsersService usersService,
+        ICallbackExecutor callbackExecutor)
         {
             _messageBox = messageBox;
             _jSRuntime = jSRuntime;
@@ -48,6 +50,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _cryptographyService = cryptographyService;
             _aESOfferHandler = aESOfferHandler;
             _usersService = usersService;
+            _callbackExecutor = callbackExecutor;
         }
         public async Task<HubConnection> ConnectAsync()
         {
@@ -64,7 +67,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             #region Event handlers registration
             hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
             {
-                CallbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, OnUsersOnlineUpdateCallbacks);
+                _callbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, OnUsersOnlineUpdateCallbacks);
             });
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
@@ -73,7 +76,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 {
                     if (message.Type == MessageType.AESAccept)
                     {
-                        CallbackExecutor.ExecuteCallbackDictionary(message.Sender, OnPartnerAESAcceptCallbacks);
+                        _callbackExecutor.ExecuteCallbackDictionary(message.Sender, OnPartnerAESAcceptCallbacks);
                         return;
                     }
 
@@ -100,7 +103,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
             hubConnection.On<Guid>("MessageWasReceivedByRecepient", messageId =>
             {
-                CallbackExecutor.ExecuteCallbackDictionary(messageId, OnMessageReceivedCallbacks);
+                _callbackExecutor.ExecuteCallbackDictionary(messageId, OnMessageReceivedCallbacks);
             });
 
             //Handling server side response on partners Public Key

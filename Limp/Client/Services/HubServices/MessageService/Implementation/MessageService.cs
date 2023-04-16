@@ -125,8 +125,18 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             hubConnection.On<string>("OnMyNameResolve", async username =>
             {
                 myName = username;
-                //await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MyUsernameResolved, myName);
-                await UpdateRSAPublicKeyAsync(await JWTHelper.GetAccessToken(_jSRuntime), InMemoryKeyStorage.MyRSAPublic!);
+                string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
+                if(string.IsNullOrWhiteSpace(accessToken))
+                {
+                    _navigationManager.NavigateTo("/login");
+                    return;
+                }
+                if(string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                {
+                    throw new ApplicationException("RSA Public key was not properly generated.");
+                }
+
+                await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
             });
 
             #endregion

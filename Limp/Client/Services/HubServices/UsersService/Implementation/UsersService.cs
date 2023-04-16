@@ -17,7 +17,6 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         private readonly NavigationManager _navigationManager;
         private readonly ICallbackExecutor _callbackExecutor;
         private HubConnection? hubConnection = null;
-        private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> UsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
         public UsersService
@@ -45,7 +44,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             //Events are being triggered from SignalR hubs in server project.
             hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
-                _callbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, UsersOnlineUpdateCallbacks);
+                _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
 
             hubConnection.On<string>("ReceiveConnectionId", connectionId =>
@@ -85,7 +84,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             bool isRemoved = ConnectionIdReceivedCallbacks.Remove(subscriptionId, out _);
             if (!isRemoved)
             {
-                RemoveSubsctiptionToUsersOnlineUpdate(subscriptionId);
+                RemoveConnectionIdReceived(subscriptionId);
             }
         }
         public Guid SubscribeToConnectionIdReceived(Func<string, Task> callback)
@@ -95,26 +94,6 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             if (!isAdded)
             {
                 SubscribeToConnectionIdReceived(callback);
-            }
-            return subscriptionId;
-        }
-
-        public void RemoveSubsctiptionToUsersOnlineUpdate(Guid subscriptionId)
-        {
-            bool isRemoved = UsersOnlineUpdateCallbacks.Remove(subscriptionId, out _);
-            if (!isRemoved)
-            {
-                RemoveSubsctiptionToUsersOnlineUpdate(subscriptionId);
-            }
-        }
-
-        public Guid SubscribeToUsersOnlineUpdate(Func<List<UserConnection>, Task> callback)
-        {
-            Guid subscriptionId = Guid.NewGuid();
-            bool isAdded = UsersOnlineUpdateCallbacks.TryAdd(subscriptionId, callback);
-            if (!isAdded)
-            {
-                SubscribeToUsersOnlineUpdate(callback);
             }
             return subscriptionId;
         }
@@ -132,7 +111,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public void RemoveUsernameResolved(Guid subscriptionId)
         {
-            bool isRemoved = UsersOnlineUpdateCallbacks.Remove(subscriptionId, out _);
+            bool isRemoved = UsernameResolvedCallbacks.Remove(subscriptionId, out _);
             if (!isRemoved)
             {
                 RemoveUsernameResolved(subscriptionId);
@@ -147,7 +126,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {
-            if(hubConnection != null)
+            if (hubConnection != null)
             {
                 await hubConnection.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
                 InMemoryKeyStorage.isPublicKeySet = true;
@@ -160,7 +139,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task ActualizeConnectedUsersAsync()
         {
-            if(hubConnection != null)
+            if (hubConnection != null)
             {
                 await hubConnection.SendAsync("PushOnlineUsersToClient");
             }

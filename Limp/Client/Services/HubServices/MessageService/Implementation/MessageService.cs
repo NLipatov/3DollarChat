@@ -14,7 +14,6 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
-using System.Collections.Generic;
 
 namespace Limp.Client.Services.HubServices.MessageService.Implementation
 {
@@ -27,7 +26,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
-        private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
         private ConcurrentDictionary<Guid, Action<Guid>> OnMessageReceivedCallbacks = new();
         private string myName;
@@ -65,9 +63,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             .Build();
 
             #region Event handlers registration
-            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", async updatedTrackedUserConnections =>
+            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
-                _callbackExecutor.ExecuteCallbackDictionary(updatedTrackedUserConnections, OnUsersOnlineUpdateCallbacks);
+                _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
@@ -129,12 +127,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 myName = username;
                 string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
-                if(string.IsNullOrWhiteSpace(accessToken))
+                if (string.IsNullOrWhiteSpace(accessToken))
                 {
                     _navigationManager.NavigateTo("/login");
                     return;
                 }
-                if(string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
@@ -217,26 +215,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         {
             await HubDisconnecter.DisconnectAsync(hubConnection);
             hubConnection = null;
-        }
-
-        public Guid SubscribeToUsersOnline(Func<List<UserConnection>, Task> callback)
-        {
-            Guid subscriptionId = Guid.NewGuid();
-            bool isAdded = OnUsersOnlineUpdateCallbacks.TryAdd(subscriptionId, callback);
-            if (!isAdded)
-            {
-                SubscribeToUsersOnline(callback);
-            }
-            return subscriptionId;
-        }
-
-        public void RemoveSubscriptionToUsersOnline(Guid subscriptionId)
-        {
-            bool isRemoved = OnUsersOnlineUpdateCallbacks.Remove(subscriptionId, out _);
-            if (!isRemoved)
-            {
-                RemoveSubscriptionToUsersOnline(subscriptionId);
-            }
         }
 
         public async Task RequestForPartnerPublicKey(string partnerUsername)

@@ -6,7 +6,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
     public class HubServiceSubscriptionManager : IHubServiceSubscriptionManager
     {
         private ConcurrentDictionary<Guid, List<Subscription>> ComponentSubscriptionsKeyValueStorage { get; set; } = new();
-        public List<Subscription> GetComponentSubscriptions(string subscriptionName)
+        public List<Subscription> GetSubscriptionsByName(string subscriptionName)
         {
             List<Subscription> targetSubscriptions = new();
 

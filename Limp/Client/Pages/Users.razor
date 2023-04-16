@@ -8,6 +8,7 @@
 @using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
 @using Limp.Client.TopicStorage;
@@ -23,7 +24,8 @@
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
 @inject IMessageService _messageService
-@implements IAsyncDisposable
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
 <PageTitle>Users Online</PageTitle>
 
@@ -44,6 +46,7 @@
     private HubConnection? usersHubConnection;
     private Guid? UsersUsersOnlineSubscriptionId { get; set; }
     private Guid? MessageUsersOnlineSubscriptionId { get; set; }
+    private Guid ComponentId { get; set; }
 
     private async Task HandleMyConnectionIdUpdate(string id)
     {
@@ -61,15 +64,17 @@
 
     protected override async Task OnInitializedAsync()
     {
+        ComponentId = Guid.NewGuid();
+
         await ResolveMyUsername();
 
-        UsersUsersOnlineSubscriptionId = _usersService.SubscribeToUsersOnlineUpdate(HandleUserConnectionsUpdate);
-        MessageUsersOnlineSubscriptionId = _messageService.SubscribeToUsersOnline(HandleUserConnectionsUpdate);
+        _hubServiceSubscriptionManager
+        .AddCallback<List<UserConnection>>(HandleUserConnectionsUpdate, "ReceiveOnlineUsers", ComponentId);
 
         await _usersService.ActualizeConnectedUsersAsync();
     }
 
-    private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
+    private void HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
     {
         userConnections.Clear();
         foreach (var connection in updatedUserConnections)
@@ -84,15 +89,8 @@
         StateHasChanged();
     }
 
-    public async ValueTask DisposeAsync()
+    public void Dispose()
     {
-        if(UsersUsersOnlineSubscriptionId.HasValue)
-        {
-            _usersService.RemoveSubsctiptionToUsersOnlineUpdate(UsersUsersOnlineSubscriptionId.Value);
-        }
-        if (MessageUsersOnlineSubscriptionId.HasValue)
-        {
-            _messageService.RemoveSubscriptionToUsersOnline(MessageUsersOnlineSubscriptionId.Value);
-        }
+        _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
     }
 }

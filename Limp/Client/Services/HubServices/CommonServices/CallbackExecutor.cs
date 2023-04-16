@@ -17,6 +17,16 @@ namespace Limp.Client.Services.HubService.CommonServices
             }
         }
 
+        public static void ExecuteCallbackDictionary<T>
+        (T arg,
+        ConcurrentDictionary<Guid, Action<T>> callbackCollection)
+        {
+            foreach (var callback in callbackCollection.Values)
+            {
+                callback(arg);
+            }
+        }
+
         /// <summary>
         /// Executes each one callback in queue and removes callback from queue
         /// </summary>

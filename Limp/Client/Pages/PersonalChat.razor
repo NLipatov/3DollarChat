@@ -78,12 +78,14 @@
     private bool isSendButtonDisabled { get; set; } = false;
     private Guid? MessageService_SubscriptionToPartnerAESAccept { get; set; }
     private Guid? MessageBox_OnMessageReceived { get; set; }
+    private Guid? MessageService_SubscrriptionToMessageReceivedByRecepient { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
         await ResolveMyUsername();
 
         MessageService_SubscriptionToPartnerAESAccept = _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
+        MessageService_SubscrriptionToMessageReceivedByRecepient = _messageService.SubscribeToMessageReceivedByRecepient(MyMessageWasReceived);
         MessageBox_OnMessageReceived = _messageBox.Subsctibe(TheirMessageWasReceived);
 
         LoadPreviousMessagesForThisTopic();
@@ -197,6 +199,10 @@
         if (MessageService_SubscriptionToPartnerAESAccept.HasValue)
         {
             _messageService.RemoveSubscriptionToPartnerAESAccept(MessageService_SubscriptionToPartnerAESAccept.Value);
+        }
+        if(MessageService_SubscrriptionToMessageReceivedByRecepient.HasValue)
+        {
+            _messageService.RemoveSubscriptionToMessageReceivedByRecepient(MessageService_SubscrriptionToMessageReceivedByRecepient.Value);
         }
         if (MessageBox_OnMessageReceived.HasValue)
         {

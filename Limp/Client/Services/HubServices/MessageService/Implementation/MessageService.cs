@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace Limp.Client.Services.HubServices.MessageService.Implementation
 {
@@ -27,7 +28,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly IUsersService _usersService;
         private ConcurrentDictionary<Guid, Func<List<UserConnection>, Task>> OnUsersOnlineUpdateCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
-        private ConcurrentDictionary<Guid, Func<Message, Task>> OnMessageReceivedCallbacks = new();
+        private ConcurrentDictionary<Guid, Action<Guid>> OnMessageReceivedCallbacks = new();
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -97,9 +98,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 }
             });
 
-            hubConnection.On<Guid>("MessageWasReceivedByRecepient", async messageId =>
+            hubConnection.On<Guid>("MessageWasReceivedByRecepient", messageId =>
             {
-                //await _messageDispatcherHubObserver.CallHandler(MessageHubEvent.MessageReceivedByRecepient, messageId);
+                CallbackExecutor.ExecuteCallbackDictionary(messageId, OnMessageReceivedCallbacks);
             });
 
             //Handling server side response on partners Public Key
@@ -276,6 +277,26 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 await ReconnectAsync();
                 await SendMessage(message);
+            }
+        }
+
+        public Guid SubscribeToMessageReceivedByRecepient(Action<Guid> callback)
+        {
+            Guid subscriptionId = Guid.NewGuid();
+            bool isAdded = OnMessageReceivedCallbacks.TryAdd(subscriptionId, callback);
+            if (!isAdded)
+            {
+                SubscribeToMessageReceivedByRecepient(callback);
+            }
+            return subscriptionId;
+        }
+
+        public void RemoveSubscriptionToMessageReceivedByRecepient(Guid subscriptionId)
+        {
+            bool isRemoved = OnMessageReceivedCallbacks.Remove(subscriptionId, out _);
+            if (!isRemoved)
+            {
+                RemoveSubscriptionToMessageReceivedByRecepient(subscriptionId);
             }
         }
     }

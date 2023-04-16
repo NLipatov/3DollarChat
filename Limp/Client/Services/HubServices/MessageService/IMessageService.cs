@@ -16,5 +16,7 @@ namespace Limp.Client.Services.HubServices.MessageService
         void RemoveSubscriptionToUsersOnline(Guid subscriptionId);
         Guid SubscribeToPartnerAESAccept(Func<string, Task> callback);
         void RemoveSubscriptionToPartnerAESAccept(Guid subscriptionId);
+        Guid SubscribeToMessageReceivedByRecepient(Action<Guid> callback);
+        void RemoveSubscriptionToMessageReceivedByRecepient(Guid subscriptionId);
     }
 }

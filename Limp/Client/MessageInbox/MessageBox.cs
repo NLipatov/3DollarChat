@@ -6,7 +6,7 @@ namespace Limp.Client.TopicStorage
     public class MessageBox : IMessageBox
     {
         private readonly IMessageDecryptor _messageDecryptor;
-        private Dictionary<Guid, Func<Message, Task>> subscriptions = new();
+        private Dictionary<Guid, Action<Message>> subscriptions = new();
         private List<Message> Messages = new();
         public MessageBox(IMessageDecryptor messageDecryptor)
         {
@@ -37,7 +37,7 @@ namespace Limp.Client.TopicStorage
             }
         }
 
-        public Guid Subsctibe(Func<Message, Task> newMessageHandler)
+        public Guid Subsctibe(Action<Message> newMessageHandler)
         {
             Guid subscriptionId = Guid.NewGuid();
             subscriptions.Add(subscriptionId, newMessageHandler);

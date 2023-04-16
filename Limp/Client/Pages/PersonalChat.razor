@@ -6,9 +6,6 @@
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
-@using Limp.Client.HubInteraction.HubObservers;
-@using Limp.Client.Services.HubConnectionProvider.Implementation.HubInteraction.Implementations;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -19,7 +16,7 @@
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
 @inject NavigationManager Navigation
-@inject IJSRuntime jS;
+@inject IJSRuntime jS
 @inject ICryptographyService _cryptographyService
 @inject IMessageDecryptor _messageDecryptor
 @inject IMessageBox _messageBox
@@ -69,7 +66,7 @@
 
 @code {
     [Parameter]
-    public string topicName { get; set; }
+    public string topicName { get; set; } = string.Empty;
     [Parameter]
     public string? myName { get; set; }
     private HubConnection? messageDispatcherHub;
@@ -87,7 +84,7 @@
         await ResolveMyUsername();
 
         MessageService_SubscriptionToPartnerAESAccept = _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
-        MessageBox_OnMessageReceived = _messageBox.Subsctibe(OnMessageReceived);
+        MessageBox_OnMessageReceived = _messageBox.Subsctibe(TheirMessageWasReceived);
 
         LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();
@@ -128,16 +125,6 @@
         StateHasChanged();
     }
 
-    private void onMessageReceivedByRecepient(Guid messageId)
-    {
-        Message? receivedMessage = messages.FirstOrDefault(x => x.Id == messageId);
-        if(receivedMessage != null)
-        {
-            receivedMessage.IsReceived = true;
-            StateHasChanged();
-        }
-    }
-
     private void LoadPreviousMessagesForThisTopic()
     {
         if (string.IsNullOrWhiteSpace(topicName))
@@ -156,7 +143,7 @@
         StateHasChanged();
     }
 
-    private async Task OnMessageReceived(Message message)
+    private void TheirMessageWasReceived(Message message)
     {
         if (message.Sender == "You")
             return;
@@ -164,6 +151,16 @@
         if(message.Type == MessageType.UserMessage)
         {
             messages.Add(message);
+            StateHasChanged();
+        }
+    }
+
+    private void MyMessageWasReceived(Guid messageId)
+    {
+        Message? receivedMessage = messages.FirstOrDefault(x => x.Id == messageId);
+        if (receivedMessage != null)
+        {
+            receivedMessage.IsReceived = true;
             StateHasChanged();
         }
     }

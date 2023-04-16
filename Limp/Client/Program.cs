@@ -1,16 +1,9 @@
 using BlazorBootstrap;
 using Limp.Client;
 using Limp.Client.Cryptography;
-using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub;
-using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
 using Limp.Client.HubInteraction.EventExecution;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
-using Limp.Client.HubInteraction.HubObservers;
-using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub;
-using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
-using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver;
-using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 using Limp.Client.Services.ContactsProvider;
@@ -44,10 +37,5 @@ builder.Services.AddScoped<IHubConnectionProvider, HubConnectionProvider>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IUsersService, UsersService>();
 builder.Services.AddSingleton<IMessageService, MessageService>();
-#region HubObservers DI Registration
-builder.Services.AddSingleton<IHubObserver<UsersHubEvent>, UsersHubObserver>();
-builder.Services.AddSingleton<IHubObserver<AuthHubEvent>, AuthHubObserver>();
-builder.Services.AddSingleton<IHubObserver<MessageHubEvent>, MessageHubObserver>();
-#endregion
 
 await builder.Build().RunAsync();

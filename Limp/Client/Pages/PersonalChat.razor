@@ -15,8 +15,8 @@
 @using Limp.Client.TopicStorage;
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
-@inject NavigationManager Navigation
-@inject IJSRuntime jS
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jS
 @inject ICryptographyService _cryptographyService
 @inject IMessageDecryptor _messageDecryptor
 @inject IMessageBox _messageBox
@@ -68,7 +68,7 @@
     [Parameter]
     public string topicName { get; set; } = string.Empty;
     [Parameter]
-    public string? myName { get; set; }
+    public string? myUsername { get; set; }
     private HubConnection? messageDispatcherHub;
     public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private List<Message> messages { get; set; } = new();
@@ -84,6 +84,13 @@
     {
         await ResolveMyUsername();
 
+        //If username was not read, ask user to relogin
+        if (string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/login");
+            return;
+        }
+
         MessageService_SubscriptionToPartnerAESAccept = _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
         MessageService_SubscrriptionToMessageReceivedByRecepient = _messageService.SubscribeToMessageReceivedByRecepient(MyMessageWasReceived);
         MessageBox_OnMessageReceived = _messageBox.Subsctibe(TheirMessageWasReceived);
@@ -92,15 +99,13 @@
         await GetAnAESKeyForConversation();
     }
 
-    private async Task ResolveMyUsername()
+    private async Task<string> ResolveMyUsername()
     {
-        string? accessToken = await JWTHelper.GetAccessToken(jS);
-        if (string.IsNullOrWhiteSpace(accessToken))
-        {
-            Navigation.NavigateTo("/login");
-            return;
-        }
-        myName = TokenReader.GetUsername(accessToken);
+        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        //Reading username from access-token
+        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+
+        return myUsername;
     }
 
     private async Task GetAnAESKeyForConversation()
@@ -140,7 +145,7 @@
 
     private async Task OnUsernameResolve(string username)
     {
-        myName = username;
+        myUsername = username;
         await GetAnAESKeyForConversation();
         StateHasChanged();
     }
@@ -181,7 +186,7 @@
             Cryptogramm = cryptogramm,
             DateSent = DateTime.UtcNow,
             TargetGroup = topicName!,
-            Sender = myName ?? throw new ApplicationException("Message was not send"),
+            Sender = myUsername ?? throw new ApplicationException("Message was not send"),
         };
 
         await _messageService.SendMessage(messageToSend);

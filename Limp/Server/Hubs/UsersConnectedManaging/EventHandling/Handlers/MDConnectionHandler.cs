@@ -60,7 +60,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 throw new ArgumentException("Access-token is not valid.");
             }
 
-            var username = TokenReader.GetUsername(accessToken);
+            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
@@ -82,7 +82,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         {
             TokenRelatedOperationResult usernameRequestResult = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
 
-            string declaredUsername = TokenReader.GetUsername(accessToken);
+            string declaredUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
             string? actualUsername = usernameRequestResult.Username;
 
             if(!string.IsNullOrWhiteSpace(actualUsername)

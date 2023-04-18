@@ -1,4 +1,5 @@
-﻿using LimpShared.Encryption;
+﻿using Limp.Client.HubInteraction.Handlers.Helpers;
+using LimpShared.Encryption;
 using System.IdentityModel.Tokens.Jwt;
 
 namespace Limp.Client.Services
@@ -19,12 +20,24 @@ namespace Limp.Client.Services
             return securityToken.ValidTo <= now;
         }
 
-        public static string GetUsername(string accessToken)
+        public static string GetUsernameFromAccessToken(string? accessToken)
+        {
+            if (string.IsNullOrWhiteSpace(accessToken))
+                throw new ApplicationException("Could not get an access-token from local storage");
+
+            string? usernameFromAccessToken = ReadUsernameFromAccessToken(accessToken);
+            if (string.IsNullOrWhiteSpace(usernameFromAccessToken))
+                throw new ApplicationException("Could read username from access-token");
+
+            return usernameFromAccessToken;
+        }
+
+        private static string? ReadUsernameFromAccessToken(string accessToken)
         {
             var tokenHandler = new JwtSecurityTokenHandler();
             var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
 
-            return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value ?? "Anonymous";
+            return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value;
         }
 
         public static Key GetPublicKey(string accessToken, string contactName)

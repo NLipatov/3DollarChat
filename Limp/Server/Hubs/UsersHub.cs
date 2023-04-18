@@ -50,7 +50,7 @@ namespace Limp.Server.Hubs
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
 
-            string? username = isTokenValid ? TokenReader.GetUsername(accessToken) : null;
+            string? username = isTokenValid ? TokenReader.GetUsernameFromAccessToken(accessToken) : null;
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {

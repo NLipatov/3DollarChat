@@ -36,9 +36,9 @@
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
-
+        
         //Reading username from access-token
-        myUsername = await GetUsernameFromAccessToken();
+        myUsername = await GetMyUsername();
 
         //If username was not read, ask user to relogin
         if(string.IsNullOrWhiteSpace(myUsername))
@@ -55,17 +55,12 @@
         await _usersService.ActualizeConnectedUsersAsync();
     }
 
-    private async Task<string> GetUsernameFromAccessToken()
+    private async Task<string> GetMyUsername()
     {
         string? accessToken = await JWTHelper.GetAccessToken(_jS);
-        if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ApplicationException("Could not get an access-token from local storage");
+        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
 
-        string? usernameFromAccessToken = TokenReader.GetUsername(accessToken);
-        if (string.IsNullOrWhiteSpace(usernameFromAccessToken))
-            throw new ApplicationException("Could read username from access-token");
-
-        return usernameFromAccessToken;
+        return myUsername;
     }
 
     private void UpdateUsersList(List<UserConnection> updatedUserConnections)

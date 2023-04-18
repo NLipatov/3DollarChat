@@ -83,14 +83,7 @@
     private Guid? MessageService_SubscrriptionToMessageReceivedByRecepient { get; set; }
     private Guid ComponentId { get; set; }
 
-    public void Dispose()
-    {
-        _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
-        if (MessageBox_OnMessageReceived.HasValue)
-        {
-            _messageBox.Unsubscribe(MessageBox_OnMessageReceived.Value);
-        }
-    }
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
@@ -109,7 +102,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady");
         _hubServiceSubscriptionManager.AddCallback<Guid>(MyMessageWasReceived, "MessageWasReceivedByRecepient");
-        MessageBox_OnMessageReceived = _messageBox.Subscribe(TheirMessageWasReceived);
+        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived");
 
         LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();
@@ -166,7 +159,7 @@
         StateHasChanged();
     }
 
-    private void TheirMessageWasReceived(Message message)
+    private void IncomingMessageReceived(Message message)
     {
         if (message.Sender == "You")
             return;

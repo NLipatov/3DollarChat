@@ -1,16 +1,21 @@
 ﻿using ClientServerCommon.Models.Message;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 
 namespace Limp.Client.TopicStorage
 {
     public class MessageBox : IMessageBox
     {
         private readonly IMessageDecryptor _messageDecryptor;
+        private readonly ICallbackExecutor _callbackExecutor;
         private Dictionary<Guid, Action<Message>> subscriptions = new();
         private List<Message> Messages = new();
-        public MessageBox(IMessageDecryptor messageDecryptor)
+        public MessageBox
+        (IMessageDecryptor messageDecryptor,
+        ICallbackExecutor callbackExecutor)
         {
             _messageDecryptor = messageDecryptor;
+            _callbackExecutor = callbackExecutor;
         }
         public async Task AddMessageAsync(Message message, bool isEncrypted = true)
         {
@@ -19,7 +24,7 @@ namespace Limp.Client.TopicStorage
 
             Messages.Add(message);
 
-            PerformSubscribedCalls(message);
+            _callbackExecutor.ExecuteSubscriptionsByName(message, "IncomingMessageReceived");
         }
 
         public List<Message> FetchMessagesFromMessageBox(string topic)
@@ -27,31 +32,6 @@ namespace Limp.Client.TopicStorage
             List<Message> messages = Messages.Where(x => x.Topic == topic).ToList();
 
             return messages;
-        }
-
-        public void PerformSubscribedCalls(Message message)
-        {
-            foreach (var subscription in subscriptions)
-            {
-                subscription.Value(message);
-            }
-        }
-
-        public Guid Subscribe(Action<Message> newMessageHandler)
-        {
-            Guid subscriptionId = Guid.NewGuid();
-            subscriptions.Add(subscriptionId, newMessageHandler);
-            return subscriptionId;
-        }
-
-        public void Unsubscribe(Guid subscriptionId)
-        {
-            subscriptions.Remove(subscriptionId);
-        }
-
-        public void UnsubscribeAll()
-        {
-            subscriptions.Clear();
         }
     }
 }

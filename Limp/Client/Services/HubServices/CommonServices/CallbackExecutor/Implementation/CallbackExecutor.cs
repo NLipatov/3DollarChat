@@ -2,7 +2,7 @@
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
 using System.Collections.Concurrent;
 
-namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
+namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation
 {
     public class CallbackExecutor : ICallbackExecutor
     {
@@ -21,16 +21,16 @@ namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
             {
                 object? callback = subscription?.Callback?.Delegate;
                 Type? callbackType = callback?.GetType();
-                if(callbackType == null)
+                if (callbackType == null)
                     throw new ArgumentNullException($"Could not resolve callback type.");
 
-                if(callbackType.IsAssignableTo(typeof(Func<T, Task>)))
+                if (callbackType.IsAssignableTo(typeof(Func<T, Task>)))
                 {
                     Func<T, Task> methodToInvoke = CastCallback<Func<T, Task>>(callback);
                     methodToInvoke.Invoke(arg);
                     return;
                 }
-                else if(callbackType.IsAssignableTo(typeof(Action<T>)))
+                else if (callbackType.IsAssignableTo(typeof(Action<T>)))
                 {
                     Action<T> methodToInvoke = CastCallback<Action<T>>(callback);
                     methodToInvoke.Invoke(arg);

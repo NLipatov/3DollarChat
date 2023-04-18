@@ -15,6 +15,7 @@ using Limp.Client.Services.HubService.AuthService.Implementation;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubService.UsersService.Implementation;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation;
 using Limp.Client.Services.HubServices.MessageService;

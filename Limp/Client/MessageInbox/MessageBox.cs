@@ -37,7 +37,7 @@ namespace Limp.Client.TopicStorage
             }
         }
 
-        public Guid Subsctibe(Action<Message> newMessageHandler)
+        public Guid Subscribe(Action<Message> newMessageHandler)
         {
             Guid subscriptionId = Guid.NewGuid();
             subscriptions.Add(subscriptionId, newMessageHandler);

@@ -109,7 +109,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady");
         _hubServiceSubscriptionManager.AddCallback<Guid>(MyMessageWasReceived, "MessageWasReceivedByRecepient");
-        MessageBox_OnMessageReceived = _messageBox.Subsctibe(TheirMessageWasReceived);
+        MessageBox_OnMessageReceived = _messageBox.Subscribe(TheirMessageWasReceived);
 
         LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();

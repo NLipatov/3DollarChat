@@ -81,9 +81,9 @@
             return;
         }
 
-        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady");
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient");
-        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived");
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
 
         await GetAnAESKeyForConversation();
     }
@@ -116,7 +116,7 @@
         }
     }
 
-    private void OnAESKeyReady(string partnerName)
+    public void OnAESKeyReady(string partnerName)
     {
         InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
         string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
@@ -127,7 +127,7 @@
         }
     }
 
-    private void IncomingMessageReceived(Message message)
+    public void IncomingMessageReceived(Message message)
     {
         if (message.Sender == "You")
             return;

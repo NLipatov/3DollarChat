@@ -18,7 +18,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService
         /// <param name="subscriptionName">Event name</param>
         /// <param name="componentId">Id of component subscribed method of which must be triggered</param>
         /// <returns></returns>
-        Guid AddCallback<T>(Action<T> action, string subscriptionName, Guid? componentId = null);
+        Guid AddCallback<T>(Action<T> action, string subscriptionName, Guid componentId);
         /// <summary>
         /// Add event callback
         /// </summary>
@@ -27,7 +27,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService
         /// <param name="subscriptionName">Event name</param>
         /// <param name="componentId">Id of component subscribed method of which must be triggered</param>
         /// <returns></returns>
-        Guid AddCallback<T>(Func<T, Task> func, string subscriptionName, Guid? componentId = null);
+        Guid AddCallback<T>(Func<T, Task> func, string subscriptionName, Guid componentId);
         /// <summary>
         /// Removes all callbacks of givent component
         /// </summary>

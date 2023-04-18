@@ -21,7 +21,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
 
             return targetSubscriptions;
         }
-        public Guid AddCallback<T>(Action<T> action, string subscriptionName, Guid? componentId = null)
+        public Guid AddCallback<T>(Action<T> action, string subscriptionName, Guid componentId)
         {
             Subscription subscription = BuildSubscription(action, subscriptionName, componentId);
             AddSubscription(subscription, subscription.ComponentId);
@@ -29,7 +29,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
             return subscription.ComponentId;
         }
 
-        public Guid AddCallback<T>(Func<T, Task> func, string subscriptionName, Guid? componentId = null)
+        public Guid AddCallback<T>(Func<T, Task> func, string subscriptionName, Guid componentId)
         {
             Subscription subscription = BuildSubscription(func, subscriptionName, componentId);
             AddSubscription(subscription, subscription.ComponentId);
@@ -37,12 +37,12 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
             return subscription.ComponentId;
         }
 
-        private Subscription BuildSubscription(object callback, string subscriptionName, Guid? componentId = null)
+        private Subscription BuildSubscription(object callback, string subscriptionName, Guid componentId)
         {
             Subscription subscription = new Subscription()
             {
                 SubscriptionName = subscriptionName,
-                ComponentId = componentId ?? Guid.NewGuid(),
+                ComponentId = componentId,
                 Callback = new()
                 {
                     CallbackType = callback.GetType(),
@@ -69,13 +69,12 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
             {
                 var updatedSubscriptions = existingSubscriptions.ToList();
                 updatedSubscriptions.Add(subscription);
-                ComponentSubscriptionsKeyValueStorage.TryUpdate(componentId, existingSubscriptions, updatedSubscriptions);
+                ComponentSubscriptionsKeyValueStorage.TryUpdate(componentId, updatedSubscriptions, existingSubscriptions);
             }
         }
 
         public void RemoveComponentCallbacks(Guid componentId)
         {
-            var targetElements = ComponentSubscriptionsKeyValueStorage[componentId];
             ComponentSubscriptionsKeyValueStorage.Remove(componentId, out _);
         }
     }

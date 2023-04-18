@@ -2,7 +2,7 @@
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 
-namespace Limp.Client.TopicStorage
+namespace Limp.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {

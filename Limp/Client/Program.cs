@@ -20,7 +20,8 @@ using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation;
 using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.Services.HubServices.MessageService.Implementation;
-using Limp.Client.TopicStorage;
+using Limp.Client.Services.InboxService;
+using Limp.Client.Services.InboxService.Implementation;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

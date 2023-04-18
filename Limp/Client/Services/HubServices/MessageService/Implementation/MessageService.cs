@@ -8,7 +8,7 @@ using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.TopicStorage;
+using Limp.Client.Services.InboxService;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;

@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models.Message;
 
-namespace Limp.Client.TopicStorage
+namespace Limp.Client.Services.InboxService
 {
     public interface IMessageBox
     {

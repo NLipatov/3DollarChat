@@ -1,0 +1,20 @@
+﻿<div class="encryption-disclaimer" style="display: @(IsDisplayed ? "" : "none")">
+    <div class="encryption-message-header">
+        <span>We are trying to negotiate with the interlocutor's side about the key AES for this chat.</span>
+    </div>
+    <div class="encryption-message-body">
+        <span>
+            Creating a new AES encryption key for your conversation
+        </span>
+    </div>
+</div>
+
+@code {
+    private bool IsDisplayed { get; set; } = true;
+
+    public void ShouldBeVisible(bool shouldBeDisplayed)
+    {
+        IsDisplayed = shouldBeDisplayed;
+        StateHasChanged();
+    }
+}

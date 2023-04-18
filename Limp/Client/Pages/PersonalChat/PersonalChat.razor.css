@@ -1,0 +1,31 @@
+﻿.message-input-box {
+    position: fixed;
+    bottom: 0;
+    padding: 10px;
+    gap: 10px;
+    display: flex;
+    left: 50%;
+}
+
+.message-input-box input {
+    border-radius: 5px;
+}
+
+.page-container {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.header {
+    position: fixed;
+    background-color: white;
+    display: flex;
+    width: 100%;
+    align-items: center;
+    border-bottom: black 1px solid;
+    padding-left: 10px;
+    padding-right: 10px;
+    font-size: 16pt;
+    padding: 10px;
+}

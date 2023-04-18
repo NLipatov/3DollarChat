@@ -1,4 +1,5 @@
 ﻿@page "/user/{topicName?}"
+@using Limp.Client.Pages.PersonalChat.MessageBox;
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -6,6 +7,7 @@
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.PersonalChat.MessageBuilder;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
@@ -24,64 +26,43 @@
 @inject IAESOfferHandler _aesOfferHandler
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IMessageBuilder _messageBuilder
 @implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
 
 <div class="page-container">
-    @if (!isAcceptedAESKeyExists)
-    {
-        <KeyTransfer 
-            IsThereAnAESKey=isAcceptedAESKeyExists/>
-    }
-    else
-    {
-        <div class="header">
-            <span>@topicName</span>
-        </div>
+    <KeyBeingTransfered
+        @ref=KeyTransferComponent/>
 
-        <div class="messages-box">
-            @foreach (var message in messages.Where(x=>x.Type == MessageType.UserMessage))
-            {
-                bool isOutcoming = message.Sender == "You";
-                string messageClass = isOutcoming ? "outcoming" : "incoming";
-                <div class="message @messageClass">
-                    <span>@(message.Payload)</span>
-                </div>
-                <div class="timestamp @messageClass">
-                    <span>@message.DateSent.ToString("hh:mm")</span>
-                    @if (message.IsReceived)
-                    {
-                        <span>R</span>
-                    }
-                </div>
+    <div class="header">
+        <span>@topicName</span>
+    </div>
 
-            }
-        </div>
+    <MessageList
+        @ref=MessageListComponent
+        topicName=@topicName/>
 
-        <div class="message-input-box">
-            <input @bind="messageInput" />
-            <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
-        </div>
-    }
+    <div class="message-input-box">
+        <input @bind="messageInput" />
+        <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
+    </div>
 </div>
 
 @code {
     [Parameter]
     public string topicName { get; set; } = string.Empty;
     [Parameter]
-    public string? myUsername { get; set; }
+    public string myUsername { get; set; } = string.Empty;
     private HubConnection? messageDispatcherHub;
     public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
-    private List<Message> messages { get; set; } = new();
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
-    private bool isAcceptedAESKeyExists { get; set; } = false;
+    private bool AESKeyForConversationExists { get; set; } = false;
     private bool isSendButtonDisabled { get; set; } = false;
-    private Guid? MessageService_SubscriptionToPartnerAESAccept { get; set; }
-    private Guid? MessageBox_OnMessageReceived { get; set; }
-    private Guid? MessageService_SubscrriptionToMessageReceivedByRecepient { get; set; }
     private Guid ComponentId { get; set; }
+    private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
+    private MessageList? MessageListComponent { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -101,10 +82,9 @@
         }
 
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady");
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MyMessageWasReceived, "MessageWasReceivedByRecepient");
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient");
         _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived");
 
-        LoadPreviousMessagesForThisTopic();
         await GetAnAESKeyForConversation();
     }
 
@@ -127,9 +107,12 @@
         }
         else
         {
-            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value.Value.ToString()}");
-            isAcceptedAESKeyExists = true;
-            StateHasChanged();
+            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString()}");
+            AESKeyForConversationExists = true;
+            if (KeyTransferComponent != null)
+            {
+                KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
+            }
         }
     }
 
@@ -137,26 +120,11 @@
     {
         InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
         string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
-        isAcceptedAESKeyExists = !string.IsNullOrWhiteSpace(keyForConversation);
-        StateHasChanged();
-    }
-
-    private void LoadPreviousMessagesForThisTopic()
-    {
-        if (string.IsNullOrWhiteSpace(topicName))
+        AESKeyForConversationExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        if(KeyTransferComponent != null)
         {
-            throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
+            KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
         }
-
-        var messagesFromMessageBox = _messageBox.FetchMessagesFromMessageBox(topicName);
-        messages.AddRange(messagesFromMessageBox);
-    }
-
-    private async Task OnUsernameResolve(string username)
-    {
-        myUsername = username;
-        await GetAnAESKeyForConversation();
-        StateHasChanged();
     }
 
     private void IncomingMessageReceived(Message message)
@@ -166,18 +134,15 @@
 
         if(message.Type == MessageType.UserMessage)
         {
-            messages.Add(message);
-            StateHasChanged();
+            TryAddMessage(message);
         }
     }
 
-    private void MyMessageWasReceived(Guid messageId)
+    private void TryAddMessage(Message message)
     {
-        Message? receivedMessage = messages.FirstOrDefault(x => x.Id == messageId);
-        if (receivedMessage != null)
+        if (MessageListComponent != null)
         {
-            receivedMessage.IsReceived = true;
-            StateHasChanged();
+            MessageListComponent.AddMessage(message);
         }
     }
 
@@ -186,23 +151,13 @@
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
 
-        Cryptogramm cryptogramm = await _cryptographyService
-        .EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = messageInput }, contact: topicName);
-
-        Message messageToSend = new Message
-        {
-            Topic = topicName,
-            Cryptogramm = cryptogramm,
-            DateSent = DateTime.UtcNow,
-            TargetGroup = topicName!,
-            Sender = myUsername ?? throw new ApplicationException("Message was not send"),
-        };
+        Message messageToSend = await _messageBuilder.BuildMessageToBeSend(messageInput, topicName, myUsername);
 
         await _messageService.SendMessage(messageToSend);
 
         messageToSend.Payload = messageInput;
         messageToSend.Sender = "You";
-        messages.Add(messageToSend);
+        TryAddMessage(messageToSend);
         await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;

@@ -75,6 +75,7 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
 
         public void RemoveComponentCallbacks(Guid componentId)
         {
+            var targetElements = ComponentSubscriptionsKeyValueStorage[componentId];
             ComponentSubscriptionsKeyValueStorage.Remove(componentId, out _);
         }
     }

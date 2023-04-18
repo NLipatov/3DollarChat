@@ -1,0 +1,67 @@
+﻿@using ClientServerCommon.Models.Message;
+@using Limp.Client.Services.InboxService;
+@inject IMessageBox _messageBox
+
+<div class="messages-box">
+    @foreach (var message in Messages.Where(x => x.Type == MessageType.UserMessage))
+    {
+        bool isOutcoming = message.Sender == "You";
+        string messageClass = isOutcoming ? "outcoming" : "incoming";
+
+        <div class="message @messageClass">
+            <span>@(message.Payload)</span>
+        </div>
+        <div class="timestamp @messageClass">
+            <span>@message.DateSent.ToString("hh:mm")</span>
+            @if (message.IsReceived)
+            {
+                <span>R</span>
+            }
+        </div>
+
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string topicName { get; set; } = string.Empty;
+    private List<Message> Messages { get; set; } = new();
+
+    protected override void OnInitialized()
+    {
+        Messages = GetPreviousMessages();
+    }
+
+    private List<Message> GetPreviousMessages()
+    {
+        if (string.IsNullOrWhiteSpace(topicName))
+        {
+            throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
+        }
+
+        List<Message> messagesFromMessageBox = _messageBox.FetchMessagesFromMessageBox(topicName);
+        return messagesFromMessageBox;
+    }
+
+    public void MarkAsReceived(Guid messageId)
+    {
+        Message? receivedMessage = Messages.FirstOrDefault(x => x.Id == messageId);
+        if (receivedMessage != null)
+        {
+            receivedMessage.IsReceived = true;
+            StateHasChanged();
+        }
+    }
+
+    public void AddMessage(Message message)
+    {
+        Messages.Add(message);
+        StateHasChanged();
+    }
+
+    public void AddMessage(List<Message> messages)
+    {
+        Messages.AddRange(messages);
+        StateHasChanged();
+    }
+}

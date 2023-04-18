@@ -4,6 +4,7 @@ using Limp.Client.Cryptography;
 using Limp.Client.HubInteraction.EventExecution;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+using Limp.Client.Pages.PersonalChat.MessageBuilder;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 using Limp.Client.Services.ContactsProvider;
@@ -44,5 +45,6 @@ builder.Services.AddSingleton<IUsersService, UsersService>();
 builder.Services.AddSingleton<IMessageService, MessageService>();
 builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscriptionManager>();
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
+builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
 
 await builder.Build().RunAsync();

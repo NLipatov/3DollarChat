@@ -1,9 +1,29 @@
 ﻿@using Limp.Client.Cryptography;
+@using Limp.Client.Cryptography.KeyStorage;
+@using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Shared.NavigationBar
+@using LimpShared.Encryption;
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
+@inject IHubConnectionProvider _hubConnectionProvider
 
-@if(isRSAGenerated)
+@if (!isRSAGenerated)
+{
+    <div class="RSACalculatingWarning">
+        <p>
+            Calculating an RSA key pair...
+        </p>
+    </div>
+}
+else if(!isConnectedToHubs)
+{
+    <div class="RSACalculatingWarning">
+        <p>
+            Connecting to application server
+        </p>
+    </div>
+}
+else
 {
     <div class="ApplicationContent">
         <NavMenu />
@@ -12,17 +32,10 @@
         </div>
     </div>
 }
-else
-{
-    <div class="RSACalculatingWarning">
-        <p>
-            Calculating an RSA key pair...
-        </p>
-    </div>
-}
 
 @code{
     private bool isRSAGenerated = false;
+    private bool isConnectedToHubs = false;
 
     protected override async Task OnInitializedAsync()
     {
@@ -31,6 +44,8 @@ else
         {
             isRSAGenerated = true;
             StateHasChanged();
+            _hubConnectionProvider.ConnectToHubs();
+            isConnectedToHubs = true;
         });
     }
 }

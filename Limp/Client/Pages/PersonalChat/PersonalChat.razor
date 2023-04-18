@@ -1,0 +1,165 @@
+﻿@page "/user/{topicName?}"
+@using Limp.Client.Pages.PersonalChat.MessageBox;
+@using ClientServerCommon.Models;
+@using ClientServerCommon.Models.Message;
+@using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+@using Limp.Client.Cryptography.KeyStorage;
+@using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.PersonalChat.MessageBuilder;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Limp.Client.Cryptography;
+@using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+@using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+@using LimpShared.Encryption;
+@using Limp.Client.Pages;
+@using Limp.Client.Services.InboxService;
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jS
+@inject ICryptographyService _cryptographyService
+@inject IMessageDecryptor _messageDecryptor
+@inject IMessageBox _messageBox
+@inject IAESOfferHandler _aesOfferHandler
+@inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IMessageBuilder _messageBuilder
+@implements IDisposable
+
+<PageTitle>Chat with @topicName</PageTitle>
+
+<div class="page-container">
+    <KeyBeingTransfered
+        @ref=KeyTransferComponent/>
+
+    <div class="header">
+        <span>@topicName</span>
+    </div>
+
+    <MessageList
+        @ref=MessageListComponent
+        topicName=@topicName/>
+
+    <div class="message-input-box">
+        <input @bind="messageInput" />
+        <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string topicName { get; set; } = string.Empty;
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
+    private HubConnection? messageDispatcherHub;
+    public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
+    private string messageInput = string.Empty;
+    private List<UserConnection> userConnections { get; set; } = new();
+    private bool AESKeyForConversationExists { get; set; } = false;
+    private bool isSendButtonDisabled { get; set; } = false;
+    private Guid ComponentId { get; set; }
+    private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
+    private MessageList? MessageListComponent { get; set; } = new();
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        await ResolveMyUsername();
+
+        //If username was not read, ask user to relogin
+        if (string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/login");
+            return;
+        }
+
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
+
+        await GetAnAESKeyForConversation();
+    }
+
+    private async Task<string> ResolveMyUsername()
+    {
+        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        //Reading username from access-token
+        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+
+        return myUsername;
+    }
+
+    private async Task GetAnAESKeyForConversation()
+    {
+        if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value == null)
+        {
+            Console.WriteLine($"There is no existing AES key for conversation. Let's create one");
+            //This will get partners public key and generate an AES key for conversation
+            await _messageService.RequestForPartnerPublicKey(topicName);
+        }
+        else
+        {
+            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString()}");
+            AESKeyForConversationExists = true;
+            if (KeyTransferComponent != null)
+            {
+                KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
+            }
+        }
+    }
+
+    public void OnAESKeyReady(string partnerName)
+    {
+        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
+        string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
+        AESKeyForConversationExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        if(KeyTransferComponent != null)
+        {
+            KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
+        }
+    }
+
+    public void IncomingMessageReceived(Message message)
+    {
+        if (message.Sender == "You")
+            return;
+
+        if(message.Type == MessageType.UserMessage)
+        {
+            TryAddMessage(message);
+        }
+    }
+
+    private void TryAddMessage(Message message)
+    {
+        if (MessageListComponent != null)
+        {
+            MessageListComponent.AddMessage(message);
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(messageInput))
+            return;
+
+        Message messageToSend = await _messageBuilder.BuildMessageToBeSend(messageInput, topicName, myUsername);
+
+        await _messageService.SendMessage(messageToSend);
+
+        messageToSend.Payload = messageInput;
+        messageToSend.Sender = "You";
+        TryAddMessage(messageToSend);
+        await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
+
+        messageInput = string.Empty;
+    }
+}

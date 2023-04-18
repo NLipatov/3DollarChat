@@ -26,7 +26,7 @@ namespace Limp.Server.Utilities.Kafka
         }
         public async Task ProduceAsync(Message message)
         {
-            using (var producer = new ProducerBuilder<string, string>(
+            using(var producer = new ProducerBuilder<string, string>(
                 _configuration.AsEnumerable()).Build())
             {
                 var result = await producer.ProduceAsync(TOPIC,
@@ -50,7 +50,7 @@ namespace Limp.Server.Utilities.Kafka
             await Task.Delay(10000);
             await hubConnection.StartAsync();
 
-            using (var consumer = new ConsumerBuilder<string, string>(
+        using(var consumer = new ConsumerBuilder<string, string>(
                 _configuration.AsEnumerable()).Build())
             {
                 consumer.Subscribe(TOPIC);

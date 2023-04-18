@@ -37,17 +37,20 @@ namespace Limp.Server.Hubs
             await PushOnlineUsersToClients();
         }
 
-        public async Task SetUsername(string accessToken) => await _userConnectedHandler
+        public async Task SetUsername(string accessToken)
+        {
+            await _userConnectedHandler
             .OnUsernameResolved
             (Context.ConnectionId,
             accessToken,
             CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
+        }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
 
-            string? username = isTokenValid ? TokenReader.GetUsername(accessToken) : null;
+            string? username = isTokenValid ? TokenReader.GetUsernameFromAccessToken(accessToken) : null;
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
@@ -75,12 +78,19 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("onNameResolve", username);
         }
 
-        private async Task PushOnlineUsersToClients()
+        public async Task PushOnlineUsersToClients()
         {
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
             List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
             //Pushes set of clients to all the clients
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
+        }
+        public async Task PushOnlineUsersToClient()
+        {
+            //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
+            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
+            //Pushes set of clients to all the clients
+            await Clients.Caller.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 
         public async Task PushConId()

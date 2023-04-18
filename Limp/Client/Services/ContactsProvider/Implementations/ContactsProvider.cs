@@ -30,7 +30,7 @@ public class ContactsProvider : IContactsProvider
     public async Task RemoveContact(string username, IJSRuntime jSRuntime)
     {
         List<string>? contacts = await GetContacts(jSRuntime);
-        if(contacts.Any(x=>x == username))
+        if (contacts.Any(x => x == username))
         {
             contacts.Remove(username);
             await SetContactItem(jSRuntime, contacts);
@@ -41,7 +41,7 @@ public class ContactsProvider : IContactsProvider
     {
         string? itemValue = await jSRuntime.InvokeAsync<string?>("localStorage.getItem", "contacts");
 
-        if(string.IsNullOrWhiteSpace(itemValue))
+        if (string.IsNullOrWhiteSpace(itemValue))
             await SetContactItem(jSRuntime, new());
     }
 

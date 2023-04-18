@@ -1,70 +1,69 @@
 ﻿@page "/users"
-@using Limp.Client.HubConnectionManagement.ConnectionHandlers.HubInteraction.Implementations;
-@using Limp.Client.HubConnectionManagement.HubObservers.Implementations.MessageHub.EventTypes;
-@using Limp.Client.HubInteraction.Handlers;
-@using Limp.Client.HubInteraction;
 @using ClientServerCommon.Models;
-@using Limp.Client.Cryptography;
-@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
-@using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub;
-@using Limp.Client.HubInteraction.HubObservers.Implementations.AuthHub.EventTypes;
-@using Limp.Client.HubInteraction.HubObservers.Implementations.UsersHubObserver.EventTypes;
-@using Limp.Client.HubInteraction.HubObservers;
-@using Limp.Client.Services.HubConnectionProvider;
-@using Limp.Client.TopicStorage;
-@using LimpShared.Authentification;
-@using Microsoft.AspNetCore.SignalR.Client;
-@using Limp.Client.UIComponents.ContactItem;
-@using ClientServerCommon.Models.Login;
+@using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using System.Collections.Concurrent;
+@using Limp.Client.Services;
+@using Limp.Client.UIComponents.ContactItem
 @inject NavigationManager _navigationManager
-@inject ICryptographyService _cryptographyService
-@inject IMessageBox _messageBox
-@inject IAESOfferHandler _aesOfferHandler
 @inject IJSRuntime _jS
-@inject IHubObserver<UsersHubEvent> _usersHubObserver
-@inject IHubObserver<AuthHubEvent> _authHubObserver
-@inject IHubObserver<MessageHubEvent> _messageDispatcherHubObserver 
-@inject IHubConnectionProvider _hubConnectionProvider
-@implements IAsyncDisposable
+@inject IUsersService _usersService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
 <PageTitle>Users Online</PageTitle>
 
 <div style="padding: 0.5rem 1rem;">
-    @foreach (var connection in userConnections.Where(x=>!x.ConnectionIds.Contains(myConnectionId) && x.ConnectionIds.Count > 0))
+    @foreach (var connection in userConnections.Where(x=>x.Username != myUsername && x.ConnectionIds.Count > 0))
     {
         <ContactBar
             Username="@connection.Username"
             IsOnline="true"
-            OnClickCallback="()=>RedirectToChat(connection.Username)"/>
+            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))"/>
     }
 </div>
 
 @code {
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
-    private string myConnectionId { get; set; } = string.Empty;
-    private HubConnection? usersHubConnection;
+    private string myUsername { get; set; } = String.Empty;
+    private Guid ComponentId { get; set; }
 
-    private async Task RedirectToChat(string username)
-    {
-        _navigationManager.NavigateTo($"/user/{username}");
-    }
-
-    private async Task HandleMyConnectionIdUpdate(string id)
-    {
-        myConnectionId = id;
-    }
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
-        await _hubConnectionProvider.ConnectToHubs
-        (OnUserConnectionsUpdate: HandleUserConnectionsUpdate,
-        OnConnectionIdUpdate: HandleMyConnectionIdUpdate);
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+        
+        //Reading username from access-token
+        myUsername = await GetMyUsername();
+
+        //If username was not read, ask user to relogin
+        if(string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/login");
+            return;
+        }
+
+        //Subscribing to server event of updating online users
+        _hubServiceSubscriptionManager
+            .AddCallback<List<UserConnection>>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+
+        //Actualizing list of users that currently online
+        await _usersService.ActualizeConnectedUsersAsync();
     }
 
-    private async Task HandleUserConnectionsUpdate(List<UserConnection> updatedUserConnections)
+    private async Task<string> GetMyUsername()
+    {
+        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+
+        return myUsername;
+    }
+
+    private void UpdateUsersList(List<UserConnection> updatedUserConnections)
     {
         userConnections.Clear();
         foreach (var connection in updatedUserConnections)
@@ -72,15 +71,5 @@
             userConnections.Add(connection);
         }
         StateHasChanged();
-    }
-
-    private void Rerender()
-    {
-        StateHasChanged();
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _hubConnectionProvider.DisposeAsync();
     }
 }

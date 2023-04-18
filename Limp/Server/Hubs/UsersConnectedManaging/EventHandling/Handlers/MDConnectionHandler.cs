@@ -1,4 +1,5 @@
-﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+﻿using Limp.Client.Services;
+using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Authentification;
 
@@ -48,11 +49,18 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         string accessToken,
         Func<string, string, CancellationToken, Task>? AddUserToGroup,
         Func<string, string, CancellationToken, Task>? SendToCaller,
+        Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
 
-            string username = await GetUsername(accessToken);
+            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            if (!isTokenValid)
+            {
+                throw new ArgumentException("Access-token is not valid.");
+            }
+
+            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
@@ -70,16 +78,22 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             await SendToCaller("OnMyNameResolve", username, default);
         }
 
-        private async Task<string> GetUsername(string accessToken)
+        private async Task<TokenRelatedOperationResult> GetUsername(string accessToken)
         {
-            TokenRelatedOperationResult usernameRequest = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
+            TokenRelatedOperationResult usernameRequestResult = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
 
-            string? username = usernameRequest.Username;
+            string declaredUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+            string? actualUsername = usernameRequestResult.Username;
 
-            if (string.IsNullOrWhiteSpace(username))
-                throw new ApplicationException($"Could not resolve a username by given user JWT token.");
+            if(!string.IsNullOrWhiteSpace(actualUsername)
+                &&
+                !string.IsNullOrWhiteSpace(declaredUsername))
+            {
+                if (!declaredUsername.Equals(actualUsername))
+                    throw new ArgumentException("Username from access-token and username from AuthAPI differs.");
+            }
 
-            return username;
+            return usernameRequestResult;
         }
 
         private void GuaranteeDelegatesNotNull(params object?[] delegateObjects)

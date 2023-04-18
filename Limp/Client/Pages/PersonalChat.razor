@@ -6,6 +6,7 @@
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
 @using Microsoft.AspNetCore.SignalR.Client;
@@ -22,7 +23,8 @@
 @inject IMessageBox _messageBox
 @inject IAESOfferHandler _aesOfferHandler
 @inject IMessageService _messageService
-@implements IAsyncDisposable
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
 
@@ -79,9 +81,23 @@
     private Guid? MessageService_SubscriptionToPartnerAESAccept { get; set; }
     private Guid? MessageBox_OnMessageReceived { get; set; }
     private Guid? MessageService_SubscrriptionToMessageReceivedByRecepient { get; set; }
+    private Guid ComponentId { get; set; }
+
+    public void Dispose()
+    {
+        _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+        if (MessageBox_OnMessageReceived.HasValue)
+        {
+            _messageBox.Unsubscribe(MessageBox_OnMessageReceived.Value);
+        }
+    }
 
     protected override async Task OnInitializedAsync()
     {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
         await ResolveMyUsername();
 
         //If username was not read, ask user to relogin
@@ -91,8 +107,8 @@
             return;
         }
 
-        MessageService_SubscriptionToPartnerAESAccept = _messageService.SubscribeToPartnerAESAccept(OnAESKeyReadyAsync);
-        MessageService_SubscrriptionToMessageReceivedByRecepient = _messageService.SubscribeToMessageReceivedByRecepient(MyMessageWasReceived);
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady");
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MyMessageWasReceived, "MessageWasReceivedByRecepient");
         MessageBox_OnMessageReceived = _messageBox.Subsctibe(TheirMessageWasReceived);
 
         LoadPreviousMessagesForThisTopic();
@@ -124,7 +140,7 @@
         }
     }
 
-    private async Task OnAESKeyReadyAsync(string partnerName)
+    private void OnAESKeyReady(string partnerName)
     {
         InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
         string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
@@ -197,21 +213,5 @@
         await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (MessageService_SubscriptionToPartnerAESAccept.HasValue)
-        {
-            _messageService.RemoveSubscriptionToPartnerAESAccept(MessageService_SubscriptionToPartnerAESAccept.Value);
-        }
-        if(MessageService_SubscrriptionToMessageReceivedByRecepient.HasValue)
-        {
-            _messageService.RemoveSubscriptionToMessageReceivedByRecepient(MessageService_SubscrriptionToMessageReceivedByRecepient.Value);
-        }
-        if (MessageBox_OnMessageReceived.HasValue)
-        {
-            _messageBox.Unsubscribe(MessageBox_OnMessageReceived.Value);
-        }
     }
 }

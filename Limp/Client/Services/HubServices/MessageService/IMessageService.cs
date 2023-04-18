@@ -12,9 +12,5 @@ namespace Limp.Client.Services.HubServices.MessageService
         bool IsConnected();
         Task SendMessage(Message message);
         Task RequestForPartnerPublicKey(string partnerUsername);
-        Guid SubscribeToPartnerAESAccept(Func<string, Task> callback);
-        void RemoveSubscriptionToPartnerAESAccept(Guid subscriptionId);
-        Guid SubscribeToMessageReceivedByRecepient(Action<Guid> callback);
-        void RemoveSubscriptionToMessageReceivedByRecepient(Guid subscriptionId);
     }
 }

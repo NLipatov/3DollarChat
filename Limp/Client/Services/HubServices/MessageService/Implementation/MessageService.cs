@@ -26,8 +26,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
-        private ConcurrentDictionary<Guid, Func<string, Task>> OnPartnerAESAcceptCallbacks = new();
-        private ConcurrentDictionary<Guid, Action<Guid>> OnMessageReceivedCallbacks = new();
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -74,7 +72,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 {
                     if (message.Type == MessageType.AESAccept)
                     {
-                        _callbackExecutor.ExecuteCallbackDictionary(message.Sender, OnPartnerAESAcceptCallbacks);
+                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         return;
                     }
 
@@ -101,7 +99,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
             hubConnection.On<Guid>("MessageWasReceivedByRecepient", messageId =>
             {
-                _callbackExecutor.ExecuteCallbackDictionary(messageId, OnMessageReceivedCallbacks);
+                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageWasReceivedByRecepient");
             });
 
             //Handling server side response on partners Public Key
@@ -238,26 +236,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             await ConnectAsync();
         }
 
-        public Guid SubscribeToPartnerAESAccept(Func<string, Task> callback)
-        {
-            Guid subscriptionId = Guid.NewGuid();
-            bool isAdded = OnPartnerAESAcceptCallbacks.TryAdd(subscriptionId, callback);
-            if (!isAdded)
-            {
-                SubscribeToPartnerAESAccept(callback);
-            }
-            return subscriptionId;
-        }
-
-        public void RemoveSubscriptionToPartnerAESAccept(Guid subscriptionId)
-        {
-            bool isRemoved = OnPartnerAESAcceptCallbacks.Remove(subscriptionId, out _);
-            if (!isRemoved)
-            {
-                RemoveSubscriptionToPartnerAESAccept(subscriptionId);
-            }
-        }
-
         public async Task SendMessage(Message message)
         {
             if (hubConnection != null)
@@ -268,26 +246,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 await ReconnectAsync();
                 await SendMessage(message);
-            }
-        }
-
-        public Guid SubscribeToMessageReceivedByRecepient(Action<Guid> callback)
-        {
-            Guid subscriptionId = Guid.NewGuid();
-            bool isAdded = OnMessageReceivedCallbacks.TryAdd(subscriptionId, callback);
-            if (!isAdded)
-            {
-                SubscribeToMessageReceivedByRecepient(callback);
-            }
-            return subscriptionId;
-        }
-
-        public void RemoveSubscriptionToMessageReceivedByRecepient(Guid subscriptionId)
-        {
-            bool isRemoved = OnMessageReceivedCallbacks.Remove(subscriptionId, out _);
-            if (!isRemoved)
-            {
-                RemoveSubscriptionToMessageReceivedByRecepient(subscriptionId);
             }
         }
     }

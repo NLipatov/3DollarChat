@@ -1,11 +1,16 @@
-﻿
-<div>
-    <label class="input-block">
-        <div class="input-box">
-            <i class="@IconClass"></i>
-            <input placeholder="@Placeholder" required="@IsRequired" type="@Type" @bind=InputText @bind:event="@BindEvent" @onchange="@(() =>OnInput.InvokeAsync(InputText))" />
-        </div>
-            </label>
+﻿<div class="form-outline mb-4">
+    @if(IconClass != null)
+    {
+        <i class="@IconClass"></i>
+    }
+    <input 
+        placeholder="@Placeholder" 
+        required="@IsRequired" 
+        type="@Type" @bind=InputText 
+        @bind:event="@BindEvent" 
+        @onchange="@(() =>OnInput.InvokeAsync(InputText))" 
+        class="form-control form-control-lg" />
+    <label class="form-label" for="form1Example13">Username</label>
 </div>
 
 @code {

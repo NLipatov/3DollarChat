@@ -33,7 +33,7 @@
             if (lasttokenFetchResult.Result != AuthResultType.Fail)
             {
                 await StoreTokensAsync(result);
-                lasttokenFetchResult.Message = "You has been logged in.";
+                lasttokenFetchResult.Message = "You're logged in!";
             }
 
             StateHasChanged();

@@ -45,7 +45,7 @@
 
     <div class="message-input-box">
         <input @bind="messageInput" />
-        <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
+        <button @onclick="async () => await SendMessage()">Send</button>
     </div>
 </div>
 
@@ -54,12 +54,9 @@
     public string topicName { get; set; } = string.Empty;
     [Parameter]
     public string myUsername { get; set; } = string.Empty;
-    private HubConnection? messageDispatcherHub;
-    public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
     private bool AESKeyForConversationExists { get; set; } = false;
-    private bool isSendButtonDisabled { get; set; } = false;
     private Guid ComponentId { get; set; }
     private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
     private MessageList? MessageListComponent { get; set; } = new();
@@ -85,7 +82,7 @@
         _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
 
-        await GetAnAESKeyForConversation();
+        await GetAESKeyAsync();
     }
 
     private async Task<string> ResolveMyUsername()
@@ -97,22 +94,17 @@
         return myUsername;
     }
 
-    private async Task GetAnAESKeyForConversation()
+    private async Task GetAESKeyAsync()
     {
         if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value == null)
         {
-            Console.WriteLine($"There is no existing AES key for conversation. Let's create one");
             //This will get partners public key and generate an AES key for conversation
             await _messageService.RequestForPartnerPublicKey(topicName);
         }
         else
         {
-            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString()}");
             AESKeyForConversationExists = true;
-            if (KeyTransferComponent != null)
-            {
-                KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
-            }
+            SetKeyTransferVisibilityBasedOnAESKeyExistance();
         }
     }
 
@@ -121,6 +113,11 @@
         InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
         string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
         AESKeyForConversationExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        SetKeyTransferVisibilityBasedOnAESKeyExistance();
+    }
+
+    private void SetKeyTransferVisibilityBasedOnAESKeyExistance()
+    {        
         if(KeyTransferComponent != null)
         {
             KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);

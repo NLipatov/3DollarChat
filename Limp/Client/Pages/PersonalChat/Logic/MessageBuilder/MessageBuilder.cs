@@ -2,7 +2,7 @@
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 
-namespace Limp.Client.Pages.PersonalChat.MessageBuilder
+namespace Limp.Client.Pages.PersonalChat.Logic.MessageBuilder
 {
     public class MessageBuilder : IMessageBuilder
     {

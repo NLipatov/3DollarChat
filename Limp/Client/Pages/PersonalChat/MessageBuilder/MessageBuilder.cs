@@ -23,7 +23,8 @@ namespace Limp.Client.Pages.PersonalChat.MessageBuilder
                 Cryptogramm = cryptogramm,
                 DateSent = DateTime.UtcNow,
                 TargetGroup = topicName!,
-                Sender = myName ?? throw new ApplicationException("Message was not send"),
+                Sender = myName ?? throw new ApplicationException
+                    ($"Exception on message building phase: Cannot define message sender name."),
             };
 
             return messageToSend;

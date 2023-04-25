@@ -73,6 +73,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     if (message.Type == MessageType.AESAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
+                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
 
@@ -82,7 +83,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     if (message.Type == MessageType.AESOffer)
                     {
                         if (hubConnection != null)
+                        {
                             await hubConnection.SendAsync("Dispatch", await _aESOfferHandler.GetAESOfferResponse(message));
+                        }
                     }
                 }
 

@@ -1,5 +1,4 @@
 ﻿@page "/user/{topicName?}"
-@using Limp.Client.Pages.PersonalChat.MessageBox;
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -7,7 +6,7 @@
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.Pages.PersonalChat.MessageBuilder;
+@using Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
@@ -18,6 +17,8 @@
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
 @using Limp.Client.Services.InboxService;
+@using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+@using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying;
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject ICryptographyService _cryptographyService
@@ -45,7 +46,7 @@
 
     <div class="message-input-box">
         <input @bind="messageInput" />
-        <button @onclick="async () => await SendMessage()" disabled="@isSendButtonDisabled">Send</button>
+        <button @onclick="async () => await SendMessage()">Send</button>
     </div>
 </div>
 
@@ -54,12 +55,9 @@
     public string topicName { get; set; } = string.Empty;
     [Parameter]
     public string myUsername { get; set; } = string.Empty;
-    private HubConnection? messageDispatcherHub;
-    public bool IsConnectedToMessageDispatcherHub => messageDispatcherHub?.State == HubConnectionState.Connected;
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
     private bool AESKeyForConversationExists { get; set; } = false;
-    private bool isSendButtonDisabled { get; set; } = false;
     private Guid ComponentId { get; set; }
     private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
     private MessageList? MessageListComponent { get; set; } = new();
@@ -72,7 +70,7 @@
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
 
-        await ResolveMyUsername();
+        myUsername = await TokenOperations.ResolveMyUsername(_jS);
 
         //If username was not read, ask user to relogin
         if (string.IsNullOrWhiteSpace(myUsername))
@@ -81,46 +79,46 @@
             return;
         }
 
+        SubscribeToHubEvents();
+
+        await GetAESKeyAsync();
+    }
+
+    private void SubscribeToHubEvents()
+    {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
-
-        await GetAnAESKeyForConversation();
     }
 
-    private async Task<string> ResolveMyUsername()
+    private async Task GetAESKeyAsync()
     {
-        string? accessToken = await JWTHelper.GetAccessToken(_jS);
-        //Reading username from access-token
-        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
-
-        return myUsername;
-    }
-
-    private async Task GetAnAESKeyForConversation()
-    {
-        if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value == null)
+        Key? key = GetAESKey();
+        if(key != null)
         {
-            Console.WriteLine($"There is no existing AES key for conversation. Let's create one");
-            //This will get partners public key and generate an AES key for conversation
-            await _messageService.RequestForPartnerPublicKey(topicName);
+            SetKeyTransferVisibilityBasedOnAESKeyExistance();
+            return;
         }
-        else
-        {
-            Console.WriteLine($"There is an existing AES key for conversation: {InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value?.Value?.ToString()}");
-            AESKeyForConversationExists = true;
-            if (KeyTransferComponent != null)
-            {
-                KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
-            }
-        }
+
+        await _messageService.RequestForPartnerPublicKey(topicName);
     }
 
     public void OnAESKeyReady(string partnerName)
     {
-        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerName).Value.IsAccepted = true;
-        string? keyForConversation = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnerName).Value?.Value?.ToString();
-        AESKeyForConversationExists = !string.IsNullOrWhiteSpace(keyForConversation);
+        Key key = GetAESKey()!;
+        SetKeyTransferVisibilityBasedOnAESKeyExistance();
+    }
+
+    private Key? GetAESKey()
+    {
+        Key? aesKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        AESKeyForConversationExists = aesKey != null;
+
+        return aesKey;
+    }
+
+    private void SetKeyTransferVisibilityBasedOnAESKeyExistance()
+    {        
         if(KeyTransferComponent != null)
         {
             KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);

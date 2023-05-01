@@ -97,7 +97,7 @@
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    private async Task ToggleContactEditionMode()
+    private void ToggleContactEditionMode()
     {
         contactEditionMode = !contactEditionMode;
         StateHasChanged();
@@ -116,7 +116,7 @@
         //If there is no one in contact book left, toggle change mode back to false automatically
         if(!(await _contactsProvider.GetContacts(_jSRuntime)).Any())
         {
-            await ToggleContactEditionMode();
+            ToggleContactEditionMode();
         }
 
         //update displayed contacts in UI component

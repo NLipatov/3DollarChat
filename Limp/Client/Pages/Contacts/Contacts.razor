@@ -1,5 +1,6 @@
 ﻿@page "/contacts"
 @using ClientServerCommon.Models;
+@using Limp.Client.Pages.Contacts.Models;
 @using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -9,6 +10,7 @@
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime;
+@implements IDisposable
 
 <div class="p-2" style="  
     width: 100%;
@@ -122,6 +124,8 @@
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
 
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
     private async Task ToggleContactEditionMode()
     {
         contactEditionMode = !contactEditionMode;
@@ -178,16 +182,9 @@
         await UpdateContacts();
     }
 
-    public class Contact
-    {
-        public string Username { get; set; }
-        public bool IsOnline { get; set; } = false;
-        public DateTime LastMessage { get; set; } = DateTime.UtcNow;
-    }
 
     protected override async Task OnInitializedAsync()
     {
-
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();

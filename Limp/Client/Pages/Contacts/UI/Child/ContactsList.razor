@@ -1,0 +1,54 @@
+﻿@using Limp.Client.Pages.Contacts.Models;
+@using Limp.Client.UIComponents.ContactItem
+
+<div class="m-2 p-2" style="
+        background-color: whitesmoke;">
+    <div style="    
+            display: flex;
+            justify-content: space-between;">
+        <h1>Your contacts:</h1>
+        <Button 
+            Color="ButtonColor.Primary" 
+            Outline="true" 
+            @onclick="ToggleContactEditionMode">@(contactEditionMode ? "Done" : "Edit")</Button>
+    </div>
+    <div>
+        @foreach (var contact in ContactCollection.OrderByDescending(x => x.LastMessage))
+        {
+            <div style="
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;">
+                @if(contactEditionMode)
+                {
+                    <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
+                    @onclick="(() => OnContactRemoved.InvokeAsync(contact.Username))"></Icon>
+                }
+                <ContactBar Username=@contact.Username
+                    IsOnline=@contact.IsOnline
+                    OnClickCallback=@(() =>  OnContactClicked.InvokeAsync(contact.Username)) 
+                    Style="width: 100%;"/>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public bool contactEditionMode { get; set; } = false;
+
+    [Parameter]
+    public List<Contact> ContactCollection { get; set; } = new();
+
+    private void ToggleContactEditionMode()
+    {
+        contactEditionMode = !contactEditionMode;
+        StateHasChanged();
+    }
+
+    [Parameter]
+    public EventCallback<string> OnContactRemoved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnContactClicked { get; set; }
+}

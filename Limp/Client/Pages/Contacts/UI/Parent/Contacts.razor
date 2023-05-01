@@ -1,4 +1,5 @@
 ﻿@page "/contacts"
+@using Limp.Client.Pages.Contacts.UI.Child;
 @using ClientServerCommon.Models;
 @using Limp.Client.Pages.Contacts.Models;
 @using Limp.Client.Services.ContactsProvider;
@@ -34,41 +35,10 @@
 
         @if(ContactsList.Any())
         {
-            <div class="m-2 p-2" style="
-                    background-color: whitesmoke;">
-                <div style="    
-                        display: flex;
-                        justify-content: space-between;">
-                    <h1>Your contacts:</h1>
-                    @if(!contactEditionMode)
-                    {
-                        <Button Color="ButtonColor.Primary" Outline="true" @onclick="ToggleContactEditionMode">Edit</Button>
-                    }
-                    else
-                    {
-                        <Button Color="ButtonColor.Success" Outline="true" @onclick="ToggleContactEditionMode">Done</Button>
-                    }
-                </div>
-                <div>
-                    @foreach (var contact in ContactsList.OrderByDescending(x => x.LastMessage))
-                    {
-                        <div style="
-                                display: flex;
-                                align-items: center;
-                                gap: 10px;">
-                            @if(contactEditionMode)
-                            {
-                                <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
-                          @onclick="(async() => await RemoveContact(contact.Username))"></Icon>
-                            }
-                            <ContactBar Username=@contact.Username
-                                IsOnline=@contact.IsOnline
-                                OnClickCallback=@(() => _navigationManager.NavigateTo($"/user/{contact.Username}")) 
-                                Style="width: 100%;"/>
-                        </div>
-                    }
-                </div>
-            </div>
+            <ContactsList
+                OnContactRemoved="RemoveContact"
+                ContactCollection="ContactsList"
+                OnContactClicked="NavigateToChatWithContact"/>
         }
         else
         {
@@ -123,6 +93,7 @@
     private List<Contact> ContactsList = new();
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
+    private List<UserConnection> LastReceivedContacts { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -130,6 +101,11 @@
     {
         contactEditionMode = !contactEditionMode;
         StateHasChanged();
+    }
+
+    public void NavigateToChatWithContact(string contactUsername)
+    {
+        _navigationManager.NavigateTo($"user/{contactUsername}");
     }
 
     private async Task RemoveContact(string username)
@@ -199,15 +175,25 @@
 
     private async Task UpdateContacts(List<UserConnection>? updatedUserConnections = null)
     {
+        TryUpdateLastReceivedContacts(updatedUserConnections);
+
         List<string> contacts = await _contactsProvider.GetContacts(_jSRuntime);
         ContactsList = contacts.Select(contact =>
         new Contact
             {
                 Username = contact,
-                IsOnline = updatedUserConnections?.Any(x=>x.Username == contact) ?? false,
+                IsOnline = LastReceivedContacts.Any(x=>x.Username == contact),
                 LastMessage = DateTime.UtcNow
             }).ToList();
 
         StateHasChanged();
+    }
+
+    private void TryUpdateLastReceivedContacts(List<UserConnection>? userConnections = null)
+    {
+        if (userConnections != null)
+        {
+            LastReceivedContacts = userConnections;
+        }
     }
 }

@@ -1,0 +1,81 @@
+﻿@using ClientServerCommon.Models;
+@using Limp.Client.Pages.Contacts.Models;
+
+<Modal 
+    @ref="modal" 
+    Title="Add user to contacts">
+
+    <BodyTemplate>
+        @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+        {
+            <span>
+                @NewContactUsername is already in your contact book
+            </span>
+        }
+        else
+        {
+            @ModalBodyText
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        @if (IsUserExists)
+        {
+            @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+            {
+                <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+            }
+            else
+            {
+                <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
+                <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
+            }
+        }
+        else
+        {
+            <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+        }
+    </FooterTemplate>
+</Modal>
+
+@code {
+    [Parameter]
+    public List<Contact> ContactCollection { get; set; } = new();
+
+    [Parameter]
+    public EventCallback<string> OnContactAddition { get; set; }
+
+    //reference to a modal-component
+    private Modal? modal = default!;
+
+    public async Task ShowModalAsync() => await modal!.ShowAsync();
+
+    public async Task HideModalAsync() => await modal!.HideAsync();
+
+    private string ModalBodyText = string.Empty;
+    private bool IsUserExists = true;
+    private string NewContactUsername = string.Empty;
+
+    public async Task ShowModalWithBodyTextAsync(ContactAdditionModalDTO modalDTO)
+    {
+        NewContactUsername = modalDTO.NewContactUsername;
+        IsUserExists = modalDTO.IsUserExists;
+        ModalBodyText = GetModalBodyText(modalDTO);
+
+        await ShowModalAsync();
+    }
+
+    private string GetModalBodyText(ContactAdditionModalDTO modalDTO)
+    {
+        if(string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
+        {
+            return modalDTO.IsUserExists ?
+                $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
+                :
+                $"There is no user with such username";
+        }
+        else
+        {
+            return modalDTO.ModalBodyText;
+        }
+    }
+}

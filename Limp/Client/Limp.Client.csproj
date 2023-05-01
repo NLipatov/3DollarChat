@@ -9,6 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
+    <Content Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
+    <EmbeddedResource Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
+    <None Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <None Remove="Pages\WebAuthn\authentication.razor.js" />
   </ItemGroup>
 
@@ -36,7 +43,6 @@
 
   <ItemGroup>
     <Folder Include="Pages\PersonalChat\Logic\ComponentBackingServices\" />
-    <Folder Include="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\" />
   </ItemGroup>
 
 </Project>

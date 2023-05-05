@@ -1,0 +1,59 @@
+﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Services;
+@inject IJSRuntime _jS
+@inject IConfiguration _configuration
+@inject NavigationManager _navigationManager
+
+@if (!isAuthenticationRequired || isAuthenticated)
+{
+    @AuthenticatedContent
+}
+else
+{
+    @UnauthenticatedContent
+}
+
+
+@code {
+    private bool isAuthenticationRequired { get; set; } = true;
+    private bool isAuthenticated { get; set; } = false;
+    [Parameter] 
+    public RenderFragment AuthenticatedContent { get; set; }
+    [Parameter] 
+    public RenderFragment UnauthenticatedContent { get; set; }
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        isAuthenticationRequired = IsThisPageRequiresAuth();
+        if(isAuthenticationRequired)
+        {
+            await IsUserAuthenticated();
+        }
+    }
+
+    private bool IsThisPageRequiresAuth()
+    {
+        string currentPage = _navigationManager.Uri;
+        string baseUri = _navigationManager.BaseUri;
+        List<string> authFreePages = _configuration.GetSection("PagesSettings:AuthFreePages").Get<List<string>>()?.Select(x=>baseUri + x).ToList() ?? new();
+        if(authFreePages.Contains(currentPage))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task IsUserAuthenticated()
+    {
+        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        if (!string.IsNullOrWhiteSpace(accessToken))
+        {
+            if (!TokenReader.HasAccessTokenExpired(accessToken))
+            {
+                isAuthenticated = true;
+            }
+        }
+    }
+}

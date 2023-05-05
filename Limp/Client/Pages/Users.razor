@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using System.Collections.Concurrent;
@@ -14,15 +15,26 @@
 
 <PageTitle>Users Online</PageTitle>
 
-<div style="padding: 0.5rem 1rem;">
-    @foreach (var connection in userConnections.Where(x=>x.Username != myUsername && x.ConnectionIds.Count > 0))
-    {
-        <ContactBar
-            Username="@connection.Username"
-            IsOnline="true"
-            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))"/>
-    }
-</div>
+<!-- Отображение содержимого в зависимости от авторизации пользователя -->
+<AuthenticatedView>
+    <AuthenticatedContent>
+    <!-- Содержимое, которое должно быть отображено, когда пользователь авторизован -->
+    <div class="ApplicationContent">
+        <div style="padding: 0.5rem 1rem;">
+            @foreach (var connection in userConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0))
+            {
+                <ContactBar Username="@connection.Username"
+                        IsOnline="true"
+                        OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
+            }
+        </div>
+    </div>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <!-- Содержимое, которое должно быть отображено, когда пользователь не авторизован -->
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
     private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
@@ -33,10 +45,14 @@
 
     protected override async Task OnInitializedAsync()
     {
+        if(string.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
+        {
+            return;
+        }
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
-        
+
         //Reading username from access-token
         myUsername = await GetMyUsername();
 
@@ -58,6 +74,9 @@
     private async Task<string> GetMyUsername()
     {
         string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            return string.Empty;
+
         myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
 
         return myUsername;

@@ -1,0 +1,22 @@
+﻿@inject NavigationManager _navigationManager
+
+<div style="    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    gap: 10px;">
+
+    <img src="https://svgur.com/i/srQ.svg" style="max-width: 50vw;" />
+    <Callout Type="CalloutType.Warning">
+        <strong>You must be logged in to view this page.</strong>
+    </Callout>
+    <button @onclick="NavigateToLogIn" class="btn btn-primary btn-lg btn-block">Log in</button>
+</div>
+
+@code {
+    private void NavigateToLogIn()
+    {
+        _navigationManager.NavigateTo("/login");
+    }
+}

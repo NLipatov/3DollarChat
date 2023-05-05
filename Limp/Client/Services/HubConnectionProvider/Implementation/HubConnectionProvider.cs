@@ -1,11 +1,8 @@
-﻿using ClientServerCommon.Models;
-using Limp.Client.Cryptography;
-using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
+﻿using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.Services.HubConnectionProvider.ConnectionStates;
 using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.MessageService;
-using Limp.Client.Services.InboxService;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -17,31 +14,24 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         public HubConnectionProvider
         (IJSRuntime jSRuntime,
         NavigationManager navigationManager,
-        ICryptographyService cryptographyService,
-        IAESOfferHandler aESOfferHandler,
-        IMessageBox messageBox,
         IAuthService authService,
         IUsersService usersService,
         IMessageService messageService)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
-            _cryptographyService = cryptographyService;
-            _aESOfferHandler = aESOfferHandler;
-            _messageBox = messageBox;
             _authService = authService;
             _usersService = usersService;
             _messageService = messageService;
         }
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
-        private readonly ICryptographyService _cryptographyService;
-        private readonly IAESOfferHandler _aESOfferHandler;
-        private readonly IMessageBox _messageBox;
         private readonly IAuthService _authService;
         private readonly IUsersService _usersService;
         private readonly IMessageService _messageService;
         private HubConnection authHubConnection;
+        private HubConnectionProviderState connectionState { get; set; } = HubConnectionProviderState.NotAuthenticated;
+        public HubConnectionProviderState GetConnectionState() => connectionState;
 
         public async Task ConnectToHubs()
         {
@@ -51,7 +41,6 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                 ||
                 string.IsNullOrWhiteSpace(await JWTHelper.GetRefreshToken(_jSRuntime)))
             {
-                _navigationManager.NavigateTo("login");
                 return;
             }
 
@@ -67,10 +56,6 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                 {
                     await DecideOnToken();
                 }
-                else
-                {
-                    await DenyHandle();
-                }
             });
         }
 
@@ -80,29 +65,17 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             {
                 if (isTokenValid)
                 {
+                    connectionState = HubConnectionProviderState.Authenticated;
                     await ProceedHandle();
-                }
-                else
-                {
-                    await DenyHandle();
                 }
             });
         }
 
-        private async Task DenyHandle()
-        {
-            _navigationManager.NavigateTo("/login");
-        }
         private async Task ProceedHandle()
         {
             await _usersService.ConnectAsync();
             await _messageService.ConnectAsync();
-        }
-
-        private async Task InvokeCallbackIfExists<T>(Func<T, Task>? callback, T parameter)
-        {
-            if (callback != null)
-                await callback.Invoke(parameter);
+            connectionState = HubConnectionProviderState.Connected;
         }
 
         public async ValueTask DisposeAsync()

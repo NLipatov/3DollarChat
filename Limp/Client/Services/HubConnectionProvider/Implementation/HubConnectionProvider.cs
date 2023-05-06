@@ -80,6 +80,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         public async ValueTask DisposeAsync()
         {
+            await _messageService.DisconnectAsync();
             await _usersService.DisconnectAsync();
             await _authService.DisconnectAsync();
         }

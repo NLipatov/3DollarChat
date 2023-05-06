@@ -1,21 +1,39 @@
 ﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Services;
+@using Limp.Client.Services.HubConnectionProvider.Implementation;
+@using Limp.Client.Services.HubConnectionProvider;
+@using Limp.Client.Services.HubService.AuthService;
 @inject IJSRuntime _jS
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
+@inject IAuthService _authService
+@inject IHubConnectionProvider _hubConnectionProvider
 
-@if (isAuthenticated)
+@if (isConnectedToAuthHub)
 {
-    @AuthenticatedContent
+    @if (isAuthenticated)
+    {
+        @AuthenticatedContent
+    }
+    else if (!isAuthenticated)
+    {
+        @UnauthenticatedContent
+    }
 }
 else
 {
-    @UnauthenticatedContent
+    <div class="d-flex flex-column align-items-center text-center">
+        <img class="img-fluid" style="max-height: 50vh;" src="https://svgur.com/i/ssH.svg" alt="Server technician adjusting wiring" />
+        <p class="mt-3 mb-0">Looks like you're not connected to our server</p>
+        <p class="mb-3">We're trying to establish a connection with you once again</p>
+    </div>
 }
 
 
+
 @code {
-    private bool isAuthenticated { get; set; } = false;
+    private bool isConnectedToAuthHub => _authService.IsConnected();
+    private bool isAuthenticated { get; set; }
     [Parameter] 
     public RenderFragment? AuthenticatedContent { get; set; }
     [Parameter] 
@@ -28,14 +46,27 @@ else
 
     private async Task IsUserAuthenticated()
     {
-        #warning ToDo: ask server-side if accessToken is valid.
-        string? accessToken = await JWTHelper.GetAccessToken(_jS);
-        if (!string.IsNullOrWhiteSpace(accessToken))
+        if (isConnectedToAuthHub)
         {
-            if (!TokenReader.HasAccessTokenExpired(accessToken))
-            {
-                isAuthenticated = true;
-            }
+            await _authService.RefreshTokenIfNeededAsync(RefreshTokenAttemptResult);
+            await _authService.ValidateTokenAsync(DecideOnToken);
         }
+        else
+        {
+            await _hubConnectionProvider.DisposeAsync();
+            await _hubConnectionProvider.ConnectToHubs();
+            await IsUserAuthenticated();
+        }
+    }
+
+    private async Task RefreshTokenAttemptResult(bool isSuccessfullyRefreshed)
+    {
+        StateHasChanged();
+    }
+
+    private async Task DecideOnToken(bool isAccessTokenValid)
+    {
+        isAuthenticated = isAccessTokenValid;
+        StateHasChanged();
     }
 }

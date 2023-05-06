@@ -9,14 +9,23 @@
         string messageClass = isOutcoming ? "outcoming" : "incoming";
 
         <div class="message @messageClass">
-            <span>@(message.Payload)</span>
-        </div>
-        <div class="timestamp @messageClass">
-            <span>@message.DateSent.ToString("hh:mm")</span>
-            @if (message.IsReceived)
-            {
-                <span>R</span>
-            }
+            <div class="message-text">
+                <span>@(message.Payload)</span>
+            </div>
+            <div class="timestamp">
+                <span>@message.DateSent.ToString("hh:mm")</span>
+                @if(message.Sender == "You")
+                {
+                    @if(message.IsRead)
+                    {
+                        <i class="fas fa-check-double @messageClass"></i>
+                    }
+                    else if(message.IsReceived)
+                    {
+                        <i class="fas fa-check @messageClass"></i>
+                    }
+                }
+            </div>
         </div>
 
     }

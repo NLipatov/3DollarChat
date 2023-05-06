@@ -63,7 +63,7 @@
     public string myUsername { get; set; } = string.Empty;
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
-    private bool AESKeyForConversationExists { get; set; } = false;
+    private bool AESKeyForConversationExists => GetAESKey() != null;
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
 
@@ -113,18 +113,15 @@
         StateHasChanged();
     }
 
-    private Key? GetAESKey()
-    {
-        Key? aesKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-        AESKeyForConversationExists = aesKey != null;
-
-        return aesKey;
-    }
+    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
     public void IncomingMessageReceived(Message message)
     {
         if (message.Sender == "You")
+        {
+            MessageListComponent.MarkAsReceived(message.Id);
             return;
+        }
 
         if(message.Type == MessageType.UserMessage)
         {

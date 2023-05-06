@@ -152,5 +152,13 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             await HubDisconnecter.DisconnectAsync(hubConnection);
             hubConnection = null;
         }
+
+        public bool IsConnected()
+        {
+            if(hubConnection == null)
+                return false;
+
+            return hubConnection.State == HubConnectionState.Connected;
+        }
     }
 }

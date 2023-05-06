@@ -35,7 +35,7 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-        <div class="page-container">
+        <div class="page-container" @onkeydown="((e)=> HandleKeyDown(e))">
             <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
 
             <div class="header">
@@ -46,7 +46,7 @@
                          topicName=@topicName />
 
             <div class="message-input-box">
-                <input @bind="messageInput" />
+                <input @bind="messageInput" @bind:event ="oninput"/>
                 <button @onclick="async () => await SendMessage()">Send</button>
             </div>
         </div>
@@ -139,6 +139,8 @@
 
     private async Task SendMessage()
     {
+        Console.WriteLine(messageInput);
+        Console.WriteLine("sending");
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
 
@@ -152,5 +154,12 @@
         await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;
+    }
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
     }
 }

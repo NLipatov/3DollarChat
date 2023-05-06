@@ -25,12 +25,6 @@
 </section>
 
 @code {
-    private void NavigateToLogIn()
-    {
-        _navigationManager.NavigateTo("/login");
-    }
-    private void NavigateToRegister()
-    {
-        _navigationManager.NavigateTo("/register");
-    }
+    private void NavigateToLogIn() => _navigationManager.NavigateTo("/login");
+    private void NavigateToRegister() => _navigationManager.NavigateTo("/register");
 }

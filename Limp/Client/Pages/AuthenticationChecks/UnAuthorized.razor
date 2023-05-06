@@ -1,22 +1,30 @@
 ﻿@inject NavigationManager _navigationManager
 
-<div style="    
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px;
-    gap: 10px;">
+<section class="vh-100">
+    <div class="container py-5 h-100">
+        <div class="row d-flex align-items-center justify-content-center h-100">
+            <div class="col-md-8 col-lg-7 col-xl-6">
+            <img src="https://svgur.com/i/srQ.svg"
+                        class="img-fluid" alt="man inputting his account password">
+            </div>
+            <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                <button @onclick="NavigateToLogIn" class="btn btn-primary btn-lg btn-block d-flex mx-auto">
+                    Log in
+                </button>
 
-    <img src="https://svgur.com/i/srQ.svg" style="max-width: 50vw;" />
-    <Callout Type="CalloutType.Warning">
-        <strong>You must be logged in to view this page.</strong>
-    </Callout>
-    <button @onclick="NavigateToLogIn" class="btn btn-primary btn-lg btn-block">Log in</button>
-</div>
+                <div class="divider d-flex align-items-center my-4">
+                    <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
+                </div>
+
+                <button @onclick="NavigateToRegister" class="btn btn-primary btn-lg btn-block d-flex mx-auto">
+                    Register
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
 
 @code {
-    private void NavigateToLogIn()
-    {
-        _navigationManager.NavigateTo("/login");
-    }
+    private void NavigateToLogIn() => _navigationManager.NavigateTo("/login");
+    private void NavigateToRegister() => _navigationManager.NavigateTo("/register");
 }

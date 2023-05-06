@@ -4,7 +4,7 @@
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
 
-@if (!isAuthenticationRequired || isAuthenticated)
+@if (isAuthenticated)
 {
     @AuthenticatedContent
 }
@@ -15,38 +15,20 @@ else
 
 
 @code {
-    private bool isAuthenticationRequired { get; set; } = true;
     private bool isAuthenticated { get; set; } = false;
     [Parameter] 
-    public RenderFragment AuthenticatedContent { get; set; }
+    public RenderFragment? AuthenticatedContent { get; set; }
     [Parameter] 
-    public RenderFragment UnauthenticatedContent { get; set; }
-
+    public RenderFragment? UnauthenticatedContent { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        isAuthenticationRequired = IsThisPageRequiresAuth();
-        if(isAuthenticationRequired)
-        {
-            await IsUserAuthenticated();
-        }
-    }
-
-    private bool IsThisPageRequiresAuth()
-    {
-        string currentPage = _navigationManager.Uri;
-        string baseUri = _navigationManager.BaseUri;
-        List<string> authFreePages = _configuration.GetSection("PagesSettings:AuthFreePages").Get<List<string>>()?.Select(x=>baseUri + x).ToList() ?? new();
-        if(authFreePages.Contains(currentPage))
-        {
-            return false;
-        }
-
-        return true;
+        await IsUserAuthenticated();
     }
 
     private async Task IsUserAuthenticated()
     {
+        #warning ToDo: ask server-side if accessToken is valid.
         string? accessToken = await JWTHelper.GetAccessToken(_jS);
         if (!string.IsNullOrWhiteSpace(accessToken))
         {

@@ -19,6 +19,7 @@
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying;
+@using Limp.Client.Pages.AuthenticationChecks
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject ICryptographyService _cryptographyService
@@ -32,23 +33,28 @@
 
 <PageTitle>Chat with @topicName</PageTitle>
 
-<div class="page-container">
-    <KeyBeingTransfered
-        @ref=KeyTransferComponent/>
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="page-container">
+            <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
 
-    <div class="header">
-        <span>@topicName</span>
-    </div>
+            <div class="header">
+                <span>@topicName</span>
+            </div>
 
-    <MessageList
-        @ref=MessageListComponent
-        topicName=@topicName/>
+            <MessageList @ref=MessageListComponent
+                         topicName=@topicName />
 
-    <div class="message-input-box">
-        <input @bind="messageInput" />
-        <button @onclick="async () => await SendMessage()">Send</button>
-    </div>
-</div>
+            <div class="message-input-box">
+                <input @bind="messageInput" />
+                <button @onclick="async () => await SendMessage()">Send</button>
+            </div>
+        </div>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
     [Parameter]
@@ -59,7 +65,6 @@
     private List<UserConnection> userConnections { get; set; } = new();
     private bool AESKeyForConversationExists { get; set; } = false;
     private Guid ComponentId { get; set; }
-    private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
     private MessageList? MessageListComponent { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
@@ -96,7 +101,6 @@
         Key? key = GetAESKey();
         if(key != null)
         {
-            SetKeyTransferVisibilityBasedOnAESKeyExistance();
             return;
         }
 
@@ -106,7 +110,7 @@
     public void OnAESKeyReady(string partnerName)
     {
         Key key = GetAESKey()!;
-        SetKeyTransferVisibilityBasedOnAESKeyExistance();
+        StateHasChanged();
     }
 
     private Key? GetAESKey()
@@ -115,14 +119,6 @@
         AESKeyForConversationExists = aesKey != null;
 
         return aesKey;
-    }
-
-    private void SetKeyTransferVisibilityBasedOnAESKeyExistance()
-    {        
-        if(KeyTransferComponent != null)
-        {
-            KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
-        }
     }
 
     public void IncomingMessageReceived(Message message)

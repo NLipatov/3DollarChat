@@ -15,10 +15,8 @@
 
 <PageTitle>Users Online</PageTitle>
 
-<!-- Отображение содержимого в зависимости от авторизации пользователя -->
 <AuthenticatedView>
     <AuthenticatedContent>
-    <!-- Содержимое, которое должно быть отображено, когда пользователь авторизован -->
     <div class="ApplicationContent">
         <div style="padding: 0.5rem 1rem;">
             @foreach (var connection in userConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0))
@@ -31,7 +29,6 @@
     </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
-        <!-- Содержимое, которое должно быть отображено, когда пользователь не авторизован -->
         <UnAuthorized/>
     </UnauthenticatedContent>
 </AuthenticatedView>

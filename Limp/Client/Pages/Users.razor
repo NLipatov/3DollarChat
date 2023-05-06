@@ -42,10 +42,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        if(string.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS)))
-        {
-            return;
-        }
+        //Shortcut for cases when user was not yet authenticated
+        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS))) return;
+
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();

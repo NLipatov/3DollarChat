@@ -43,7 +43,7 @@
             </div>
 
             <MessageList @ref=MessageListComponent
-                         topicName=@topicName />
+                        topicName=@topicName />
 
             <div class="message-input-box">
                 <input @bind="messageInput" @bind:event ="oninput"/>
@@ -92,8 +92,6 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
     }
 
     private async Task GetAESKeyAsync()
@@ -115,32 +113,8 @@
 
     private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
-    public void IncomingMessageReceived(Message message)
-    {
-        if (message.Sender == "You")
-        {
-            MessageListComponent.MarkAsReceived(message.Id);
-            return;
-        }
-
-        if(message.Type == MessageType.UserMessage)
-        {
-            TryAddMessage(message);
-        }
-    }
-
-    private void TryAddMessage(Message message)
-    {
-        if (MessageListComponent != null)
-        {
-            MessageListComponent.AddMessage(message);
-        }
-    }
-
     private async Task SendMessage()
     {
-        Console.WriteLine(messageInput);
-        Console.WriteLine("sending");
         if (string.IsNullOrWhiteSpace(messageInput))
             return;
 
@@ -150,7 +124,6 @@
 
         messageToSend.Payload = messageInput;
         messageToSend.Sender = "You";
-        TryAddMessage(messageToSend);
         await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;

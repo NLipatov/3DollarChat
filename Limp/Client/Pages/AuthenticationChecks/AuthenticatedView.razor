@@ -1,4 +1,5 @@
 ﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.AuthenticationChecks.Stages;
 @using Limp.Client.Services;
 @using Limp.Client.Services.HubConnectionProvider.Implementation;
 @using Limp.Client.Services.HubConnectionProvider;
@@ -11,13 +12,22 @@
 
 @if (isConnectedToAuthHub)
 {
-    @if (isAuthenticated)
+    if(_authenticationState == AuthenticationState.TokenActualisation)
     {
-        @AuthenticatedContent
+        <div class="d-flex flex-column align-items-center text-center">
+            <p class="mt-3 mb-0">Checking if you have been authenticated</p>
+        </div>
     }
-    else if (!isAuthenticated)
+    else
     {
-        @UnauthenticatedContent
+        if (_authenticationState == AuthenticationState.Authenticated)
+        {
+            @AuthenticatedContent
+        }
+        else
+        {
+            @UnauthenticatedContent
+        }
     }
 }
 else
@@ -32,12 +42,12 @@ else
 
 
 @code {
-    private bool isConnectedToAuthHub => _authService.IsConnected();
-    private bool isAuthenticated { get; set; }
     [Parameter] 
     public RenderFragment? AuthenticatedContent { get; set; }
     [Parameter] 
     public RenderFragment? UnauthenticatedContent { get; set; }
+    private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
+    private bool isConnectedToAuthHub => _authService.IsConnected();
 
     protected override async Task OnInitializedAsync()
     {
@@ -48,25 +58,40 @@ else
     {
         if (isConnectedToAuthHub)
         {
+            //If the access token has expired, we will try to update it
             await _authService.RefreshTokenIfNeededAsync(RefreshTokenAttemptResult);
-            await _authService.ValidateTokenAsync(DecideOnToken);
         }
         else
         {
-            await _hubConnectionProvider.DisposeAsync();
-            await _hubConnectionProvider.ConnectToHubs();
+            await ReconnectToHubsAsync();
             await IsUserAuthenticated();
         }
     }
 
     private async Task RefreshTokenAttemptResult(bool isSuccessfullyRefreshed)
     {
-        StateHasChanged();
+        //If the refresh token is invalid, the user must log in again
+        if (!isSuccessfullyRefreshed)
+            _authenticationState = AuthenticationState.NotAuthenticated;
+
+        //Else - checking if actualised access token is valid
+        await _authService.ValidateTokenAsync(DecideOnToken);
     }
 
     private async Task DecideOnToken(bool isAccessTokenValid)
     {
-        isAuthenticated = isAccessTokenValid;
+        if(isAccessTokenValid)
+            _authenticationState = AuthenticationState.Authenticated;
+        else
+            _authenticationState = AuthenticationState.NotAuthenticated;
+
+        await ReconnectToHubsAsync();
         StateHasChanged();
+    }
+
+    private async Task ReconnectToHubsAsync()
+    {
+        await _hubConnectionProvider.DisposeAsync();
+        await _hubConnectionProvider.ConnectToHubs();
     }
 }

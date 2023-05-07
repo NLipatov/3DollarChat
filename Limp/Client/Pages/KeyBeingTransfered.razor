@@ -10,11 +10,6 @@
 </div>
 
 @code {
-    private bool IsDisplayed { get; set; } = true;
-
-    public void ShouldBeVisible(bool shouldBeDisplayed)
-    {
-        IsDisplayed = shouldBeDisplayed;
-        StateHasChanged();
-    }
+    [Parameter]
+    public bool IsDisplayed { get; set; } = true;
 }

@@ -1,31 +1,32 @@
 ﻿.message-input-box {
-    position: fixed;
-    bottom: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     padding: 10px;
     gap: 10px;
-    display: flex;
-    left: 50%;
+    background-color: #f1f1f1;
+    bottom: 0;
+    position: fixed;
+    max-width: 100%;
+    width: calc(100vw - 270px);
 }
 
 .message-input-box input {
-    border-radius: 5px;
-}
-
-.page-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-}
-
-.header {
-    position: fixed;
-    background-color: white;
-    display: flex;
-    width: 100%;
-    align-items: center;
-    border-bottom: black 1px solid;
-    padding-left: 10px;
-    padding-right: 10px;
-    font-size: 16pt;
+    flex-grow: 1;
+    height: 40px;
     padding: 10px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+}
+
+.message-input-box button {
+    height: 40px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 5px;
+    background-color: #007bff;
+    color: #fff;
+    font-size: 16px;
+    cursor: pointer;
 }

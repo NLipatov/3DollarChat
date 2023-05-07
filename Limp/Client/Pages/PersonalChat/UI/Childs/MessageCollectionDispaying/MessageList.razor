@@ -1,6 +1,8 @@
 ﻿@using ClientServerCommon.Models.Message;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.InboxService;
 @inject IMessageBox _messageBox
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 
 <div class="messages-box">
     @foreach (var message in Messages.Where(x => x.Type == MessageType.UserMessage))
@@ -9,14 +11,23 @@
         string messageClass = isOutcoming ? "outcoming" : "incoming";
 
         <div class="message @messageClass">
-            <span>@(message.Payload)</span>
-        </div>
-        <div class="timestamp @messageClass">
-            <span>@message.DateSent.ToString("hh:mm")</span>
-            @if (message.IsReceived)
-            {
-                <span>R</span>
-            }
+            <div class="message-text">
+                <span>@(message.Payload)</span>
+            </div>
+            <div class="timestamp">
+                <span>@message.DateSent.ToString("hh:mm")</span>
+                @if(message.Sender == "You")
+                {
+                    @if(message.IsRead)
+                    {
+                        <i class="fas fa-check-double @messageClass"></i>
+                    }
+                    else if(message.IsReceived)
+                    {
+                        <i class="fas fa-check @messageClass"></i>
+                    }
+                }
+            </div>
         </div>
 
     }
@@ -26,14 +37,28 @@
     [Parameter]
     public string topicName { get; set; } = string.Empty;
     private List<Message> Messages { get; set; } = new();
+    private Guid ComponentId { get; set; }
 
-    protected override void OnInitialized()
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    protected override async Task OnInitializedAsync()
     {
         Messages = GetPreviousMessages();
+
+        SubscribeToHubEvents();
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessage, "IncomingMessageReceived", ComponentId);
     }
 
     private List<Message> GetPreviousMessages()
     {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
         if (string.IsNullOrWhiteSpace(topicName))
         {
             throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
@@ -45,7 +70,10 @@
 
     public void MarkAsReceived(Guid messageId)
     {
-        Message? receivedMessage = Messages.FirstOrDefault(x => x.Id == messageId);
+        Message? receivedMessage = Messages
+        .Where(x=>x.Sender == "You")
+        .FirstOrDefault(x => x.Id == messageId);
+
         if (receivedMessage != null)
         {
             receivedMessage.IsReceived = true;
@@ -56,12 +84,6 @@
     public void AddMessage(Message message)
     {
         Messages.Add(message);
-        StateHasChanged();
-    }
-
-    public void AddMessage(List<Message> messages)
-    {
-        Messages.AddRange(messages);
         StateHasChanged();
     }
 }

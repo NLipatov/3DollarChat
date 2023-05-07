@@ -1,42 +1,58 @@
 ﻿.messages-box {
-    padding-top: 5vh;
-    width: 70%;
+    padding: 10px;
+    width: 100%;
     display: flex;
     flex-direction: column;
-    align-self: center;
+    align-items: center;
 }
 
 .message {
-    border-radius: 5px;
     display: flex;
-    box-shadow: 10px 10px 5px -2px rgb(34 60 80 / 20%);
-    margin: 10px;
-    padding: 10px;
-    min-width: 20px;
-    max-width: 80%;
-}
-
-.timestamp {
-    display: flex;
+    flex-direction: column;
     background-color: lightgreen;
-    width: fit-content;
-    padding: 5px;
-    font-size: 7pt;
-    border-radius: 5px;
-    margin: 5px;
+    border-radius: 16px;
+    margin: 8px 0;
+    max-width: 75%;
 }
 
 .incoming {
-    background: deepskyblue;
-    display: flex;
-    width: fit-content;
-    margin-right: auto;
+    background-color: deepskyblue;
+    align-self: flex-start;
 }
 
 .outcoming {
-    background: lightgreen;
-    display: flex;
-    width: fit-content;
-    margin-left: auto;
+    background-color: #DCF8C6;
+    align-self: flex-end;
 }
 
+.message-text {
+    padding: 8px;
+    font-size: 16px;
+    line-height: 24px;
+    color: #000000;
+}
+
+.timestamp {
+    margin: 4px 8px;
+    font-size: 12px;
+    line-height: 16px;
+    color: #606060;
+}
+
+.fa-check,
+.fa-check-double {
+    margin-left: 5px;
+    color: #9B9B9B;
+}
+
+.outcoming .fa-check {
+    color: limegreen;
+}
+
+.outcoming .fa-check-double {
+    color: limegreen;
+}
+
+.incoming .fa-check-double {
+    color: limegreen;
+}

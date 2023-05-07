@@ -19,6 +19,7 @@
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying;
+@using Limp.Client.Pages.AuthenticationChecks
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject ICryptographyService _cryptographyService
@@ -32,23 +33,28 @@
 
 <PageTitle>Chat with @topicName</PageTitle>
 
-<div class="page-container">
-    <KeyBeingTransfered
-        @ref=KeyTransferComponent/>
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="page-container" @onkeydown="((e)=> HandleKeyDown(e))">
+            <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
 
-    <div class="header">
-        <span>@topicName</span>
-    </div>
+            <div class="header">
+                <span>@topicName</span>
+            </div>
 
-    <MessageList
-        @ref=MessageListComponent
-        topicName=@topicName/>
+            <MessageList @ref=MessageListComponent
+                        topicName=@topicName />
 
-    <div class="message-input-box">
-        <input @bind="messageInput" />
-        <button @onclick="async () => await SendMessage()">Send</button>
-    </div>
-</div>
+            <div class="message-input-box">
+                <input @bind="messageInput" @bind:event ="oninput"/>
+                <button @onclick="async () => await SendMessage()">Send</button>
+            </div>
+        </div>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
     [Parameter]
@@ -57,9 +63,8 @@
     public string myUsername { get; set; } = string.Empty;
     private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
-    private bool AESKeyForConversationExists { get; set; } = false;
+    private bool AESKeyForConversationExists => GetAESKey() != null;
     private Guid ComponentId { get; set; }
-    private KeyBeingTransfered? KeyTransferComponent { get; set; } = new();
     private MessageList? MessageListComponent { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
@@ -87,8 +92,6 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageListComponent!.MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(IncomingMessageReceived, "IncomingMessageReceived", ComponentId);
     }
 
     private async Task GetAESKeyAsync()
@@ -96,7 +99,6 @@
         Key? key = GetAESKey();
         if(key != null)
         {
-            SetKeyTransferVisibilityBasedOnAESKeyExistance();
             return;
         }
 
@@ -106,43 +108,10 @@
     public void OnAESKeyReady(string partnerName)
     {
         Key key = GetAESKey()!;
-        SetKeyTransferVisibilityBasedOnAESKeyExistance();
+        StateHasChanged();
     }
 
-    private Key? GetAESKey()
-    {
-        Key? aesKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-        AESKeyForConversationExists = aesKey != null;
-
-        return aesKey;
-    }
-
-    private void SetKeyTransferVisibilityBasedOnAESKeyExistance()
-    {        
-        if(KeyTransferComponent != null)
-        {
-            KeyTransferComponent.ShouldBeVisible(!AESKeyForConversationExists);
-        }
-    }
-
-    public void IncomingMessageReceived(Message message)
-    {
-        if (message.Sender == "You")
-            return;
-
-        if(message.Type == MessageType.UserMessage)
-        {
-            TryAddMessage(message);
-        }
-    }
-
-    private void TryAddMessage(Message message)
-    {
-        if (MessageListComponent != null)
-        {
-            MessageListComponent.AddMessage(message);
-        }
-    }
+    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
     private async Task SendMessage()
     {
@@ -155,9 +124,15 @@
 
         messageToSend.Payload = messageInput;
         messageToSend.Sender = "You";
-        TryAddMessage(messageToSend);
         await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
 
         messageInput = string.Empty;
+    }
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
     }
 }

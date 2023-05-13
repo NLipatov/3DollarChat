@@ -38,9 +38,9 @@
         <div class="page-container" @onkeydown="((e)=> HandleKeyDown(e))">
             <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
 
-            <div class="header">
-                <span>@topicName</span>
-            </div>
+            <ChatHeader 
+                IsOnline=true
+                Name=@topicName/>
 
             <MessageList @ref=MessageListComponent
                         topicName=@topicName />

@@ -45,6 +45,7 @@
 
   <ItemGroup>
     <Folder Include="Pages\PersonalChat\Logic\ComponentBackingServices\" />
+    <Folder Include="Pages\PersonalChat\UI\Childs\ChatHeader\" />
   </ItemGroup>
 
 </Project>

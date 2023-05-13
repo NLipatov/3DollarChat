@@ -1,0 +1,18 @@
+﻿<div class="header">
+    <div class="profile-picture">
+        <img src=@AvatarLink alt="Profile Picture">
+    </div>
+    <div class="contact-info">
+        <h2 class="name">@Name</h2>
+        <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
+    </div>
+</div>
+
+@code {
+    private string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
+
+    [Parameter]
+    public string Name { get; set; } = "Unnamed";
+    [Parameter]
+    public bool IsOnline { get; set; } = false;
+}

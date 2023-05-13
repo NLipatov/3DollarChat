@@ -105,13 +105,13 @@
         await _messageService.RequestForPartnerPublicKey(topicName);
     }
 
+    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+
     public void OnAESKeyReady(string partnerName)
     {
         Key key = GetAESKey()!;
         StateHasChanged();
     }
-
-    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
     private async Task SendMessage()
     {

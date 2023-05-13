@@ -6,6 +6,11 @@ namespace Limp.Client.Services
 {
     public static class TokenReader
     {
+        public static bool IsTokenReadable(string accessToken)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.CanReadToken(accessToken);
+        }
         public static bool HasAccessTokenExpired(string accessToken)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

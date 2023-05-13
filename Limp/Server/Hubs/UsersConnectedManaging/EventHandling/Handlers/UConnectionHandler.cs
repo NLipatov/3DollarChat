@@ -46,12 +46,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
-            if(!isTokenValid)
-            {
-                throw new ArgumentException("Access-token is not valid.");
-            }
-
             var username = TokenReader.GetUsernameFromAccessToken(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.

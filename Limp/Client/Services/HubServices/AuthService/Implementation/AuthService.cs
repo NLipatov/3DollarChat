@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using Limp.Client.Services.JWTReader;
 
 namespace Limp.Client.Services.HubService.AuthService.Implementation
 {

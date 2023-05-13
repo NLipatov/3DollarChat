@@ -1,5 +1,5 @@
 ﻿using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services;
+using Limp.Client.Services.JWTReader;
 using Microsoft.JSInterop;
 
 namespace Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations

@@ -5,6 +5,7 @@ using Limp.Client.HubInteraction.EventExecution;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 using Limp.Client.Services.ContactsProvider;
@@ -23,6 +24,7 @@ using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.Services.HubServices.MessageService.Implementation;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.InboxService.Implementation;
+using Limp.Client.Services.LocalKeyChainService.Implementation;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -46,5 +48,6 @@ builder.Services.AddSingleton<IMessageService, MessageService>();
 builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscriptionManager>();
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
+builder.Services.AddTransient<ILocalKeyManager, LocalKeyManager>();
 
 await builder.Build().RunAsync();

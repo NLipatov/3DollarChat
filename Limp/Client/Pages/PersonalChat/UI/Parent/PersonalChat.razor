@@ -8,6 +8,8 @@
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.ChatHeader
+@using Limp.Client.Services.CloudKeyService;
+@using Limp.Client.Services.CloudKeyService.Models;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
@@ -30,6 +32,7 @@
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IMessageBuilder _messageBuilder
+@inject ILocalKeyManager _localKeyManager
 @implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -95,7 +98,7 @@
 
     private async Task GetAESKeyAsync()
     {
-        Key? key = GetAESKey();
+        Key? key = await GetAESKey();
         if(key != null)
         {
             return;
@@ -104,11 +107,40 @@
         await _messageService.RequestForPartnerPublicKey(topicName);
     }
 
-    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-
-    public void OnAESKeyReady(string partnerName)
+    private async Task<Key?> GetAESKey()
     {
-        Key key = GetAESKey()!;
+        LocalKeyChain? lkc = (await _localKeyManager.ReadLocalKeyChainAsync());
+        Key? lkcKey = lkc?.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+
+        Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+
+        if (keyFromInMemoryService == null && lkcKey != null)
+        {
+            InMemoryKeyStorage.AESKeyStorage.Add(topicName, lkcKey);
+            keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        }
+
+        if(keyFromInMemoryService != null)
+        {
+            Console.WriteLine($"Using key created at: {keyFromInMemoryService.CreationDate.ToString("M hh:mm")}");
+        }
+        else
+        {
+            Console.WriteLine("No key found");
+        }
+
+        return keyFromInMemoryService;
+    }
+
+    public async Task OnAESKeyReady(string partnerName)
+    {
+        Key key = await GetAESKey()!;
+        await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
         StateHasChanged();
+    }
+
+    private async Task RenewAESKey()
+    {
+        await _messageService.RequestForPartnerPublicKey(topicName);
     }
 }

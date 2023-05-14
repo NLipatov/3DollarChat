@@ -1,31 +1,39 @@
 ﻿@using Limp.Client.Cryptography.KeyStorage;
+@using Limp.Client.Services.HubServices.MessageService;
 @using LimpShared.Encryption;
+@inject IMessageService _messageService
+
 <div class="header">
     <div class="profile-picture">
         <img src=@AvatarLink alt="Profile Picture">
     </div>
     <div class="contact-info">
-        <h2 class="name">@Name</h2>
+        <h2 class="name">@PartnerName</h2>
         <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
     </div>
     <div class="key-info">
-        <button title="Renew AES Key" style="border: none;">
+        <button title="Renew AES Key" style="border: none;" @onclick=@OnAESRenewal>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
-        <div class="key-details">
-            <p class="key-label">AES-secured</p>
-            <p class="key-value">Key transmition date: @AESKey.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")</p>
-        </div>
+        @if(AESKey != null)
+        {
+            <div class="key-details">
+                <p class="key-label">AES-secured</p>
+                <p class="key-value">Key creation date: @AESKey.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")</p>
+            </div>
+        }
     </div>
 </div>
 
 @code {
-    private string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
-
     [Parameter]
-    public string Name { get; set; } = "Unnamed";
+    public string PartnerName { get; set; } = "Unnamed";
     [Parameter]
     public bool IsOnline { get; set; } = false;
-
-    private Key AESKey => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == Name).Value;
+    [Parameter]
+    public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
+    [Parameter]
+    public Key? AESKey { get; set; }
+    [Parameter]
+    public EventCallback OnAESRenewal { get; set; }
 }

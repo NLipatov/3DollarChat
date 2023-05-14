@@ -8,7 +8,7 @@
 
 <div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
     <input @bind="messageInput" @bind:event="oninput" />
-    <button @onclick="async () => await SendMessage()">Send</button>
+    <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
 
 @code {

@@ -13,7 +13,6 @@ using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using System.Collections.Concurrent;
 
 namespace Limp.Client.Services.HubServices.MessageService.Implementation
 {
@@ -73,6 +72,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     if (message.Type == MessageType.AESAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
+                        _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
@@ -85,6 +85,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                         if (hubConnection != null)
                         {
                             await hubConnection.SendAsync("Dispatch", await _aESOfferHandler.GetAESOfferResponse(message));
+                            _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         }
                     }
                 }
@@ -173,15 +174,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         string partnersUsername,
         string partnersPublicKey)
         {
-            if (InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == partnersUsername).Value != null)
-            {
-                return;
-            }
-
             await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
             {
+                InMemoryKeyStorage.AESKeyStorage.First(x=>x.Key == partnersUsername).Value.CreationDate = DateTime.UtcNow;
+                InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value = aesKeyForConversation;
                 string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
-
+                
                 if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
                     throw new ApplicationException("Could not properly generated an AES Key for conversation");
 
@@ -222,10 +220,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         {
             if (hubConnection != null)
             {
-                if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == partnerUsername).Value == null)
-                {
-                    await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
-                }
+                await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
             }
             else
             {

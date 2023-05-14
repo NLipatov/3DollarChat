@@ -8,6 +8,8 @@
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.ChatHeader
+@using Limp.Client.Services.CloudKeyService;
+@using Limp.Client.Services.CloudKeyService.Models;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
@@ -30,6 +32,7 @@
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IMessageBuilder _messageBuilder
+@inject ILocalKeyManager _localKeyManager
 @implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -37,11 +40,13 @@
 <AuthenticatedView>
     <AuthenticatedContent>
         <div class="page-container">
-            <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
+            <KeyBeingTransfered IsDisplayed=@(AESKey == null) />
 
             <ChatHeader 
                 IsOnline=true
-                Name=@topicName/>
+                PartnerName=@topicName
+                OnAESRenewal=@RenewAES 
+                AESKey=@AESKey/>
 
             <MessageList @ref=MessageListComponent
                         topicName=@topicName />
@@ -63,6 +68,7 @@
     public string myUsername { get; set; } = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
     private bool AESKeyForConversationExists => GetAESKey() != null;
+    private Key? AESKey { get; set; }
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
 
@@ -91,24 +97,62 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+    }
+    private void OnAESUpdated(bool keyRenewed)
+    {
+        AESKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        StateHasChanged();
     }
 
     private async Task GetAESKeyAsync()
     {
-        Key? key = GetAESKey();
-        if(key != null)
+        AESKey = await GetAESKey();
+        if (AESKey != null)
         {
             return;
         }
 
+        await RenewAES();
+    }
+
+    private async Task RenewAES()
+    {
         await _messageService.RequestForPartnerPublicKey(topicName);
     }
 
-    private Key? GetAESKey() => InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-
-    public void OnAESKeyReady(string partnerName)
+    private async Task<Key?> GetAESKey()
     {
-        Key key = GetAESKey()!;
+        LocalKeyChain? lkc = (await _localKeyManager.ReadLocalKeyChainAsync());
+        Key? lkcKey = lkc?.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+
+        Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+
+        if (keyFromInMemoryService == null && lkcKey != null)
+        {
+            InMemoryKeyStorage.AESKeyStorage.Add(topicName, lkcKey);
+            keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        }
+
+        if(keyFromInMemoryService != null)
+        {
+            Console.WriteLine($"Using key created at: {keyFromInMemoryService.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")}");
+        }
+        else
+        {
+            Console.WriteLine("No key found");
+        }
+
+        return keyFromInMemoryService;
+    }
+
+    public async Task OnAESKeyReady(string partnerName)
+    {
+        AESKey = await GetAESKey();
+        if (AESKey == null)
+            throw new ApplicationException("Could not get an AES key.");
+
+        await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
         StateHasChanged();
     }
 }

@@ -2,6 +2,7 @@
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
+using Limp.Client.Services.CloudKeyService;
 using LimpShared.Encryption;
 
 namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling
@@ -9,10 +10,12 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
     public class AESOfferHandler : IAESOfferHandler
     {
         private readonly ICryptographyService _cryptographyService;
+        private readonly ILocalKeyManager _localKeyManager;
 
-        public AESOfferHandler(ICryptographyService cryptographyService)
+        public AESOfferHandler(ICryptographyService cryptographyService, ILocalKeyManager localKeyManager)
         {
             _cryptographyService = cryptographyService;
+            _localKeyManager = localKeyManager;
         }
         public async Task<Message> GetAESOfferResponse(Message offerMessage)
         {
@@ -33,6 +36,8 @@ namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandl
                 {
                     InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender] = aesKeyForConversation;
                 }
+
+                await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
             }
 
             return new Message

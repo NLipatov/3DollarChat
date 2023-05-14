@@ -30,7 +30,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         private readonly IUsersService _usersService;
         private readonly IMessageService _messageService;
         private HubConnection authHubConnection;
-        private HubConnectionProviderState connectionState { get; set; } = HubConnectionProviderState.NotAuthenticated;
+        private HubConnectionProviderState connectionState { get; set; } = HubConnectionProviderState.NotConnected;
         public HubConnectionProviderState GetConnectionState() => connectionState;
 
         public async Task ConnectToHubs()
@@ -50,7 +50,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         private async Task RefreshTokenIfNeededAsync()
         {
-            await _authService.RefreshTokenIfNeededAsync(async (isRefreshSucceeded) =>
+            await _authService.RenewalAccessTokenIfExpiredAsync(async (isRefreshSucceeded) =>
             {
                 if (isRefreshSucceeded)
                 {
@@ -61,11 +61,11 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         private async Task DecideOnToken()
         {
-            await _authService.ValidateTokenAsync(async (isTokenValid) =>
+            await _authService.ValidateAccessTokenAsync(async (isTokenValid) =>
             {
                 if (isTokenValid)
                 {
-                    connectionState = HubConnectionProviderState.Authenticated;
+                    connectionState = HubConnectionProviderState.PartiallyConnected;
                     await ProceedHandle();
                 }
             });

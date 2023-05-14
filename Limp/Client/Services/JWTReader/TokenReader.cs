@@ -1,11 +1,15 @@
-﻿using Limp.Client.HubInteraction.Handlers.Helpers;
-using LimpShared.Encryption;
+﻿using LimpShared.Encryption;
 using System.IdentityModel.Tokens.Jwt;
 
-namespace Limp.Client.Services
+namespace Limp.Client.Services.JWTReader
 {
     public static class TokenReader
     {
+        public static bool IsTokenReadable(string accessToken)
+        {
+            var tokenHandler = new JwtSecurityTokenHandler();
+            return tokenHandler.CanReadToken(accessToken);
+        }
         public static bool HasAccessTokenExpired(string accessToken)
         {
             var tokenHandler = new JwtSecurityTokenHandler();

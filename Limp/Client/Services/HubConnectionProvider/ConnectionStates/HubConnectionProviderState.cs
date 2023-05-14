@@ -2,8 +2,8 @@
 {
     public enum HubConnectionProviderState
     {
-        NotAuthenticated,
-        Authenticated,
+        NotConnected,
+        PartiallyConnected,
         Connected
     }
 }

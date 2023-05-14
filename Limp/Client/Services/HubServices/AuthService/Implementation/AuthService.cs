@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using Limp.Client.Services.JWTReader;
 
 namespace Limp.Client.Services.HubService.AuthService.Implementation
 {
@@ -88,18 +89,18 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             }
         }
 
-        public async Task RefreshTokenIfNeededAsync(Func<bool, Task> callback)
+        public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
         {
             JWTPair? jwtPair = await GetJWTPairAsync();
             if (jwtPair == null)
             {
-                await callback(false);
+                await isRenewalSucceededCallback(false);
             }
             else
             {
                 if (TokenReader.HasAccessTokenExpired(jwtPair.AccessToken))
                 {
-                    RefreshTokenCallbackQueue.Enqueue(callback);
+                    RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
                     await hubConnection!.SendAsync("RefreshTokens", new RefreshToken
                     {
                         Token = (jwtPair.RefreshToken.Token)
@@ -107,21 +108,24 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 }
                 else
                 {
-                    await callback(true);
+                    await isRenewalSucceededCallback(true);
                 }
             }
         }
 
-        public async Task ValidateTokenAsync(Func<bool, Task> callback)
+        public async Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback)
         {
             JWTPair? jWTPair = await GetJWTPairAsync();
             if (jWTPair == null)
             {
-                await callback(false);
+                await isTokenAccessValidCallback(false);
             }
             else
             {
-                IsTokenValidCallbackQueue.Enqueue(callback);
+                //Server will trigger callback execution later
+                //later comes, when server responds us by calling client 'OnTokenValidation' method with boolean value
+                IsTokenValidCallbackQueue.Enqueue(isTokenAccessValidCallback);
+                //Informing server that we're waiting for it's decision on access token
                 await hubConnection!.SendAsync("IsTokenValid", jWTPair.AccessToken);
             }
         }

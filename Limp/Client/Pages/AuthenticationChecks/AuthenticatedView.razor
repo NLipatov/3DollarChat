@@ -1,9 +1,11 @@
 ﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks.Stages;
 @using Limp.Client.Services;
+@using Limp.Client.Services.HubConnectionProvider.ConnectionStates;
 @using Limp.Client.Services.HubConnectionProvider.Implementation;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.AuthService;
+@using Limp.Client.Services.JWTReader;
 @inject IJSRuntime _jS
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
@@ -34,8 +36,8 @@ else
 {
     <div class="d-flex flex-column align-items-center text-center">
         <img class="img-fluid" style="max-height: 50vh;" src="https://svgur.com/i/ssH.svg" alt="Server technician adjusting wiring" />
-        <p class="mt-3 mb-0">Looks like you're not connected to our server</p>
-        <p class="mb-3">We're trying to establish a connection with you once again</p>
+        <p class="mt-3 mb-0">Connectivity error</p>
+        <p class="mb-3">Cannot connect to a server</p>
     </div>
 }
 
@@ -47,6 +49,7 @@ else
     [Parameter] 
     public RenderFragment? UnauthenticatedContent { get; set; }
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
+    private HubConnectionProviderState _connectionState => _hubConnectionProvider.GetConnectionState();
     private bool isConnectedToAuthHub => _authService.IsConnected();
 
     protected override async Task OnInitializedAsync()
@@ -59,23 +62,40 @@ else
         if (isConnectedToAuthHub)
         {
             //If the access token has expired, we will try to update it
-            await _authService.RefreshTokenIfNeededAsync(RefreshTokenAttemptResult);
+            await _authService.RenewalAccessTokenIfExpiredAsync(isRenewalSucceededCallback: RefreshTokenAttemptResult);
         }
         else
         {
-            await ReconnectToHubsAsync();
-            await IsUserAuthenticated();
+            string? accessToken = await JWTHelper.GetAccessToken(_jS);
+            if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
+            {
+                _navigationManager.NavigateTo("login");
+                return;
+            }
+
+            //Make an attempt to reconnect to hubs
+            await ReconnectToHubsIfNeededAsync();
+            //If we still have no connection to hub make nothing
+            if (!isConnectedToAuthHub)
+            {
+                return;
+            }
+            //If we are now connected to hub, make sure that user is authenticated
+            else
+            {
+                await IsUserAuthenticated();
+            }
         }
     }
 
-    private async Task RefreshTokenAttemptResult(bool isSuccessfullyRefreshed)
+    private async Task RefreshTokenAttemptResult(bool isRenewalSucceededCallback)
     {
         //If the refresh token is invalid, the user must log in again
-        if (!isSuccessfullyRefreshed)
+        if (!isRenewalSucceededCallback)
             _authenticationState = AuthenticationState.NotAuthenticated;
 
         //Else - checking if actualised access token is valid
-        await _authService.ValidateTokenAsync(DecideOnToken);
+        await _authService.ValidateAccessTokenAsync(DecideOnToken);
     }
 
     private async Task DecideOnToken(bool isAccessTokenValid)
@@ -83,15 +103,19 @@ else
         if(isAccessTokenValid)
             _authenticationState = AuthenticationState.Authenticated;
         else
+        {
             _authenticationState = AuthenticationState.NotAuthenticated;
+        }
 
-        await ReconnectToHubsAsync();
         StateHasChanged();
     }
 
-    private async Task ReconnectToHubsAsync()
+    private async Task ReconnectToHubsIfNeededAsync()
     {
-        await _hubConnectionProvider.DisposeAsync();
-        await _hubConnectionProvider.ConnectToHubs();
+        if (!isConnectedToAuthHub)
+        {
+            await _hubConnectionProvider.DisposeAsync();
+            await _hubConnectionProvider.ConnectToHubs();
+        }
     }
 }

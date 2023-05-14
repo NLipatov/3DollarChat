@@ -36,7 +36,7 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-        <div class="page-container" @onkeydown="((e)=> HandleKeyDown(e))">
+        <div class="page-container">
             <KeyBeingTransfered IsDisplayed="!AESKeyForConversationExists" />
 
             <ChatHeader 
@@ -46,10 +46,9 @@
             <MessageList @ref=MessageListComponent
                         topicName=@topicName />
 
-            <div class="message-input-box">
-                <input @bind="messageInput" @bind:event ="oninput"/>
-                <button @onclick="async () => await SendMessage()">Send</button>
-            </div>
+            <Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput.MessageInputBox 
+                myUsername=@myUsername
+                topicName=@topicName/>
         </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
@@ -62,7 +61,6 @@
     public string topicName { get; set; } = string.Empty;
     [Parameter]
     public string myUsername { get; set; } = string.Empty;
-    private string messageInput = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
     private bool AESKeyForConversationExists => GetAESKey() != null;
     private Guid ComponentId { get; set; }
@@ -112,28 +110,5 @@
     {
         Key key = GetAESKey()!;
         StateHasChanged();
-    }
-
-    private async Task SendMessage()
-    {
-        if (string.IsNullOrWhiteSpace(messageInput))
-            return;
-
-        Message messageToSend = await _messageBuilder.BuildMessageToBeSend(messageInput, topicName, myUsername);
-
-        await _messageService.SendMessage(messageToSend);
-
-        messageToSend.Payload = messageInput;
-        messageToSend.Sender = "You";
-        await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
-
-        messageInput = string.Empty;
-    }
-    private async Task HandleKeyDown(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
-        }
     }
 }

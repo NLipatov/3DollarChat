@@ -38,11 +38,16 @@ namespace Limp.Server.Hubs
         }
 
         public async override Task OnConnectedAsync()
-            => _userConnectedHandler.OnConnect(Context.ConnectionId);
+        {
+            _userConnectedHandler.OnConnect(Context.ConnectionId);
+            await base.OnConnectedAsync();
+        }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
-            => _userConnectedHandler.OnDisconnect(Context.ConnectionId, RemoveUserFromGroup: Groups.RemoveFromGroupAsync);
-
+        {
+            _userConnectedHandler.OnDisconnect(Context.ConnectionId, RemoveUserFromGroup: Groups.RemoveFromGroupAsync);
+            await base.OnDisconnectedAsync(exception);
+        }
 
         public async Task SetUsername(string accessToken)
         {

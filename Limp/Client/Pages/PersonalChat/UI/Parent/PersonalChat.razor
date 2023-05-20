@@ -1,4 +1,5 @@
 ﻿@page "/user/{topicName?}"
+@using Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -39,7 +40,7 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-        <div class="page-container">
+
             <KeyBeingTransfered IsDisplayed=@(AESKey == null) />
 
             <ChatHeader 
@@ -51,10 +52,10 @@
             <MessageList @ref=MessageListComponent
                         topicName=@topicName />
 
-            <Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput.MessageInputBox 
+            <MessageInputBox 
                 myUsername=@myUsername
                 topicName=@topicName/>
-        </div>
+
     </AuthenticatedContent>
     <UnauthenticatedContent>
         <UnAuthorized/>

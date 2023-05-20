@@ -1,7 +1,7 @@
 ﻿.message-input-box {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-end;
     padding: 10px;
     gap: 10px;
     background-color: #f1f1f1;
@@ -9,15 +9,7 @@
     position: fixed;
     max-width: 100%;
     width: calc(100vw - 270px);
-}
-
-.message-input-box input {
-    flex-grow: 1;
-    height: 40px;
-    padding: 10px;
-    border: none;
-    border-radius: 5px;
-    font-size: 16px;
+    margin-top: 10px;
 }
 
 .message-input-box button {
@@ -29,4 +21,14 @@
     color: #fff;
     font-size: 16px;
     cursor: pointer;
+}
+
+.message-input-box input {
+    width: 100%;
+}
+
+@media (max-width: 768px) {
+    .message-input-box {
+        width: 100%;
+    }
 }

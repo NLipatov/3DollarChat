@@ -8,7 +8,7 @@
     bottom: 0;
     position: fixed;
     max-width: 100%;
-    width: calc(100vw - 270px);
+    width: calc(100vw - var(--bb-sidebar-width));
     margin-top: 10px;
 }
 

@@ -4,12 +4,14 @@
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying.Childs
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IJSRuntime _jSRuntime
 
 <div class="messages-box">
-    <Virtualize Items="@(Messages.Where(x => x.Type == MessageType.UserMessage).ToList())" Context="message">
-        <SingleMessage 
-            Message="message"/>
-    </Virtualize>
+    @*ToDo: virtualization for list of messages. Virtualization should work with uneven component(SingleMessage in this case) height*@
+    @foreach (var message in Messages.Where(x=>x.Type == MessageType.UserMessage))
+    {
+        <SingleMessage Message="message"/>
+    }
 </div>
 
 @code {
@@ -29,7 +31,7 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessage, "IncomingMessageReceived", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "IncomingMessageReceived", ComponentId);
     }
 
     private List<Message> GetPreviousMessages()
@@ -60,9 +62,20 @@
         }
     }
 
-    public void AddMessage(Message message)
+    public async Task AddMessageAsync(Message message)
     {
         Messages.Add(message);
         StateHasChanged();
+        await ScrollToLastMessage();
+    }
+
+    private async Task ScrollToLastMessage()
+    {
+        string jsCode = @"
+    var messagesBox = document.querySelector('.messages-box');
+    messagesBox.scrollTop = messagesBox.scrollHeight;
+";
+
+        await _jSRuntime.InvokeVoidAsync("eval", jsCode);
     }
 }

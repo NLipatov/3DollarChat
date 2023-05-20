@@ -1,0 +1,39 @@
+﻿@using ClientServerCommon.Models.Message;
+
+@if(Message != null)
+{
+    <div class="message @messageClass">
+        <div class="message-text">
+            <span>@(Message.Payload)</span>
+        </div>
+        <div class="timestamp">
+            <span>@Message.DateSent.ToString("hh:mm")</span>
+            @if (Message.Sender == "You")
+            {
+                @if (Message.IsRead)
+                {
+                    <i class="fas fa-check-double @messageClass"></i>
+                }
+                else if (Message.IsReceived)
+                {
+                    <i class="fas fa-check @messageClass"></i>
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Message? Message { get; set; }
+    private bool isOutcoming;
+    private string messageClass = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isOutcoming = Message?.Sender == "You";
+        messageClass = isOutcoming ? "outcoming" : "incoming";
+
+        await base.OnParametersSetAsync();
+    }
+}

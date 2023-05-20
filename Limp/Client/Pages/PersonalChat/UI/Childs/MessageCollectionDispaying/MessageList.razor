@@ -1,35 +1,15 @@
 ﻿@using ClientServerCommon.Models.Message;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.InboxService;
+@using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying.Childs
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 
 <div class="messages-box">
-    @foreach (var message in Messages.Where(x => x.Type == MessageType.UserMessage))
-    {
-        bool isOutcoming = message.Sender == "You";
-        string messageClass = isOutcoming ? "outcoming" : "incoming";
-
-        <div class="message @messageClass">
-            <div class="message-text">
-                <span>@(message.Payload)</span>
-            </div>
-            <div class="timestamp">
-                <span>@message.DateSent.ToString("hh:mm")</span>
-                @if(message.Sender == "You")
-                {
-                    @if(message.IsRead)
-                    {
-                        <i class="fas fa-check-double @messageClass"></i>
-                    }
-                    else if(message.IsReceived)
-                    {
-                        <i class="fas fa-check @messageClass"></i>
-                    }
-                }
-            </div>
-        </div>
-    }
+    <Virtualize Items="@(Messages.Where(x => x.Type == MessageType.UserMessage).ToList())" Context="message">
+        <SingleMessage 
+            Message="message"/>
+    </Virtualize>
 </div>
 
 @code {

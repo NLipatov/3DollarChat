@@ -24,7 +24,7 @@ builder.Services.UseServerHttpClient();
 builder.Services.UseKafkaService();
 
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>();
-builder.Services.AddScoped<IUserConnectedHandler<MessageDispatcherHub>, MDConnectionHandler>();
+builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 
 var app = builder.Build();
@@ -55,7 +55,7 @@ app.MapRazorPages();
 app.MapControllers();
 app.MapHub<AuthHub>("/authHub");
 app.MapHub<UsersHub>("/usersHub");
-app.MapHub<MessageDispatcherHub>("/messageDispatcherHub");
+app.MapHub<MessageHub>("/messageDispatcherHub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

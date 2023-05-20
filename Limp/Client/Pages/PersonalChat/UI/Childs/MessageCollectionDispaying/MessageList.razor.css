@@ -1,6 +1,5 @@
 ﻿.messages-box {
     padding: 10px;
-    width: 100%;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -59,4 +58,10 @@
 
 .incoming .fa-check-double {
     color: limegreen;
+}
+
+@media (max-width: 768px) {
+    .messages-box {
+        width: 100%;
+    }
 }

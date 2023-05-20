@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Message;
-using Limp.Server.Hubs.MessageDispatching;
+using Limp.Server.Hubs.MessageDispatcher.Helpers;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -10,31 +10,23 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
 {
-    public class MessageDispatcherHub : Hub
+    public class MessageHub : Hub
     {
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IMessageBrokerService _messageBrokerService;
-        private readonly IUserConnectedHandler<MessageDispatcherHub> _userConnectedHandler;
+        private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
 
-        public MessageDispatcherHub
+        public MessageHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
-        IUserConnectedHandler<MessageDispatcherHub> userConnectedHandler,
+        IUserConnectedHandler<MessageHub> userConnectedHandler,
         IOnlineUsersManager onlineUsersManager)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-        }
-
-        private static bool IsClientConnectedToHub(string username)
-        {
-            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
-            {
-                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == username);
-            }
         }
 
         public async override Task OnConnectedAsync()
@@ -47,6 +39,14 @@ namespace Limp.Server.Hubs
         {
             _userConnectedHandler.OnDisconnect(Context.ConnectionId, RemoveUserFromGroup: Groups.RemoveFromGroupAsync);
             await base.OnDisconnectedAsync(exception);
+        }
+
+        private static bool IsClientConnectedToHub(string username)
+        {
+            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            {
+                return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == username);
+            }
         }
 
         public async Task SetUsername(string accessToken)
@@ -80,12 +80,11 @@ namespace Limp.Server.Hubs
             switch (IsClientConnectedToHub(message.TargetGroup))
             {
                 case true:
-                    await Deliver(message);
+                    await MessageSender.SendAsync(message, Clients);
                     break;
 
                 case false:
-                    await Task.Delay(1000);
-                    await Dispatch(message);
+                    await MessageSender.AddAsUnprocessedAsync(message, Clients);
                     break;
 
                 default:
@@ -102,33 +101,7 @@ namespace Limp.Server.Hubs
             await _messageBrokerService.ProduceAsync(message);
         }
 
-        /// <summary>
-        /// Deliver message to connected Hub client
-        /// </summary>
-        /// <param name="message">Message for delivery</param>
-        public async Task Deliver(Message message)
-        {
-            MessageStore.UnprocessedMessages.Add(message.Clone());
-
-            string targetGroup = message.TargetGroup;
-
-            message.Topic = message.Sender;
-            await Clients.Group(targetGroup).SendAsync("ReceiveMessage", message);
-            message.Topic = message.TargetGroup;
-            message.Sender = "You";
-            await Clients.Caller.SendAsync("ReceiveMessage", message);
-            //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
-        }
-
-        public async Task MessageReceived(Guid messageId)
-        {
-            Message? deliveredMessage = MessageStore.UnprocessedMessages.FirstOrDefault(x => x.Id == messageId);
-            if (deliveredMessage != null)
-            {
-                MessageStore.UnprocessedMessages.Remove(deliveredMessage);
-                await Clients.Group(deliveredMessage.Sender).SendAsync("MessageWasReceivedByRecepient", messageId);
-            }
-        }
+        public async Task MessageReceived(Guid messageId) => await MessageSender.OnMessageReceived(messageId, Clients);
         public async Task GetAnRSAPublic(string username)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);

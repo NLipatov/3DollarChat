@@ -1,4 +1,5 @@
 ﻿@page "/user/{topicName?}"
+@using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput
 @using ClientServerCommon.Models;
 @using ClientServerCommon.Models.Message;
@@ -17,7 +18,6 @@
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Cryptography;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
-@using Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling;
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
 @using Limp.Client.Services.InboxService;

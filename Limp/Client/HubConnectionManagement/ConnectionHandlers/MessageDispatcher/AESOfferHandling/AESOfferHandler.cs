@@ -5,7 +5,7 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.Services.CloudKeyService;
 using LimpShared.Encryption;
 
-namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling
+namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public class AESOfferHandler : IAESOfferHandler
     {

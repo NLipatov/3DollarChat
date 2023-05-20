@@ -5,7 +5,7 @@ using LimpShared.Authentification;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
-    public class MDConnectionHandler : IUserConnectedHandler<MessageDispatcherHub>
+    public class MDConnectionHandler : IUserConnectedHandler<MessageHub>
     {
         private readonly IServerHttpClient _serverHttpClient;
 

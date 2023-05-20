@@ -10,7 +10,7 @@
 </div>
 
 @code {
-    Sidebar sidebar;
+    Sidebar? sidebar;
     IEnumerable<NavItem> navItems;
 
     private async Task<SidebarDataProviderResult> SidebarDataProvider(SidebarDataProviderRequest request)
@@ -37,5 +37,5 @@
         return navItems;
     }
 
-    private void ToogleSidebar() => sidebar.ToggleSidebar();
+    private void ToogleSidebar() => sidebar?.ToggleSidebar();
 }

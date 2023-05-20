@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models.Message;
 
-namespace Limp.Client.HubInteraction.Handlers.MessageDispatcherHub.AESOfferHandling
+namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public interface IAESOfferHandler
     {

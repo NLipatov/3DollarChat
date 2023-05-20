@@ -9,7 +9,7 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
 {
     public class LocalKeyManager : ILocalKeyManager
     {
-        public string localStorageKeychainObjectName { get; set; } = "lkc";
+        public string localStorageKeychainObjectName { get; set; } = "localKeyChain";
         public string Password { get; set; } = string.Empty;
         private readonly IJSRuntime _jSRuntime;
 

@@ -124,14 +124,14 @@
 
     private async Task<Key?> GetAESKey()
     {
-        LocalKeyChain? lkc = (await _localKeyManager.ReadLocalKeyChainAsync());
-        Key? lkcKey = lkc?.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        LocalKeyChain? localKeyChain = (await _localKeyManager.ReadLocalKeyChainAsync());
+        Key? key = localKeyChain?.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
         Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
 
-        if (keyFromInMemoryService == null && lkcKey != null)
+        if (keyFromInMemoryService == null && key != null)
         {
-            InMemoryKeyStorage.AESKeyStorage.Add(topicName, lkcKey);
+            InMemoryKeyStorage.AESKeyStorage.Add(topicName, key);
             keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
         }
 

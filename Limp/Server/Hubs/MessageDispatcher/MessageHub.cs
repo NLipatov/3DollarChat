@@ -8,7 +8,7 @@ using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs
+namespace Limp.Server.Hubs.MessageDispatcher
 {
     public class MessageHub : Hub
     {
@@ -43,7 +43,7 @@ namespace Limp.Server.Hubs
 
         private static bool IsClientConnectedToHub(string username)
         {
-            lock(InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
+            lock (InMemoryHubConnectionStorage.MessageDispatcherHubConnections)
             {
                 return InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == username);
             }
@@ -52,8 +52,8 @@ namespace Limp.Server.Hubs
         public async Task SetUsername(string accessToken)
         {
             await _userConnectedHandler.OnUsernameResolved
-            (Context.ConnectionId, accessToken, 
-            Groups.AddToGroupAsync, 
+            (Context.ConnectionId, accessToken,
+            Groups.AddToGroupAsync,
             Clients.Caller.SendAsync,
             Clients.Caller.SendAsync);
             await PushOnlineUsersToClients();

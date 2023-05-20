@@ -52,7 +52,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
             });
 
-            hubConnection.On<string>("onNameResolve", async username =>
+            hubConnection.On<string>("OnNameResolve", async username =>
             {
                 _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
 

@@ -10,13 +10,24 @@
             <span>@Message.DateSent.ToString("hh:mm")</span>
             @if (Message.Sender == "You")
             {
-                @if (Message.IsRead)
+                @if (Message.Sender == "You")
                 {
-                    <i class="fas fa-check-double @messageClass"></i>
-                }
-                else if (Message.IsReceived)
-                {
-                    <i class="fas fa-check @messageClass"></i>
+                    @if (Message.IsRead)
+                    {
+                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                        //issue reference: https://stackoverflow.com/a/64686984
+                        <span>
+                            <i class="fas fa-check-double @messageClass"></i>
+                        </span>
+                    }
+                    else if (Message.IsReceived)
+                    {
+                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                        //issue reference: https://stackoverflow.com/a/64686984
+                        <span>
+                            <i class="fas fa-check @messageClass"></i>
+                        </span>
+                    }
                 }
             }
         </div>

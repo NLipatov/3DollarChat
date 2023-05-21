@@ -9,7 +9,7 @@
     position: fixed;
     max-width: 100%;
     width: calc(100vw - var(--bb-sidebar-width));
-    margin-top: 10px;
+    height: var(--input-bar-height);
 }
 
 .message-input-box button {

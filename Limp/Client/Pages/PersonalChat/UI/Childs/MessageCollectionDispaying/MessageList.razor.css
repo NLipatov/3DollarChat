@@ -5,11 +5,12 @@
     align-items: flex-start;
     width: calc(100vw - var(--bb-sidebar-width));
     overflow-y: auto;
-    max-height: calc(100vh - 8rem);
+    max-height: calc(100vh - var(--input-bar-height) - var(--sidebar-header-height));
 }
 
 @media (max-width: 768px) {
     .messages-box {
         width: 100%;
+        max-height: calc(100vh - var(--input-bar-height) - var(--sidebar-header-height) - 57px);
     }
 }

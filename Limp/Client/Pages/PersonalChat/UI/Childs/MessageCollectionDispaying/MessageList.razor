@@ -7,11 +7,9 @@
 @inject IJSRuntime _jSRuntime
 
 <div class="messages-box">
-    @*ToDo: virtualization for list of messages. Virtualization should work with uneven component(SingleMessage in this case) height*@
-    @foreach (var message in Messages.Where(x=>x.Type == MessageType.UserMessage))
-    {
+    <Virtualize Items="Messages" Context="message">
         <SingleMessage Message="message"/>
-    }
+    </Virtualize>
 </div>
 
 @code {
@@ -71,10 +69,9 @@
 
     private async Task ScrollToLastMessage()
     {
-        string jsCode = @"
-    var messagesBox = document.querySelector('.messages-box');
-    messagesBox.scrollTop = messagesBox.scrollHeight;
-";
+        string jsCode = 
+        @"var messagesBox = document.querySelector('.messages-box');
+        messagesBox.scrollTop = messagesBox.scrollHeight;";
 
         await _jSRuntime.InvokeVoidAsync("eval", jsCode);
     }

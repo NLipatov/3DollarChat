@@ -1,3 +1,8 @@
+:root {
+    --sidebar-header-height: 3.5rem;
+    --input-bar-height: 3.75rem;
+}
+
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     margin: 0px;

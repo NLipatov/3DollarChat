@@ -3,7 +3,7 @@
     align-items: center;
     padding: 10px;
     background-color: #f1f1f1;
-    height: 3.5rem;
+    height: var(--sidebar-header-height);
 }
 
 .profile-picture img {

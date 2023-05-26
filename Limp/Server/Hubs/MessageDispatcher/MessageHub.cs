@@ -1,6 +1,6 @@
 ﻿using ClientServerCommon.Models;
 using ClientServerCommon.Models.Message;
-using Limp.Server.Hubs.MessageDispatcher.Helpers;
+using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -16,17 +16,20 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
+        private readonly IMessageSender _messageSender;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
         IUserConnectedHandler<MessageHub> userConnectedHandler,
-        IOnlineUsersManager onlineUsersManager)
+        IOnlineUsersManager onlineUsersManager,
+        IMessageSender messageSender)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
+            _messageSender = messageSender;
         }
 
         public async override Task OnConnectedAsync()
@@ -80,11 +83,11 @@ namespace Limp.Server.Hubs.MessageDispatcher
             switch (IsClientConnectedToHub(message.TargetGroup))
             {
                 case true:
-                    await MessageSender.SendAsync(message, Clients);
+                    await _messageSender.SendAsync(message, Clients);
                     break;
 
                 case false:
-                    await MessageSender.AddAsUnprocessedAsync(message, Clients);
+                    await _messageSender.AddAsUnprocessedAsync(message, Clients);
                     break;
 
                 default:
@@ -101,7 +104,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             await _messageBrokerService.ProduceAsync(message);
         }
 
-        public async Task MessageReceived(Guid messageId) => await MessageSender.OnMessageReceived(messageId, Clients);
+        public async Task MessageReceived(Message message) => await _messageSender.OnMessageReceived(message, Clients);
         public async Task GetAnRSAPublic(string username)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);

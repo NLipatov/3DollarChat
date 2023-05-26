@@ -92,7 +92,10 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                 await _messageBox.AddMessageAsync(message);
 
-                await hubConnection.SendAsync("MessageReceived", message.Id);
+                if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+                    throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
+
+                await hubConnection.SendAsync("MessageReceived", message);
 
                 //If we dont yet know a partner Public Key, we will request it from server side.
                 if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null)

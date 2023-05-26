@@ -2,6 +2,7 @@
 @using Limp.Client.Pages.Contacts.UI.Child;
 @using ClientServerCommon.Models;
 @using Limp.Client.Pages.Contacts.Models;
+@using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -11,6 +12,7 @@
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime;
+@inject ILocalKeyManager _localKeyManager;
 @implements IDisposable
 
 <div class="p-2" style="  
@@ -121,7 +123,13 @@
                 Username = contact,
                 IsOnline = LastReceivedConnections.Any(x=>x.Username == contact),
                 LastMessage = DateTime.UtcNow
-            }).ToList();
+            }
+        ).ToList();
+
+        foreach (Contact contact in ContactsList)
+        {
+            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+        }
 
         StateHasChanged();
     }

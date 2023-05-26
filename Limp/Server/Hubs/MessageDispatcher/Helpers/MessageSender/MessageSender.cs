@@ -31,11 +31,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 
         public async Task AddAsUnprocessedAsync(Message message, IHubCallerClients clients)
         {
-            //Wait 1 second and try again
-            //Todo: send this message to undelivered message storage
-            //  and deliver it when user is back online
-            await Task.Delay(1000);
-            await SendAsync(message, clients);
+            _undeliveredMessagesStorer.Add(message);
         }
 
         public async Task OnMessageReceived(Message message, IHubCallerClients clients)

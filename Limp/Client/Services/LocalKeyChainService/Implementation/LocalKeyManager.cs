@@ -45,5 +45,13 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
             string serializedPlainLocalKeyChain = JsonSerializer.Serialize(LocalKeyToStore);
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", LocalKeyToStore.Name, serializedPlainLocalKeyChain);
         }
+
+        public async Task<bool> IsAESKeyReady(string contactName)
+        {
+            LocalKeyChain? keyChain = await ReadLocalKeyChainAsync();
+            string? targetKey = keyChain?.AESKeyStorage.Keys.FirstOrDefault(x => x == contactName);
+
+            return targetKey != null;
+        }
     }
 }

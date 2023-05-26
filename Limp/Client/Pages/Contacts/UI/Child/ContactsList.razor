@@ -27,6 +27,7 @@
                 <ContactBar Username=@contact.Username
                     IsOnline=@contact.IsOnline
                     OnClickCallback=@(() =>  OnContactClicked.InvokeAsync(contact.Username)) 
+                    IsKeyReady=@contact.IsKeyReady
                     Style="width: 100%;"/>
             </div>
         }

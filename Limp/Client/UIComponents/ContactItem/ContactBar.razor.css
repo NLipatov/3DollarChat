@@ -7,16 +7,27 @@
     border-radius: 0.25rem;
 }
 
-.user-card a {
+.user-card a.username {
     text-decoration: none;
     color: black;
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    gap: 10px;
     font-size: 20px;
 }
 
 .online {
     border-left: 0.25rem solid lawngreen !important;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.profile-picture {
+    /* Добавьте стили для профильной картинки */
+}
+
+.person-icon,
+.key-icon {
+    font-size: 20px;
 }

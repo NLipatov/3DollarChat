@@ -2,7 +2,6 @@ using Limp.Server.Extensions;
 using Limp.Server.Hubs;
 using Limp.Server.Hubs.MessageDispatcher;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.UndeliveredMessagesRegistry;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -30,7 +29,6 @@ builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
-builder.Services.AddSingleton<IUndeliveredMessagesStorer, UndeliveredMessagesStorer>();
 
 var app = builder.Build();
 

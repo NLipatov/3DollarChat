@@ -67,14 +67,13 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
             {
-
-                if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
-                    throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
-
-                await hubConnection.SendAsync("MessageReceived", message.Id, message.TargetGroup);
-
                 if (message.Sender != "You")
                 {
+                    if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+                        throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
+
+                    await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
+
                     if (message.Type == MessageType.AESAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");

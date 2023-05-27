@@ -7,7 +7,7 @@
 @inject IJSRuntime _jSRuntime
 
 <div class="messages-box">
-    <Virtualize Items="Messages" Context="message">
+    <Virtualize Items="_messageBox.FetchMessagesFromMessageBox(topicName)" Context="message">
         <SingleMessage Message="message"/>
     </Virtualize>
 </div>
@@ -15,14 +15,11 @@
 @code {
     [Parameter]
     public string topicName { get; set; } = string.Empty;
-    private List<Message> Messages { get; set; } = new();
     private Guid ComponentId { get; set; }
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
     protected override async Task OnInitializedAsync()
     {
-        Messages = GetPreviousMessages();
-
         SubscribeToHubEvents();
     }
 
@@ -32,24 +29,9 @@
         _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "IncomingMessageReceived", ComponentId);
     }
 
-    private List<Message> GetPreviousMessages()
-    {
-        //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
-        ComponentId = Guid.NewGuid();
-
-        if (string.IsNullOrWhiteSpace(topicName))
-        {
-            throw new ApplicationException("Chat topic name was not resolved, could not messages from this topic.");
-        }
-
-        List<Message> messagesFromMessageBox = _messageBox.FetchMessagesFromMessageBox(topicName);
-        return messagesFromMessageBox;
-    }
-
     public void MarkAsReceived(Guid messageId)
     {
-        Message? receivedMessage = Messages
+        Message? receivedMessage = _messageBox.FetchMessagesFromMessageBox(topicName)
         .Where(x=>x.Sender == "You")
         .FirstOrDefault(x => x.Id == messageId);
 
@@ -62,7 +44,10 @@
 
     public async Task AddMessageAsync(Message message)
     {
-        Messages.Add(message);
+        _messageBox.FetchMessagesFromMessageBox(topicName)
+        .First(x => x.Id == message.Id)
+        .IsReceived = true;
+
         StateHasChanged();
         await ScrollToLastMessage();
     }

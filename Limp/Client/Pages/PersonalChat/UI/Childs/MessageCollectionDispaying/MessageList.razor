@@ -26,26 +26,17 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "IncomingMessageReceived", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "MessageBoxUpdate", ComponentId);
     }
 
     public void MarkAsReceived(Guid messageId)
     {
-        Message? receivedMessage = _messageBox.FetchMessagesFromMessageBox(topicName)
-        .Where(x=>x.Sender == "You")
-        .FirstOrDefault(x => x.Id == messageId);
-
-        if (receivedMessage != null)
-        {
-            receivedMessage.IsReceived = true;
-            StateHasChanged();
-        }
+        _messageBox.MarkAsReceived(messageId);
+        StateHasChanged();
     }
 
     public async Task AddMessageAsync(Message message)
     {
-        _messageBox.MarkAsReceived(message.Id);
-
         StateHasChanged();
         await ScrollToLastMessage();
     }

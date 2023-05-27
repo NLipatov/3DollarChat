@@ -24,7 +24,7 @@ namespace Limp.Client.Services.InboxService.Implementation
 
             Messages.Add(message);
 
-            _callbackExecutor.ExecuteSubscriptionsByName(message, "IncomingMessageReceived");
+            _callbackExecutor.ExecuteSubscriptionsByName(message, "MessageBoxUpdate");
         }
 
         public List<Message> FetchMessagesFromMessageBox(string topic)

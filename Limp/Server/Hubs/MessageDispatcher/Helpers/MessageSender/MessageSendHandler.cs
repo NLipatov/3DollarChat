@@ -15,9 +15,6 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
             //For personal chat we have Group with only one person in it
             //Send to members of this single-membered Group a message
             await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message.ToReceiverRepresentation());
-
-            await clients.Caller.SendAsync("ReceiveMessage", message.ToSenderRepresentation());
-            //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
         }
 
         public async Task MarkAsReceived(Guid messageId, string topicName, IHubCallerClients clients)

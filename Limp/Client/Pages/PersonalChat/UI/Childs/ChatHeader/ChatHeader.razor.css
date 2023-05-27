@@ -12,6 +12,10 @@
     border-radius: 50%;
 }
 
+.profile-picture.online img {
+    border: 1.5px solid lawngreen;
+}
+
 .contact-info {
     margin-left: 10px;
 }
@@ -27,6 +31,7 @@
     font-size: 14px;
     color: #555;
 }
+
 .key-info {
     display: flex;
     align-items: center;

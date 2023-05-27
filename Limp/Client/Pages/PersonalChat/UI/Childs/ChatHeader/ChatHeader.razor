@@ -4,7 +4,7 @@
 @inject IMessageService _messageService
 
 <div class="header">
-    <div class="profile-picture">
+    <div class="profile-picture @(IsOnline ? "online" : "")">
         <img src=@AvatarLink alt="Profile Picture">
     </div>
     <div class="contact-info">
@@ -15,7 +15,7 @@
         <button title="Renew AES Key" style="border: none;" @onclick=@OnAESRenewal>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
-        @if(AESKey != null)
+        @if (AESKey != null)
         {
             <div class="key-details">
                 <p class="key-label">AES-secured</p>

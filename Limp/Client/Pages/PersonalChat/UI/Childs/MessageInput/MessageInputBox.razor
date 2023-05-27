@@ -37,6 +37,7 @@
         }
 
         await _messageSender.SendMessageAsync(messageInput, topicName, myUsername);
+        messageInput = string.Empty;
     }
 
 }

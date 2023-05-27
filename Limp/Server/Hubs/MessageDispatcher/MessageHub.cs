@@ -16,20 +16,20 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IMessageSender _messageSender;
+        private readonly IMessageSendHandler _messageSendHandler;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
         IUserConnectedHandler<MessageHub> userConnectedHandler,
         IOnlineUsersManager onlineUsersManager,
-        IMessageSender messageSender)
+        IMessageSendHandler messageSender)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _messageSender = messageSender;
+            _messageSendHandler = messageSender;
         }
 
         public async override Task OnConnectedAsync()
@@ -80,20 +80,10 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
-            switch (IsClientConnectedToHub(message.TargetGroup))
-            {
-                case true:
-                    await _messageSender.SendAsync(message, Clients);
-                    break;
-
-                case false:
-                    await _messageSender.AddAsUnprocessedAsync(message, Clients);
-                    break;
-
-                default:
-                    throw new ApplicationException("Could not dispatch a message");
-            }
+            await _messageSendHandler.SendAsync(message, Clients);
         }
+        public async Task MessageReceived(Message message) 
+            => await _messageSendHandler.MarkAsReceived(message, Clients);
 
         /// <summary>
         /// Sends message to a message broker system
@@ -104,7 +94,6 @@ namespace Limp.Server.Hubs.MessageDispatcher
             await _messageBrokerService.ProduceAsync(message);
         }
 
-        public async Task MessageReceived(Message message) => await _messageSender.OnMessageReceived(message, Clients);
         public async Task GetAnRSAPublic(string username)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);

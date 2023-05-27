@@ -8,9 +8,8 @@ public class UndeliveredMessagesStorer : IUndeliveredMessagesStorer
     private ConcurrentDictionary<string, List<Message>> userUndeliveredMessagesKV { get; set; } = new();
     public void Add(Message message)
     {
-        Console.WriteLine($"Storing message with payload: {message.Payload}");
         if (string.IsNullOrWhiteSpace(message.TargetGroup))
-            throw new ApplicationException($"Message with no {nameof(Message.TargetGroup)} cannot be delivered.");
+            return;
 
         bool keyExists = userUndeliveredMessagesKV.TryGetValue
             (message.TargetGroup, out List<Message>? undeliveredMessages);
@@ -23,7 +22,7 @@ public class UndeliveredMessagesStorer : IUndeliveredMessagesStorer
     public void Remove(Message message)
     {
         if (string.IsNullOrWhiteSpace(message.TargetGroup))
-            throw new ApplicationException($"Message with no {nameof(Message.TargetGroup)} cannot be delivered.");
+            return;
 
         bool keyExists = userUndeliveredMessagesKV.TryGetValue(message.TargetGroup, out List<Message>? undeliveredMessages);
 

@@ -29,7 +29,7 @@ builder.Services.UseKafkaService();
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
-builder.Services.AddTransient<IMessageSender, MessageSender>();
+builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
 builder.Services.AddSingleton<IUndeliveredMessagesStorer, UndeliveredMessagesStorer>();
 
 var app = builder.Build();

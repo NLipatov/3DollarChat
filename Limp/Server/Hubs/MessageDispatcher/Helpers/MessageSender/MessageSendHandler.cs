@@ -6,11 +6,11 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 {
-    public class MessageSender : IMessageSender
+    public class MessageSendHandler : IMessageSendHandler
     {
         private readonly IUndeliveredMessagesStorer _undeliveredMessagesStorer;
 
-        public MessageSender(IUndeliveredMessagesStorer undeliveredMessagesStorer)
+        public MessageSendHandler(IUndeliveredMessagesStorer undeliveredMessagesStorer)
         {
             _undeliveredMessagesStorer = undeliveredMessagesStorer;
         }
@@ -29,12 +29,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
             //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
         }
 
-        public async Task AddAsUnprocessedAsync(Message message, IHubCallerClients clients)
-        {
-            _undeliveredMessagesStorer.Add(message);
-        }
-
-        public async Task OnMessageReceived(Message message, IHubCallerClients clients)
+        public async Task MarkAsReceived(Message message, IHubCallerClients clients)
         {
             _undeliveredMessagesStorer.Remove(message);
             await clients.Group(message.Sender!).SendAsync("MessageWasReceivedByRecepient", message.Id);

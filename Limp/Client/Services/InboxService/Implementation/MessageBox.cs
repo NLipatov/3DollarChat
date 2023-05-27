@@ -33,5 +33,12 @@ namespace Limp.Client.Services.InboxService.Implementation
 
             return messages;
         }
+
+        public void MarkAsReceived(Guid messageId)
+        {
+            Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
+            if(message != null)
+                message.IsReceived = true;
+        }
     }
 }

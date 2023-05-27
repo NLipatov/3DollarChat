@@ -44,9 +44,7 @@
 
     public async Task AddMessageAsync(Message message)
     {
-        _messageBox.FetchMessagesFromMessageBox(topicName)
-        .First(x => x.Id == message.Id)
-        .IsReceived = true;
+        _messageBox.MarkAsReceived(message.Id);
 
         StateHasChanged();
         await ScrollToLastMessage();

@@ -1,10 +1,12 @@
 ﻿@using ClientServerCommon.Models.Message;
 @using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+@using Limp.Client.Pages.PersonalChat.Logic.MessageSender;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services.InboxService;
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
+@inject IMessageSender _messageSender
 
 <div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
     <input @bind="messageInput" @bind:event="oninput" />
@@ -28,30 +30,13 @@
 
     private async Task SendMessage()
     {
-        if (!AreTopicNameAndUsernameValid())
+        if (string.IsNullOrWhiteSpace(messageInput) || string.IsNullOrWhiteSpace(topicName) || string.IsNullOrWhiteSpace(myUsername))
         {
-            throw new ApplicationException
-            ($"{this.GetType().Name} has wrong {nameof(topicName)} and {nameof(myUsername)} parameters value.");
-        }
-        if (string.IsNullOrWhiteSpace(messageInput))
+            messageInput = string.Empty;
             return;
+        }
 
-        Message messageToSend = await _messageBuilder.BuildMessageToBeSend(messageInput, topicName, myUsername);
-
-        await _messageService.SendMessage(messageToSend);
-
-        messageToSend.Payload = messageInput;
-        messageToSend.Sender = "You";
-        await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
-
-        messageInput = string.Empty;
+        await _messageSender.SendMessageAsync(messageInput, topicName, myUsername);
     }
 
-    private bool AreTopicNameAndUsernameValid()
-    {
-        bool isMyNameWellformed = !string.IsNullOrWhiteSpace(myUsername);
-        bool isTopicNameWellformed = !string.IsNullOrWhiteSpace(topicName);
-
-        return isMyNameWellformed && isTopicNameWellformed;
-    }
 }

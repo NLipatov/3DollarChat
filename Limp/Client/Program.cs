@@ -5,6 +5,7 @@ using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.A
 using Limp.Client.HubInteraction.EventExecution;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+using Limp.Client.Pages.PersonalChat.Logic.MessageSender;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
@@ -49,5 +50,6 @@ builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscrip
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
 builder.Services.AddTransient<ILocalKeyManager, LocalKeyManager>();
+builder.Services.AddTransient<IMessageSender, MessageSender>();
 
 await builder.Build().RunAsync();

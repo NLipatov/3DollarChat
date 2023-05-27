@@ -19,14 +19,21 @@ public class UndeliveredMessagesStorer : IUndeliveredMessagesStorer
         else
             undeliveredMessages!.Add(message);
     }
-    public void Remove(Message message)
+    public void Remove(Guid messageId, string targetGroup)
     {
-        if (string.IsNullOrWhiteSpace(message.TargetGroup))
+        if (string.IsNullOrWhiteSpace(targetGroup))
             return;
 
-        bool keyExists = userUndeliveredMessagesKV.TryGetValue(message.TargetGroup, out List<Message>? undeliveredMessages);
+        bool keyExists = userUndeliveredMessagesKV.TryGetValue(targetGroup, out List<Message>? undeliveredMessages);
+
+        if (!keyExists)
+            throw new ApplicationException($"{userUndeliveredMessagesKV} has no such key.");
 
         if (keyExists)
-            undeliveredMessages!.Remove(message);
+        {
+            Message? message = undeliveredMessages?.FirstOrDefault(x=>x.Id == messageId);
+            if (message != null)
+                undeliveredMessages?.Remove(message);
+        }
     }
 }

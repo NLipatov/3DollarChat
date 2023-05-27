@@ -67,6 +67,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
             {
+
+                if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
+                    throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
+
+                await hubConnection.SendAsync("MessageReceived", message.Id, message.TargetGroup);
+
                 if (message.Sender != "You")
                 {
                     if (message.Type == MessageType.AESAccept)
@@ -91,11 +97,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 }
 
                 await _messageBox.AddMessageAsync(message);
-
-                if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
-                    throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
-
-                await hubConnection.SendAsync("MessageReceived", message);
 
                 //If we dont yet know a partner Public Key, we will request it from server side.
                 if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null)

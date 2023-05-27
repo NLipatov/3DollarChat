@@ -29,10 +29,13 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
             //In the other case we need some message storage to be implemented to store a not delivered messages and remove them when they are delivered.
         }
 
-        public async Task MarkAsReceived(Message message, IHubCallerClients clients)
+        public async Task MarkAsReceived(Guid messageId, string topicName, IHubCallerClients clients)
         {
-            _undeliveredMessagesStorer.Remove(message);
-            await clients.Group(message.Sender!).SendAsync("MessageWasReceivedByRecepient", message.Id);
+            if (string.IsNullOrWhiteSpace(topicName))
+                throw new ApplicationException("Cannot get an message sender username.");
+
+            _undeliveredMessagesStorer.Remove(messageId, topicName);
+            await clients.Group(topicName).SendAsync("MessageWasReceivedByRecepient", messageId);
         }
     }
 }

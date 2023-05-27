@@ -82,8 +82,8 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
             await _messageSendHandler.SendAsync(message, Clients);
         }
-        public async Task MessageReceived(Message message) 
-            => await _messageSendHandler.MarkAsReceived(message, Clients);
+        public async Task MessageReceived(Guid messageId, string topicName) 
+            => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
 
         /// <summary>
         /// Sends message to a message broker system

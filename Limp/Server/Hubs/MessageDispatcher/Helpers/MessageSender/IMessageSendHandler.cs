@@ -5,7 +5,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 {
     public interface IMessageSendHandler
     {
-        Task MarkAsReceived(Message message, IHubCallerClients clients);
+        Task MarkAsReceived(Guid messageId, string topicName, IHubCallerClients clients);
         Task SendAsync(Message message, IHubCallerClients clients);
     }
 }

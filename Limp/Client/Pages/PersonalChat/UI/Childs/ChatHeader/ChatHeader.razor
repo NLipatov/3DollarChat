@@ -1,6 +1,7 @@
 ﻿@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.Services.HubServices.MessageService;
 @using LimpShared.Encryption;
+@using Limp.Client.Pages.PersonalChat.UI.Childs.ChatHeader.Child;
 @inject IMessageService _messageService
 
 <div class="header">
@@ -12,7 +13,7 @@
         <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
     </div>
     <div class="key-info">
-        <button title="Renew AES Key" style="border: none;" @onclick=@OnAESRenewal>
+        <button title="Renew AES Key" style="border: none;" @onclick=ShowModalAsync>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
         @if (AESKey != null)
@@ -25,6 +26,10 @@
     </div>
 </div>
 
+<AESKeyRenewalModal 
+    @ref=aesRenewalModal 
+    OnAESRenewal="OnAESRenewal"/>
+
 @code {
     [Parameter]
     public string PartnerName { get; set; } = "Unnamed";
@@ -36,4 +41,12 @@
     public Key? AESKey { get; set; }
     [Parameter]
     public EventCallback OnAESRenewal { get; set; }
+
+    private AESKeyRenewalModal? aesRenewalModal { get; set; }
+    
+    private async Task ShowModalAsync()
+    {
+        if (aesRenewalModal != null)
+            await aesRenewalModal.ShowModalAsync();
+    }
 }

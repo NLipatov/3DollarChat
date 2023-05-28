@@ -2,9 +2,11 @@
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying.Childs
+@using Limp.Client.Services.UndeliveredMessagesStore;
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
+@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
 @implements IDisposable
 
 <div class="messages-box">
@@ -32,15 +34,21 @@
         _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "MessageBoxUpdate", ComponentId);
     }
 
-    public void MarkAsReceived(Guid messageId)
+    public async Task MarkAsReceived(Guid messageId)
     {
+        await _undeliveredMessagesRepository.DeleteAsync(messageId);
+
         _messageBox.MarkAsReceived(messageId);
+
         StateHasChanged();
     }
 
     public async Task AddMessageAsync(Message message)
     {
+        await _undeliveredMessagesRepository.AddAsync(message);
+
         StateHasChanged();
+
         await ScrollToLastMessage();
     }
 

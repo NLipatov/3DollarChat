@@ -22,7 +22,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
             if (string.IsNullOrWhiteSpace(topicName))
                 throw new ApplicationException("Cannot get an message sender username.");
 
-            await clients.Group(topicName).SendAsync("MessageWasReceivedByRecepient", messageId);
+            await clients.Group(topicName).SendAsync("OnReceiverMarkedMessageAsReceived", messageId);
         }
     }
 }

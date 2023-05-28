@@ -5,9 +5,10 @@
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
+@implements IDisposable
 
 <div class="messages-box">
-    <Virtualize Items="_messageBox.FetchMessagesFromMessageBox(topicName)" Context="message">
+    <Virtualize Items="_messageBox.Messages.Where(x=>x.Topic == topicName).ToList()" Context="message">
         <SingleMessage Message="message"/>
     </Virtualize>
 </div>
@@ -15,17 +16,19 @@
 @code {
     [Parameter]
     public string topicName { get; set; } = string.Empty;
+
     private Guid ComponentId { get; set; }
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
     protected override async Task OnInitializedAsync()
     {
+        ComponentId = Guid.NewGuid();
         SubscribeToHubEvents();
     }
 
     private void SubscribeToHubEvents()
     {
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "MessageWasReceivedByRecepient", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "MessageBoxUpdate", ComponentId);
     }
 

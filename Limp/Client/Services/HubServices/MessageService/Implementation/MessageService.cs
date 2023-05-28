@@ -104,9 +104,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 }
             });
 
-            hubConnection.On<Guid>("MessageWasReceivedByRecepient", messageId =>
+            hubConnection.On<Guid>("OnReceiverMarkedMessageAsReceived", messageId =>
             {
-                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageWasReceivedByRecepient");
+                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsReceived");
             });
 
             //Handling server side response on partners Public Key

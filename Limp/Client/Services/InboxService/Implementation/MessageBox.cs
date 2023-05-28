@@ -8,8 +8,7 @@ namespace Limp.Client.Services.InboxService.Implementation
     {
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly ICallbackExecutor _callbackExecutor;
-        private Dictionary<Guid, Action<Message>> subscriptions = new();
-        private List<Message> Messages = new();
+        public List<Message> Messages { get; private set; } = new();
         public MessageBox
         (IMessageDecryptor messageDecryptor,
         ICallbackExecutor callbackExecutor)
@@ -27,17 +26,10 @@ namespace Limp.Client.Services.InboxService.Implementation
             _callbackExecutor.ExecuteSubscriptionsByName(message, "MessageBoxUpdate");
         }
 
-        public List<Message> FetchMessagesFromMessageBox(string topic)
-        {
-            List<Message> messages = Messages.Where(x => x.Topic == topic).ToList();
-
-            return messages;
-        }
-
         public void MarkAsReceived(Guid messageId)
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
-            if(message != null)
+            if (message != null)
                 message.IsReceived = true;
         }
     }

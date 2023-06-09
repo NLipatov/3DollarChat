@@ -12,9 +12,11 @@
 @using Limp.Client.Pages.PersonalChat.UI.Childs.ChatHeader
 @using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.CloudKeyService.Models;
+@using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
+@using Limp.Client.Services.UndeliveredMessagesStore;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Cryptography;
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption;
@@ -34,6 +36,8 @@
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IMessageBuilder _messageBuilder
 @inject ILocalKeyManager _localKeyManager
+@inject IUsersService _usersService
+@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
 @implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -93,17 +97,65 @@
         SubscribeToHubEvents();
 
         await GetAESKeyAsync();
+
+        await _usersService.CheckIfUserOnline(topicName);
     }
 
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnection>(UserIsOnline, "IsUserOnlineResponse", ComponentId);
     }
+
     private void OnAESUpdated(bool keyRenewed)
     {
         AESKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
         StateHasChanged();
+    }
+
+    private async Task UserIsOnline(UserConnection userConnection)
+    {
+        List<Message> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+
+        if (undelivered.Count == 0)
+            return;
+
+        List<Message> messages = new List<Message>(undelivered.Count);
+        Task[] buildWorkload = BuildMessages(undelivered, messages);
+        await Task.WhenAll(buildWorkload);
+
+        Task[] sendWorkload = SendMessages(messages);
+
+        await Task.WhenAll(sendWorkload);
+    }
+
+    private Task[] BuildMessages(List<Message> plainTextMessages, List<Message> messagesToBeSend)
+    {
+        Task[] workload = new Task[plainTextMessages.Count];
+        for (int i = 0; i < plainTextMessages.Count; i++)
+        {
+            workload[i] = Task.Run(async () =>
+            {
+                messagesToBeSend.Add(await _messageBuilder.BuildMessageToBeSend(plainTextMessages[i].Payload, topicName, myUsername));
+            });
+        }
+
+        return workload;
+    }
+
+    private Task[] SendMessages(List<Message> messagesToSend)
+    {
+        Task[] workload = new Task[messagesToSend.Count];
+        for (int i = 0; i < messagesToSend.Count; i++)
+        {
+            workload[i] = Task.Run(async () =>
+            {
+                await _messageService.SendMessage(messagesToSend[i]);
+            });
+        }
+
+        return workload;
     }
 
     private async Task GetAESKeyAsync()

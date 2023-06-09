@@ -59,6 +59,11 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
             });
 
+            hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+            });
+
             await hubConnection.StartAsync();
 
             await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
@@ -153,6 +158,18 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             await DisconnectAsync();
             await ConnectAsync();
+        }
+
+        public async Task CheckIfUserOnline(string username)
+        {
+            if (hubConnection != null)
+            {
+                await hubConnection.SendAsync("IsUserOnline", username);
+            }
+            else
+            {
+                await ReconnectAsync();
+            }
         }
     }
 }

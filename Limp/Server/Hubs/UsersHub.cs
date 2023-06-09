@@ -105,15 +105,19 @@ namespace Limp.Server.Hubs
 
         public async Task IsUserOnline(string username)
         {
-            bool isUserConnectedToUsersHub =
-                InMemoryHubConnectionStorage.UsersHubConnections.Any(x=>x.Key == username);
+            string[] userHubConnections =
+                InMemoryHubConnectionStorage.UsersHubConnections.Where(x=>x.Key == username).SelectMany(x=>x.Value).ToArray();
 
-            bool isUserConnectedToMessageDispatcherHub =
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == username);
+            string[] messageHubConnections =
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
 
-            bool isUserOnline = isUserConnectedToUsersHub && isUserConnectedToMessageDispatcherHub;
+            bool isOnline = userHubConnections.Length > 0 && messageHubConnections.Length > 0;
 
-            await Clients.Caller.SendAsync("IsUserOnlineResponse", username, isUserOnline);
+            await Clients.Caller.SendAsync("IsUserOnlineResponse", new UserConnection
+            {
+                Username = username,
+                ConnectionIds = isOnline ? messageHubConnections : new string[0],
+            });
         }
     }
 }

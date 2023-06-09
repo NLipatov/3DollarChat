@@ -15,5 +15,6 @@ namespace Limp.Client.Services.HubService.UsersService
         void RemoveConnectionIdReceived(Guid subscriptionId);
         Guid SubscribeToUsernameResolved(Func<string, Task> callback);
         void RemoveUsernameResolved(Guid subscriptionId);
+        Task CheckIfUserOnline(string username);
     }
 }

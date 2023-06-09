@@ -6,6 +6,6 @@ namespace ClientServerCommon.Models
     {
         public string Username { get; set; }
         public Key RSAPublicKey { get; set; }
-        public List<string> ConnectionIds { get; set; }
+        public IList<string> ConnectionIds { get; set; }
     }
 }

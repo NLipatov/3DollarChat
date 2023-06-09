@@ -116,46 +116,25 @@
 
     private async Task UserIsOnline(UserConnection userConnection)
     {
-        List<Message> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
-
-        if (undelivered.Count == 0)
-            return;
-
-        List<Message> messages = new List<Message>(undelivered.Count);
-        Task[] buildWorkload = BuildMessages(undelivered, messages);
-        await Task.WhenAll(buildWorkload);
-
-        Task[] sendWorkload = SendMessages(messages);
-
-        await Task.WhenAll(sendWorkload);
-    }
-
-    private Task[] BuildMessages(List<Message> plainTextMessages, List<Message> messagesToBeSend)
-    {
-        Task[] workload = new Task[plainTextMessages.Count];
-        for (int i = 0; i < plainTextMessages.Count; i++)
+        if(AESKey != null)
         {
-            workload[i] = Task.Run(async () =>
+            List<Message> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+
+            if (undelivered.Count == 0)
+                return;
+
+            List<Message> toBeSend = new(undelivered.Count);
+
+            foreach (var message in undelivered)
             {
-                messagesToBeSend.Add(await _messageBuilder.BuildMessageToBeSend(plainTextMessages[i].Payload, topicName, myUsername));
-            });
-        }
+                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.Payload ?? string.Empty, topicName, myUsername, message.Id));
+            }
 
-        return workload;
-    }
-
-    private Task[] SendMessages(List<Message> messagesToSend)
-    {
-        Task[] workload = new Task[messagesToSend.Count];
-        for (int i = 0; i < messagesToSend.Count; i++)
-        {
-            workload[i] = Task.Run(async () =>
+            foreach (var message in toBeSend)
             {
-                await _messageService.SendMessage(messagesToSend[i]);
-            });
+                await _messageService.SendMessage(message);
+            }
         }
-
-        return workload;
     }
 
     private async Task GetAESKeyAsync()

@@ -40,9 +40,8 @@ namespace Limp.Client.Services.UndeliveredMessagesStore.Implementation
             if(message != null)
             {
                 undelivered.Remove(message);
+                await SaveUndeliveredListAsync(undelivered);
             }
-
-            await SaveUndeliveredListAsync(undelivered);
         }
 
         public async Task DeleteRangeAsync(Guid[] messageIds)

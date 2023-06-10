@@ -4,7 +4,7 @@
 {
     <div class="message @messageClass">
         <div class="message-text">
-            <span>@(Message.Payload)</span>
+            <span>@(Message.PlainTextPayload)</span>
         </div>
         <div class="timestamp">
             <span>@Message.DateSent.ToString("hh:mm")</span>

@@ -205,7 +205,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     DateSent = DateTime.UtcNow,
                     Sender = myName,
                     TargetGroup = partnersUsername,
-                    Payload = encryptedAESKey
+                    PlainTextPayload = encryptedAESKey
                 };
 
                 if (hubConnection != null)
@@ -239,6 +239,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
         public async Task SendMessage(Message message)
         {
+            message.PlainTextPayload = string.Empty;
             if (hubConnection != null)
             {
                 await hubConnection.SendAsync("Dispatch", message);

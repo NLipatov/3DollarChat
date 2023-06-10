@@ -127,7 +127,7 @@
 
             foreach (var message in undelivered)
             {
-                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.Payload ?? string.Empty, topicName, myUsername, message.Id));
+                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainTextPayload ?? string.Empty, topicName, myUsername, message.Id));
             }
 
             foreach (var message in toBeSend)

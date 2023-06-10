@@ -20,7 +20,7 @@ public class MessageDecryptor : IMessageDecryptor
         encryptedMessage.Cryptogramm = await _cryptographyService
             .DecryptAsync<AESHandler>(encryptedMessage.Cryptogramm, contact: encryptedMessage.Sender);
 
-        encryptedMessage.Payload = encryptedMessage.Cryptogramm.PlainText;
+        encryptedMessage.PlainTextPayload = encryptedMessage.Cryptogramm.PlainText;
         return encryptedMessage;
     }
 }

@@ -29,13 +29,13 @@ namespace Limp.Client.Pages.PersonalChat.Logic.MessageSender
         {
             Guid messageId = Guid.NewGuid();
 
-            await _undeliveredMessagesRepository.AddAsync(new Message { Id = messageId, Payload = text, Sender = myUsername, TargetGroup = targetGroup });
+            await _undeliveredMessagesRepository.AddAsync(new Message { Id = messageId, PlainTextPayload = text, Sender = myUsername, TargetGroup = targetGroup });
 
             Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
 
             await _messageService.SendMessage(messageToSend);
 
-            messageToSend.Payload = text;
+            messageToSend.PlainTextPayload = text;
             messageToSend.Sender = "You";
             await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
         }

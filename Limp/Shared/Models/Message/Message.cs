@@ -11,7 +11,7 @@ public class Message : ICloneable
     public string? CompanionConnectionId { get; set; }
     public string? Sender { get; set; }
     public string? Topic { get; set; }
-    public string? Payload { get; set; }
+    public string? PlainTextPayload { get; set; }
     public Cryptogramm? Cryptogramm { get; set; }
     public bool IsReceived { get; set; } = false;
     public DateTime DateReceived { get; set; }

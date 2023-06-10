@@ -1,4 +1,5 @@
 ﻿@page "/contacts"
+@using ClientServerCommon.Models.HubMessages;
 @using Limp.Client.Pages.Contacts.UI.Child;
 @using ClientServerCommon.Models;
 @using Limp.Client.Pages.Contacts.Models;
@@ -53,7 +54,7 @@
     private List<Contact> ContactsList = new();
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
-    private List<UserConnection> LastReceivedConnections { get; set; } = new();
+    private UsersOnlineMessage _usersOnlineMessage { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -73,7 +74,7 @@
         }
 
         //update displayed contacts in UI component
-        await UpdateContacts();
+        await _usersService.ActualizeConnectedUsersAsync();
     }
 
     private async Task OnAddContactAttempt(string NewContactUsername)
@@ -93,7 +94,7 @@
     private async Task HandleContactAddition(string username)
     {
         await _contactsProvider.AddContact(username, _jSRuntime);
-        await UpdateContacts();
+        await _usersService.ActualizeConnectedUsersAsync();
         await contactAdditionModal!.HideModalAsync();
     }
 
@@ -106,13 +107,13 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<List<UserConnection>>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UsersOnlineMessage>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
     }
 
-    private async Task UpdateContacts(List<UserConnection>? updatedUserConnections = null)
+    private async Task UpdateContacts(UsersOnlineMessage updatedUserConnections)
     {
         TryUpdateLastReceivedContacts(updatedUserConnections);
 
@@ -121,7 +122,7 @@
         new Contact
             {
                 Username = contact,
-                IsOnline = LastReceivedConnections.Any(x=>x.Username == contact),
+                IsOnline = _usersOnlineMessage.UserConnections.Any(x=>x.Username == contact),
                 LastMessage = DateTime.UtcNow
             }
         ).ToList();
@@ -134,11 +135,11 @@
         StateHasChanged();
     }
 
-    private void TryUpdateLastReceivedContacts(List<UserConnection>? userConnections = null)
+    private void TryUpdateLastReceivedContacts(UsersOnlineMessage usersOnlineMessage)
     {
-        if (userConnections != null)
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
-            LastReceivedConnections = userConnections;
+            _usersOnlineMessage = usersOnlineMessage;
         }
     }
 }

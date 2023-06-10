@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.HubMessages;
 using ClientServerCommon.Models.Message;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
@@ -64,7 +65,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task PushOnlineUsersToClients()
         {
-            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
+            UsersOnlineMessage userConnections = _onlineUsersManager.FormUsersOnlineMessage();
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 

@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.HubMessages;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -68,7 +69,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             .Build();
 
             #region Event handlers registration
-            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            hubConnection.On<UsersOnlineMessage>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });

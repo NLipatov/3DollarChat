@@ -1,11 +1,12 @@
 ﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.HubMessages;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public class OnlineUsersManager : IOnlineUsersManager
     {
-        public List<UserConnection> GetOnlineUsers()
+        public UsersOnlineMessage FormUsersOnlineMessage()
         {
             List<UserConnection> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .Where(x => x.Value.Count > 0)
@@ -25,9 +26,9 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
                 })
                 .ToList();
 
-            List<UserConnection> commonConnections = uConnections.Where(u=>mdConnections.Any(md=>md.Username == u.Username)).ToList();
+            UserConnection[] commonConnections = uConnections.Where(u => mdConnections.Any(md => md.Username == u.Username)).ToArray();
 
-            return commonConnections;
+            return new() { FormedAt = DateTime.UtcNow, UserConnections = commonConnections };
         }
     }
 }

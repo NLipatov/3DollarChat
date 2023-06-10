@@ -1,5 +1,6 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
+@using ClientServerCommon.Models.HubMessages;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
@@ -20,7 +21,7 @@
     <AuthenticatedContent>
     <div class="ApplicationContent">
         <div class="p-2">
-            @foreach (var connection in userConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0))
+                @foreach (var connection in _usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0])
             {
                 <ContactBar Username="@connection.Username"
                         IsOnline="true"
@@ -35,7 +36,7 @@
 </AuthenticatedView>
 
 @code {
-    private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
+    private UsersOnlineMessage? _usersOnlineMessage { get; set; }
     private string myUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
@@ -62,7 +63,7 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<List<UserConnection>>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UsersOnlineMessage>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
@@ -79,13 +80,13 @@
         return myUsername;
     }
 
-    private void UpdateUsersList(List<UserConnection> updatedUserConnections)
+    private void UpdateUsersList(UsersOnlineMessage usersOnlineMessage)
     {
-        userConnections.Clear();
-        foreach (var connection in updatedUserConnections)
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
-            userConnections.Add(connection);
+            _usersOnlineMessage = usersOnlineMessage;
         }
+
         StateHasChanged();
     }
 }

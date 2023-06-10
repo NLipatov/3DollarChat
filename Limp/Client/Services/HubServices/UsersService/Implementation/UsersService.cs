@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using ClientServerCommon.Models.HubMessages;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices;
@@ -42,7 +43,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             //Here we are registering a callbacks for specific server-triggered events.
             //Events are being triggered from SignalR hubs in server project.
-            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            hubConnection.On<UsersOnlineMessage>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
@@ -146,7 +147,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             if (hubConnection != null)
             {
-                await hubConnection.SendAsync("PushOnlineUsersToClient");
+                await hubConnection.SendAsync("PushOnlineUsersToClients");
             }
             else
             {

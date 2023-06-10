@@ -21,7 +21,6 @@ namespace Limp.Client.Pages.PersonalChat.Logic.MessageBuilder
             Message messageToSend = new Message
             {
                 Id = id,
-                Topic = topicName,
                 Cryptogramm = cryptogramm,
                 DateSent = DateTime.UtcNow,
                 TargetGroup = topicName!,

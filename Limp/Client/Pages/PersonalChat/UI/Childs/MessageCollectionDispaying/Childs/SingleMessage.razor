@@ -1,18 +1,18 @@
 ﻿@using ClientServerCommon.Models.Message;
 
-@if(Message != null)
+@if(message != null)
 {
     <div class="message @messageClass">
         <div class="message-text">
-            <span>@(Message.PlainTextPayload)</span>
+            <span>@(message.PlainTextPayload)</span>
         </div>
         <div class="timestamp">
-            <span>@Message.DateSent.ToString("hh:mm")</span>
-            @if (Message.Sender == "You")
+            <span>@message.DateSent.ToString("hh:mm")</span>
+            @if (message.Sender == myUsername)
             {
-                @if (Message.Sender == "You")
+                @if (message.Sender == myUsername)
                 {
-                    @if (Message.IsRead)
+                    @if (message.IsRead)
                     {
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
@@ -20,7 +20,7 @@
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
                     }
-                    else if (Message.IsReceived)
+                    else if (message.IsReceived)
                     {
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
@@ -36,13 +36,17 @@
 
 @code {
     [Parameter]
-    public Message? Message { get; set; }
+    public Message? message { get; set; }
+
+    [Parameter]
+    public string? myUsername { get; set; }
+
     private bool isOutcoming;
     private string messageClass = string.Empty;
 
     protected override async Task OnParametersSetAsync()
     {
-        isOutcoming = Message?.Sender == "You";
+        isOutcoming = message?.Sender == myUsername;
         messageClass = isOutcoming ? "outcoming" : "incoming";
 
         await base.OnParametersSetAsync();

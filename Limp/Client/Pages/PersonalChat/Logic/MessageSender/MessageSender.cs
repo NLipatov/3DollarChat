@@ -3,7 +3,6 @@ using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
 using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.UndeliveredMessagesStore;
-using Limp.Client.Services.UndeliveredMessagesStore.Implementation;
 
 namespace Limp.Client.Pages.PersonalChat.Logic.MessageSender
 {
@@ -15,9 +14,9 @@ namespace Limp.Client.Pages.PersonalChat.Logic.MessageSender
         private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
 
         public MessageSender
-            (IMessageBuilder messageBuilder, 
-            IMessageService messageService, 
-            IMessageBox messageBox, 
+            (IMessageBuilder messageBuilder,
+            IMessageService messageService,
+            IMessageBox messageBox,
             IUndeliveredMessagesRepository undeliveredMessagesRepository)
         {
             _messageBuilder = messageBuilder;
@@ -28,16 +27,36 @@ namespace Limp.Client.Pages.PersonalChat.Logic.MessageSender
         public async Task SendMessageAsync(string text, string targetGroup, string myUsername)
         {
             Guid messageId = Guid.NewGuid();
-
-            await _undeliveredMessagesRepository.AddAsync(new Message { Id = messageId, PlainTextPayload = text, Sender = myUsername, TargetGroup = targetGroup });
-
             Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
 
-            await _messageService.SendMessage(messageToSend);
+            await AddAsUnreceived(text, targetGroup, myUsername, messageId);
 
-            messageToSend.PlainTextPayload = text;
-            messageToSend.Sender = "You";
-            await _messageBox.AddMessageAsync(messageToSend, isEncrypted: false);
+            await AddToMessageBox(text, targetGroup, myUsername, messageId);
+
+            await _messageService.SendMessage(messageToSend);
+        }
+
+        private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
+        {
+            await _messageBox.AddMessageAsync(new Message
+            {
+                Id = messageId,
+                Sender = myUsername,
+                TargetGroup = targetGroup,
+                PlainTextPayload = text
+            },
+            isEncrypted: false);
+        }
+
+        private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId)
+        {
+            await _undeliveredMessagesRepository.AddAsync(new Message
+            {
+                Id = messageId,
+                Sender = myUsername,
+                TargetGroup = targetGroup,
+                PlainTextPayload = text
+            });
         }
     }
 }

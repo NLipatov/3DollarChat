@@ -10,14 +10,17 @@
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize Items="_messageBox.Messages.Where(x=>x.Topic == topicName).ToList()" Context="message">
-        <SingleMessage Message="message"/>
+    <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup).ToList()" Context="message">
+        <SingleMessage message="message" myUsername=@myUsername/>
     </Virtualize>
 </div>
 
 @code {
     [Parameter]
-    public string topicName { get; set; } = string.Empty;
+    public string targetGroup { get; set; } = string.Empty;
+
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
 
     private Guid ComponentId { get; set; }
 

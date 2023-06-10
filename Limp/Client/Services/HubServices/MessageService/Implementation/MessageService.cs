@@ -276,7 +276,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 Id = messageId,
                 Sender = myUsername,
                 TargetGroup = targetGroup,
-                PlainTextPayload = text
+                PlainTextPayload = text,
+                DateSent = DateTime.UtcNow
             },
             isEncrypted: false);
         }
@@ -288,7 +289,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 Id = messageId,
                 Sender = myUsername,
                 TargetGroup = targetGroup,
-                PlainTextPayload = text
+                PlainTextPayload = text,
+                DateSent = DateTime.UtcNow
             });
         }
     }

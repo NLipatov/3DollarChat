@@ -5,10 +5,12 @@ using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.InboxService;
+using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -25,6 +27,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
+        private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
+        private readonly IMessageBuilder _messageBuilder;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -37,7 +41,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         ICryptographyService cryptographyService,
         IAESOfferHandler aESOfferHandler,
         IUsersService usersService,
-        ICallbackExecutor callbackExecutor)
+        ICallbackExecutor callbackExecutor,
+        IUndeliveredMessagesRepository undeliveredMessagesRepository,
+        IMessageBuilder messageBuilder)
         {
             _messageBox = messageBox;
             _jSRuntime = jSRuntime;
@@ -46,6 +52,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _aESOfferHandler = aESOfferHandler;
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
+            _undeliveredMessagesRepository = undeliveredMessagesRepository;
+            _messageBuilder = messageBuilder;
         }
         public async Task<HubConnection> ConnectAsync()
         {
@@ -248,6 +256,40 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 await ReconnectAsync();
                 await SendMessage(message);
             }
+        }
+        public async Task SendUserMessage(string text, string targetGroup, string myUsername)
+        {
+            Guid messageId = Guid.NewGuid();
+            Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
+
+            await AddAsUnreceived(text, targetGroup, myUsername, messageId);
+
+            await AddToMessageBox(text, targetGroup, myUsername, messageId);
+
+            await SendMessage(messageToSend);
+        }
+
+        private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
+        {
+            await _messageBox.AddMessageAsync(new Message
+            {
+                Id = messageId,
+                Sender = myUsername,
+                TargetGroup = targetGroup,
+                PlainTextPayload = text
+            },
+            isEncrypted: false);
+        }
+
+        private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId)
+        {
+            await _undeliveredMessagesRepository.AddAsync(new Message
+            {
+                Id = messageId,
+                Sender = myUsername,
+                TargetGroup = targetGroup,
+                PlainTextPayload = text
+            });
         }
     }
 }

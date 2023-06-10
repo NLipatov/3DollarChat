@@ -1,12 +1,10 @@
 ﻿@using ClientServerCommon.Models.Message;
 @using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
-@using Limp.Client.Pages.PersonalChat.Logic.MessageSender;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services.InboxService;
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
-@inject IMessageSender _messageSender
 
 <div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
     <input @bind="messageInput" @bind:event="oninput" />
@@ -36,7 +34,7 @@
             return;
         }
 
-        await _messageSender.SendMessageAsync(messageInput, topicName, myUsername);
+        await _messageService.SendUserMessage(messageInput, topicName, myUsername);
         messageInput = string.Empty;
     }
 

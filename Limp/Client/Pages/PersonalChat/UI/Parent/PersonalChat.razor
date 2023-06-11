@@ -73,7 +73,7 @@
     [Parameter]
     public string myUsername { get; set; } = string.Empty;
     private List<UserConnection> userConnections { get; set; } = new();
-    private bool AESKeyForConversationExists => GetAESKey() != null;
+    private bool AESKeyForConversationExists => _localKeyManager.GetAESKeyForChat(topicName) != null;
     private Key? AESKey { get; set; }
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
@@ -140,7 +140,7 @@
 
     private async Task GetAESKeyAsync()
     {
-        AESKey = await GetAESKey();
+        AESKey = await _localKeyManager.GetAESKeyForChat(topicName);
         if (AESKey != null)
         {
             return;
@@ -154,34 +154,9 @@
         await _messageService.RequestForPartnerPublicKey(topicName);
     }
 
-    private async Task<Key?> GetAESKey()
-    {
-        LocalKeyChain? localKeyChain = (await _localKeyManager.ReadLocalKeyChainAsync());
-        Key? key = localKeyChain?.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-
-        Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-
-        if (keyFromInMemoryService == null && key != null)
-        {
-            InMemoryKeyStorage.AESKeyStorage.Add(topicName, key);
-            keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
-        }
-
-        if(keyFromInMemoryService != null)
-        {
-            Console.WriteLine($"Using key created at: {keyFromInMemoryService.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")}");
-        }
-        else
-        {
-            Console.WriteLine("No key found");
-        }
-
-        return keyFromInMemoryService;
-    }
-
     public async Task OnAESKeyReady(string partnerName)
     {
-        AESKey = await GetAESKey();
+        AESKey = await _localKeyManager.GetAESKeyForChat(partnerName);
         if (AESKey == null)
             throw new ApplicationException("Could not get an AES key.");
 

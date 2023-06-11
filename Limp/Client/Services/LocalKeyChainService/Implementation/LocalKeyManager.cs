@@ -53,5 +53,30 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
 
             return targetKey != null;
         }
+
+        public async Task<Key?> GetAESKeyForChat(string contactName)
+        {
+            LocalKeyChain? localKeyChain = await ReadLocalKeyChainAsync();
+            Key? key = localKeyChain?.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+
+            Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+
+            if (keyFromInMemoryService == null && key != null)
+            {
+                Console.WriteLine("Key was not found in memory, using key from local storage.");
+                InMemoryKeyStorage.AESKeyStorage.Add(contactName, key);
+                keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+            }
+            else if (keyFromInMemoryService != null)
+            {
+                Console.WriteLine($"Using key created at: {keyFromInMemoryService.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")}");
+            }
+            else
+            {
+                Console.WriteLine("No key found");
+            }
+
+            return keyFromInMemoryService;
+        }
     }
 }

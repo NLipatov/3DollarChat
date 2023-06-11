@@ -5,6 +5,7 @@ namespace Limp.Client.Services.CloudKeyService
 {
     public interface ILocalKeyManager
     {
+        Task<Key?> GetAESKeyForChat(string contactName);
         Task SynchronizeWithInMemoryKeyStorageAsync();
         Task SaveLocalKeyChainAsync(LocalKeyChain LocalKeyToStore);
         Task<LocalKeyChain?> ReadLocalKeyChainAsync();

@@ -7,6 +7,7 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
@@ -30,6 +31,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
         private readonly IMessageBuilder _messageBuilder;
+        private readonly ILocalKeyManager _localKeyManager;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -44,7 +46,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         IUsersService usersService,
         ICallbackExecutor callbackExecutor,
         IUndeliveredMessagesRepository undeliveredMessagesRepository,
-        IMessageBuilder messageBuilder)
+        IMessageBuilder messageBuilder,
+        ILocalKeyManager localKeyManager)
         {
             _messageBox = messageBox;
             _jSRuntime = jSRuntime;
@@ -55,6 +58,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _callbackExecutor = callbackExecutor;
             _undeliveredMessagesRepository = undeliveredMessagesRepository;
             _messageBuilder = messageBuilder;
+            _localKeyManager = localKeyManager;
         }
         public async Task<HubConnection> ConnectAsync()
         {
@@ -106,10 +110,18 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                 await _messageBox.AddMessageAsync(message);
 
-                //If we dont yet know a partner Public Key, we will request it from server side.
-                if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null)
+                //If we dont yet know a partner Public Key and we dont have an AES Key for chat with partner,
+                //we will request it from server side.
+                if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null
+                &&
+                _localKeyManager.GetAESKeyForChat(message.Sender!) == null)
                 {
-                    await hubConnection.SendAsync("GetAnRSAPublic", message.Sender);
+                    if(hubConnection == null)
+                    {
+                        await ReconnectAsync();
+                    }
+                    else
+                        await hubConnection.SendAsync("GetAnRSAPublic", message.Sender);
                 }
             });
 

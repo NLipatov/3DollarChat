@@ -18,7 +18,7 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
             _jSRuntime = jSRuntime;
         }
 
-        public async Task SynchronizeWithInMemoryKeyStorageAsync()
+        public async Task SaveInMemoryKeysInLocalStorage()
         {
             Dictionary<string, Key> inMemoryStoredKeys = InMemoryKeyStorage.AESKeyStorage;
             LocalKeyChain localKeyChain = new()
@@ -40,7 +40,7 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
             return localKeyChain;
         }
 
-        public async Task SaveLocalKeyChainAsync(LocalKeyChain LocalKeyToStore)
+        private async Task SaveLocalKeyChainAsync(LocalKeyChain LocalKeyToStore)
         {
             string serializedPlainLocalKeyChain = JsonSerializer.Serialize(LocalKeyToStore);
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", LocalKeyToStore.Name, serializedPlainLocalKeyChain);

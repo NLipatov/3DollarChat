@@ -1,5 +1,4 @@
-﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.HubMessages;
+﻿using ClientServerCommon.Models.HubMessages;
 using ClientServerCommon.Models.Message;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -116,7 +115,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 &&
                 _localKeyManager.GetAESKeyForChat(message.Sender!) == null)
                 {
-                    if(hubConnection == null)
+                    if (hubConnection == null)
                     {
                         await ReconnectAsync();
                     }
@@ -200,10 +199,11 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         {
             await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
             {
-                InMemoryKeyStorage.AESKeyStorage.First(x=>x.Key == partnersUsername).Value.CreationDate = DateTime.UtcNow;
+                InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate = DateTime.UtcNow;
                 InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value = aesKeyForConversation;
+                await _localKeyManager.SaveInMemoryKeysInLocalStorage();
                 string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
-                
+
                 if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
                     throw new ApplicationException("Could not properly generated an AES Key for conversation");
 

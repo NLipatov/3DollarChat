@@ -37,7 +37,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
                     InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender] = aesKeyForConversation;
                 }
 
-                await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
+                await _localKeyManager.SaveInMemoryKeysInLocalStorage();
             }
 
             return new Message

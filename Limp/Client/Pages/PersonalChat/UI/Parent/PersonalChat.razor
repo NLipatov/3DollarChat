@@ -160,7 +160,7 @@
         if (AESKey == null)
             throw new ApplicationException("Could not get an AES key.");
 
-        await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
+        await _localKeyManager.SaveInMemoryKeysInLocalStorage();
         StateHasChanged();
     }
 }

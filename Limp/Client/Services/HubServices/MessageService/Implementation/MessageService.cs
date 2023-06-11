@@ -30,7 +30,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
         private readonly IMessageBuilder _messageBuilder;
-        private readonly ILocalKeyManager _localKeyManager;
+        private readonly IBrowserKeyStorage _localKeyManager;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -46,7 +46,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         ICallbackExecutor callbackExecutor,
         IUndeliveredMessagesRepository undeliveredMessagesRepository,
         IMessageBuilder messageBuilder,
-        ILocalKeyManager localKeyManager)
+        IBrowserKeyStorage localKeyManager)
         {
             _messageBox = messageBox;
             _jSRuntime = jSRuntime;

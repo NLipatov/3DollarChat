@@ -50,7 +50,7 @@ builder.Services.AddSingleton<IMessageService, MessageService>();
 builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscriptionManager>();
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
-builder.Services.AddTransient<ILocalKeyManager, LocalKeyManager>();
+builder.Services.AddTransient<IBrowserKeyStorage, BrowserKeyStorage>();
 builder.Services.AddTransient<IUndeliveredMessagesRepository, UndeliveredMessagesRepository>();
 
 await builder.Build().RunAsync();

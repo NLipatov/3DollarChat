@@ -10,9 +10,9 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
     public class AESOfferHandler : IAESOfferHandler
     {
         private readonly ICryptographyService _cryptographyService;
-        private readonly ILocalKeyManager _localKeyManager;
+        private readonly IBrowserKeyStorage _localKeyManager;
 
-        public AESOfferHandler(ICryptographyService cryptographyService, ILocalKeyManager localKeyManager)
+        public AESOfferHandler(ICryptographyService cryptographyService, IBrowserKeyStorage localKeyManager)
         {
             _cryptographyService = cryptographyService;
             _localKeyManager = localKeyManager;

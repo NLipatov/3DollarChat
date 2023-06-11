@@ -7,13 +7,13 @@ using System.Text.Json;
 
 namespace Limp.Client.Services.LocalKeyChainService.Implementation
 {
-    public class LocalKeyManager : ILocalKeyManager
+    public class BrowserKeyStorage : IBrowserKeyStorage
     {
-        public string localStorageKeychainObjectName { get; set; } = "localKeyChain";
+        public string localStorageKeyChainObjectName { get; set; } = "localKeyChain";
         public string Password { get; set; } = string.Empty;
         private readonly IJSRuntime _jSRuntime;
 
-        public LocalKeyManager(IJSRuntime jSRuntime)
+        public BrowserKeyStorage(IJSRuntime jSRuntime)
         {
             _jSRuntime = jSRuntime;
         }
@@ -23,7 +23,7 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
             Dictionary<string, Key> inMemoryStoredKeys = InMemoryKeyStorage.AESKeyStorage;
             LocalKeyChain localKeyChain = new()
             {
-                Name = localStorageKeychainObjectName,
+                Name = localStorageKeyChainObjectName,
                 AESKeyStorage = inMemoryStoredKeys
             };
 
@@ -32,7 +32,7 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
 
         public async Task<LocalKeyChain?> ReadLocalKeyChainAsync()
         {
-            string? encryptedKeyChain = await _jSRuntime.InvokeAsync<string?>("localStorage.getItem", localStorageKeychainObjectName);
+            string? encryptedKeyChain = await _jSRuntime.InvokeAsync<string?>("localStorage.getItem", localStorageKeyChainObjectName);
             if(string.IsNullOrWhiteSpace(encryptedKeyChain))
                 return null;
 
@@ -57,26 +57,22 @@ namespace Limp.Client.Services.LocalKeyChainService.Implementation
         public async Task<Key?> GetAESKeyForChat(string contactName)
         {
             LocalKeyChain? localKeyChain = await ReadLocalKeyChainAsync();
-            Key? key = localKeyChain?.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+            Key? browserkey = localKeyChain?.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
 
-            Key? keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+            Key? inMemoryKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
 
-            if (keyFromInMemoryService == null && key != null)
+            if (inMemoryKey == null && browserkey != null)
             {
-                Console.WriteLine("Key was not found in memory, using key from local storage.");
-                InMemoryKeyStorage.AESKeyStorage.Add(contactName, key);
-                keyFromInMemoryService = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
+                InMemoryKeyStorage.AESKeyStorage.Add(contactName, browserkey);
+                inMemoryKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
             }
-            else if (keyFromInMemoryService != null)
+            else if(inMemoryKey?.Value != null && inMemoryKey.Value.ToString() != browserkey?.Value?.ToString())
             {
-                Console.WriteLine($"Using key created at: {keyFromInMemoryService.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")}");
-            }
-            else
-            {
-                Console.WriteLine("No key found");
+                //Saving InMemoryKey in browser's local storage
+                await SaveInMemoryKeysInLocalStorage();
             }
 
-            return keyFromInMemoryService;
+            return inMemoryKey;
         }
     }
 }

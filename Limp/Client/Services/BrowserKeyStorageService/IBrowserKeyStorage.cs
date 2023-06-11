@@ -3,7 +3,7 @@ using LimpShared.Encryption;
 
 namespace Limp.Client.Services.CloudKeyService
 {
-    public interface ILocalKeyManager
+    public interface IBrowserKeyStorage
     {
         Task<Key?> GetAESKeyForChat(string contactName);
         Task SaveInMemoryKeysInLocalStorage();

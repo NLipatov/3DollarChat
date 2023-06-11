@@ -61,6 +61,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         }
         public async Task<HubConnection> ConnectAsync()
         {
+            //Loading from local storage earlier saved AES keys
+            InMemoryKeyStorage.AESKeyStorage = (await _localKeyManager.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
+
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
             if (existingHubConnection != null)
             {

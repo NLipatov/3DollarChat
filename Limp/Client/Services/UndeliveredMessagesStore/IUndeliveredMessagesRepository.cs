@@ -1,4 +1,5 @@
-﻿using LimpShared.Models.Message;
+﻿using Limp.Client.ClientOnlyModels;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.UndeliveredMessagesStore
 {
@@ -6,8 +7,8 @@ namespace Limp.Client.Services.UndeliveredMessagesStore
     {
         Task DeleteAsync(Guid messageId);
         Task DeleteRangeAsync(Guid[] messageIds);
-        Task AddRange(List<Message> messages);
-        Task AddAsync(Message messages);
-        Task<List<Message>> GetUndeliveredAsync();
+        Task AddRange(List<ClientMessage> messages);
+        Task AddAsync(ClientMessage messages);
+        Task<List<ClientMessage>> GetUndeliveredAsync();
     }
 }

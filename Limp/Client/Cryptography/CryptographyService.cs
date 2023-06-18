@@ -70,7 +70,7 @@ namespace Limp.Client.Cryptography
             else
                 InMemoryKeyStorage.AESKeyStorage[contactName] = key;
         }
-        public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogramm, string? contact = null) where T : ICryptoHandler
+        public async Task<string> DecryptAsync<T>(Cryptogramm cryptogramm, string? contact = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)

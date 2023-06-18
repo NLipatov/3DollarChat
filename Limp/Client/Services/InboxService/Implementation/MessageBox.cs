@@ -1,4 +1,6 @@
-﻿using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+﻿using Limp.Client.ClientOnlyModels;
+using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
+using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Models.Message;
@@ -11,7 +13,7 @@ namespace Limp.Client.Services.InboxService.Implementation
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
 
-        public List<Message> Messages { get; private set; } = new();
+        public List<ClientMessage> Messages { get; private set; } = new();
         public MessageBox
         (IMessageDecryptor messageDecryptor,
         ICallbackExecutor callbackExecutor,
@@ -21,10 +23,10 @@ namespace Limp.Client.Services.InboxService.Implementation
             _callbackExecutor = callbackExecutor;
             _undeliveredMessagesRepository = undeliveredMessagesRepository;
         }
-        public async Task AddMessageAsync(Message message, bool isEncrypted = true)
+        public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {
             if (isEncrypted)
-                message = await _messageDecryptor.DecryptAsync(message);
+                message.PlainText = await _messageDecryptor.DecryptAsync(message);
 
             Messages.Add(message);
 

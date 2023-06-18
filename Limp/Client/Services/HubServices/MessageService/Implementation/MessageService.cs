@@ -1,4 +1,6 @@
-﻿using Limp.Client.Cryptography;
+﻿using Limp.Client.ClientOnlyModels;
+using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
+using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
@@ -110,7 +112,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     }
                 }
 
-                await _messageBox.AddMessageAsync(message);
+                await _messageBox.AddMessageAsync(message.AsClientMessage());
 
                 //If we dont yet know a partner Public Key and we dont have an AES Key for chat with partner,
                 //we will request it from server side.
@@ -229,7 +231,10 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     DateSent = DateTime.UtcNow,
                     Sender = myName,
                     TargetGroup = partnersUsername,
-                    PlainTextPayload = encryptedAESKey
+                    Cryptogramm = new()
+                    {
+                        Cyphertext = encryptedAESKey,
+                    }
                 };
 
                 if (hubConnection != null)
@@ -287,12 +292,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
         {
-            await _messageBox.AddMessageAsync(new Message
+            await _messageBox.AddMessageAsync(new ClientMessage
             {
                 Id = messageId,
                 Sender = myUsername,
                 TargetGroup = targetGroup,
-                PlainTextPayload = text,
+                PlainText = text,
                 DateSent = DateTime.UtcNow
             },
             isEncrypted: false);
@@ -300,12 +305,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
         private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId)
         {
-            await _undeliveredMessagesRepository.AddAsync(new Message
+            await _undeliveredMessagesRepository.AddAsync(new ClientMessage
             {
                 Id = messageId,
                 Sender = myUsername,
                 TargetGroup = targetGroup,
-                PlainTextPayload = text,
+                PlainText = text,
                 DateSent = DateTime.UtcNow
             });
         }

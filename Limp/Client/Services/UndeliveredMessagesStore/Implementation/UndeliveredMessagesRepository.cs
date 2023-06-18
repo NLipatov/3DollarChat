@@ -1,4 +1,4 @@
-﻿using LimpShared.Models.Message;
+﻿using Limp.Client.ClientOnlyModels;
 using Microsoft.JSInterop;
 using System.Text.Json;
 
@@ -14,18 +14,18 @@ namespace Limp.Client.Services.UndeliveredMessagesStore.Implementation
             _jSRuntime = jSRuntime;
         }
 
-        public async Task AddAsync(Message messages)
+        public async Task AddAsync(ClientMessage messages)
         {
-            List<Message> undelivered = await GetUndeliveredAsync();
+            List<ClientMessage> undelivered = await GetUndeliveredAsync();
 
             undelivered.Add(messages);
 
             await SaveUndeliveredListAsync(undelivered);
         }
 
-        public async Task AddRange(List<Message> messages)
+        public async Task AddRange(List<ClientMessage> messages)
         {
-            List<Message> undelivered = await GetUndeliveredAsync();
+            List<ClientMessage> undelivered = await GetUndeliveredAsync();
 
             undelivered.AddRange(messages);
 
@@ -34,9 +34,9 @@ namespace Limp.Client.Services.UndeliveredMessagesStore.Implementation
 
         public async Task DeleteAsync(Guid messageId)
         {
-            List<Message> undelivered = await GetUndeliveredAsync();
+            List<ClientMessage> undelivered = await GetUndeliveredAsync();
 
-            Message? message = undelivered.FirstOrDefault(x => x.Id == messageId);
+            ClientMessage? message = undelivered.FirstOrDefault(x => x.Id == messageId);
             if(message != null)
             {
                 undelivered.Remove(message);
@@ -46,14 +46,14 @@ namespace Limp.Client.Services.UndeliveredMessagesStore.Implementation
 
         public async Task DeleteRangeAsync(Guid[] messageIds)
         {
-            List<Message> undelivered = await GetUndeliveredAsync();
+            List<ClientMessage> undelivered = await GetUndeliveredAsync();
 
-            List<Message> messages = undelivered.Where(x=>messageIds.Any(id => id == x.Id)).ToList();
+            List<ClientMessage> messages = undelivered.Where(x=>messageIds.Any(id => id == x.Id)).ToList();
 
             await SaveUndeliveredListAsync(messages);
         }
 
-        public async Task<List<Message>> GetUndeliveredAsync()
+        public async Task<List<ClientMessage>> GetUndeliveredAsync()
         {
             string? undeliveredMessagesSerialized = await _jSRuntime
                 .InvokeAsync<string?>("localStorage.getItem", localStorageObjectName);
@@ -61,12 +61,12 @@ namespace Limp.Client.Services.UndeliveredMessagesStore.Implementation
             if(string.IsNullOrWhiteSpace(undeliveredMessagesSerialized))
                 return new(0);
 
-            List<Message>? undeliveredMessages = JsonSerializer.Deserialize<List<Message>>(undeliveredMessagesSerialized);
+            List<ClientMessage>? undeliveredMessages = JsonSerializer.Deserialize<List<ClientMessage>>(undeliveredMessagesSerialized);
 
             return undeliveredMessages ?? new(0);
         }
 
-        public async Task SaveUndeliveredListAsync(List<Message> messages)
+        public async Task SaveUndeliveredListAsync(List<ClientMessage> messages)
         {
             string undeliveredMessagesSerialized = JsonSerializer.Serialize(messages);
 

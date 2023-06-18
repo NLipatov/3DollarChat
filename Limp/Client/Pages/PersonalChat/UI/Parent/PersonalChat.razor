@@ -1,4 +1,5 @@
 ﻿@page "/user/{topicName?}"
+@using Limp.Client.ClientOnlyModels;
 @using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 @using Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -119,7 +120,7 @@
     {
         if(AESKey != null)
         {
-            List<Message> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+            List<ClientMessage> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
 
             if (undelivered.Count == 0)
                 return;
@@ -128,7 +129,7 @@
 
             foreach (var message in undelivered)
             {
-                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainTextPayload ?? string.Empty, topicName, myUsername, message.Id));
+                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainText ?? string.Empty, topicName, myUsername, message.Id));
             }
 
             foreach (var message in toBeSend)

@@ -1,4 +1,5 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.ClientOnlyModels;
+using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
 using LimpShared.Models.Message;
 using Microsoft.JSInterop;
@@ -13,7 +14,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
             if (string.IsNullOrWhiteSpace(cryptogramm.IV))
                 throw new ArgumentException("Please provide an IV");
@@ -29,10 +30,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             string decryptedMessage = await _jSRuntime
                 .InvokeAsync<string>("AESDecryptMessage", cryptogramm.Cyphertext, key.Value.ToString());
 
-            return new Cryptogramm
-            {
-                PlainText = decryptedMessage
-            };
+            return decryptedMessage;
         }
 
         public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)

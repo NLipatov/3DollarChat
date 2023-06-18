@@ -1,10 +1,11 @@
-﻿@using LimpShared.Models.Message;
+﻿@using Limp.Client.ClientOnlyModels;
+@using LimpShared.Models.Message;
 
 @if(message != null)
 {
     <div class="message @messageClass">
         <div class="message-text">
-            <span>@(message.PlainTextPayload)</span>
+            <span>@(message.PlainText)</span>
         </div>
         <div class="timestamp">
             <span>@message.DateSent.ToString("hh:mm")</span>
@@ -36,7 +37,7 @@
 
 @code {
     [Parameter]
-    public Message? message { get; set; }
+    public ClientMessage? message { get; set; }
 
     [Parameter]
     public string? myUsername { get; set; }

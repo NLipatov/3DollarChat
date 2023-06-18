@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.UndeliveredMessagesStore
 {

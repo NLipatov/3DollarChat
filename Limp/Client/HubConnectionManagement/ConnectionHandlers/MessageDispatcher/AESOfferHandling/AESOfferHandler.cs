@@ -1,9 +1,9 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography;
+﻿using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.Services.CloudKeyService;
 using LimpShared.Encryption;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {

@@ -1,6 +1,4 @@
-﻿using ClientServerCommon.Models.HubMessages;
-using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography;
+﻿using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
@@ -13,6 +11,8 @@ using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
+using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -75,7 +75,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             .Build();
 
             #region Event handlers registration
-            hubConnection.On<UsersOnlineMessage>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });

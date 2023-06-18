@@ -1,10 +1,10 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.HubMessages;
+using LimpShared.Models.ConnectedUsersManaging;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public interface IOnlineUsersManager
     {
-        UsersOnlineMessage FormUsersOnlineMessage();
+        UserConnectionsReport FormUsersOnlineMessage();
     }
 }

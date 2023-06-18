@@ -1,11 +1,9 @@
 ﻿@using System.Text.Json;
 @using System.Text;
-@using AuthAPI.DTOs.Claims;
-@using AuthAPI.DTOs.User;
 @using System.Web;
-@using ClientServerCommon.Models.Login;
 @using Limp.Client.UIComponents.InputForms.Login
-@using LimpShared.Authentification;
+@using LimpShared.Models.Authentication.Models;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using Microsoft.AspNetCore.SignalR.Client;
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
@@ -42,7 +40,7 @@
         await hubConnection.StartAsync();
     }
 
-    private async Task OnLogIn(UserDTO loggingInUser)
+    private async Task OnLogIn(UserAuthentication loggingInUser)
     {
         if (hubConnection == null)
             throw new ApplicationException("No connection with Hub.");

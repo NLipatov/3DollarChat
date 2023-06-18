@@ -1,7 +1,7 @@
 ﻿using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Authentification;
+using LimpShared.Models.Authentication.Models;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {

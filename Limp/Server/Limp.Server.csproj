@@ -13,7 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Client\Limp.Client.csproj" />
-    <ProjectReference Include="..\Shared\ClientServerCommon.csproj" />
 	  <PackageReference Include="Confluent.Kafka" Version="2.1.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
 	  <PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="7.0.4" />

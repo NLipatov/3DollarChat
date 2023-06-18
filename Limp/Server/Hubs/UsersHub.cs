@@ -1,12 +1,12 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.HubMessages;
 using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.DTOs.PublicKey;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using LimpShared.Models.ConnectedUsersManaging;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -82,7 +82,7 @@ namespace Limp.Server.Hubs
         public async Task PushOnlineUsersToClients()
         {
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
-            UsersOnlineMessage userConnections = _onlineUsersManager.FormUsersOnlineMessage();
+            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
             //Pushes set of clients to all the clients
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }

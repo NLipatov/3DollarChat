@@ -1,5 +1,5 @@
 ﻿@page "/contacts"
-@using ClientServerCommon.Models.HubMessages;
+@using LimpShared.Models.ConnectedUsersManaging
 @using Limp.Client.Pages.Contacts.UI.Child;
 @using ClientServerCommon.Models;
 @using Limp.Client.Pages.Contacts.Models;
@@ -8,6 +8,7 @@
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.UIComponents.ContactItem;
+@using LimpShared.Models.ConnectedUsersManaging;
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -54,7 +55,7 @@
     private List<Contact> ContactsList = new();
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
-    private UsersOnlineMessage _usersOnlineMessage { get; set; } = new();
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -107,13 +108,13 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<UsersOnlineMessage>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UserConnectionsReport>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
     }
 
-    private async Task UpdateContacts(UsersOnlineMessage updatedUserConnections)
+    private async Task UpdateContacts(UserConnectionsReport updatedUserConnections)
     {
         TryUpdateLastReceivedContacts(updatedUserConnections);
 
@@ -135,7 +136,7 @@
         StateHasChanged();
     }
 
-    private void TryUpdateLastReceivedContacts(UsersOnlineMessage usersOnlineMessage)
+    private void TryUpdateLastReceivedContacts(UserConnectionsReport usersOnlineMessage)
     {
         if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {

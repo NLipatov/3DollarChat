@@ -1,8 +1,7 @@
-﻿using AuthAPI.DTOs.User;
-using ClientServerCommon.Models.Login;
-using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Authentification;
+﻿using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -15,13 +14,13 @@ namespace Limp.Server.Hubs
             _serverHttpClient = serverHttpClient;
         }
 
-        public async Task Register(UserDTO userDto)
+        public async Task Register(UserAuthentication userDto)
         {
             AuthResult result = await _serverHttpClient.Register(userDto);
 
             await Clients.Caller.SendAsync("OnRegister", result);
         }
-        public async Task LogIn(UserDTO userDto)
+        public async Task LogIn(UserAuthentication userDto)
         {
             var result = await _serverHttpClient.GetJWTPairAsync(userDto);
 

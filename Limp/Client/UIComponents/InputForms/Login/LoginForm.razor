@@ -1,8 +1,8 @@
-﻿@using AuthAPI.DTOs.User;
-@using ClientServerCommon.Models.Login;
-@using Limp.Client.UIComponents.InputForms.InputBoxes
+﻿@using Limp.Client.UIComponents.InputForms.InputBoxes
 @using Limp.Client.UIComponents.InputForms.Login.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
+@using LimpShared.Models.Authentication.Models;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
 
 @if (LoginAttemptResult.Result != AuthResultType.Success)
 {
@@ -83,7 +83,7 @@ else
 
 @code {
     [Parameter]
-    public Action<UserDTO> OnLoginEvent { get; set; } = ((dto) => throw new ApplicationException
+    public Action<UserAuthentication> OnLoginEvent { get; set; } = ((dto) => throw new ApplicationException
     ($"At {nameof(LoginFormModel)} component please provide a handler for event: {nameof(OnLogin)}"));
 
     [Parameter]
@@ -93,12 +93,12 @@ else
 
     private void OnLogin()
     {
-        UserDTO data = new UserDTO()
+        UserAuthentication authenticationData = new()
             {
                 Username = LoginFormModel.Username,
                 Password = LoginFormModel.Password,
             };
 
-        OnLoginEvent(data);
+        OnLoginEvent(authenticationData);
     }
 }

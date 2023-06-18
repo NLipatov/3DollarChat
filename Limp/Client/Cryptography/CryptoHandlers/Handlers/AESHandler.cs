@@ -1,6 +1,6 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.Cryptography.KeyStorage;
 using LimpShared.Encryption;
+using LimpShared.Models.Message;
 using Microsoft.JSInterop;
 
 namespace Limp.Client.Cryptography.CryptoHandlers.Handlers

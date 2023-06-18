@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 using Microsoft.JSInterop;
 using System.Text.Json;
 

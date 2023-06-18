@@ -1,12 +1,12 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.HubMessages;
-using ClientServerCommon.Models.Message;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
+using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.MessageDispatcher
@@ -65,7 +65,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task PushOnlineUsersToClients()
         {
-            UsersOnlineMessage userConnections = _onlineUsersManager.FormUsersOnlineMessage();
+            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 

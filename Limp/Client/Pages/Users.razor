@@ -1,6 +1,5 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
-@using ClientServerCommon.Models.HubMessages;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
@@ -9,6 +8,7 @@
 @using Limp.Client.Services;
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.UIComponents.ContactItem
+@using LimpShared.Models.ConnectedUsersManaging;
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
@@ -36,7 +36,7 @@
 </AuthenticatedView>
 
 @code {
-    private UsersOnlineMessage? _usersOnlineMessage { get; set; }
+    private UserConnectionsReport? _usersOnlineMessage { get; set; }
     private string myUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
@@ -63,7 +63,7 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<UsersOnlineMessage>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
@@ -80,7 +80,7 @@
         return myUsername;
     }
 
-    private void UpdateUsersList(UsersOnlineMessage usersOnlineMessage)
+    private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
         if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {

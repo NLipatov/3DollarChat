@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender

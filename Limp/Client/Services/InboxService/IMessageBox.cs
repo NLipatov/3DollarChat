@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 using System.Collections.ObjectModel;
 
 namespace Limp.Client.Services.InboxService

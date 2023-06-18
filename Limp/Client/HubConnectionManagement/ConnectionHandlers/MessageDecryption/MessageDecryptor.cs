@@ -1,6 +1,6 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography;
+﻿using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.HubInteraction.Handlers.MessageDecryption;
 

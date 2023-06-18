@@ -1,9 +1,7 @@
 ﻿@page "/register"
-@using AuthAPI.DTOs.User;
-@using ClientServerCommon.Models.Login;
-@using AuthAPI.DTOs.Claims;
 @using Limp.Client.UIComponents.InputForms.Registration
-@using LimpShared.Authentification;
+@using LimpShared.Models.Authentication.Models;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using System.ComponentModel.DataAnnotations;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage;
@@ -43,7 +41,7 @@
         await hubConnection.StartAsync();
     }
 
-    async Task OnRegister(UserDTO newUserDTO)
+    async Task OnRegister(UserAuthentication newUserDTO)
     {
         if (hubConnection == null)
             throw new ApplicationException("No connection with Hub.");

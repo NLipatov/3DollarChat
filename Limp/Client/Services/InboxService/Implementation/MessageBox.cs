@@ -1,7 +1,7 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+﻿using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.UndeliveredMessagesStore;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.InboxService.Implementation
 {

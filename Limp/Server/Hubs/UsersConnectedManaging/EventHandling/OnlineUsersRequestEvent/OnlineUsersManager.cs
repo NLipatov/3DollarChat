@@ -1,12 +1,11 @@
-﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.HubMessages;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using LimpShared.Models.ConnectedUsersManaging;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public class OnlineUsersManager : IOnlineUsersManager
     {
-        public UsersOnlineMessage FormUsersOnlineMessage()
+        public UserConnectionsReport FormUsersOnlineMessage()
         {
             List<UserConnection> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .Where(x => x.Value.Count > 0)

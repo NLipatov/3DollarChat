@@ -1,9 +1,9 @@
-﻿@using AuthAPI.DTOs.Claims;
-@using AuthAPI.DTOs.User;
-@using ClientServerCommon.Models.Login;
-@using Limp.Client.UIComponents.InputForms.InputBoxes
+﻿@using Limp.Client.UIComponents.InputForms.InputBoxes
 @using Limp.Client.UIComponents.InputForms.Registration.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
+@using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
+@using LimpShared.Models.Authentication.Models;
 
 <div class="registration-page-content">
     <EditForm Model="@Credentials" OnSubmit="OnRegister">
@@ -54,7 +54,7 @@
 
 @code {
     [Parameter]
-    public Action<UserDTO> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
+    public Action<UserAuthentication> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
     ($"At {nameof(RegistrationForm)} component please provide a handler for event: {nameof(OnRegisterEvent)}"));
 
     [Parameter]
@@ -85,7 +85,7 @@
             return;
         }
 
-        UserDTO data = new UserDTO()
+        UserAuthentication authenticationData = new()
         {
             Username = Credentials.Username,
             Password = Credentials.PasswordConfirmation,
@@ -99,6 +99,6 @@
             }
         };
 
-        OnRegisterEvent(data);
+        OnRegisterEvent(authenticationData);
     }
 }

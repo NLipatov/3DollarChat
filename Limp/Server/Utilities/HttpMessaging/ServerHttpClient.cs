@@ -1,9 +1,7 @@
-﻿using AuthAPI.DTOs.User;
-using ClientServerCommon.Models.Login;
-using LimpShared.Authentification;
-using LimpShared.DTOs.PublicKey;
-using LimpShared.DTOs.User;
-using LimpShared.ResultTypeEnum;
+﻿using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using LimpShared.Models.Authentication.Models.UserAuthentication;
+using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
 using System.Text;
 using System.Text.Json;
 
@@ -17,7 +15,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             _configuration = configuration;
         }
 
-        public async Task<AuthResult> Register(UserDTO userDTO)
+        public async Task<AuthResult> Register(UserAuthentication userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
@@ -28,7 +26,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             var response = await client.PostAsync(url, content);
 
             var serializedResponse = await response.Content.ReadAsStringAsync();
-            UserOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserOperationResult>(serializedResponse);
+            UserAuthenticationOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserAuthenticationOperationResult>(serializedResponse);
 
             if (deserializedResponse == null)
             {
@@ -42,7 +40,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             };
         }
 
-        public async Task<AuthResult> GetJWTPairAsync(UserDTO userDTO)
+        public async Task<AuthResult> GetJWTPairAsync(UserAuthentication userDTO)
         {
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 

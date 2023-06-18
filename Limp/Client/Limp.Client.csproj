@@ -40,7 +40,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\LimpShared\LimpShared\LimpShared.csproj" />
-    <ProjectReference Include="..\Shared\ClientServerCommon.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -1,14 +1,14 @@
 ﻿@page "/user/{topicName?}"
 @using Limp.Client.ClientOnlyModels;
 @using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
-@using Limp.Client.Pages.PersonalChat.UI.Childs.MessageInput
+@using Limp.Client.Pages.Chat.UI.Childs.MessageInput
 @using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction.Handlers;
 @using Limp.Client.HubInteraction;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations;
-@using Limp.Client.Pages.PersonalChat.UI.Childs.ChatHeader
+@using Limp.Client.Pages.Chat.Logic.TokenRelatedOperations;
+@using Limp.Client.Pages.Chat.UI.Childs.ChatHeader
 @using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.CloudKeyService.Models;
 @using Limp.Client.Services.HubService.UsersService;
@@ -24,8 +24,8 @@
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
 @using Limp.Client.Services.InboxService;
-@using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
-@using Limp.Client.Pages.PersonalChat.UI.Childs.MessageCollectionDispaying;
+@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+@using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
 @using Limp.Client.Pages.AuthenticationChecks
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS

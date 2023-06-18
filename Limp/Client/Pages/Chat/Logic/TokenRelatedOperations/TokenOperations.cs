@@ -2,7 +2,7 @@
 using Limp.Client.Services.JWTReader;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Pages.PersonalChat.Logic.TokenRelatedOperations
+namespace Limp.Client.Pages.Chat.Logic.TokenRelatedOperations
 {
     public static class TokenOperations
     {

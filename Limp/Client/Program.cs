@@ -4,7 +4,7 @@ using Limp.Client.Cryptography;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 using Limp.Client.HubInteraction.EventExecution;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
-using Limp.Client.Pages.PersonalChat.Logic.MessageBuilder;
+using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;

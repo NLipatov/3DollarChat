@@ -9,13 +9,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Pages\PersonalChat\Logic\ComponentBackingServices\**" />
+    <Compile Remove="Pages\Chat\Logic\ComponentBackingServices\**" />
     <Compile Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
-    <Content Remove="Pages\PersonalChat\Logic\ComponentBackingServices\**" />
+    <Content Remove="Pages\Chat\Logic\ComponentBackingServices\**" />
     <Content Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
-    <EmbeddedResource Remove="Pages\PersonalChat\Logic\ComponentBackingServices\**" />
+    <EmbeddedResource Remove="Pages\Chat\Logic\ComponentBackingServices\**" />
     <EmbeddedResource Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
-    <None Remove="Pages\PersonalChat\Logic\ComponentBackingServices\**" />
+    <None Remove="Pages\Chat\Logic\ComponentBackingServices\**" />
     <None Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
   </ItemGroup>
 

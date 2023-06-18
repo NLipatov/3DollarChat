@@ -1,6 +1,6 @@
 ﻿using LimpShared.Models.Message;
 
-namespace Limp.Client.Pages.PersonalChat.Logic.MessageBuilder
+namespace Limp.Client.Pages.Chat.Logic.MessageBuilder
 {
     public interface IMessageBuilder
     {

@@ -22,6 +22,7 @@ using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation;
 using Limp.Client.Services.HubServices.MessageService;
 using Limp.Client.Services.HubServices.MessageService.Implementation;
+using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.InboxService.Implementation;
 using Limp.Client.Services.LocalKeyChainService.Implementation;
@@ -52,5 +53,6 @@ builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
 builder.Services.AddTransient<IBrowserKeyStorage, BrowserKeyStorage>();
 builder.Services.AddTransient<IUndeliveredMessagesRepository, UndeliveredMessagesRepository>();
+builder.Services.AddTransient<IUndeliveredMessageService, UndeliveredMessageService>();
 
 await builder.Build().RunAsync();

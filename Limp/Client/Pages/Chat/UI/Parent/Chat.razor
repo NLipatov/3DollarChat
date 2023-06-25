@@ -49,7 +49,7 @@
             <KeyBeingTransfered IsDisplayed=@(AESKey == null) />
 
             <ChatHeader 
-                IsOnline=true
+                IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
                 PartnerName=@topicName
                 OnAESRenewal=@RenewAES 
                 AESKey=@AESKey/>
@@ -78,6 +78,7 @@
     private Key? AESKey { get; set; }
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -107,7 +108,8 @@
     {
         _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
         _hubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<UserConnection>(UserIsOnline, "IsUserOnlineResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnection>(OnIsUserOnlineResponse, "IsUserOnlineResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
     }
 
     private void OnAESUpdated(bool keyRenewed)
@@ -116,25 +118,32 @@
         StateHasChanged();
     }
 
-    private async Task UserIsOnline(UserConnection userConnection)
+    private async Task OnIsUserOnlineResponse(UserConnection userConnection)
     {
-        if(AESKey != null)
+        if(userConnection.Username == topicName)
         {
-            List<ClientMessage> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
-
-            if (undelivered.Count == 0)
-                return;
-
-            List<Message> toBeSend = new(undelivered.Count);
-
-            foreach (var message in undelivered)
+            if (userConnection.ConnectionIds.Count > 0)
             {
-                toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainText ?? string.Empty, topicName, myUsername, message.Id));
+                _usersOnlineMessage.UserConnections = new UserConnection[1] { userConnection };
             }
-
-            foreach (var message in toBeSend)
+            if (AESKey != null)
             {
-                await _messageService.SendMessage(message);
+                List<ClientMessage> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+
+                if (undelivered.Count == 0)
+                    return;
+
+                List<Message> toBeSend = new(undelivered.Count);
+
+                foreach (var message in undelivered)
+                {
+                    toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainText ?? string.Empty, topicName, myUsername, message.Id));
+                }
+
+                foreach (var message in toBeSend)
+                {
+                    await _messageService.SendMessage(message);
+                }
             }
         }
     }
@@ -163,5 +172,14 @@
 
         await _localKeyManager.SaveInMemoryKeysInLocalStorage();
         StateHasChanged();
+    }
+
+    private void OnUsersOnlineUpdate(UserConnectionsReport usersOnlineMessage)
+    {
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        {
+            _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
+        }
     }
 }

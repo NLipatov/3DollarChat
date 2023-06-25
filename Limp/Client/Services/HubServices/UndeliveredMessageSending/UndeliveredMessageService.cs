@@ -56,7 +56,6 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
 
         private async Task SendUndelivered(string username)
         {
-            //await Console.Out.WriteLineAsync($"Sending undelivered for {username}");
             Key? AESKey = await _browserKeyStorage.GetAESKeyForChat(username);
             if (AESKey != null)
             {

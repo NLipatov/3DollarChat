@@ -85,8 +85,7 @@
         if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
             _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
         }
-
-        StateHasChanged();
     }
 }

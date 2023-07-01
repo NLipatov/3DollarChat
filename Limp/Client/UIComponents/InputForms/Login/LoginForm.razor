@@ -3,6 +3,7 @@
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
+@inject NavigationManager _navigationManager
 
 @if (LoginAttemptResult.Result != AuthResultType.Success)
 {
@@ -57,6 +58,12 @@
                                 <i class="bi bi-fingerprint"></i>Continue with WebAuthn
                             </button>
                         </Tooltip>
+
+                        <div class="divider d-flex align-items-center my-4">
+                            <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
+                        </div>
+
+                        <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/login"))>Register</a>
 
                         <div class="validation-results">
                             <DataAnnotationsValidator />

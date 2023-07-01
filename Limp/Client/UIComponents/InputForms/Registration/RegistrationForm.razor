@@ -4,6 +4,7 @@
 @using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using LimpShared.Models.Authentication.Models;
+@using System.Text.RegularExpressions;
 
 <div class="registration-page-content">
     <EditForm Model="@Credentials" OnSubmit="OnRegister">
@@ -12,93 +13,217 @@
                 <span>Create a Limp Messenger Account</span>
             </div>
             <div class="registration-form">
-                <InputBox InputText="@Credentials.Username"
+                <InputBox InputText="@Credentials.Username.Value"
                           IconClass="fa-solid fa-user"
                           Placeholder="Username"
                           BindEvent="oninput"                
                           IsRequired="true"
-                          OnInput="((value) => Credentials.Username = value)"/>
+                          OnInput="((value) => {Credentials.Username.Value = value; Credentials.Username.IsTouched = true; ValidateUsername();})" />
 
-                <InputBox InputText="@Credentials.Password"
+                @if (Credentials.Username.IsTouched && !Credentials.Username.IsValid)
+                {
+                    <div style="
+                        display: flex;
+                        flex-direction: column;
+                        gap: 10px;
+                        color:red;">
+
+                        @foreach (var errorMessage in Credentials.Username.ErrorMessages)
+                        {
+                            <span>@errorMessage</span>
+                        }
+                    </div>
+                }
+
+                <InputBox InputText="@Credentials.Password.Value"
                           IconClass="fa-solid fa-key"
                           Placeholder="Password"
-                          BindEvent="oninput"                
+                          BindEvent="oninput"
                           IsRequired="true"
                           Type="password"
-                          OnInput="((value) => Credentials.Password = value)" />
+                          OnInput="((value) => {Credentials.Password.Value = value; Credentials.Password.IsTouched = true; ValidatePassword();})" />
 
-                <InputBox InputText="@Credentials.PasswordConfirmation" 
+                @if (Credentials.Password.IsTouched && !Credentials.Password.IsValid)
+                {
+                    <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    color:red;">
+
+                        @foreach (var errorMessage in Credentials.Password.ErrorMessages)
+                        {
+                            <span>@errorMessage</span>
+                        }
+                    </div>
+                }
+
+                <InputBox InputText="@Credentials.PasswordConfirmation.Value" 
                     IconClass="fa-solid fa-key" 
                     Placeholder="Password confirmation" 
                     BindEvent="oninput"
                     IsRequired="true"
                     Type="password"
-                    OnInput="((value) => Credentials.PasswordConfirmation = value)" />
+                    OnInput="((value) => { Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.IsTouched = true; ValidatePasswordConfirmation();})" />
+
+                @if (Credentials.PasswordConfirmation.IsTouched && !Credentials.PasswordConfirmation.IsValid)
+                {
+                    <div style="
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    color:red;">
+
+                        @foreach (var errorMessage in Credentials.PasswordConfirmation.ErrorMessages)
+                        {
+                            <span>@errorMessage</span>
+                        }
+                    </div>
+                }
 
                 <button class="submit-button">Submit</button>
             </div>
         </div>
 
-        <ResultMessagesBlock
-            Result="RegistrationAttemptResult"/>
-
-        <div class="validation-results">
-                <DataAnnotationsValidator />
-            <ValidationSummary style="
-            display: flex;
-            flex-direction: column;
-            gap: 10px;" />
-            </div>
+        <ResultMessagesBlock Result="RegistrationAttemptResult" />
     </EditForm>
 </div>
 
 @code {
-    [Parameter]
-    public Action<UserAuthentication> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
-    ($"At {nameof(RegistrationForm)} component please provide a handler for event: {nameof(OnRegisterEvent)}"));
+        [Parameter]
+        public Action<UserAuthentication> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
+        ($"At {nameof(RegistrationForm)} component please provide a handler for event: {nameof(OnRegisterEvent)}"));
 
-    [Parameter]
-    public AuthResult RegistrationAttemptResult { get; set; } = new();
+        [Parameter]
+        public AuthResult RegistrationAttemptResult { get; set; } = new();
 
     private RegisterFormModel Credentials = new();
 
-    private bool IsPasswordSameAsConfirmation()
+    private void ValidateUsername()
     {
-        if (Credentials.Password != Credentials.PasswordConfirmation)
+        Credentials.Username.ErrorMessages.Clear();
+        if (Credentials.Username.Value == "You")
         {
-            RegistrationAttemptResult = new AuthResult
-            {
-                Result = AuthResultType.Fail,
-                Message = "Password does not match Password Confirmation!"
-            };
-
-            return false;
+            Credentials.Username.IsValid = false;
+            Credentials.Username.ErrorMessages.Add("You cant use 'You' as your username.");
         }
+        else if (!Regex.IsMatch(Credentials.Username.Value, @"^[a-zA-Z0-9]+$"))
+        {
+            Credentials.Username.IsValid = false;
+            Credentials.Username.ErrorMessages.Add("Only english alhabet letters and arabic numbers are allowed.");
+        }
+        else if (Credentials.Username.Value.Length < 3)
+        {
+            Credentials.Username.IsValid = false;
+            Credentials.Username.ErrorMessages.Add("Your username should have atleast 3 characters.");
+        }
+        else
+        {
+            Credentials.Username.IsValid = true;
+        }
+    }
 
-        return true;
+    private void ValidatePassword()
+    {
+        Credentials.Password.ErrorMessages.Clear();
+        if (Credentials.Password.Value.Length < 16)
+        {
+            Credentials.Password.IsValid = false;
+            Credentials.Password.ErrorMessages.Add("Password should be atleast 16 characters long.");
+        }
+        else if (!(Credentials.Password.Value.Any(char.IsUpper) && Credentials.Password.Value.Any(char.IsLower)))
+        {
+            Credentials.Password.IsValid = false;
+            Credentials.Password.ErrorMessages.Add("Password should contain lower and upper case characters.");
+        }
+        else if (!Regex.IsMatch(Credentials.Password.Value, @"[0-9]"))
+        {
+            Credentials.Password.IsValid = false;
+            Credentials.Password.ErrorMessages.Add("Password should contain atleast 1 arabic number");
+        }
+        else if (!Regex.IsMatch(Credentials.Password.Value, @"[!@#$%^&*()_+=\[\]{};':\""<>,.?\\/|]"))
+        {
+            Credentials.Password.IsValid = false;
+            Credentials.Password.ErrorMessages.Add("Password should contain atleast 1 special character.");
+        }
+        else
+        {
+            Credentials.Password.IsValid = true;
+        }
+    }
+
+    private void ValidatePasswordConfirmation()
+    {
+        Credentials.PasswordConfirmation.ErrorMessages.Clear();
+        if (Credentials.Password.Value != Credentials.PasswordConfirmation.Value)
+        {
+            Credentials.PasswordConfirmation.IsValid = false;
+            Credentials.PasswordConfirmation.ErrorMessages.Add("Password confirmation not matches with password.");
+        }
+        else
+        {
+            Credentials.PasswordConfirmation.IsValid = true;
+        }
     }
 
     private void OnRegister()
     {
-        if(!IsPasswordSameAsConfirmation())
+        if (!ValidateCredentials())
         {
             return;
         }
 
         UserAuthentication authenticationData = new()
         {
-            Username = Credentials.Username,
-            Password = Credentials.PasswordConfirmation,
+            Username = Credentials.Username.Value,
+            Password = Credentials.PasswordConfirmation.Value,
             Claims = new List<UserClaimsDTO>
             {
                 new UserClaimsDTO
                 {
                     Name = "Name",
-                    Value = Credentials.Username,
+                    Value = Credentials.Username.Value,
                 }
             }
         };
 
         OnRegisterEvent(authenticationData);
+    }
+
+    private bool ValidateCredentials()
+    {
+        if(Credentials.Username.IsTouched)
+        {
+            ValidateUsername();
+        }
+        else
+        {
+            Credentials.Username.IsValid = false;
+            Credentials.Username.ErrorMessages.Add($"Fill in {nameof(Credentials.Username)}.");
+        }
+
+        if(Credentials.Password.IsTouched)
+        {
+            ValidatePassword();
+        }
+        else
+        {
+            Credentials.Password.IsValid = false;
+            Credentials.Password.ErrorMessages.Add($"Fill in {nameof(Credentials.Password)}.");
+        }
+
+        if(Credentials.PasswordConfirmation.IsTouched)
+        {
+            ValidatePasswordConfirmation();
+        }
+        else
+        {
+            Credentials.PasswordConfirmation.IsValid = false;
+            Credentials.PasswordConfirmation.ErrorMessages.Add($"Fill in {nameof(Credentials.Password)}.");
+        }
+
+        return Credentials.Username.IsValid && Credentials.Username.IsTouched 
+            && Credentials.Password.IsValid && Credentials.Password.IsTouched
+            && Credentials.PasswordConfirmation.IsValid && Credentials.PasswordConfirmation.IsTouched;
     }
 }

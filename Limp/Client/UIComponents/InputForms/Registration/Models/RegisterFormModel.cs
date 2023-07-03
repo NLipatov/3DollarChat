@@ -2,6 +2,9 @@
 
 namespace Limp.Client.UIComponents.InputForms.Registration.Models
 {
+    /// <summary>
+    /// Defines validation methods for its input boxes
+    /// </summary>
     public class RegisterFormModel
     {
         public CheckedInput Username = new("Username", ValidateUsername);

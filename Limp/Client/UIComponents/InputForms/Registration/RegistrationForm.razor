@@ -1,4 +1,5 @@
-﻿@using Limp.Client.UIComponents.InputForms.InputBoxes
+﻿@using Limp.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
+@using Limp.Client.UIComponents.InputForms.InputBoxes
 @using Limp.Client.UIComponents.InputForms.Registration.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
 @using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
@@ -7,99 +8,59 @@
 @using System.Text.RegularExpressions;
 
 <div class="registration-page-content">
-    <EditForm Model="@Credentials" OnSubmit="OnRegister">
-        <div class="form-content" style="display: @(RegistrationAttemptResult.Result == AuthResultType.Success ? "none" : "unset");">            
-            <div class="registration-form-header">
-                <span>Create a Limp Messenger Account</span>
-            </div>
-            <div class="registration-form">
-                <InputBox InputText="@Credentials.Username.Value"
-                          IconClass="fa-solid fa-user"
-                          Placeholder="Username"
-                          Label="Username"
-                          BindEvent="oninput"                
-                          IsRequired="true"
-                          OnInput="((value) => Credentials.Username.Value = value)" />
+    <section class="vh-100">
+        <div class="container py-5 h-100">
+            <div class="row d-flex align-items-center justify-content-center h-100">
+                <div class="col-md-8 col-lg-7 col-xl-6">
+                    <img src="https://svgur.com/i/sLL.svg"
+                         class="img-fluid" alt="man inputting his account password">
+                </div>
+                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                    <EditForm Model="@Credentials" OnSubmit="OnRegister">
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.Username"
+                            Placeholder="Username"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            OnInput="((value) => Credentials.Username.Value = value)" />
 
-                @if (Credentials.Username.IsTouched)
-                {
-                    <div style="
-                        display: flex;
-                        flex-direction: column;
-                        gap: 10px;
-                        color:red;">
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.Password"
+                            Placeholder="Password"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            Type="password"
+                            OnInput="((value) => Credentials.Password.Value = value)" />
 
-                        @foreach (var errorMessage in Credentials.Username.ErrorMessages)
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.PasswordConfirmation"
+                            Placeholder="Password confirmation"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            Type="password"
+                            OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+
+                        @if (ValidateForm())
                         {
-                            <span>@errorMessage</span>
+                            <button class="btn btn-primary btn-lg btn-block">Submit</button>
                         }
-                    </div>
-                }
-
-                <InputBox InputText="@Credentials.Password.Value"
-                IconClass="fa-solid fa-key"
-                Placeholder="Password"
-                Label="Password"
-                BindEvent="oninput"
-                IsRequired="true"
-                Type="password"
-                OnInput="((value) => Credentials.Password.Value = value)" />
-
-                @if (Credentials.Password.IsTouched)
-                {
-                    <div style="
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    color:red;">
-
-                        @foreach (var errorMessage in Credentials.Password.ErrorMessages)
+                        else
                         {
-                            <span>@errorMessage</span>
+                            <Tooltip Placement="TooltipPlacement.Right" Title="Fill in the form first">
+                                <button class="btn btn-secondary btn-lg btn-block" disabled>Submit</button>
+                            </Tooltip>
                         }
-                    </div>
-                }
 
-                <InputBox InputText="@Credentials.PasswordConfirmation.Value" 
-                    IconClass="fa-solid fa-key"
-                    Placeholder="Password confirmation"
-                    Label="Password confirmation"
-                    BindEvent="oninput"
-                    IsRequired="true"
-                    Type="password"
-                          OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+                        <ResultMessagesBlock 
+                            Result="RegistrationAttemptResult"
+                            SuccesLink="login"
+                            SuccessLinkDescription="To login page" />
 
-                @if (Credentials.PasswordConfirmation.IsTouched)
-                {
-                    <div style="
-                    display: flex;
-                    flex-direction: column;
-                    gap: 10px;
-                    color:red;">
-
-                        @foreach (var errorMessage in Credentials.PasswordConfirmation.ErrorMessages)
-                        {
-                            <span>@errorMessage</span>
-                        }
-                    </div>
-                }
-
-                @if (Credentials.Username.IsValid && Credentials.Password.IsValid && Credentials.PasswordConfirmation.Value == Credentials.Password.Value)
-                {
-                    <button class="btn btn-secondary btn-lg btn-block">Submit</button>
-                }
-                else
-                {
-                    <button class="btn btn-secondary btn-lg btn-block" disabled>Submit</button>
-                }
+                    </EditForm>
+                </div>
             </div>
         </div>
-
-        <ResultMessagesBlock 
-            Result="RegistrationAttemptResult" 
-            SuccesLink="login"
-            SuccessLinkDescription="To login page"/>
-    </EditForm>
+    </section>
 </div>
 
 @code {
@@ -130,4 +91,9 @@
 
         OnRegisterEvent(authenticationData);
     }
+
+    private bool ValidateForm() 
+    => Credentials.Username.IsValid 
+    && Credentials.Password.IsValid 
+    && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
 }

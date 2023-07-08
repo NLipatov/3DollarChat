@@ -1,6 +1,7 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Notifications;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -67,6 +68,8 @@
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
+
+        await RequestNotificationSubscriptionAsync();
     }
 
     private async Task<string> GetMyUsername()
@@ -86,6 +89,25 @@
         {
             _usersOnlineMessage = usersOnlineMessage;
             StateHasChanged();
+        }
+    }
+
+    private async Task RequestNotificationSubscriptionAsync()
+    {
+        var subscription = await _jS.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
+        if (subscription != null)
+        {
+            try
+            {
+                HttpClient httpClient = new();
+                httpClient.BaseAddress = new Uri("https://localhost:7273");
+                var response = await httpClient.PutAsJsonAsync("notifications/subscribe", subscription);
+                response.EnsureSuccessStatusCode();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+            }
         }
     }
 }

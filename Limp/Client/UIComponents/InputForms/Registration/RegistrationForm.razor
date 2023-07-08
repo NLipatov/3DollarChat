@@ -1,4 +1,5 @@
-﻿@using Limp.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
+﻿@using Limp.Client.Pages.AccountManagement.LogicHandlers;
+@using Limp.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
 @using Limp.Client.UIComponents.InputForms.InputBoxes
 @using Limp.Client.UIComponents.InputForms.Registration.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
@@ -6,6 +7,7 @@
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using LimpShared.Models.Authentication.Models;
 @using System.Text.RegularExpressions;
+@inject ILoginHandler _loginHandler
 
 <div class="registration-page-content">
     <section class="vh-100">

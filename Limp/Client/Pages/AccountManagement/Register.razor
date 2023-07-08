@@ -1,4 +1,5 @@
 ﻿@page "/register"
+@using Limp.Client.Pages.AccountManagement.LogicHandlers;
 @using Limp.Client.UIComponents.InputForms.Registration
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
@@ -9,6 +10,8 @@
 @using ClientServerCommon
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
+@inject ILoginHandler _loginHandler
+@inject NavigationManager _navigationManager
 @implements IAsyncDisposable;
 
 <PageTitle>Sign Up</PageTitle>
@@ -20,6 +23,7 @@
 @code {
     private HubConnection? hubConnection;
     private AuthResult lastRegisterAttemptResult { get; set; } = new();
+    private UserAuthentication? lastRegisterDTO { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -29,20 +33,36 @@
 
         hubConnection.On<AuthResult>("OnRegister", result =>
         {
-            lastRegisterAttemptResult = new AuthResult
+            //If registration attempt successfull — log in and redirect user
+            if(result.Result is AuthResultType.Success)
             {
-                Result = result.Result,
-                Message = result.Result == AuthResultType.Success ? "Account has been created, you can log in now." : result.Message,
-            };
-
-            StateHasChanged();
+                LogInAndRedirect(result);
+            }
+            //Else - display error message to user
+            else
+                StateHasChanged();
         });
 
         await hubConnection.StartAsync();
     }
 
-    async Task OnRegister(UserAuthentication newUserDTO)
+    private void LogInAndRedirect(AuthResult result)
     {
+        //If we have DTO with wich user was registered successfully, we can automatically log that user in
+        if (result.Result == AuthResultType.Success && lastRegisterDTO is not null)
+        {
+            _loginHandler.OnLogIn(lastRegisterDTO, ((authResult) =>
+            {
+                if (authResult.Result == AuthResultType.Success)
+                    _navigationManager.NavigateTo("/users");
+            }));
+        }
+    }
+
+    private async Task OnRegister(UserAuthentication newUserDTO)
+    {
+        lastRegisterDTO = newUserDTO;
+
         if (hubConnection == null)
             throw new ApplicationException("No connection with Hub.");
 

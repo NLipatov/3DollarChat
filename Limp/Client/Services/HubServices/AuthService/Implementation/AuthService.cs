@@ -7,6 +7,7 @@ using Microsoft.JSInterop;
 using System.Collections.Concurrent;
 using Limp.Client.Services.JWTReader;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.UserAuthentication;
 
 namespace Limp.Client.Services.HubService.AuthService.Implementation
 {
@@ -56,6 +57,11 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             hubConnection.On<bool>("OnTokenValidation", isTokenValid =>
             {
                 _callbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
+            });
+
+            hubConnection.On<AuthResult>("OnLoggingIn", async result =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnLogIn");
             });
 
             await hubConnection.StartAsync();
@@ -162,6 +168,14 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 return false;
 
             return hubConnection.State == HubConnectionState.Connected;
+        }
+
+        public async Task LogIn(UserAuthentication userAuthentication)
+        {
+            if (hubConnection == null)
+                throw new ApplicationException("No connection with Hub.");
+
+            await hubConnection.SendAsync("LogIn", userAuthentication);
         }
     }
 }

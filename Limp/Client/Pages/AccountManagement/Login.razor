@@ -1,6 +1,9 @@
 ﻿@using System.Text.Json;
 @using System.Text;
 @using System.Web;
+@using Limp.Client.Pages.AccountManagement.LogicHandlers;
+@using Limp.Client.Services.HubService.AuthService;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.UIComponents.InputForms.Login
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
@@ -8,6 +11,9 @@
 @inject IConfiguration _configuration;
 @inject IJSRuntime js
 @inject NavigationManager Navigation
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IAuthService _authService
+@inject ILoginHandler _loginHandler
 @page "/login"
 
 <LoginForm 
@@ -18,49 +24,28 @@
     private AuthResult? lasttokenFetchResult = new();
     private HubConnection? hubConnection;
 
-    protected override async Task OnInitializedAsync()
+    private void HandleOnLogInResponse(AuthResult authResult)
     {
-        hubConnection = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
-        .Build();
+        lasttokenFetchResult = authResult;
 
-        hubConnection.On<AuthResult>("OnLoggingIn", async result =>
+        if (lasttokenFetchResult.Result != AuthResultType.Fail)
         {
-            lasttokenFetchResult = result;
-
-            if (lasttokenFetchResult.Result != AuthResultType.Fail)
-            {
-                await StoreTokensAsync(result);
-                lasttokenFetchResult.Message = "You're logged in!";
-            }
-
-            StateHasChanged();
-        });
-
-        await hubConnection.StartAsync();
-    }
-
-    private async Task OnLogIn(UserAuthentication loggingInUser)
-    {
-        if (hubConnection == null)
-            throw new ApplicationException("No connection with Hub.");
-
-        await hubConnection.SendAsync("LogIn", loggingInUser);
-    }
-
-    private async Task StoreTokensAsync(AuthResult result)
-    {
-        if (String.IsNullOrWhiteSpace(result?.JWTPair?.AccessToken) || String.IsNullOrWhiteSpace(result?.JWTPair?.RefreshToken?.Token))
+            lasttokenFetchResult.Message = "You're logged in!";
+        }
+        else if (string.IsNullOrWhiteSpace(authResult?.JWTPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JWTPair?.RefreshToken?.Token))
         {
             lasttokenFetchResult = new AuthResult
                 {
-                    Message = "Authentification server response was invalid",
+                    Message = "Server authentification response was invalid",
                     Result = AuthResultType.Fail,
                 };
         }
 
-        await js.InvokeVoidAsync("localStorage.setItem", "access-token", result.JWTPair.AccessToken);
-        await js.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
+        StateHasChanged();
     }
 
+    private async Task OnLogIn(UserAuthentication loggingInUser)
+    {
+        await _loginHandler.OnLogIn(loggingInUser, HandleOnLogInResponse);
+    }
 }

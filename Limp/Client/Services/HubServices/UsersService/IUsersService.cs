@@ -1,5 +1,6 @@
 ﻿using ClientServerCommon.Models;
 using LimpShared.Encryption;
+using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubService.UsersService
@@ -16,5 +17,6 @@ namespace Limp.Client.Services.HubService.UsersService
         Guid SubscribeToUsernameResolved(Func<string, Task> callback);
         void RemoveUsernameResolved(Guid subscriptionId);
         Task CheckIfUserOnline(string username);
+        Task SubscribeToWebPushAsync(NotificationSubscriptionDTO subscriptionDTO);
     }
 }

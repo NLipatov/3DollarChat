@@ -4,6 +4,7 @@ using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -66,7 +67,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             await hubConnection.StartAsync();
 
-            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
+            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
 
             return hubConnection;
         }
@@ -170,6 +171,14 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             {
                 await ReconnectAsync();
             }
+        }
+
+        public async Task SubscribeToWebPushAsync(NotificationSubscriptionDTO subscriptionDTO)
+        {
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("SubscribeToWebPushNotifications", subscriptionDTO);
         }
     }
 }

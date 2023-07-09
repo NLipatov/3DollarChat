@@ -8,7 +8,7 @@ namespace Limp.Client.Pages.Chat.Logic.TokenRelatedOperations
     {
         public static async Task<string> ResolveMyUsername(IJSRuntime jSRuntime)
         {
-            string? accessToken = await JWTHelper.GetAccessToken(jSRuntime);
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(jSRuntime);
             //Reading username from access-token
             string myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
 

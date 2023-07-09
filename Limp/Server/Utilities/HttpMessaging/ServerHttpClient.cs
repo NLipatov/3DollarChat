@@ -2,6 +2,7 @@
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
+using LimpShared.Models.WebPushNotification;
 using System.Text;
 using System.Text.Json;
 
@@ -147,6 +148,31 @@ namespace Limp.Server.Utilities.HttpMessaging
                 var response = await client.GetAsync(requestUrl);
                 var pemEncodedKey = await response.Content.ReadAsStringAsync();
                 return pemEncodedKey;
+            }
+        }
+
+        public async Task SubscribeToWebPush(NotificationSubscriptionDTO subscriptionDTO)
+        {
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
+
+            using (HttpClient client = new())
+            {
+                await client.PutAsJsonAsync(requestUrl, subscriptionDTO);
+            }
+        }
+
+        public async Task<NotificationSubscriptionDTO[]> GetUserSubscriptions(string username)
+        {
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.GetAsync(requestUrl);
+                var serializedSubscriptions = await response.Content.ReadAsStringAsync();
+                return JsonSerializer.Deserialize<NotificationSubscriptionDTO[]>(serializedSubscriptions, options: new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new NotificationSubscriptionDTO[0];
             }
         }
     }

@@ -5,9 +5,11 @@ using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
+using Limp.Server.WebPushNotifications;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
+using WebPush;
 
 namespace Limp.Server.Hubs.MessageDispatcher
 {
@@ -18,19 +20,22 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IMessageSendHandler _messageSendHandler;
+        private readonly IWebPushSender _webPushSender;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
         IUserConnectedHandler<MessageHub> userConnectedHandler,
         IOnlineUsersManager onlineUsersManager,
-        IMessageSendHandler messageSender)
+        IMessageSendHandler messageSender,
+        IWebPushSender webPushSender)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
             _messageSendHandler = messageSender;
+            _webPushSender = webPushSender;
         }
 
         public async override Task OnConnectedAsync()
@@ -82,6 +87,9 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 throw new ArgumentException("Invalid target group of a message.");
 
             await _messageSendHandler.SendAsync(message, Clients);
+
+            if(message.Type == MessageType.UserMessage)
+                await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"https://google.com", message.TargetGroup);
         }
         public async Task MessageReceived(Guid messageId, string topicName) 
             => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);

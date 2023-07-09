@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="WebPushNotifications\Models\**" />
+    <Content Remove="WebPushNotifications\Models\**" />
+    <EmbeddedResource Remove="WebPushNotifications\Models\**" />
+    <None Remove="WebPushNotifications\Models\**" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.Server" Version="7.0.5" />
     <PackageReference Include="WebPush" Version="1.0.12" />
   </ItemGroup>

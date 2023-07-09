@@ -1,7 +1,6 @@
 ﻿@page "/users"
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.Notifications;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -10,6 +9,7 @@
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.UIComponents.ContactItem
 @using LimpShared.Models.ConnectedUsersManaging;
+@using LimpShared.Models.WebPushNotification;
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
@@ -46,7 +46,7 @@
     protected override async Task OnInitializedAsync()
     {
         //Shortcut for cases when user was not yet authenticated
-        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS))) return;
+        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessTokenAsync(_jS))) return;
 
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
@@ -69,12 +69,13 @@
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
 
-        await RequestNotificationSubscriptionAsync();
+        if (!(await IsPushPermissionGranted()))
+            await RequestPushPermission();
     }
 
     private async Task<string> GetMyUsername()
     {
-        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
         if (string.IsNullOrWhiteSpace(accessToken))
             return string.Empty;
 
@@ -92,17 +93,23 @@
         }
     }
 
-    private async Task RequestNotificationSubscriptionAsync()
+    #warning move push permission dialog to an parent component
+    private async Task<bool> IsPushPermissionGranted() => await _jS.InvokeAsync<string>("eval", "Notification.permission") == "granted";
+
+    private async Task RequestPushPermission()
     {
-        var subscription = await _jS.InvokeAsync<NotificationSubscription>("blazorPushNotifications.requestSubscription");
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ApplicationException
+            ("Could not subscribe to web push notifications because access token was empty string. Relogin needed.");
+
+        NotificationSubscriptionDTO? subscription = await _jS.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");
+        subscription.AccessToken = accessToken;
         if (subscription != null)
         {
             try
             {
-                HttpClient httpClient = new();
-                httpClient.BaseAddress = new Uri("https://localhost:7273");
-                var response = await httpClient.PutAsJsonAsync("notifications/subscribe", subscription);
-                response.EnsureSuccessStatusCode();
+                await _usersService.SubscribeToWebPushAsync(subscription);
             }
             catch (Exception ex)
             {

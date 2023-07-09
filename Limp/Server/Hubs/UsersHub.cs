@@ -7,6 +7,7 @@ using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs
@@ -112,6 +113,11 @@ namespace Limp.Server.Hubs
                 Username = username,
                 ConnectionIds = isOnline ? messageHubConnections : new string[0],
             });
+        }
+
+        public async Task SubscribeToWebPushNotifications(NotificationSubscriptionDTO notificationSubscriptionDTO)
+        {
+            await _serverHttpClient.SubscribeToWebPush(notificationSubscriptionDTO);
         }
     }
 }

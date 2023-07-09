@@ -1,4 +1,3 @@
-using Limp.Client.Notifications;
 using Limp.Server.Extensions;
 using Limp.Server.Hubs;
 using Limp.Server.Hubs.MessageDispatcher;
@@ -6,6 +5,8 @@ using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Limp.Server.WebPushNotifications;
+using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.ResponseCompression;
 using Org.BouncyCastle.Asn1.X509;
 using System.Text.Json;
@@ -33,6 +34,7 @@ builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
+builder.Services.AddTransient<IWebPushSender, WebPushSender>();
 
 var app = builder.Build();
 
@@ -65,11 +67,11 @@ app.MapHub<UsersHub>("/usersHub");
 app.MapHub<MessageHub>("/messageDispatcherHub");
 app.MapFallbackToFile("index.html");
 
-NotificationSubscription? _subscription;
+NotificationSubscriptionDTO? _subscription;
 // Subscribe to notifications
 app.MapPut("/notifications/subscribe", async (
     HttpContext context,
-    NotificationSubscription subscription) => {
+    NotificationSubscriptionDTO subscription) => {
         _subscription = subscription;
         SendNotification();
         return Results.Ok(subscription);

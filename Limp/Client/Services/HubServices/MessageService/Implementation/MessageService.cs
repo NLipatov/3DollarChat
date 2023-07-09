@@ -156,7 +156,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             hubConnection.On<string>("OnMyNameResolve", async username =>
             {
                 myName = username;
-                string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
+                string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
                 if (string.IsNullOrWhiteSpace(accessToken))
                 {
                     _navigationManager.NavigateTo("/login");
@@ -173,7 +173,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             #endregion
 
             await hubConnection.StartAsync();
-            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
+            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
 
             return hubConnection;
         }

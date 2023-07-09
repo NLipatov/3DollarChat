@@ -137,8 +137,8 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
         private async Task<JWTPair?> GetJWTPairAsync()
         {
-            string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
-            string? refreshToken = await JWTHelper.GetRefreshToken(_jSRuntime);
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+            string? refreshToken = await JWTHelper.GetRefreshTokenAsync(_jSRuntime);
 
             if (string.IsNullOrWhiteSpace(accessToken)
                ||

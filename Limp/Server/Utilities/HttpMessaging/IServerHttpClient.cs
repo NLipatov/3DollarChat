@@ -1,6 +1,7 @@
 ﻿using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
+using LimpShared.Models.WebPushNotification;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -13,5 +14,7 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<AuthResult> Register(UserAuthentication userDTO);
         Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO);
         Task<string?> GetAnRSAPublicKey(string username);
+        Task SubscribeToWebPush(NotificationSubscriptionDTO subscriptionDTO);
+        Task<NotificationSubscriptionDTO[]> GetUserSubscriptions(string username);
     }
 }

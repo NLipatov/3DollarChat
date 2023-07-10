@@ -16,16 +16,16 @@ namespace Limp.Server.WebPushNotifications
         {
             var subscriptions = await _serverHttpClient.GetUserSubscriptions(username);
             await SendNotificationAsync(message, pushLink, subscriptions[0]);
-            //Task[] workload = new Task[subscriptions.Length];
-            //for (int i = 0; i < subscriptions.Length; i++)
-            //{
-            //    workload[i] = Task.Run(async () =>
-            //    {
-            //        await SendNotificationAsync(message, pushLink, subscriptions[i]);
-            //    });
-            //}
+            Task[] workload = new Task[subscriptions.Length];
+            for (int i = 0; i < subscriptions.Length; i++)
+            {
+                workload[i] = Task.Run(async () =>
+                {
+                    await SendNotificationAsync(message, pushLink, subscriptions[i]);
+                });
+            }
 
-            //await Task.WhenAll(workload);
+            await Task.WhenAll(workload);
 
         }
         private async Task SendNotificationAsync(string message, string pushLink, NotificationSubscriptionDTO notificationSubscriptionDTO)

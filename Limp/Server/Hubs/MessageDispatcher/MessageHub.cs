@@ -85,7 +85,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
         {
             //message.Sender will be overriden somewhere here: await _messageSendHandler.SendAsync(message, Clients);
             if (message.Type == MessageType.UserMessage)
-                await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"https://google.com", message.TargetGroup);
+                await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
 
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");

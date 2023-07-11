@@ -9,15 +9,21 @@ self.addEventListener('install', async event => {
 });
 
 self.addEventListener('push', event => {
-    console.log("On push");
     const payload = event.data.json();
+
     event.waitUntil(
-        self.registration.showNotification('3$ Chat', {
-            body: payload.message,
-            icon: 'icon-512.png',
-            vibrate: [100, 50, 100],
-            data: { url: payload.url }
-        })
+        self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+            .then(clients => {
+                if (clients && clients.length === 0) {
+                    //if there is no open clients, we will show notification
+                    return self.registration.showNotification('3$ Chat', {
+                        body: payload.message,
+                        icon: 'icon-512.png',
+                        vibrate: [100, 50, 100],
+                        data: { url: payload.url }
+                    });
+                }
+            })
     );
 });
 

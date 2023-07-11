@@ -32,7 +32,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         public async Task<HubConnection> ConnectAsync()
         {
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
-            if (existingHubConnection != null)
+            if (existingHubConnection != null && existingHubConnection.State == HubConnectionState.Connected)
             {
                 return existingHubConnection;
             }

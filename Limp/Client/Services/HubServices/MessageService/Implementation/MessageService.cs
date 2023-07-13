@@ -5,6 +5,7 @@ using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubService.UsersService;
@@ -32,7 +33,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
         private readonly IMessageBuilder _messageBuilder;
-        private readonly IBrowserKeyStorage _localKeyManager;
+        private readonly IBrowserKeyStorage _browserKeyStorage;
+        private readonly IMessageDecryptor _messageDecryptor;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
@@ -48,7 +50,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         ICallbackExecutor callbackExecutor,
         IUndeliveredMessagesRepository undeliveredMessagesRepository,
         IMessageBuilder messageBuilder,
-        IBrowserKeyStorage localKeyManager)
+        IBrowserKeyStorage browserKeyStorage,
+        IMessageDecryptor messageDecryptor)
         {
             _messageBox = messageBox;
             _jSRuntime = jSRuntime;
@@ -59,12 +62,13 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _callbackExecutor = callbackExecutor;
             _undeliveredMessagesRepository = undeliveredMessagesRepository;
             _messageBuilder = messageBuilder;
-            _localKeyManager = localKeyManager;
+            _browserKeyStorage = browserKeyStorage;
+            _messageDecryptor = messageDecryptor;
         }
         public async Task<HubConnection> ConnectAsync()
         {
             //Loading from local storage earlier saved AES keys
-            InMemoryKeyStorage.AESKeyStorage = (await _localKeyManager.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
+            InMemoryKeyStorage.AESKeyStorage = (await _browserKeyStorage.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
 
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
             if (existingHubConnection != null)
@@ -86,10 +90,11 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 if (message.Sender != "You")
                 {
-                    if (hubConnection == null || hubConnection.State != HubConnectionState.Connected)
-                        throw new ApplicationException($"{nameof(hubConnection)} is not useable.");
-
-                    await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
+                    if (hubConnection.State != HubConnectionState.Connected)
+                    {
+                        await hubConnection.StopAsync();
+                        await hubConnection.StartAsync();
+                    }
 
                     if (message.Type == MessageType.AESAccept)
                     {
@@ -98,11 +103,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                         InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
-
-                    if (_cryptographyService == null)
-                        throw new ArgumentException($"Please provide an instance of type {typeof(ICryptographyService)} as an argument.");
-
-                    if (message.Type == MessageType.AESOffer)
+                    else if (message.Type == MessageType.AESOffer)
                     {
                         if (hubConnection != null)
                         {
@@ -110,15 +111,31 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                             _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         }
                     }
-                }
+                    else if(message.Type is MessageType.UserMessage)
+                    {
+                        string decryptedMessageText = string.Empty;
+                        try
+                        {
+                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            return;
+                        }
 
-                await _messageBox.AddMessageAsync(message.AsClientMessage());
+                        ClientMessage clientMessage = message.AsClientMessage();
+                        clientMessage.PlainText = decryptedMessageText;
+
+                        await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
+                        await _messageBox.AddMessageAsync(clientMessage, false);
+                    }
+                }
 
                 //If we dont yet know a partner Public Key and we dont have an AES Key for chat with partner,
                 //we will request it from server side.
                 if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null
                 &&
-                _localKeyManager.GetAESKeyForChat(message.Sender!) == null)
+                _browserKeyStorage.GetAESKeyForChat(message.Sender!) == null)
                 {
                     if (hubConnection == null)
                     {
@@ -206,7 +223,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             {
                 InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate = DateTime.UtcNow;
                 InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value = aesKeyForConversation;
-                await _localKeyManager.SaveInMemoryKeysInLocalStorage();
+                await _browserKeyStorage.SaveInMemoryKeysInLocalStorage();
                 string? offeredAESKeyForConversation = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
 
                 if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))

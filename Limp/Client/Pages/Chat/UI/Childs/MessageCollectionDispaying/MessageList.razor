@@ -34,7 +34,7 @@
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(AddMessageAsync, "MessageBoxUpdate", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
     }
 
     public async Task MarkAsReceived(Guid messageId)
@@ -46,7 +46,7 @@
         StateHasChanged();
     }
 
-    public async Task AddMessageAsync(Message message)
+    public async Task AddMessageAsync()
     {
         StateHasChanged();
 

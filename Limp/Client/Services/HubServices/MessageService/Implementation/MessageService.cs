@@ -98,22 +98,21 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                     if (message.Type is MessageType.UserMessage)
                     {
-                        string decryptedMessageText = string.Empty;
-                        try
+                        string decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                        
+                        if(!string.IsNullOrWhiteSpace(decryptedMessageText))
                         {
-                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                            ClientMessage clientMessage = message.AsClientMessage();
+                            clientMessage.PlainText = decryptedMessageText;
+
+                            await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
+                            await _messageBox.AddMessageAsync(clientMessage, false);
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            await RequestForPartnerPublicKey(message.Sender);
-                            return;
+                            if (message.Sender is not null)
+                                await RequestForPartnerPublicKey(message.Sender);
                         }
-
-                        ClientMessage clientMessage = message.AsClientMessage();
-                        clientMessage.PlainText = decryptedMessageText;
-
-                        await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
-                        await _messageBox.AddMessageAsync(clientMessage, false);
                     }
                     else if (message.Type == MessageType.AESAccept)
                     {

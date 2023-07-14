@@ -96,7 +96,26 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                         await hubConnection.StartAsync();
                     }
 
-                    if (message.Type == MessageType.AESAccept)
+                    if (message.Type is MessageType.UserMessage)
+                    {
+                        string decryptedMessageText = string.Empty;
+                        try
+                        {
+                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            await RequestForPartnerPublicKey(message.Sender);
+                            return;
+                        }
+
+                        ClientMessage clientMessage = message.AsClientMessage();
+                        clientMessage.PlainText = decryptedMessageText;
+
+                        await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
+                        await _messageBox.AddMessageAsync(clientMessage, false);
+                    }
+                    else if (message.Type == MessageType.AESAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
@@ -110,24 +129,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                             await hubConnection.SendAsync("Dispatch", await _aESOfferHandler.GetAESOfferResponse(message));
                             _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         }
-                    }
-                    else if(message.Type is MessageType.UserMessage)
-                    {
-                        string decryptedMessageText = string.Empty;
-                        try
-                        {
-                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
-                        }
-                        catch (Exception ex)
-                        {
-                            return;
-                        }
-
-                        ClientMessage clientMessage = message.AsClientMessage();
-                        clientMessage.PlainText = decryptedMessageText;
-
-                        await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
-                        await _messageBox.AddMessageAsync(clientMessage, false);
                     }
                 }
 

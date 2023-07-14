@@ -1,4 +1,5 @@
 ﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
+using System;
 using System.Collections.Concurrent;
 
 namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation
@@ -20,6 +21,22 @@ namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Im
             }
 
             return targetSubscriptions;
+        }
+
+        public Guid AddCallback(Action action, string subscriptionName, Guid componentId)
+        {
+            Subscription subscription = BuildSubscription(action, subscriptionName, componentId);
+            AddSubscription(subscription, subscription.ComponentId);
+
+            return subscription.ComponentId;
+        }
+
+        public Guid AddCallback(Func<Task> func, string subscriptionName, Guid componentId)
+        {
+            Subscription subscription = BuildSubscription(func, subscriptionName, componentId);
+            AddSubscription(subscription, subscription.ComponentId);
+
+            return subscription.ComponentId;
         }
         public Guid AddCallback<T>(Action<T> action, string subscriptionName, Guid componentId)
         {

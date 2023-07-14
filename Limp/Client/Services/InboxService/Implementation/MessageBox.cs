@@ -30,7 +30,22 @@ namespace Limp.Client.Services.InboxService.Implementation
 
             Messages.Add(message);
 
-            _callbackExecutor.ExecuteSubscriptionsByName(message, "MessageBoxUpdate");
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+        }
+
+        public async Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true)
+        {
+            if (isEncrypted)
+            {
+                foreach (var encryptedMessage in messages)
+                {
+                    encryptedMessage.PlainText = await _messageDecryptor.DecryptAsync(encryptedMessage);
+                }
+            }
+
+            Messages.AddRange(messages);
+
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
         public async Task MarkAsReceived(Guid messageId)

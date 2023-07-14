@@ -12,6 +12,33 @@ namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Imple
         {
             _hubServiceSubscriptionManager = hubServiceSubscriptionManager;
         }
+
+        public void ExecuteSubscriptionsByName(string subscriptionName)
+        {
+            List<Subscription> targetSubscriptions = _hubServiceSubscriptionManager.GetSubscriptionsByName(subscriptionName);
+            foreach (var subscription in targetSubscriptions)
+            {
+                object? callback = subscription?.Callback?.Delegate;
+                Type? callbackType = callback?.GetType();
+                if (callbackType == null)
+                    throw new ArgumentNullException($"Could not resolve callback type.");
+
+                if (callbackType.IsAssignableTo(typeof(Func<Task>)))
+                {
+                    Func<Task> methodToInvoke = CastCallback<Func<Task>>(callback);
+                    methodToInvoke.Invoke();
+                    return;
+                }
+                else if (callbackType.IsAssignableTo(typeof(Action)))
+                {
+                    Action methodToInvoke = CastCallback<Action>(callback);
+                    methodToInvoke.Invoke();
+                    return;
+                }
+
+                throw new ArgumentException($"Could not handle an callback of type: {nameof(callbackType)}");
+            }
+        }
         public void ExecuteSubscriptionsByName<T>
         (T arg,
         string subscriptionName)

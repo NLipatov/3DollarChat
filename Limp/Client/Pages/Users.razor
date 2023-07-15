@@ -69,9 +69,6 @@
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
-
-        if (!(await IsPushPermissionGranted()))
-            await RequestPushPermission();
     }
 
     private async Task<string> GetMyUsername()
@@ -91,31 +88,6 @@
         {
             _usersOnlineMessage = usersOnlineMessage;
             StateHasChanged();
-        }
-    }
-
-    #warning move push permission dialog to an parent component
-    private async Task<bool> IsPushPermissionGranted() => await _jS.InvokeAsync<string>("eval", "Notification.permission") == "granted";
-
-    private async Task RequestPushPermission()
-    {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
-        if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ApplicationException
-            ("Could not subscribe to web push notifications because access token was empty string. Relogin needed.");
-
-        NotificationSubscriptionDTO? subscription = await _jS.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");
-        subscription.AccessToken = accessToken;
-        if (subscription != null)
-        {
-            try
-            {
-                await _usersService.SubscribeToWebPushAsync(subscription);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
         }
     }
 }

@@ -27,6 +27,8 @@ using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.InboxService.Implementation;
 using Limp.Client.Services.LocalKeyChainService.Implementation;
+using Limp.Client.Services.NotificationService;
+using Limp.Client.Services.NotificationService.Implementation;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using Limp.Client.Services.UndeliveredMessagesStore.Implementation;
 using Microsoft.AspNetCore.Components.Web;
@@ -56,5 +58,6 @@ builder.Services.AddTransient<IBrowserKeyStorage, BrowserKeyStorage>();
 builder.Services.AddTransient<IUndeliveredMessagesRepository, UndeliveredMessagesRepository>();
 builder.Services.AddTransient<IUndeliveredMessageService, UndeliveredMessageService>();
 builder.Services.AddTransient<ILoginHandler, LoginHandler>();
+builder.Services.AddTransient<IWebPushService, WebPushService>();
 
 await builder.Build().RunAsync();

@@ -3,6 +3,7 @@
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.NotificationService;
 @using Limp.Client.Shared.ChildComponents
 @using LimpShared.Encryption;
 @using LimpShared.Models.WebPushNotification;
@@ -11,6 +12,7 @@
 @inject IHubConnectionProvider _hubConnectionProvider
 @inject IJSRuntime _jSRuntime
 @inject IUsersService _usersService
+@inject IWebPushService _webPushService
 
 @if (!isRSAGenerated)
 {
@@ -53,34 +55,6 @@ else
             isConnectedToHubs = true;
         });
 
-        if (!(await IsPushPermissionGranted()))
-            await RequestPushPermission();
-    }
-
-    private async Task<bool> IsPushPermissionGranted() 
-        => await _jSRuntime.InvokeAsync<string>("eval", "Notification.permission") == "granted";
-
-    private async Task RequestPushPermission()
-    {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-        if (string.IsNullOrWhiteSpace(accessToken))
-            throw new ApplicationException
-            ("Could not subscribe to web push notifications because access token was empty string. Relogin needed.");
-
-        NotificationSubscriptionDTO? subscription = 
-            await _jSRuntime.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");
-
-        if (subscription != null)
-        {
-            try
-            {
-                subscription.AccessToken = accessToken;
-                await _usersService.SubscribeToWebPushAsync(subscription);
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine(ex.Message);
-            }
-        }
+        await _webPushService.RequestWebPushPermission();
     }
 }

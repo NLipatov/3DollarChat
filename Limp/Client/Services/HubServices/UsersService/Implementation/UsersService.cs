@@ -173,7 +173,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             }
         }
 
-        public async Task SubscribeToWebPushAsync(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task SubscribeUserToWebPushNotificationsAsync(NotificationSubscriptionDTO subscriptionDTO)
         {
             if (hubConnection?.State is not HubConnectionState.Connected)
                 throw new ApplicationException("Hub is not connected.");

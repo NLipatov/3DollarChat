@@ -17,6 +17,6 @@ namespace Limp.Client.Services.HubService.UsersService
         Guid SubscribeToUsernameResolved(Func<string, Task> callback);
         void RemoveUsernameResolved(Guid subscriptionId);
         Task CheckIfUserOnline(string username);
-        Task SubscribeToWebPushAsync(NotificationSubscriptionDTO subscriptionDTO);
+        Task SubscribeUserToWebPushNotificationsAsync(NotificationSubscriptionDTO subscriptionDTO);
     }
 }

@@ -15,6 +15,7 @@
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.MessageService;
 @using Limp.Client.Services;
+@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 @using Limp.Client.Services.UndeliveredMessagesStore;
 @using LimpShared.Models.ConnectedUsersManaging;
 @using LimpShared.Models.Message;
@@ -39,6 +40,7 @@
 @inject IBrowserKeyStorage _localKeyManager
 @inject IUsersService _usersService
 @inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
+@inject IUndeliveredMessageService _undeliveredMessageService
 @implements IDisposable
 
 <PageTitle>Chat with @topicName</PageTitle>
@@ -126,25 +128,8 @@
             {
                 _usersOnlineMessage.UserConnections = new UserConnection[1] { userConnection };
             }
-            if (AESKey != null)
-            {
-                List<ClientMessage> undelivered = await _undeliveredMessagesRepository.GetUndeliveredAsync();
 
-                if (undelivered.Count == 0)
-                    return;
-
-                List<Message> toBeSend = new(undelivered.Count);
-
-                foreach (var message in undelivered)
-                {
-                    toBeSend.Add(await _messageBuilder.BuildMessageToBeSend(message.PlainText ?? string.Empty, topicName, myUsername, message.Id));
-                }
-
-                foreach (var message in toBeSend)
-                {
-                    await _messageService.SendMessage(message);
-                }
-            }
+            await _undeliveredMessageService.SendUndelivered(topicName);
         }
     }
 

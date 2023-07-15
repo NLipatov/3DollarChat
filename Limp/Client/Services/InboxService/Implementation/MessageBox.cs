@@ -22,6 +22,14 @@ namespace Limp.Client.Services.InboxService.Implementation
             _messageDecryptor = messageDecryptor;
             _callbackExecutor = callbackExecutor;
             _undeliveredMessagesRepository = undeliveredMessagesRepository;
+
+            _ = AddUndeliveredMessagesFromLocalStorageAsync();
+        }
+        private async Task AddUndeliveredMessagesFromLocalStorageAsync()
+        {
+            var undeliveredMessages = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+            Messages.AddRange(undeliveredMessages);
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
         public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {

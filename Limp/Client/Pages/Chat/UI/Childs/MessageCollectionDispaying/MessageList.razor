@@ -1,4 +1,7 @@
-﻿@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+﻿@using Limp.Client.ClientOnlyModels;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying.Childs
 @using Limp.Client.Services.UndeliveredMessagesStore;
@@ -7,11 +10,12 @@
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
 @inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
+@inject IUndeliveredMessageService _undeliveredMessageService
 @implements IDisposable
 
 <div class="messages-box">
     <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup).ToList()" Context="message">
-        <SingleMessage message="message" myUsername=@myUsername/>
+        <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage" />
     </Virtualize>
 </div>
 
@@ -31,6 +35,11 @@
         SubscribeToHubEvents();
     }
 
+    private async Task ResendMessage(ClientMessage message)
+    {
+        await _undeliveredMessageService.SendUndelivered(message.TargetGroup);
+    }
+
     private void SubscribeToHubEvents()
     {
         _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
@@ -41,7 +50,7 @@
     {
         await _undeliveredMessagesRepository.DeleteAsync(messageId);
 
-        _messageBox.MarkAsReceived(messageId);
+        await _messageBox.MarkAsReceived(messageId);
 
         StateHasChanged();
     }

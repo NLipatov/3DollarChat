@@ -128,8 +128,6 @@
             {
                 _usersOnlineMessage.UserConnections = new UserConnection[1] { userConnection };
             }
-
-            await _undeliveredMessageService.SendUndelivered(topicName);
         }
     }
 

@@ -83,6 +83,21 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
             }
         }
 
+        public async Task SendUndelivered(ClientMessage message)
+        {
+            Key? AESKey = await _browserKeyStorage.GetAESKeyForChat(message.TargetGroup);
+            if (AESKey != null)
+            {
+                Message toBeSend = await _messageBuilder.BuildMessageToBeSend
+                        (message.PlainText ?? string.Empty,
+                        message.TargetGroup,
+                        message.Sender,
+                        message.Id);
+
+                await _messageService.SendMessage(message);
+            }
+        }
+
         public void Dispose()
         {
             _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);

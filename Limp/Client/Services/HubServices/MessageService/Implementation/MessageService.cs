@@ -98,18 +98,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                     if (message.Type is MessageType.UserMessage)
                     {
-                        string decryptedMessageText = string.Empty;
-                        try
-                        {
-                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
-                        }
-                        catch (Exception ex)
-                        {
+                        string decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
 
-                            throw;
-                        }
-                        
-                        if(!string.IsNullOrWhiteSpace(decryptedMessageText))
+                        if (!string.IsNullOrWhiteSpace(decryptedMessageText))
                         {
                             ClientMessage clientMessage = message.AsClientMessage();
                             clientMessage.PlainText = decryptedMessageText;

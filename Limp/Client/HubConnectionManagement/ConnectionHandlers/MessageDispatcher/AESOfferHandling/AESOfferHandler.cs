@@ -1,18 +1,18 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography;
+﻿using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.Services.CloudKeyService;
 using LimpShared.Encryption;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public class AESOfferHandler : IAESOfferHandler
     {
         private readonly ICryptographyService _cryptographyService;
-        private readonly ILocalKeyManager _localKeyManager;
+        private readonly IBrowserKeyStorage _localKeyManager;
 
-        public AESOfferHandler(ICryptographyService cryptographyService, ILocalKeyManager localKeyManager)
+        public AESOfferHandler(ICryptographyService cryptographyService, IBrowserKeyStorage localKeyManager)
         {
             _cryptographyService = cryptographyService;
             _localKeyManager = localKeyManager;
@@ -37,7 +37,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
                     InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender] = aesKeyForConversation;
                 }
 
-                await _localKeyManager.SynchronizeWithInMemoryKeyStorageAsync();
+                await _localKeyManager.SaveInMemoryKeysInLocalStorage();
             }
 
             return new Message
@@ -61,7 +61,12 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
 
         private async Task<string> GetDecryptedAESKeyFromMessage(Message message)
         {
-            string? encryptedAESKey = message.Payload;
+            if (string.IsNullOrWhiteSpace(message.Cryptogramm?.Cyphertext))
+                throw new ArgumentException
+                    ($"Cannot get decrypted AES key from {typeof(Message).Name}: " +
+                    $"{typeof(Message).Name} was not containing a {nameof(Message.Cryptogramm.Cyphertext)} property value.");
+
+            string? encryptedAESKey = message.Cryptogramm.Cyphertext;
             if (string.IsNullOrWhiteSpace(encryptedAESKey))
                 throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
@@ -69,7 +74,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
                 (new Cryptogramm
                 {
                     Cyphertext = encryptedAESKey
-                })).PlainText;
+                }));
 
             if (string.IsNullOrWhiteSpace(decryptedAESKey))
                 throw new ArgumentException("Could not decrypt an AES Key.");

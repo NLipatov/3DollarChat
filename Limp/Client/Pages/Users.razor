@@ -2,12 +2,15 @@
 @using ClientServerCommon.Models;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using System.Collections.Concurrent;
 @using Limp.Client.Services;
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.UIComponents.ContactItem
+@using LimpShared.Models.ConnectedUsersManaging;
+@using LimpShared.Models.WebPushNotification;
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
@@ -20,7 +23,7 @@
     <AuthenticatedContent>
     <div class="ApplicationContent">
         <div class="p-2">
-            @foreach (var connection in userConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0))
+                @foreach (var connection in _usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0])
             {
                 <ContactBar Username="@connection.Username"
                         IsOnline="true"
@@ -35,7 +38,7 @@
 </AuthenticatedView>
 
 @code {
-    private ConcurrentBag<UserConnection> userConnections { get; set; } = new();
+    private UserConnectionsReport? _usersOnlineMessage { get; set; }
     private string myUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
@@ -44,7 +47,7 @@
     protected override async Task OnInitializedAsync()
     {
         //Shortcut for cases when user was not yet authenticated
-        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessToken(_jS))) return;
+        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessTokenAsync(_jS))) return;
 
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
@@ -62,7 +65,7 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<List<UserConnection>>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
@@ -70,7 +73,7 @@
 
     private async Task<string> GetMyUsername()
     {
-        string? accessToken = await JWTHelper.GetAccessToken(_jS);
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
         if (string.IsNullOrWhiteSpace(accessToken))
             return string.Empty;
 
@@ -79,13 +82,12 @@
         return myUsername;
     }
 
-    private void UpdateUsersList(List<UserConnection> updatedUserConnections)
+    private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
-        userConnections.Clear();
-        foreach (var connection in updatedUserConnections)
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
-            userConnections.Add(connection);
+            _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
         }
-        StateHasChanged();
     }
 }

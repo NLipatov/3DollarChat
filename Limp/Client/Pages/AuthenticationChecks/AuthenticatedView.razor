@@ -54,6 +54,9 @@ else
 
     protected override async Task OnInitializedAsync()
     {
+        if (_hubConnectionProvider.GetConnectionState() is not Services.HubConnectionProvider.ConnectionStates.HubConnectionProviderState.Connected)
+            await _hubConnectionProvider.ConnectToHubs();
+
         await IsUserAuthenticated();
     }
 
@@ -66,7 +69,7 @@ else
         }
         else
         {
-            string? accessToken = await JWTHelper.GetAccessToken(_jS);
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
             if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
             {
                 _navigationManager.NavigateTo("login");

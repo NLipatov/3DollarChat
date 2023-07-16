@@ -1,11 +1,25 @@
 ﻿@using Limp.Client.Cryptography;
 @using Limp.Client.Cryptography.KeyStorage;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Services.HubConnectionProvider;
+@using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.InboxService;
+@using Limp.Client.Services.JWTReader;
+@using Limp.Client.Services.NotificationService;
 @using Limp.Client.Shared.ChildComponents
 @using LimpShared.Encryption;
+@using LimpShared.Models.WebPushNotification;
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
 @inject IHubConnectionProvider _hubConnectionProvider
+@inject IJSRuntime _jSRuntime
+@inject IUsersService _usersService
+@inject IWebPushService _webPushService
+@inject IToastService _toastService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IMessageBox _messageBox
+@inject NavigationManager _navigationManager
 
 @if (!isRSAGenerated)
 {
@@ -33,12 +47,24 @@ else
     </div>
 }
 
+<BlazoredToasts 
+    Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"/>
+
 @code{
     private bool isRSAGenerated = false;
     private bool isConnectedToHubs = false;
+    private Guid ComponentId { get; set; }
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        //Subscribing to server event of updating online users
+        _hubServiceSubscriptionManager.AddCallback(NotifyAboutNewMessages, "MessageBoxUpdate", ComponentId);
+
         await _cryptographyService.GenerateRSAKeyPairAsync();
         KeysGeneratedHandler.SubscribeToRSAKeysGeneratedEvent(() =>
         {
@@ -47,5 +73,30 @@ else
             _hubConnectionProvider.ConnectToHubs();
             isConnectedToHubs = true;
         });
+
+        await _webPushService.RequestWebPushPermission();
+    }
+
+    private async void NotifyAboutNewMessages()
+    {
+        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsUserNotified == false);
+        foreach (var message in unnotifiedAbout)
+        {
+            if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
+        {
+                _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
+            }
+            _messageBox.MarkAsNotified(message.Id);
+        }
+    }
+
+    private async Task<string> GetUsername()
+    {
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+        if (!TokenReader.IsTokenReadable(accessToken ?? string.Empty))
+            throw new ArgumentException("Token was not readable");
+
+        return TokenReader.GetUsernameFromAccessToken(accessToken);
     }
 }

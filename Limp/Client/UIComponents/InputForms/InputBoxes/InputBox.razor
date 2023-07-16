@@ -10,7 +10,10 @@
         @bind:event="@BindEvent" 
         @onchange="@(() =>OnInput.InvokeAsync(InputText))" 
         class="form-control form-control-lg" />
-    <label class="form-label" for="form1Example13">Username</label>
+        @if(!string.IsNullOrWhiteSpace(Label))
+        {
+            <label class="form-label" for="form1Example13">@Label</label>
+        }
 </div>
 
 @code {
@@ -34,4 +37,7 @@
 
     [Parameter]
     public EventCallback<string> OnInput { get; set; }
+
+    [Parameter]
+    public string Label { get; set; } = string.Empty;
 }

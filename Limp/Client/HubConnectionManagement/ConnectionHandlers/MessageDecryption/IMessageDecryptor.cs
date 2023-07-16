@@ -1,8 +1,8 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 
 namespace Limp.Client.HubInteraction.Handlers.MessageDecryption;
 
 public interface IMessageDecryptor
 {
-    Task<Message> DecryptAsync(Message encryptedMessage);
+    Task<string> DecryptAsync(Message encryptedMessage);
 }

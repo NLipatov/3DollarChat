@@ -1,9 +1,10 @@
-﻿using ClientServerCommon.Models;
-using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using LimpShared.Encryption;
+using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -31,7 +32,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         public async Task<HubConnection> ConnectAsync()
         {
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
-            if (existingHubConnection != null)
+            if (existingHubConnection != null && existingHubConnection.State == HubConnectionState.Connected)
             {
                 return existingHubConnection;
             }
@@ -42,7 +43,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             //Here we are registering a callbacks for specific server-triggered events.
             //Events are being triggered from SignalR hubs in server project.
-            hubConnection.On<List<UserConnection>>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
@@ -59,9 +60,14 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
             });
 
+            hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+            });
+
             await hubConnection.StartAsync();
 
-            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessToken(_jSRuntime));
+            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
 
             return hubConnection;
         }
@@ -141,7 +147,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             if (hubConnection != null)
             {
-                await hubConnection.SendAsync("PushOnlineUsersToClient");
+                await hubConnection.SendAsync("PushOnlineUsersToClients");
             }
             else
             {
@@ -153,6 +159,26 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             await DisconnectAsync();
             await ConnectAsync();
+        }
+
+        public async Task CheckIfUserOnline(string username)
+        {
+            if (hubConnection != null)
+            {
+                await hubConnection.SendAsync("IsUserOnline", username);
+            }
+            else
+            {
+                await ReconnectAsync();
+            }
+        }
+
+        public async Task SubscribeUserToWebPushNotificationsAsync(NotificationSubscriptionDTO subscriptionDTO)
+        {
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("SubscribeToWebPushNotifications", subscriptionDTO);
         }
     }
 }

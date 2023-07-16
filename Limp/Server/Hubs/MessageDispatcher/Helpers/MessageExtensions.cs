@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using LimpShared.Models.Message;
 
 namespace Limp.Server.Hubs.MessageDispatcher.Helpers
 {
@@ -13,7 +13,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers
         /// <returns></returns>
         internal static Message ToReceiverRepresentation(this Message message)
         {
-            message.Topic = message.Sender;
+            message.TargetGroup = message.Sender;
             return message;
         }
 

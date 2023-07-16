@@ -1,0 +1,64 @@
+﻿@using Limp.Client.ClientOnlyModels;
+@using LimpShared.Models.Message;
+
+@if(message != null)
+{
+    <div class="message @messageClass">
+        <div class="message-text">
+            <span>@(message.PlainText)</span>
+        </div>
+        <div class="timestamp">
+            <span>@message.DateSent.ToString("hh:mm")</span>
+            @if (message.Sender == myUsername)
+            {
+                @if (message.Sender == myUsername)
+                {
+                    @if (message.IsRead)
+                    {
+                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                        //issue reference: https://stackoverflow.com/a/64686984
+                        <span>
+                            <i class="fas fa-check-double @messageClass"></i>
+                        </span>
+                    }
+                    else if (message.IsReceived)
+                    {
+                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                        //issue reference: https://stackoverflow.com/a/64686984
+                        <span>
+                            <i class="fas fa-check @messageClass"></i>
+                        </span>
+                    }
+                    else if(!message.IsReceived)
+                    {
+                        <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
+                            <i class="bi bi-arrow-clockwise">Resend</i>
+                        </span>
+                    }
+                }
+            }
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public EventCallback<ClientMessage> OnResend { get; set; }
+
+    [Parameter]
+    public ClientMessage? message { get; set; }
+
+    [Parameter]
+    public string? myUsername { get; set; }
+
+    private bool isOutcoming;
+    private string messageClass = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        isOutcoming = message?.Sender == myUsername;
+        messageClass = isOutcoming ? "outcoming" : "incoming";
+
+        await base.OnParametersSetAsync();
+    }
+}

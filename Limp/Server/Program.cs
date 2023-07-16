@@ -2,10 +2,10 @@ using Limp.Server.Extensions;
 using Limp.Server.Hubs;
 using Limp.Server.Hubs.MessageDispatcher;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.UndeliveredMessagesRegistry;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Limp.Server.WebPushNotifications;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,11 +26,11 @@ builder.Services.UseServerHttpClient();
 
 builder.Services.UseKafkaService();
 
-builder.Services.AddScoped<IUserConnectedHandler<UsersHub>,  UConnectionHandler>();
+builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
-builder.Services.AddTransient<IMessageSender, MessageSender>();
-builder.Services.AddSingleton<IUndeliveredMessagesStorer, UndeliveredMessagesStorer>();
+builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
+builder.Services.AddTransient<IWebPushSender, WebPushSender>();
 
 var app = builder.Build();
 

@@ -1,5 +1,5 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.Message;
+using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubServices.MessageService
@@ -11,6 +11,7 @@ namespace Limp.Client.Services.HubServices.MessageService
         Task ReconnectAsync();
         bool IsConnected();
         Task SendMessage(Message message);
-        Task RequestForPartnerPublicKey(string partnerUsername);
+        Task RequestForPartnerPublicKey(string partnerUsername); 
+        Task SendUserMessage(string text, string targetGroup, string myUsername);
     }
 }

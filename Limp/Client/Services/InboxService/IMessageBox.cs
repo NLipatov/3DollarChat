@@ -1,10 +1,15 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using Limp.Client.ClientOnlyModels;
+using LimpShared.Models.Message;
+using System.Collections.ObjectModel;
 
 namespace Limp.Client.Services.InboxService
 {
     public interface IMessageBox
     {
-        Task AddMessageAsync(Message message, bool isEncrypted = true);
-        List<Message> FetchMessagesFromMessageBox(string topic);
+        public List<ClientMessage> Messages { get; }
+        Task MarkAsReceived(Guid messageId);
+        void MarkAsNotified(Guid messageId);
+        Task AddMessageAsync(ClientMessage message, bool isEncrypted = true);
+        Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true);
     }
 }

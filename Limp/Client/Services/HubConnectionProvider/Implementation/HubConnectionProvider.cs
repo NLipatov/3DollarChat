@@ -36,10 +36,10 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
         public async Task ConnectToHubs()
         {
             //If user does not have at least one token from JWT pair, ask him to login
-            string? accessToken = await JWTHelper.GetAccessToken(_jSRuntime);
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
             if (string.IsNullOrWhiteSpace(accessToken)
                 ||
-                string.IsNullOrWhiteSpace(await JWTHelper.GetRefreshToken(_jSRuntime)))
+                string.IsNullOrWhiteSpace(await JWTHelper.GetRefreshTokenAsync(_jSRuntime)))
             {
                 return;
             }

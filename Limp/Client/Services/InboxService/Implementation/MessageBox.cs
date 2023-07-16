@@ -1,6 +1,9 @@
-﻿using ClientServerCommon.Models.Message;
+﻿using Limp.Client.ClientOnlyModels;
+using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.UndeliveredMessagesStore;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.InboxService.Implementation
 {
@@ -8,30 +11,61 @@ namespace Limp.Client.Services.InboxService.Implementation
     {
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly ICallbackExecutor _callbackExecutor;
-        private Dictionary<Guid, Action<Message>> subscriptions = new();
-        private List<Message> Messages = new();
+        private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
+
+        public List<ClientMessage> Messages { get; private set; } = new();
         public MessageBox
         (IMessageDecryptor messageDecryptor,
-        ICallbackExecutor callbackExecutor)
+        ICallbackExecutor callbackExecutor,
+        IUndeliveredMessagesRepository undeliveredMessagesRepository)
         {
             _messageDecryptor = messageDecryptor;
             _callbackExecutor = callbackExecutor;
+            _undeliveredMessagesRepository = undeliveredMessagesRepository;
+
+            _ = AddUndeliveredMessagesFromLocalStorageAsync();
         }
-        public async Task AddMessageAsync(Message message, bool isEncrypted = true)
+        private async Task AddUndeliveredMessagesFromLocalStorageAsync()
+        {
+            var undeliveredMessages = await _undeliveredMessagesRepository.GetUndeliveredAsync();
+            Messages.AddRange(undeliveredMessages);
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+        }
+        public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {
             if (isEncrypted)
-                message = await _messageDecryptor.DecryptAsync(message);
+                message.PlainText = await _messageDecryptor.DecryptAsync(message);
 
             Messages.Add(message);
 
-            _callbackExecutor.ExecuteSubscriptionsByName(message, "IncomingMessageReceived");
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
-        public List<Message> FetchMessagesFromMessageBox(string topic)
+        public async Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true)
         {
-            List<Message> messages = Messages.Where(x => x.Topic == topic).ToList();
+            if (isEncrypted)
+            {
+                foreach (var encryptedMessage in messages)
+                {
+                    encryptedMessage.PlainText = await _messageDecryptor.DecryptAsync(encryptedMessage);
+                }
+            }
 
-            return messages;
+            Messages.AddRange(messages);
+
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
+
+        public async Task MarkAsReceived(Guid messageId)
+        {
+            Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
+            if (message != null)
+                message.IsReceived = true;
+
+            await _undeliveredMessagesRepository.DeleteAsync(messageId);
+        }
+
+        public void MarkAsNotified(Guid messageId)
+            => Messages.First(x => x.Id == messageId).IsUserNotified = true;
     }
 }

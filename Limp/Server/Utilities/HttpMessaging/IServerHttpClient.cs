@@ -1,18 +1,20 @@
-﻿using AuthAPI.DTOs.User;
-using ClientServerCommon.Models.Login;
-using LimpShared.Authentification;
-using LimpShared.DTOs.PublicKey;
+﻿using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using LimpShared.Models.Authentication.Models.UserAuthentication;
+using LimpShared.Models.WebPushNotification;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
     public interface IServerHttpClient
     {
         Task<AuthResult> ExplicitJWTPairRefresh(RefreshToken refreshToken);
-        Task<AuthResult> GetJWTPairAsync(UserDTO userDTO);
+        Task<AuthResult> GetJWTPairAsync(UserAuthentication userDTO);
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);
-        Task<AuthResult> Register(UserDTO userDTO);
+        Task<AuthResult> Register(UserAuthentication userDTO);
         Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO);
         Task<string?> GetAnRSAPublicKey(string username);
+        Task SubscribeToWebPush(NotificationSubscriptionDTO subscriptionDTO);
+        Task<NotificationSubscriptionDTO[]> GetUserSubscriptions(string username);
     }
 }

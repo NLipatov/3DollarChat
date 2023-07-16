@@ -1,5 +1,5 @@
-﻿using ClientServerCommon.Models.Message;
-using Limp.Client.Cryptography.KeyStorage;
+﻿using Limp.Client.Cryptography.KeyStorage;
+using LimpShared.Models.Message;
 using Microsoft.JSInterop;
 
 namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
@@ -29,7 +29,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             };
         }
 
-        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
             if (InMemoryKeyStorage.MyRSAPrivate?.Value == null)
                 throw new ApplicationException("RSA Private key was null");
@@ -37,10 +37,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             string decryptedMessage = await _jSRuntime
                 .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
 
-            return new Cryptogramm
-            {
-                PlainText = decryptedMessage,
-            };
+            return decryptedMessage;
         }
     }
 }

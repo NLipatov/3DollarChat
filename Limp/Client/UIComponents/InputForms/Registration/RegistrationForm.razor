@@ -1,60 +1,73 @@
-﻿@using AuthAPI.DTOs.Claims;
-@using AuthAPI.DTOs.User;
-@using ClientServerCommon.Models.Login;
+﻿@using Limp.Client.Pages.AccountManagement.LogicHandlers;
+@using Limp.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
 @using Limp.Client.UIComponents.InputForms.InputBoxes
 @using Limp.Client.UIComponents.InputForms.Registration.Models;
 @using Limp.Client.UIComponents.SuccessOrErrorMessage
+@using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
+@using LimpShared.Models.Authentication.Models;
+@using System.Text.RegularExpressions;
+@inject ILoginHandler _loginHandler
 
 <div class="registration-page-content">
-    <EditForm Model="@Credentials" OnSubmit="OnRegister">
-        <div class="form-content" style="display: @(RegistrationAttemptResult.Result == AuthResultType.Success ? "none" : "unset");">            
-            <div class="registration-form-header">
-                <span>Create a Limp Messenger Account</span>
-            </div>
-            <div class="registration-form">
-                <InputBox InputText="@Credentials.Username"
-                          IconClass="fa-solid fa-user"
-                          Placeholder="Username"
-                          BindEvent="oninput"                
-                          IsRequired="true"
-                          OnInput="((value) => Credentials.Username = value)"/>
+    <section class="vh-100">
+        <div class="container py-5 h-100">
+            <div class="row d-flex align-items-center justify-content-center h-100">
+                <div class="col-md-8 col-lg-7 col-xl-6">
+                    <img src="https://svgur.com/i/sLL.svg"
+                         class="img-fluid" alt="man inputting his account password">
+                </div>
+                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                    <EditForm Model="@Credentials" OnSubmit="OnRegister">
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.Username"
+                            Placeholder="Username"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            OnInput="((value) => Credentials.Username.Value = value)" />
 
-                <InputBox InputText="@Credentials.Password"
-                          IconClass="fa-solid fa-key"
-                          Placeholder="Password"
-                          BindEvent="oninput"                
-                          IsRequired="true"
-                          Type="password"
-                          OnInput="((value) => Credentials.Password = value)" />
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.Password"
+                            Placeholder="Password"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            Type="password"
+                            OnInput="((value) => Credentials.Password.Value = value)" />
 
-                <InputBox InputText="@Credentials.PasswordConfirmation" 
-                    IconClass="fa-solid fa-key" 
-                    Placeholder="Password confirmation" 
-                    BindEvent="oninput"
-                    IsRequired="true"
-                    Type="password"
-                    OnInput="((value) => Credentials.PasswordConfirmation = value)" />
+                        <RegisterFormInputBox 
+                            CheckedInput="Credentials.PasswordConfirmation"
+                            Placeholder="Password confirmation"
+                            BindEvent="oninput"
+                            IsRequired="true"
+                            Type="password"
+                            OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
 
-                <button class="submit-button">Submit</button>
+                        @if (ValidateForm())
+                        {
+                            <button class="btn btn-primary btn-lg btn-block">Submit</button>
+                        }
+                        else
+                        {
+                            <Tooltip Placement="TooltipPlacement.Right" Title="Fill in the form first">
+                                <button class="btn btn-secondary btn-lg btn-block" disabled>Submit</button>
+                            </Tooltip>
+                        }
+
+                        <ResultMessagesBlock 
+                            Result="RegistrationAttemptResult"
+                            SuccesLink="login"
+                            SuccessLinkDescription="To login page" />
+
+                    </EditForm>
+                </div>
             </div>
         </div>
-
-        <ResultMessagesBlock
-            Result="RegistrationAttemptResult"/>
-
-        <div class="validation-results">
-                <DataAnnotationsValidator />
-            <ValidationSummary style="
-            display: flex;
-            flex-direction: column;
-            gap: 10px;" />
-            </div>
-    </EditForm>
+    </section>
 </div>
 
 @code {
     [Parameter]
-    public Action<UserDTO> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
+    public Action<UserAuthentication> OnRegisterEvent { get; set; } = ((dto) => throw new ApplicationException
     ($"At {nameof(RegistrationForm)} component please provide a handler for event: {nameof(OnRegisterEvent)}"));
 
     [Parameter]
@@ -62,43 +75,27 @@
 
     private RegisterFormModel Credentials = new();
 
-    private bool IsPasswordSameAsConfirmation()
-    {
-        if (Credentials.Password != Credentials.PasswordConfirmation)
-        {
-            RegistrationAttemptResult = new AuthResult
-            {
-                Result = AuthResultType.Fail,
-                Message = "Password does not match Password Confirmation!"
-            };
-
-            return false;
-        }
-
-        return true;
-    }
-
     private void OnRegister()
     {
-        if(!IsPasswordSameAsConfirmation())
+        UserAuthentication authenticationData = new()
         {
-            return;
-        }
-
-        UserDTO data = new UserDTO()
-        {
-            Username = Credentials.Username,
-            Password = Credentials.PasswordConfirmation,
+            Username = Credentials.Username.Value,
+            Password = Credentials.PasswordConfirmation.Value,
             Claims = new List<UserClaimsDTO>
             {
                 new UserClaimsDTO
                 {
                     Name = "Name",
-                    Value = Credentials.Username,
+                    Value = Credentials.Username.Value,
                 }
             }
         };
 
-        OnRegisterEvent(data);
+        OnRegisterEvent(authenticationData);
     }
+
+    private bool ValidateForm() 
+    => Credentials.Username.IsValid 
+    && Credentials.Password.IsValid 
+    && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
 }

@@ -1,4 +1,4 @@
-﻿using LimpShared.Authentification;
+﻿using LimpShared.Models.Authentication.Models;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling

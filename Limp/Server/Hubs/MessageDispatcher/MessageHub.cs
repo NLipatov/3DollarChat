@@ -1,12 +1,15 @@
 ﻿using ClientServerCommon.Models;
-using ClientServerCommon.Models.Message;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
+using Limp.Server.WebPushNotifications;
+using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
+using WebPush;
 
 namespace Limp.Server.Hubs.MessageDispatcher
 {
@@ -16,20 +19,23 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IMessageSender _messageSender;
+        private readonly IMessageSendHandler _messageSendHandler;
+        private readonly IWebPushSender _webPushSender;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
         IMessageBrokerService messageBrokerService,
         IUserConnectedHandler<MessageHub> userConnectedHandler,
         IOnlineUsersManager onlineUsersManager,
-        IMessageSender messageSender)
+        IMessageSendHandler messageSender,
+        IWebPushSender webPushSender)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _messageSender = messageSender;
+            _messageSendHandler = messageSender;
+            _webPushSender = webPushSender;
         }
 
         public async override Task OnConnectedAsync()
@@ -64,7 +70,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task PushOnlineUsersToClients()
         {
-            List<UserConnection> userConnections = _onlineUsersManager.GetOnlineUsers();
+            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
         }
 
@@ -80,20 +86,14 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
-            switch (IsClientConnectedToHub(message.TargetGroup))
-            {
-                case true:
-                    await _messageSender.SendAsync(message, Clients);
-                    break;
+            //message.Sender will be overriden somewhere here: await _messageSendHandler.SendAsync(message, Clients);
+            if (message.Type == MessageType.UserMessage)
+                await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
 
-                case false:
-                    await _messageSender.AddAsUnprocessedAsync(message, Clients);
-                    break;
-
-                default:
-                    throw new ApplicationException("Could not dispatch a message");
-            }
+            await _messageSendHandler.SendAsync(message, Clients);
         }
+        public async Task MessageReceived(Guid messageId, string topicName) 
+            => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
 
         /// <summary>
         /// Sends message to a message broker system
@@ -104,7 +104,6 @@ namespace Limp.Server.Hubs.MessageDispatcher
             await _messageBrokerService.ProduceAsync(message);
         }
 
-        public async Task MessageReceived(Message message) => await _messageSender.OnMessageReceived(message, Clients);
         public async Task GetAnRSAPublic(string username)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);

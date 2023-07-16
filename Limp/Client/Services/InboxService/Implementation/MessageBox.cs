@@ -64,5 +64,8 @@ namespace Limp.Client.Services.InboxService.Implementation
 
             await _undeliveredMessagesRepository.DeleteAsync(messageId);
         }
+
+        public void MarkAsNotified(Guid messageId)
+            => Messages.First(x => x.Id == messageId).IsUserNotified = true;
     }
 }

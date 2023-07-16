@@ -1,4 +1,5 @@
 using BlazorBootstrap;
+using Blazored.Toast;
 using Limp.Client;
 using Limp.Client.Cryptography;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
@@ -59,5 +60,6 @@ builder.Services.AddTransient<IUndeliveredMessagesRepository, UndeliveredMessage
 builder.Services.AddTransient<IUndeliveredMessageService, UndeliveredMessageService>();
 builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
+builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

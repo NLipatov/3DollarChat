@@ -85,6 +85,10 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
 
         public async Task SendUndelivered(ClientMessage message)
         {
+            if (string.IsNullOrWhiteSpace(message.TargetGroup) || string.IsNullOrWhiteSpace(message.Sender))
+                throw new ArgumentException($"Message was not well formed." +
+                    $" {nameof(message.TargetGroup)} and {nameof(message.Sender)} are required properties.");
+
             Key? AESKey = await _browserKeyStorage.GetAESKeyForChat(message.TargetGroup);
             if (AESKey != null)
             {
@@ -94,7 +98,7 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
                         message.Sender,
                         message.Id);
 
-                await _messageService.SendMessage(message);
+                await _messageService.SendMessage(toBeSend);
             }
         }
 

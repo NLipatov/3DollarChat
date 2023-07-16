@@ -37,7 +37,7 @@
 
     private async Task ResendMessage(ClientMessage message)
     {
-        await _undeliveredMessageService.SendUndelivered(message.TargetGroup);
+        await _undeliveredMessageService.SendUndelivered(message);
     }
 
     private void SubscribeToHubEvents()

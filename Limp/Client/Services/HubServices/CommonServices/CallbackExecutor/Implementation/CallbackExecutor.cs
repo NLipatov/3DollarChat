@@ -27,13 +27,13 @@ namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Imple
                 {
                     Func<Task> methodToInvoke = CastCallback<Func<Task>>(callback);
                     methodToInvoke.Invoke();
-                    return;
+                    continue;
                 }
                 else if (callbackType.IsAssignableTo(typeof(Action)))
                 {
                     Action methodToInvoke = CastCallback<Action>(callback);
                     methodToInvoke.Invoke();
-                    return;
+                    continue;
                 }
 
                 throw new ArgumentException($"Could not handle an callback of type: {nameof(callbackType)}");
@@ -55,13 +55,13 @@ namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Imple
                 {
                     Func<T, Task> methodToInvoke = CastCallback<Func<T, Task>>(callback);
                     methodToInvoke.Invoke(arg);
-                    return;
+                    continue;
                 }
                 else if (callbackType.IsAssignableTo(typeof(Action<T>)))
                 {
                     Action<T> methodToInvoke = CastCallback<Action<T>>(callback);
                     methodToInvoke.Invoke(arg);
-                    return;
+                    continue;
                 }
 
                 throw new ArgumentException($"Could not handle an callback of type: {nameof(callbackType)}");

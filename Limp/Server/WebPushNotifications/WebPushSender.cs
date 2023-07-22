@@ -14,7 +14,7 @@ namespace Limp.Server.WebPushNotifications
         }
         public async Task SendPush(string message, string pushLink, string username)
         {
-            var subscriptions = await _serverHttpClient.GetUserSubscriptions(username);
+            var subscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
 
             var tasks = new List<Task>();
             foreach (var subscription in subscriptions)

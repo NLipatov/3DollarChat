@@ -34,7 +34,7 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 try
                 {
                     subscription.AccessToken = accessToken;
-                    await _usersService.SubscribeUserToWebPushNotificationsAsync(subscription);
+                    await _usersService.AddUserWebPushSubscription(subscription);
                 }
                 catch (Exception ex)
                 {
@@ -43,7 +43,12 @@ namespace Limp.Client.Services.NotificationService.Implementation
             }
         }
 
-        public async Task<bool> IsWebPushPermissionGranted()
+        private async Task<bool> IsWebPushPermissionGranted()
             => await _jSRuntime.InvokeAsync<string>("eval", "Notification.permission") == "granted";
+
+        public async Task ResetWebPushPermission()
+        {
+            await _jSRuntime.InvokeAsync<string>("eval", "Notification.permission = 'default'");
+        }
     }
 }

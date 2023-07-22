@@ -14,7 +14,8 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<AuthResult> Register(UserAuthentication userDTO);
         Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO);
         Task<string?> GetAnRSAPublicKey(string username);
-        Task SubscribeToWebPush(NotificationSubscriptionDTO subscriptionDTO);
-        Task<NotificationSubscriptionDTO[]> GetUserSubscriptions(string username);
+        Task AddUserWebPushSubscribtion(NotificationSubscriptionDTO subscriptionDTO);
+        Task<NotificationSubscriptionDTO[]> GetUserWebPushSubscriptionsByAccessToken(string accessToken);
+        Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove);
     }
 }

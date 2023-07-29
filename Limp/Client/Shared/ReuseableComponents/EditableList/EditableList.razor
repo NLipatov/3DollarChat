@@ -1,0 +1,56 @@
+﻿@using Limp.Client.Pages.Contacts.Models;
+@using Limp.Client.UIComponents.ContactItem
+
+<div class="m-2 p-2" style="
+        background-color: whitesmoke;">
+    <div style="
+            display: flex;
+            justify-content: space-between;">
+        <h1>@ListHeader</h1>
+        <Button Color="ButtonColor.Primary"
+                Outline="true"
+        @onclick="ToggleContactEditionMode">
+            @(EditionMode ? "Done" : "Edit")
+        </Button>
+    </div>
+    <div>
+        <Virtualize Items="@itemCollection" Context="item">
+            <div style="display: flex;
+                align-items: baseline;
+                gap: 10px;">
+                @if (EditionMode)
+                {
+                    <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
+                    @onclick="(() => OnItemRemoved.InvokeAsync(item.Username))"></Icon>
+                }
+                <EditableListItem 
+                    ItemModel="new ItemModel{ItemName = item.Username, IsActive = item.IsOnline}"
+                    IconClass="bi bi-person-fill"
+                    Style="width: 100%; margin-top: 10px;"/>
+            </div>
+        </Virtualize>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public string ListHeader { get; set; } = "Items";
+
+    [Parameter]
+    public bool EditionMode { get; set; } = false;
+
+    [Parameter]
+    public List<Contact> itemCollection { get; set; } = new();
+
+    private void ToggleContactEditionMode()
+    {
+        EditionMode = !EditionMode;
+        StateHasChanged();
+    }
+
+    [Parameter]
+    public EventCallback<string> OnItemRemoved { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnItemClicked { get; set; }
+}

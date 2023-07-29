@@ -21,10 +21,10 @@
                 @if (EditionMode)
                 {
                     <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
-                    @onclick="(() => OnItemRemoved.InvokeAsync(item.Username))"></Icon>
+                    @onclick="(() => OnItemRemoved.InvokeAsync(item.ItemName))"></Icon>
                 }
                 <EditableListItem 
-                    ItemModel="new ItemModel{ItemName = item.Username, IsActive = item.IsOnline}"
+                    ItemModel="item"
                     IconClass="bi bi-person-fill"
                     Style="width: 100%; margin-top: 10px;"/>
             </div>
@@ -40,7 +40,7 @@
     public bool EditionMode { get; set; } = false;
 
     [Parameter]
-    public List<Contact> itemCollection { get; set; } = new();
+    public List<ItemModel> itemCollection { get; set; } = new();
 
     private void ToggleContactEditionMode()
     {

@@ -29,7 +29,7 @@
         @if(ContactsList.Any())
         {
             <EditableList 
-                itemCollection="ContactsList"
+                itemCollection="ContactsList.Select(x=> new ItemModel{IsActive = x.IsOnline, IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username}).ToList()"
                 OnItemClicked="NavigateToChatWithContact"
                 OnItemRemoved="RemoveContact" 
                 ListHeader="Your contacts:"/>

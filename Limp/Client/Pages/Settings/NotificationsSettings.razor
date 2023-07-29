@@ -3,13 +3,16 @@
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.LocalStorageService;
 @using Limp.Client.Services.NotificationService;
+@using Limp.Client.Shared.ReuseableComponents.EditableList
 @using LimpShared.Models.WebPushNotification;
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
 @inject IWebPushService _webPushService
+@inject ILocalStorageService _localStorageService
 @implements IDisposable
 
 <AuthenticatedView>
@@ -30,6 +33,9 @@
 
                 <Button @onclick="OnRemoveSubscriptions" Color="ButtonColor.Danger">Remove all subscriptions</Button>
             </div>
+
+            <EditableList 
+                itemCollection="(webPushSubscriptions.Select(x=> new ItemModel {ItemName = x.Id.ToString()}).ToList())"/>
 
             <Grid TItem="NotificationSubscriptionDTO"
                 AllowSorting="true"

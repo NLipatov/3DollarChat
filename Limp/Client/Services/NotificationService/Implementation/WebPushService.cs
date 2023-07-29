@@ -1,5 +1,6 @@
 ﻿using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubService.UsersService;
+using Limp.Client.Services.LocalStorageService;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.JSInterop;
 
@@ -9,11 +10,13 @@ namespace Limp.Client.Services.NotificationService.Implementation
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly IUsersService _usersService;
+        private readonly ILocalStorageService _localStorageService;
 
-        public WebPushService(IJSRuntime jSRuntime, IUsersService usersService)
+        public WebPushService(IJSRuntime jSRuntime, IUsersService usersService, ILocalStorageService localStorageService)
         {
             _jSRuntime = jSRuntime;
             _usersService = usersService;
+            _localStorageService = localStorageService;
         }
 
         public async Task RequestWebPushPermission()
@@ -34,6 +37,7 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 try
                 {
                     subscription.AccessToken = accessToken;
+                    subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
                     await _usersService.AddUserWebPushSubscription(subscription);
                 }
                 catch (Exception ex)

@@ -21,15 +21,15 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-    <div class="ApplicationContent">
-        <div class="p-2">
-                @foreach (var connection in _usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0])
-            {
+    <div class="ApplicationContent p-2">
+            <Virtualize 
+                Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0]"
+                Context="connection">
+
                 <ContactBar Username="@connection.Username"
-                        IsOnline="true"
-                        OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
-            }
-        </div>
+                            IsOnline="true"
+                            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
+            </Virtualize>
     </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>

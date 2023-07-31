@@ -75,6 +75,11 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
             });
 
+            hubConnection.On("WebPushSubscriptionSetChanged", () =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
+            });
+
             await hubConnection.StartAsync();
 
             await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));

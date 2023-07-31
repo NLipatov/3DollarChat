@@ -119,6 +119,7 @@ namespace Limp.Server.Hubs
         public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO notificationSubscriptionDTO)
         {
             await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
+            await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
         public async Task GetUserWebPushSubscriptions(string accessToken)
@@ -132,6 +133,7 @@ namespace Limp.Server.Hubs
         {
             await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
             await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
+            await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
     }
 }

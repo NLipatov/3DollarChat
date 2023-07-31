@@ -1,7 +1,7 @@
 ﻿@using Limp.Client.Pages.Contacts.Models;
 @using Limp.Client.UIComponents.ContactItem
 
-<div class="m-2 p-2" style="
+<div class="p-2" style="
         background-color: whitesmoke;">
     <div style="
             display: flex;
@@ -24,8 +24,9 @@
                     @onclick="(() => OnItemRemoved.InvokeAsync(item.ItemName))"></Icon>
                 }
                 <EditableListItem 
+                    OnItemClickedAction=@((string itemName) => OnItemClicked.InvokeAsync(item.ItemName))
                     ItemModel="item"
-                    IconClass="bi bi-person-fill"
+                    IconClass=@IconClass
                     Style="width: 100%; margin-top: 10px;"/>
             </div>
         </Virtualize>
@@ -33,6 +34,9 @@
 </div>
 
 @code {
+    [Parameter]
+    public string? IconClass { get; set; } = string.Empty;
+
     [Parameter]
     public string ListHeader { get; set; } = "Items";
 

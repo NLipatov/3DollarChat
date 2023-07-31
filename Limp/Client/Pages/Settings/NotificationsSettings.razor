@@ -31,11 +31,12 @@
             <div class="d-flex justify-content-between">
                 <h3>Your Web Push Subscriptions</h3>
 
-                <Button @onclick="OnRemoveSubscriptions" Color="ButtonColor.Danger">Remove all subscriptions</Button>
+                <Button @onclick=@(() => OnRemoveSubscriptions()) Color="ButtonColor.Danger">Remove all subscriptions</Button>
             </div>
 
-            <EditableList 
-                itemCollection="(webPushSubscriptions.Select(x=> new ItemModel {ItemName = x.Id.ToString()}).ToList())"/>
+            <EditableList itemCollection="(webPushSubscriptions.Select(x=> new ItemModel {ItemName = x.Id.ToString(), IsActive = x.UserAgentId == userAgentWebPushNotificationId}).ToList())"
+                OnItemRemoved="OnRemoveSubscriptions"
+                IconClass="bi bi-display" />
 
             <Grid TItem="NotificationSubscriptionDTO"
                 AllowSorting="true"
@@ -57,17 +58,19 @@
 </AuthenticatedView>
 
 @code {
-    #warning TODO: add a functionality to not only remove all of the notifications, but specific ones.
     #warning TODO: check if user has deleted a current user-agent notification subscription and if so, advice him to reset notifications permissions
     private Guid ComponentId { get; set; }
     private NotificationSubscriptionDTO[] webPushSubscriptions { get; set; } = new NotificationSubscriptionDTO[0];
     private bool subscriptionsWasLoaded { get; set; } = false;
+    private Guid userAgentWebPushNotificationId { get; set; }
 
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
+        userAgentWebPushNotificationId = await _localStorageService.GetUserAgentIdAsync();
+
         string? accesToken = await JWTHelper.GetAccessTokenAsync(_jS);
 
         //Shortcut for cases when user was not yet authenticated
@@ -85,6 +88,9 @@
         _hubServiceSubscriptionManager
             .AddCallback<NotificationSubscriptionDTO[]>(OnRemoveSubsriptionsProcessedByHub, "RemovedFromWebPushSubscriptions", ComponentId);
 
+        _hubServiceSubscriptionManager
+            .AddCallback(LoadWebPushSubscriptions, "WebPushSubscriptionSetChanged", ComponentId);
+
         //if hub connection is not setted up already, we will set it up now
         await _usersService.ConnectAsync();
 
@@ -99,12 +105,31 @@
         StateHasChanged();
     }
 
-    private async Task OnRemoveSubscriptions()
+    private async Task OnRemoveSubscriptions(string? subscriptionIdString = null)
     {
-        if(webPushSubscriptions.Any())
-            webPushSubscriptions.First().AccessToken = await JWTHelper.GetAccessTokenAsync(_jS);
+        if(!string.IsNullOrWhiteSpace(subscriptionIdString))
+        {
+            if (!Guid.TryParse(subscriptionIdString, out Guid subscriptionId))
+                throw new ArgumentException($"Could not parse {typeof(Guid).Name} from given string: '{subscriptionIdString}'.");
 
-        await _usersService.RemoveUserWebPushSubscriptions(webPushSubscriptions);
+            var subscriptionToDelete = webPushSubscriptions.FirstOrDefault(x => x.Id == subscriptionId);
+            if (subscriptionToDelete is null)
+                throw new ArgumentException
+                ($"Error on web push subscription deletion:" + 
+                "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
+            else
+            {
+                subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(_jS);
+                await _usersService.RemoveUserWebPushSubscriptions(new NotificationSubscriptionDTO[1] { subscriptionToDelete });
+            }
+        }
+        else
+        {
+            if (webPushSubscriptions.Any())
+                webPushSubscriptions.First().AccessToken = await JWTHelper.GetAccessTokenAsync(_jS);
+
+            await _usersService.RemoveUserWebPushSubscriptions(webPushSubscriptions);
+        }
     }
 
     private async Task OnRemoveSubsriptionsProcessedByHub(NotificationSubscriptionDTO[] notificationSubscriptionDTOs)
@@ -119,5 +144,15 @@
         .ToArray();
 
         StateHasChanged();
+    }
+
+    private async Task LoadWebPushSubscriptions()
+    {
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException
+            ("Could not get a access token from local storage to load web push subscriptions.");
+
+        await _usersService.GetUserWebPushSubscriptions(accessToken);
     }
 }

@@ -8,7 +8,6 @@
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.UIComponents.ContactItem;
-@using LimpShared.Models.ConnectedUsersManaging;
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -32,7 +31,8 @@
                 itemCollection="ContactsList.Select(x=> new ItemModel{IsActive = x.IsOnline, IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username}).ToList()"
                 OnItemClicked="NavigateToChatWithContact"
                 OnItemRemoved="RemoveContact" 
-                ListHeader="Your contacts:"/>
+                ListHeader="Your contacts:"
+                IconClass="bi bi-person-fill" />
         }
         else
         {

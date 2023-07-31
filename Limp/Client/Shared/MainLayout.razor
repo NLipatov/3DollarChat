@@ -83,7 +83,7 @@ else
         foreach (var message in unnotifiedAbout)
         {
             if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
-        {
+            {
                 _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
             }
             _messageBox.MarkAsNotified(message.Id);

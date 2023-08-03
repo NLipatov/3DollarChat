@@ -11,5 +11,6 @@ namespace Limp.Client.Services.InboxService
         void MarkAsNotified(Guid messageId);
         Task AddMessageAsync(ClientMessage message, bool isEncrypted = true);
         Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true);
+        Task<ClientMessage[]> GetUnreadedMessages(string partnerName);
     }
 }

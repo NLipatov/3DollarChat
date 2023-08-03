@@ -1,4 +1,6 @@
-﻿<div style="cursor: pointer; @Style" @onclick="HandleClick">
+﻿@using Limp.Client.Shared.ReuseableComponents.EditableList.Models;
+
+<div style="cursor: pointer; @Style" @onclick="HandleClick">
     <div class="item-card @(ItemModel.IsActive ? "active" : "")">
         <div class="header">
             <div class="profile-picture">
@@ -12,6 +14,10 @@
                 <div class="key-info">
                     <i class="bi bi-key-fill key-icon" data-bs-toggle="tooltip" title="AES key for secure communication"></i>
                 </div>
+            }
+            @if (ItemModel.ShowBadge)
+            {
+                <Badge Style=@ItemModel.BadgeModel.InlineStyles>@ItemModel.BadgeModel.Text</Badge>
             }
         </div>
     </div>

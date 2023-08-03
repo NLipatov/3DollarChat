@@ -1,4 +1,5 @@
 ﻿@page "/contacts"
+@using Limp.Client.Services.InboxService;
 @using LimpShared.Models.ConnectedUsersManaging
 @using Limp.Client.Pages.Contacts.UI.Child;
 @using ClientServerCommon.Models;
@@ -14,7 +15,9 @@
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime;
 @inject IBrowserKeyStorage _localKeyManager;
-@using Limp.Client.Shared.ReuseableComponents.EditableList
+@inject IMessageBox _messageBox
+@using Limp.Client.Shared.ReuseableComponents.EditableList;
+@using Limp.Client.Shared.ReuseableComponents.EditableList.Models
 @implements IDisposable
 
 <div class="p-2" style="  
@@ -28,11 +31,20 @@
         @if(ContactsList.Any())
         {
             <EditableList 
-                itemCollection="ContactsList.Select(x=> new ItemModel{IsActive = x.IsOnline, IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username}).ToList()"
+                itemCollection="ContactsList
+                    .Select(x=> new ItemModel
+                    {
+                        IsActive = x.IsOnline, 
+                        IsEncryptionSettedUp = x.IsKeyReady, 
+                        ItemName = x.Username,
+                        BadgeModel = GetContactBadge(x),
+                        ShowBadge = x.UnreadedMessagesCount > 0
+                    })
+                    .ToList()"
                 OnItemClicked="NavigateToChatWithContact"
                 OnItemRemoved="RemoveContact" 
                 ListHeader="Your contacts:"
-                IconClass="bi bi-person-fill" />
+                IconClass="bi bi-person-fill"/>
         }
         else
         {
@@ -64,6 +76,15 @@
     private void ToggleEditContactsMode() => contactEditionMode = !contactEditionMode;
 
     public void NavigateToChatWithContact(string contactUsername) => _navigationManager.NavigateTo($"user/{contactUsername}");
+
+    private BadgeModel GetContactBadge(Contact contact)
+    {
+        return new()
+        {
+            Text = contact.UnreadedMessagesCount.ToString(),
+            InlineStyles = "background-color: white; color: black; margin-left: auto;"
+        };
+    }
 
     private async Task RemoveContact(string username)
     {
@@ -133,6 +154,7 @@
         foreach (Contact contact in ContactsList)
         {
             contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+            contact.UnreadedMessagesCount = (await _messageBox.GetUnreadedMessages(contact.Username)).Length;
         }
 
         StateHasChanged();

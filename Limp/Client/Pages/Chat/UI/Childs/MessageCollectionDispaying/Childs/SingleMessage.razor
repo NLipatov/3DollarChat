@@ -1,9 +1,20 @@
 ﻿@using Limp.Client.ClientOnlyModels;
+@using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services.InboxService;
 @using LimpShared.Models.Message;
+@using Ljbc1994.Blazor.IntersectionObserver
+@inject IIntersectionObserverService ObserverService
+@inject ICallbackExecutor _callbackExecutor
+@inject IMessageBox _messageBox
+@inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
 @if(message != null)
 {
-    <div class="message @messageClass">
+    <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
             <span>@(message.PlainText)</span>
         </div>
@@ -42,6 +53,9 @@
 }
 
 @code {
+    public ElementReference MessageElement { get; set; }
+    public bool IsIntersecting { get; set; }
+
     [Parameter]
     public EventCallback<ClientMessage> OnResend { get; set; }
 
@@ -53,6 +67,27 @@
 
     private bool isOutcoming;
     private string messageClass = string.Empty;
+    private Guid componentId { get; set; }
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
+
+    protected override void OnInitialized()
+    {
+        componentId = Guid.NewGuid();
+
+        SubscribeToHubEvents();
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkMessageAsRead, "OnReceiverMarkedMessageAsRead", componentId);
+    }
+
+    private void MarkMessageAsRead(Guid messageId)
+    {
+        _messageBox.MarkAsRead(messageId);
+        StateHasChanged();
+    }
 
     protected override async Task OnParametersSetAsync()
     {
@@ -60,5 +95,29 @@
         messageClass = isOutcoming ? "outcoming" : "incoming";
 
         await base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await SetupObserver();
+        }
+    }
+
+    public async Task SetupObserver()
+    {
+        await ObserverService.Observe(MessageElement, (entries) =>
+        {
+            var entry = entries.FirstOrDefault();
+            if(entry is not null)
+            {
+                if (message is not null)
+                    _messageService.NotifyThatMessageHasBeenRead(message.Id, message.Sender);
+
+                IsIntersecting = entry.IsIntersecting;
+                StateHasChanged();
+            }
+        });
     }
 }

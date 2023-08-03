@@ -68,6 +68,11 @@ namespace Limp.Client.Services.InboxService.Implementation
         public void MarkAsNotified(Guid messageId)
             => Messages.First(x => x.Id == messageId).IsUserNotified = true;
 
+        public void MarkAsRead(Guid messageId)
+        {
+            Messages.First(x=>x.Id == messageId).IsRead = true;
+        }
+
         public Task<ClientMessage[]> GetUnreadedMessages(string partnerName)
         {
 #warning ToDo: implement this method logics

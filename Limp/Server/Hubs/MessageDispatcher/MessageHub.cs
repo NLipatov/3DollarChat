@@ -109,5 +109,10 @@ namespace Limp.Server.Hubs.MessageDispatcher
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
             await Clients.Caller.SendAsync("ReceivePublicKey", username, pubKey);
         }
+
+        public async Task MessageHasBeenRead(Guid messageId, string messageSender)
+        {
+            await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
+        }
     }
 }

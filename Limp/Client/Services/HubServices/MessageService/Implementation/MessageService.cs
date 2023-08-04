@@ -338,10 +338,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             });
         }
 
-        public async Task NotifyThatMessageHasBeenRead(Guid messageId, string messageSender)
+        public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)
         {
-            string myUsername = await TokenOperations.ResolveMyUsername(_jSRuntime);
-            if (messageSender == myUsername)
+            if (messageSender == myUsername) //If it's our message, we don't want to notify partner that we've seen our message
                 return;
 
             if (hubConnection is not null)

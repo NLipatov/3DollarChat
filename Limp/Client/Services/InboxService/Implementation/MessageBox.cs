@@ -39,6 +39,8 @@ namespace Limp.Client.Services.InboxService.Implementation
             Messages.Add(message);
 
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+
+            _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "NewUnreadedMessage");
         }
 
         public async Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true)
@@ -68,23 +70,13 @@ namespace Limp.Client.Services.InboxService.Implementation
         public void MarkAsNotified(Guid messageId)
             => Messages.First(x => x.Id == messageId).IsUserNotified = true;
 
-        public void MarkAsRead(Guid messageId)
+        public void MarkAsReaded(Guid messageId)
         {
-            Messages.First(x=>x.Id == messageId).IsRead = true;
-        }
-
-        public Task<ClientMessage[]> GetUnreadedMessages(string partnerName)
-        {
-#warning ToDo: implement this method logics
-            return Task.FromResult(new ClientMessage[6]
+            ClientMessage? message = Messages.FirstOrDefault(x => x.Id == messageId);
+            if (message is not null)
             {
-                new(),
-                new(),
-                new(),
-                new(),
-                new(),
-                new()
-            });
+                message.IsRead = true;   
+            }
         }
     }
 }

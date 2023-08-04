@@ -85,7 +85,7 @@
 
     private void MarkMessageAsRead(Guid messageId)
     {
-        _messageBox.MarkAsRead(messageId);
+        _messageBox.MarkAsReaded(messageId);
         StateHasChanged();
     }
 
@@ -113,7 +113,10 @@
             if(entry is not null)
             {
                 if (message is not null)
-                    _messageService.NotifyThatMessageHasBeenRead(message.Id, message.Sender);
+                {
+                    _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername);
+                    MarkMessageAsRead(message.Id);
+                }
 
                 IsIntersecting = entry.IsIntersecting;
                 StateHasChanged();

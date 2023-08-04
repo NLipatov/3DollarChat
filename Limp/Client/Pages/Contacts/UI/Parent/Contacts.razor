@@ -133,6 +133,8 @@
         _hubServiceSubscriptionManager
             .AddCallback<UserConnectionsReport>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
 
+        _hubServiceSubscriptionManager.AddCallback<string>(UpdateContact, "NewUnreadedMessage", ComponentId);
+
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
     }
@@ -146,18 +148,26 @@
         new Contact
             {
                 Username = contact,
-                IsOnline = _usersOnlineMessage.UserConnections.Any(x=>x.Username == contact),
+                IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == contact),
                 LastMessage = DateTime.UtcNow
             }
         ).ToList();
 
         foreach (Contact contact in ContactsList)
         {
-            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
-            contact.UnreadedMessagesCount = (await _messageBox.GetUnreadedMessages(contact.Username)).Length;
+            await UpdateContact(contact.Username);
         }
+    }
 
-        StateHasChanged();
+    private async Task UpdateContact(string contactUsername)
+    {
+        Contact? contact = ContactsList.FirstOrDefault(x => x.Username == contactUsername);
+        if (contact is not null)
+        {
+            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+            contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsRead).Count();
+            StateHasChanged();
+        }
     }
 
     private void TryUpdateLastReceivedContacts(UserConnectionsReport usersOnlineMessage)

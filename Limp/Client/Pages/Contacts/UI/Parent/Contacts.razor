@@ -165,7 +165,7 @@
         if (contact is not null)
         {
             contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
-            contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsRead).Count();
+            contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsSeen).Count();
             StateHasChanged();
         }
     }

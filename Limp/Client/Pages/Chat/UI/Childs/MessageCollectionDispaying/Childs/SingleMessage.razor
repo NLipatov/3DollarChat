@@ -5,7 +5,7 @@
 @using Limp.Client.Services.InboxService;
 @using LimpShared.Models.Message;
 @using Ljbc1994.Blazor.IntersectionObserver
-@inject IIntersectionObserverService ObserverService
+@inject IIntersectionObserverService _observerService
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
@@ -24,7 +24,7 @@
             {
                 @if (message.Sender == myUsername)
                 {
-                    @if (message.IsRead)
+                    @if (message.IsSeen)
                     {
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
@@ -32,7 +32,7 @@
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
                     }
-                    else if (message.IsReceived)
+                    else if (message.IsDelivered)
                     {
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
@@ -40,7 +40,7 @@
                             <i class="fas fa-check @messageClass"></i>
                         </span>
                     }
-                    else if(!message.IsReceived)
+                    else if(!message.IsDelivered)
                     {
                         <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
                             <i class="bi bi-arrow-clockwise">Resend</i>
@@ -69,7 +69,11 @@
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
 
-    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
+    public void Dispose()
+    {
+        _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
+        _observerService.Observe(new(), null, null);
+    }
 
     protected override void OnInitialized()
     {
@@ -80,13 +84,11 @@
 
     private void SubscribeToHubEvents()
     {
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkMessageAsRead, "OnReceiverMarkedMessageAsRead", componentId);
-    }
-
-    private void MarkMessageAsRead(Guid messageId)
-    {
-        _messageBox.MarkAsReaded(messageId);
-        StateHasChanged();
+        _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
+        {
+            _messageBox.OnSeen(id);
+            StateHasChanged();
+        }), "OnReceiverMarkedMessageAsRead", componentId);
     }
 
     protected override async Task OnParametersSetAsync()
@@ -107,15 +109,14 @@
 
     public async Task SetupObserver()
     {
-        await ObserverService.Observe(MessageElement, (entries) =>
+        await _observerService.Observe(MessageElement, (entries) =>
         {
             var entry = entries.FirstOrDefault();
             if(entry is not null)
             {
-                if (message is not null)
+                if (message is not null && message.Sender != myUsername)
                 {
                     _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername);
-                    MarkMessageAsRead(message.Id);
                 }
 
                 IsIntersecting = entry.IsIntersecting;

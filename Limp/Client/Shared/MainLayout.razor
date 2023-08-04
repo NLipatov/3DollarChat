@@ -79,14 +79,14 @@ else
 
     private async void NotifyAboutNewMessages()
     {
-        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsUserNotified == false);
+        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsToastShown == false);
         foreach (var message in unnotifiedAbout)
         {
             if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
             {
                 _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
             }
-            _messageBox.MarkAsNotified(message.Id);
+            _messageBox.OnToastWasShown(message.Id);
         }
     }
 

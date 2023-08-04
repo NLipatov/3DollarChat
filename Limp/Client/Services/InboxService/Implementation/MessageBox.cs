@@ -1,5 +1,4 @@
 ﻿using Limp.Client.ClientOnlyModels;
-using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.UndeliveredMessagesStore;
@@ -58,24 +57,24 @@ namespace Limp.Client.Services.InboxService.Implementation
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
-        public async Task MarkAsReceived(Guid messageId)
+        public async Task OnDelivered(Guid messageId)
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
-                message.IsReceived = true;
+                message.IsDelivered = true;
 
             await _undeliveredMessagesRepository.DeleteAsync(messageId);
         }
 
-        public void MarkAsNotified(Guid messageId)
-            => Messages.First(x => x.Id == messageId).IsUserNotified = true;
+        public void OnToastWasShown(Guid messageId)
+            => Messages.First(x => x.Id == messageId).IsToastShown = true;
 
-        public void MarkAsReaded(Guid messageId)
+        public void OnSeen(Guid messageId)
         {
             ClientMessage? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message is not null)
             {
-                message.IsRead = true;   
+                message.IsSeen = true;
             }
         }
     }

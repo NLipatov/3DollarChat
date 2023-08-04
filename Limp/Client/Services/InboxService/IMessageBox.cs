@@ -5,10 +5,30 @@ namespace Limp.Client.Services.InboxService
     public interface IMessageBox
     {
         public List<ClientMessage> Messages { get; }
-        Task MarkAsReceived(Guid messageId);
-        void MarkAsNotified(Guid messageId);
+
+        /// <summary>
+        /// Adds message to message box
+        /// </summary>
         Task AddMessageAsync(ClientMessage message, bool isEncrypted = true);
+
+        /// <summary>
+        /// Adds messages to message box
+        /// </summary>
         Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true);
-        public void MarkAsReaded(Guid messageId);
+
+        /// <summary>
+        /// Marks message as seen
+        /// </summary>
+        public void OnSeen(Guid messageId);
+
+        /// <summary>
+        /// Marks message as delivered
+        /// </summary>
+        Task OnDelivered(Guid messageId);
+
+        /// <summary>
+        /// Marks message toast as shown
+        /// </summary>
+        void OnToastWasShown(Guid messageId);
     }
 }

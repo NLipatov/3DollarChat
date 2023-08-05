@@ -22,6 +22,13 @@
 <AuthenticatedView>
     <AuthenticatedContent>
     <div class="ApplicationContent p-2">
+            @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
+            {
+                <Callout Type="CalloutType.Info">
+                    <span>Looks like everyone is offline now.</span>
+                </Callout>
+            }
+
             <Virtualize 
                 Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0]"
                 Context="connection">
@@ -38,7 +45,7 @@
 </AuthenticatedView>
 
 @code {
-    private UserConnectionsReport? _usersOnlineMessage { get; set; }
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
     private string myUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 

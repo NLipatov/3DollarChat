@@ -116,7 +116,10 @@
             {
                 if (message is not null && message.Sender != myUsername)
                 {
+                    //sends sender a message has been readed confirmation
                     _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername);
+                    //Marks message as seen
+                    _messageBox.OnSeen(message.Id);
                 }
 
                 IsIntersecting = entry.IsIntersecting;

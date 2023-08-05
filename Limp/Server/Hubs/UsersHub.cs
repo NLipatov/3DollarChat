@@ -8,6 +8,7 @@ using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
 
@@ -134,6 +135,12 @@ namespace Limp.Server.Hubs
             await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
             await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
+        }
+
+        public async Task CheckIfUserExist(string username)
+        {
+            IsUserExistDTO response = await _serverHttpClient.CheckIfUserExists(username);
+            await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }
     }
 }

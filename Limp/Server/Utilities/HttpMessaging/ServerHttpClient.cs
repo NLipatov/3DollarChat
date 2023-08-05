@@ -2,6 +2,7 @@
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
+using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using System.Net;
 using System.Text;
@@ -186,6 +187,23 @@ namespace Limp.Server.Utilities.HttpMessaging
                 var response = await client.PatchAsJsonAsync(requestUrl,  subscriptionsToRemove);
                 if(response.StatusCode is not HttpStatusCode.OK)
                     throw new HttpRequestException($"Server did not respond with {HttpStatusCode.OK} status code.");
+            }
+        }
+
+        public async Task<IsUserExistDTO> CheckIfUserExists(string username)
+        {
+            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]?.Replace("{username}", username);
+            
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.GetFromJsonAsync<IsUserExistDTO>(requestUrl);
+
+                if (response is null)
+                    throw new HttpRequestException($"Server respond with unexpected JSON value.");
+
+                return response;
             }
         }
     }

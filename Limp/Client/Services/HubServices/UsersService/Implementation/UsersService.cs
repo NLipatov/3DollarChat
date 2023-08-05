@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using LimpShared.Models.Users;
 
 namespace Limp.Client.Services.HubService.UsersService.Implementation
 {
@@ -78,6 +79,11 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             hubConnection.On("WebPushSubscriptionSetChanged", () =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
+            });
+
+            hubConnection.On<IsUserExistDTO>("UserExistanceResponse", async isUserExistDTO =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
             });
 
             await hubConnection.StartAsync();
@@ -215,6 +221,14 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 throw new ApplicationException("Hub is not connected.");
 
             await hubConnection.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);
+        }
+
+        public async Task CheckIfUserExists(string username)
+        {
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("CheckIfUserExist", username);
         }
     }
 }

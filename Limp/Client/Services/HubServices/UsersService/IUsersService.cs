@@ -19,5 +19,6 @@ namespace Limp.Client.Services.HubService.UsersService
         Task AddUserWebPushSubscription(NotificationSubscriptionDTO subscriptionDTO);
         Task GetUserWebPushSubscriptions(string accessToken);
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove);
+        Task CheckIfUserExists(string username);
     }
 }

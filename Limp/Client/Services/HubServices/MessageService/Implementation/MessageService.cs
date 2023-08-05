@@ -182,7 +182,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
                 if (string.IsNullOrWhiteSpace(accessToken))
                 {
-                    _navigationManager.NavigateTo("/login");
+                    _navigationManager.NavigateTo("/signIn");
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))

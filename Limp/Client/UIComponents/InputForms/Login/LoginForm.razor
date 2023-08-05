@@ -35,11 +35,6 @@
                               OnInput="((value) => LoginFormModel.Password = value)" />
 
                         <div class="d-flex justify-content-around align-items-center mb-4">
-                            <!-- Checkbox -->
-                            <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" id="form1Example3" checked />
-                                <label class="form-check-label" for="form1Example3"> Remember me </label>
-                            </div>
                             
                             <Tooltip Class="d-inline-block" Title="Not yet available" role="button">
                                 <button class="btn btn-secondary btn-lg btn-block" disabled href="#!">Forgot password?</button>
@@ -63,7 +58,7 @@
                             <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
                         </div>
 
-                        <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/register"))>Register</a>
+                        <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/signUp"))>Sign Up</a>
 
                         <div class="validation-results">
                             <DataAnnotationsValidator />

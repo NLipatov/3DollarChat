@@ -106,7 +106,7 @@ else
         //If username was not read, ask user to relogin
         if (string.IsNullOrWhiteSpace(myUsername))
         {
-            _navigationManager.NavigateTo("/login");
+            _navigationManager.NavigateTo("/signIn");
             return;
         }
 

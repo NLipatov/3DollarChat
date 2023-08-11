@@ -26,8 +26,7 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
             if (string.IsNullOrWhiteSpace(accessToken))
-                throw new ApplicationException
-                ("Could not subscribe to web push notifications because access token was empty string. Relogin needed.");
+                return;
 
             NotificationSubscriptionDTO? subscription =
                 await _jSRuntime.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");

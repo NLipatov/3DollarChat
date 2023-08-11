@@ -31,9 +31,13 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         public async Task<HubConnection> ConnectAsync()
         {
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
+            
             if (existingHubConnection != null)
             {
-                return existingHubConnection;
+                if (existingHubConnection.State == HubConnectionState.Connected)
+                    return existingHubConnection;
+                else
+                    await existingHubConnection.StopAsync();
             }
 
             hubConnection = new HubConnectionBuilder()

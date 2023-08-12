@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ $# -lt 1 ]; then
+    echo "Usage: $0 <Auth-api-address without an \"/api\" part>"
+    exit 1
+fi
+
 # Step 1: Pull the latest changes from Git
 echo "INFO: Step 1: Pull the latest changes from Git"
 git pull
@@ -28,6 +33,11 @@ EXISTING_IMAGE=$(docker images -q wasm-chat)
 if [ "$EXISTING_IMAGE" ]; then
     docker rmi "$EXISTING_IMAGE"
 fi
+
+# Step 6: Replace the database connection string in appsettings.json
+echo "INFO: Step 6: Replace the database connection string in appsettings.json"
+auth_api_address="$1"
+sed -i "s/\"Address\": \"https:\/\/localhost:7143\/\"/\"Address\": \"$auth_api_address\"/" appsettings.json
 
 # Step 6: Publish the .NET app to 'distro' folder
 echo "INFO: Step 7: Publish the .NET app to 'distro' folder"

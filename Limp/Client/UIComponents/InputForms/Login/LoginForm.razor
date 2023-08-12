@@ -1,0 +1,106 @@
+﻿@using Limp.Client.UIComponents.InputForms.InputBoxes
+@using Limp.Client.UIComponents.InputForms.Login.Models;
+@using Limp.Client.UIComponents.SuccessOrErrorMessage
+@using LimpShared.Models.Authentication.Models;
+@using LimpShared.Models.Authentication.Models.UserAuthentication;
+@inject NavigationManager _navigationManager
+
+@if (LoginAttemptResult.Result != AuthResultType.Success)
+{
+    <section class="vh-100">
+        <div class="container py-5 h-100">
+            <div class="row d-flex align-items-center justify-content-center h-100">
+                <div class="col-md-8 col-lg-7 col-xl-6">
+                    <img src="https://svgur.com/i/sLL.svg"
+                         class="img-fluid" alt="man inputting his account password">
+                </div>
+                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                    @if (LoginAttemptResult.Result != null && !string.IsNullOrWhiteSpace(LoginAttemptResult.Message) && LoginAttemptResult.Result != AuthResultType.Success)
+                    {
+                        <p class="text-danger fw-bold fs-5">
+                            @LoginAttemptResult.Message</p>
+                    }
+                    <EditForm Model="@LoginFormModel" OnSubmit="OnLogin">
+                        <!-- Username input -->
+                        <InputBox InputText="@LoginFormModel.Username"
+                              BindEvent="oninput"
+                              IsRequired="true"
+                              OnInput="((value) => LoginFormModel.Username = value)" />
+
+                        <!-- Password input -->
+                        <InputBox InputText="@LoginFormModel.Password"
+                              BindEvent="oninput"
+                              IsRequired="true"
+                              Type="password"
+                              OnInput="((value) => LoginFormModel.Password = value)" />
+
+                        <div class="d-flex justify-content-around align-items-center mb-4">
+                            
+                            <Tooltip Class="d-inline-block" Title="Not yet available" role="button">
+                                <button class="btn btn-secondary btn-lg btn-block" disabled href="#!">Forgot password?</button>
+                            </Tooltip>
+                        </div>
+
+                        <!-- Submit button -->
+                        <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in</button>
+
+                        <div class="divider d-flex align-items-center my-4">
+                            <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
+                        </div>
+
+                        <Tooltip Class="d-inline-block" Title="Not yet available" role="button">
+                            <button disabled class="btn btn-primary btn-lg btn-block" role="button">
+                                <i class="bi bi-fingerprint"></i>Continue with WebAuthn
+                            </button>
+                        </Tooltip>
+
+                        <div class="divider d-flex align-items-center my-4">
+                            <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
+                        </div>
+
+                        <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/signUp"))>Sign Up</a>
+
+                        <div class="validation-results">
+                            <DataAnnotationsValidator />
+                            <ValidationSummary class="d-flex flex-column gap-2" />
+                        </div>
+
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </section>
+}
+else
+{
+    <div class="d-flex flex-column align-items-center font-weight-bold text-center" 
+    style="max-width: 50%; 
+        height: 100vh; 
+        justify-content: center; 
+        margin: 0 auto;">
+        <img src="https://svgur.com/i/sKd.svg" class="img-fluid">
+        <p>You're logged in!</p>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public Action<UserAuthentication> OnLoginEvent { get; set; } = ((dto) => throw new ApplicationException
+    ($"At {nameof(LoginFormModel)} component please provide a handler for event: {nameof(OnLogin)}"));
+
+    [Parameter]
+    public AuthResult LoginAttemptResult { get; set; } = new();
+
+    private LoginFormModel LoginFormModel = new();
+
+    private void OnLogin()
+    {
+        UserAuthentication authenticationData = new()
+            {
+                Username = LoginFormModel.Username,
+                Password = LoginFormModel.Password,
+            };
+
+        OnLoginEvent(authenticationData);
+    }
+}

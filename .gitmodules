@@ -1,0 +1,3 @@
+[submodule "LimpShared"]
+	path = LimpShared
+	url = https://github.com/NLipatov/LimpShared.git

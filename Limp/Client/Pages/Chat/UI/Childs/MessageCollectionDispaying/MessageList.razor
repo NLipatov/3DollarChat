@@ -1,0 +1,74 @@
+﻿@using Limp.Client.ClientOnlyModels;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
+@using Limp.Client.Services.InboxService;
+@using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying.Childs
+@using Limp.Client.Services.UndeliveredMessagesStore;
+@using LimpShared.Models.Message;
+@using Ljbc1994.Blazor.IntersectionObserver.Components
+@inject IMessageBox _messageBox
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IJSRuntime _jSRuntime
+@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
+@inject IUndeliveredMessageService _undeliveredMessageService
+@implements IDisposable
+
+<div class="messages-box">
+    <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup).ToList()" Context="message">
+        <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage" />
+    </Virtualize>
+</div>
+
+@code {
+    [Parameter]
+    public string targetGroup { get; set; } = string.Empty;
+
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
+
+    private Guid ComponentId { get; set; }
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    protected override async Task OnInitializedAsync()
+    {
+        ComponentId = Guid.NewGuid();
+        SubscribeToHubEvents();
+    }
+
+    private async Task ResendMessage(ClientMessage message)
+    {
+        await _undeliveredMessageService.SendUndelivered(message);
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
+    }
+
+    public async Task MarkAsReceived(Guid messageId)
+    {
+        await _undeliveredMessagesRepository.DeleteAsync(messageId);
+
+        await _messageBox.OnDelivered(messageId);
+
+        StateHasChanged();
+    }
+
+    public async Task AddMessageAsync()
+    {
+        StateHasChanged();
+
+        await ScrollToLastMessage();
+    }
+
+    private async Task ScrollToLastMessage()
+    {
+        string jsCode = 
+        @"var messagesBox = document.querySelector('.messages-box');
+        messagesBox.scrollTop = messagesBox.scrollHeight;";
+
+        await _jSRuntime.InvokeVoidAsync("eval", jsCode);
+    }
+}

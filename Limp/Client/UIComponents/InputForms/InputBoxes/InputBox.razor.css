@@ -1,0 +1,27 @@
+﻿.input-block {
+    display: flex;
+    justify-content: space-between;
+}
+
+.input-block input {
+    border-radius: 5px;
+    height: 20px;
+    border: none;
+}
+
+.input-box {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    width: 100%;
+}
+
+.input-box svg {
+    font-size: xx-large;
+    width: 40px;
+}
+
+.input-box input {
+    height: 40px;
+    width: 100%;
+}

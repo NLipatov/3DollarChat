@@ -1,0 +1,179 @@
+﻿@page "/user/{topicName?}"
+@using Limp.Client.ClientOnlyModels;
+@using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
+@using Limp.Client.Pages.Chat.UI.Childs.MessageInput
+@using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+@using Limp.Client.Cryptography.KeyStorage;
+@using Limp.Client.HubInteraction.Handlers;
+@using Limp.Client.HubInteraction;
+@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.Chat.Logic.TokenRelatedOperations;
+@using Limp.Client.Pages.Chat.UI.Childs.ChatHeader
+@using Limp.Client.Services.CloudKeyService;
+@using Limp.Client.Services.CloudKeyService.Models;
+@using Limp.Client.Services.HubService.UsersService;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services;
+@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
+@using Limp.Client.Services.UndeliveredMessagesStore;
+@using LimpShared.Models.ConnectedUsersManaging;
+@using LimpShared.Models.Message;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Limp.Client.Cryptography;
+@using Limp.Client.HubInteraction.Handlers.MessageDecryption;
+@using LimpShared.Encryption;
+@using Limp.Client.Pages;
+@using Limp.Client.Services.InboxService;
+@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+@using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
+@using Limp.Client.Pages.AuthenticationChecks
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jS
+@inject ICryptographyService _cryptographyService
+@inject IMessageDecryptor _messageDecryptor
+@inject IMessageBox _messageBox
+@inject IAESOfferHandler _aesOfferHandler
+@inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IMessageBuilder _messageBuilder
+@inject IBrowserKeyStorage _localKeyManager
+@inject IUsersService _usersService
+@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
+@inject IUndeliveredMessageService _undeliveredMessageService
+@implements IDisposable
+
+@if (string.IsNullOrWhiteSpace(topicName))
+{
+    <div class="p-2">
+        <Callout Type="CalloutType.Warning">
+            <span>
+                Specify a username in a url like so: "user/<strong>Pavel</strong>"
+            </span>
+        </Callout>
+    </div>
+}
+else
+{
+    <PageTitle>Chat with @topicName</PageTitle>
+
+    <AuthenticatedView>
+        <AuthenticatedContent>
+
+            <KeyBeingTransfered IsDisplayed=@(AESKey == null) />
+
+            <ChatHeader IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
+                        PartnerName=@topicName
+                        OnAESRenewal=@RenewAES
+                        AESKey=@AESKey />
+
+            <MessageList @ref=MessageListComponent
+                         targetGroup=@topicName
+                         myUsername=@myUsername />
+
+            <MessageInputBox myUsername=@myUsername
+                             topicName=@topicName />
+
+        </AuthenticatedContent>
+        <UnauthenticatedContent>
+            <UnAuthorized />
+        </UnauthenticatedContent>
+    </AuthenticatedView>
+}
+
+@code {
+    [Parameter]
+    public string topicName { get; set; } = string.Empty;
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
+    private List<UserConnection> userConnections { get; set; } = new();
+    private bool AESKeyForConversationExists => _localKeyManager.GetAESKeyForChat(topicName) != null;
+    private Key? AESKey { get; set; }
+    private Guid ComponentId { get; set; }
+    private MessageList? MessageListComponent { get; set; } = new();
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        myUsername = await TokenOperations.ResolveMyUsername(_jS);
+
+        //If username was not read, ask user to relogin
+        if (string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/signIn");
+            return;
+        }
+
+        SubscribeToHubEvents();
+
+        await GetAESKeyAsync();
+
+        await _usersService.CheckIfUserOnline(topicName);
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnection>(OnIsUserOnlineResponse, "IsUserOnlineResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
+    }
+
+    private void OnAESUpdated(bool keyRenewed)
+    {
+        AESKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        StateHasChanged();
+    }
+
+    private async Task OnIsUserOnlineResponse(UserConnection userConnection)
+    {
+        if(userConnection.Username == topicName)
+        {
+            if (userConnection.ConnectionIds.Count > 0)
+            {
+                _usersOnlineMessage.UserConnections = new UserConnection[1] { userConnection };
+            }
+        }
+    }
+
+    private async Task GetAESKeyAsync()
+    {
+        AESKey = await _localKeyManager.GetAESKeyForChat(topicName);
+        if (AESKey != null)
+        {
+            return;
+        }
+
+        await RenewAES();
+    }
+
+    private async Task RenewAES()
+    {
+        await _messageService.RequestForPartnerPublicKey(topicName);
+    }
+
+    public async Task OnAESKeyReady(string partnerName)
+    {
+        AESKey = await _localKeyManager.GetAESKeyForChat(partnerName);
+        if (AESKey == null)
+            throw new ApplicationException("Could not get an AES key.");
+
+        await _localKeyManager.SaveInMemoryKeysInLocalStorage();
+        StateHasChanged();
+    }
+
+    private void OnUsersOnlineUpdate(UserConnectionsReport usersOnlineMessage)
+    {
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        {
+            _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
+        }
+    }
+}

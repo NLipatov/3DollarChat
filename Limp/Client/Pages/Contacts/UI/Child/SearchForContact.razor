@@ -1,0 +1,35 @@
+﻿<div class="p-2" style="
+        background-color: whitesmoke;">
+    <div class="input-group mb-3">
+        <div class="input-group-prepend">
+            <span class="input-group-text" id="basic-addon1">@("@")</span>
+        </div>
+        <input type="text" 
+            class="form-control" 
+            placeholder="Add someone new" 
+            aria-label="Username" 
+            aria-describedby="basic-addon1"
+            @bind="NewContactUsername"
+            @bind:event="oninput"
+            @onkeydown="((e)=> HandleKeyDown(e))">
+    </div>
+    <Button Color="ButtonColor.Primary" @onclick="() => OnNewContactSearch.InvokeAsync(NewContactUsername)">
+        <span>Search for a user</span>
+        <Icon Name="IconName.Search" />
+    </Button>
+</div>
+
+@code {
+    [Parameter]
+    public EventCallback<string> OnNewContactSearch { get; set; }
+
+    private string NewContactUsername { get; set; } = string.Empty;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await OnNewContactSearch.InvokeAsync(NewContactUsername);
+        }
+    }
+}

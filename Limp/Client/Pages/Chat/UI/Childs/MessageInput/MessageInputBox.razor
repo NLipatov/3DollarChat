@@ -1,0 +1,40 @@
+﻿@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+@using Limp.Client.Services.HubServices.MessageService;
+@using Limp.Client.Services.InboxService;
+@inject IMessageBuilder _messageBuilder
+@inject IMessageService _messageService
+@inject IMessageBox _messageBox
+
+<div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
+    <input @bind="messageInput" @bind:event="oninput" />
+    <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
+</div>
+
+@code {
+    [Parameter]
+    public string topicName { get; set; } = string.Empty;
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
+    private string messageInput { get; set; } = string.Empty;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(messageInput) || string.IsNullOrWhiteSpace(topicName) || string.IsNullOrWhiteSpace(myUsername))
+        {
+            messageInput = string.Empty;
+            return;
+        }
+
+        await _messageService.SendUserMessage(messageInput, topicName, myUsername);
+        messageInput = string.Empty;
+    }
+
+}

@@ -1,4 +1,11 @@
+using Limp.Server.Extensions;
 using Limp.Server.Hubs;
+using Limp.Server.Hubs.MessageDispatcher;
+using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
+using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Limp.Server.WebPushNotifications;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -14,6 +21,16 @@ builder.Services.AddResponseCompression(opts =>
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
         new[] { "application/octet-stream" });
 });
+
+builder.Services.UseServerHttpClient();
+
+builder.Services.UseKafkaService();
+
+builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
+builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
+builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
+builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
+builder.Services.AddTransient<IWebPushSender, WebPushSender>();
 
 var app = builder.Build();
 
@@ -41,7 +58,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<ChatHub>("/chatHub");
+app.MapHub<AuthHub>("/authHub");
+app.MapHub<UsersHub>("/usersHub");
+app.MapHub<MessageHub>("/messageDispatcherHub");
 app.MapFallbackToFile("index.html");
 
 app.Run();

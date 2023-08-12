@@ -18,7 +18,7 @@
 @inject ILoginHandler _loginHandler
 @inject IUsersService _usersService
 @inject IHubConnectionProvider _hubConnectionProvider
-@page "/login"
+@page "/signIn"
 
 <LoginForm 
     OnLoginEvent="async (dto) => await OnLogIn(dto)"

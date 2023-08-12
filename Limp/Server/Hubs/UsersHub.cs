@@ -1,4 +1,5 @@
 ﻿using ClientServerCommon.Models;
+using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
@@ -7,6 +8,7 @@ using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.ConnectedUsersManaging;
+using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
 
@@ -115,9 +117,30 @@ namespace Limp.Server.Hubs
             });
         }
 
-        public async Task SubscribeToWebPushNotifications(NotificationSubscriptionDTO notificationSubscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO notificationSubscriptionDTO)
         {
-            await _serverHttpClient.SubscribeToWebPush(notificationSubscriptionDTO);
+            await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
+            await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
+        }
+
+        public async Task GetUserWebPushSubscriptions(string accessToken)
+        {
+            string username = TokenReader.GetUsernameFromAccessToken(accessToken);
+            var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
+            await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
+        }
+
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] notificationSubscriptionDTOs)
+        {
+            await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
+            await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
+            await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
+        }
+
+        public async Task CheckIfUserExist(string username)
+        {
+            IsUserExistDTO response = await _serverHttpClient.CheckIfUserExists(username);
+            await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }
     }
 }

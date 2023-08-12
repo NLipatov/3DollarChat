@@ -1,18 +1,17 @@
-﻿.user-card {
+﻿.item-card {
     padding: 1.25rem;
-    margin-bottom: 10px;
     border-left: 0.25rem solid rgba(0, 10, 0, 1);
     background-color: rgba(var(--bs-dark-rgb), .075);
     border-radius: 0.25rem;
 }
 
-.user-card a.username {
+.item-card a.name {
     text-decoration: none;
     color: black;
     font-size: 20px;
 }
 
-.online {
+.active {
     border-left: 0.25rem solid lawngreen !important;
 }
 
@@ -22,11 +21,11 @@
     gap: 10px;
 }
 
-.profile-picture {
+.item-picture {
     /* Добавьте стили для профильной картинки */
 }
 
-.person-icon,
+.item-icon,
 .key-icon {
     font-size: 20px;
 }

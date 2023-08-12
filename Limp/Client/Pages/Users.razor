@@ -21,15 +21,22 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-    <div class="ApplicationContent">
-        <div class="p-2">
-                @foreach (var connection in _usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0])
+    <div class="ApplicationContent p-2">
+            @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
             {
-                <ContactBar Username="@connection.Username"
-                        IsOnline="true"
-                        OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
+                <Callout Type="CalloutType.Info">
+                    <span>Looks like everyone is offline now.</span>
+                </Callout>
             }
-        </div>
+
+            <Virtualize 
+                Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0]"
+                Context="connection">
+
+                <ContactBar Username="@connection.Username"
+                            IsOnline="true"
+                            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
+            </Virtualize>
     </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
@@ -38,7 +45,7 @@
 </AuthenticatedView>
 
 @code {
-    private UserConnectionsReport? _usersOnlineMessage { get; set; }
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
     private string myUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
@@ -59,7 +66,7 @@
         //If username was not read, ask user to relogin
         if(string.IsNullOrWhiteSpace(myUsername))
         {
-            _navigationManager.NavigateTo("/login");
+            _navigationManager.NavigateTo("/signIn");
             return;
         }
 

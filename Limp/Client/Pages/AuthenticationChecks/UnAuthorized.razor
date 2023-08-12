@@ -17,7 +17,7 @@
                 </div>
 
                 <button @onclick="NavigateToRegister" class="btn btn-primary btn-lg btn-block d-flex mx-auto">
-                    Register
+                    Sign up
                 </button>
             </div>
         </div>
@@ -25,6 +25,6 @@
 </section>
 
 @code {
-    private void NavigateToLogIn() => _navigationManager.NavigateTo("/login");
-    private void NavigateToRegister() => _navigationManager.NavigateTo("/register");
+    private void NavigateToLogIn() => _navigationManager.NavigateTo("/signIn");
+    private void NavigateToRegister() => _navigationManager.NavigateTo("/signUp");
 }

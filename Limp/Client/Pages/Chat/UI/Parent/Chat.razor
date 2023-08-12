@@ -43,32 +43,43 @@
 @inject IUndeliveredMessageService _undeliveredMessageService
 @implements IDisposable
 
-<PageTitle>Chat with @topicName</PageTitle>
+@if (string.IsNullOrWhiteSpace(topicName))
+{
+    <div class="p-2">
+        <Callout Type="CalloutType.Warning">
+            <span>
+                Specify a username in a url like so: "user/<strong>Pavel</strong>"
+            </span>
+        </Callout>
+    </div>
+}
+else
+{
+    <PageTitle>Chat with @topicName</PageTitle>
 
-<AuthenticatedView>
-    <AuthenticatedContent>
+    <AuthenticatedView>
+        <AuthenticatedContent>
 
             <KeyBeingTransfered IsDisplayed=@(AESKey == null) />
 
-            <ChatHeader 
-                IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
-                PartnerName=@topicName
-                OnAESRenewal=@RenewAES 
-                AESKey=@AESKey/>
+            <ChatHeader IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
+                        PartnerName=@topicName
+                        OnAESRenewal=@RenewAES
+                        AESKey=@AESKey />
 
             <MessageList @ref=MessageListComponent
-                        targetGroup=@topicName 
-                        myUsername=@myUsername/>
+                         targetGroup=@topicName
+                         myUsername=@myUsername />
 
-            <MessageInputBox 
-                myUsername=@myUsername
-                topicName=@topicName/>
+            <MessageInputBox myUsername=@myUsername
+                             topicName=@topicName />
 
-    </AuthenticatedContent>
-    <UnauthenticatedContent>
-        <UnAuthorized/>
-    </UnauthenticatedContent>
-</AuthenticatedView>
+        </AuthenticatedContent>
+        <UnauthenticatedContent>
+            <UnAuthorized />
+        </UnauthenticatedContent>
+    </AuthenticatedView>
+}
 
 @code {
     [Parameter]
@@ -95,7 +106,7 @@
         //If username was not read, ask user to relogin
         if (string.IsNullOrWhiteSpace(myUsername))
         {
-            _navigationManager.NavigateTo("/login");
+            _navigationManager.NavigateTo("/signIn");
             return;
         }
 

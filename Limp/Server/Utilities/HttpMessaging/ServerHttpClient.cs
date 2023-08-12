@@ -2,7 +2,9 @@
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
+using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
+using System.Net;
 using System.Text;
 using System.Text.Json;
 
@@ -151,7 +153,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task SubscribeToWebPush(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDTO subscriptionDTO)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
 
@@ -161,7 +163,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<NotificationSubscriptionDTO[]> GetUserSubscriptions(string username)
+        public async Task<NotificationSubscriptionDTO[]> GetUserWebPushSubscriptionsByAccessToken(string username)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
 
@@ -173,6 +175,35 @@ namespace Limp.Server.Utilities.HttpMessaging
                 {
                     PropertyNameCaseInsensitive = true
                 }) ?? new NotificationSubscriptionDTO[0];
+            }
+        }
+
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+        {
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.PatchAsJsonAsync(requestUrl,  subscriptionsToRemove);
+                if(response.StatusCode is not HttpStatusCode.OK)
+                    throw new HttpRequestException($"Server did not respond with {HttpStatusCode.OK} status code.");
+            }
+        }
+
+        public async Task<IsUserExistDTO> CheckIfUserExists(string username)
+        {
+            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]?.Replace("{username}", username);
+            
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.GetFromJsonAsync<IsUserExistDTO>(requestUrl);
+
+                if (response is null)
+                    throw new HttpRequestException($"Server respond with unexpected JSON value.");
+
+                return response;
             }
         }
     }

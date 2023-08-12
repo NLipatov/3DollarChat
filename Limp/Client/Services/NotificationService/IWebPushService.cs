@@ -3,5 +3,6 @@
     public interface IWebPushService
     {
         Task RequestWebPushPermission();
+        Task ResetWebPushPermission();
     }
 }

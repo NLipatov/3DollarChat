@@ -17,6 +17,11 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
             await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message.ToReceiverRepresentation());
         }
 
+        public async Task MarkAsReaded(Guid messageId, string messageSender, IHubCallerClients clients)
+        {
+            await clients.Group(messageSender).SendAsync("MessageHasBeenRead", messageId);
+        }
+
         public async Task MarkAsReceived(Guid messageId, string topicName, IHubCallerClients clients)
         {
             if (string.IsNullOrWhiteSpace(topicName))

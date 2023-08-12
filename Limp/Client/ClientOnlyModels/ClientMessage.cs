@@ -6,6 +6,6 @@ namespace Limp.Client.ClientOnlyModels
     public class ClientMessage : Message
     {
         public string PlainText { get; set; } = string.Empty;
-        public bool IsUserNotified { get; set; } = false;
+        public bool IsToastShown { get; set; } = false;
     }
 }

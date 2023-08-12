@@ -13,5 +13,6 @@ namespace Limp.Client.Services.HubServices.MessageService
         Task SendMessage(Message message);
         Task RequestForPartnerPublicKey(string partnerUsername); 
         Task SendUserMessage(string text, string targetGroup, string myUsername);
+        Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
     }
 }

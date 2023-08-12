@@ -7,6 +7,7 @@ using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.A
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+using Limp.Client.Pages.Chat.Logic.TokenRelatedOperations;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
@@ -151,6 +152,11 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsReceived");
             });
 
+            hubConnection.On<Guid>("MessageHasBeenRead", messageId =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsRead");
+            });
+
             //Handling server side response on partners Public Key
             hubConnection.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
             {
@@ -176,7 +182,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
                 if (string.IsNullOrWhiteSpace(accessToken))
                 {
-                    _navigationManager.NavigateTo("/login");
+                    _navigationManager.NavigateTo("/signIn");
                     return;
                 }
                 if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
@@ -330,6 +336,22 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 PlainText = text,
                 DateSent = DateTime.UtcNow
             });
+        }
+
+        public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)
+        {
+            if (messageSender == myUsername) //If it's our message, we don't want to notify partner that we've seen our message
+                return;
+
+            if (hubConnection is not null)
+            {
+                if (hubConnection.State is HubConnectionState.Connected)
+                {
+                    await hubConnection.SendAsync("MessageHasBeenRead", messageId, messageSender);
+                }    
+            }
+
+            throw new ArgumentException("Notification was not sent because hub connection is lost.");
         }
     }
 }

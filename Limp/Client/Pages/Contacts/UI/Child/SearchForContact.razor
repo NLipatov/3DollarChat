@@ -1,16 +1,17 @@
-﻿<div class="m-2 p-2" style="
+﻿<div class="p-2" style="
         background-color: whitesmoke;">
-    <h1>Search for a new contact!</h1>
     <div class="input-group mb-3">
         <div class="input-group-prepend">
             <span class="input-group-text" id="basic-addon1">@("@")</span>
         </div>
         <input type="text" 
             class="form-control" 
-            placeholder="Username" 
+            placeholder="Add someone new" 
             aria-label="Username" 
             aria-describedby="basic-addon1"
-            @bind-value="NewContactUsername">
+            @bind="NewContactUsername"
+            @bind:event="oninput"
+            @onkeydown="((e)=> HandleKeyDown(e))">
     </div>
     <Button Color="ButtonColor.Primary" @onclick="() => OnNewContactSearch.InvokeAsync(NewContactUsername)">
         <span>Search for a user</span>
@@ -19,7 +20,16 @@
 </div>
 
 @code {
-    private string NewContactUsername { get; set; } = string.Empty;
     [Parameter]
     public EventCallback<string> OnNewContactSearch { get; set; }
+
+    private string NewContactUsername { get; set; } = string.Empty;
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await OnNewContactSearch.InvokeAsync(NewContactUsername);
+        }
+    }
 }

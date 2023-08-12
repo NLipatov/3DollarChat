@@ -48,7 +48,8 @@ else
 }
 
 <BlazoredToasts 
-    Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"/>
+    Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"
+    Timeout="2"/>
 
 @code{
     private bool isRSAGenerated = false;
@@ -63,7 +64,7 @@ else
         ComponentId = Guid.NewGuid();
 
         //Subscribing to server event of updating online users
-        _hubServiceSubscriptionManager.AddCallback(NotifyAboutNewMessages, "MessageBoxUpdate", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
 
         await _cryptographyService.GenerateRSAKeyPairAsync();
         KeysGeneratedHandler.SubscribeToRSAKeysGeneratedEvent(() =>
@@ -77,16 +78,16 @@ else
         await _webPushService.RequestWebPushPermission();
     }
 
-    private async void NotifyAboutNewMessages()
+    private async void ShowMessageToast()
     {
-        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsUserNotified == false);
+        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsToastShown == false);
         foreach (var message in unnotifiedAbout)
         {
             if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
-        {
+            {
                 _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
             }
-            _messageBox.MarkAsNotified(message.Id);
+            _messageBox.OnToastWasShown(message.Id);
         }
     }
 

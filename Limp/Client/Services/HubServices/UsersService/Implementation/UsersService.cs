@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using LimpShared.Models.Users;
 
 namespace Limp.Client.Services.HubService.UsersService.Implementation
 {
@@ -63,6 +64,26 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+            });
+
+            hubConnection.On<NotificationSubscriptionDTO[]>("ReceiveWebPushSubscriptions", subscriptions =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
+            });
+
+            hubConnection.On<NotificationSubscriptionDTO[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
+            });
+
+            hubConnection.On("WebPushSubscriptionSetChanged", () =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
+            });
+
+            hubConnection.On<IsUserExistDTO>("UserExistanceResponse", async isUserExistDTO =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
             });
 
             await hubConnection.StartAsync();
@@ -173,12 +194,41 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             }
         }
 
-        public async Task SubscribeUserToWebPushNotificationsAsync(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO subscriptionDTO)
         {
             if (hubConnection?.State is not HubConnectionState.Connected)
                 throw new ApplicationException("Hub is not connected.");
 
-            await hubConnection.SendAsync("SubscribeToWebPushNotifications", subscriptionDTO);
+            await hubConnection.SendAsync("AddUserWebPushSubscription", subscriptionDTO);
+        }
+
+        public async Task GetUserWebPushSubscriptions(string accessToken)
+        {
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("GetUserWebPushSubscriptions", accessToken);
+        }
+
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+        {
+            //If there are no subscription with access token - throw an exception
+            if (!subscriptionsToRemove.Any(x=>!string.IsNullOrWhiteSpace(x.AccessToken)))
+                throw new ArgumentException
+                    ($"Atleast one of parameters array should have it's {nameof(NotificationSubscriptionDTO.AccessToken)} not null");
+
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);
+        }
+
+        public async Task CheckIfUserExists(string username)
+        {
+            if (hubConnection?.State is not HubConnectionState.Connected)
+                throw new ApplicationException("Hub is not connected.");
+
+            await hubConnection.SendAsync("CheckIfUserExist", username);
         }
     }
 }

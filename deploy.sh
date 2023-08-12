@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ $# -lt 1 ]; then
-    echo "Usage: $0 <Auth-api-address without an \"/api\" part>"
-    exit 1
-fi
-
 # Step 1: switching to dev branch
 echo "INFO: Step 1: Pull the latest changes from Git"
 git checkout dev
@@ -38,17 +33,12 @@ if [ "$EXISTING_IMAGE" ]; then
     docker rmi "$EXISTING_IMAGE"
 fi
 
-# Step 7: Replace the database connection string in appsettings.json
-echo "INFO: Step 7: Replace the database connection string in appsettings.json"
-auth_api_address="$1"
-sed -i "s/\"Address\": \"https:\/\/localhost:7143\/\"/\"Address\": \"$auth_api_address\"/" appsettings.json
-
-# Step 8: Publish the .NET app to 'distro' folder
-echo "INFO: Step 8: Publish the .NET app to 'distro' folder"
+# Step 7: Publish the .NET app to 'distro' folder
+echo "INFO: Step 7: Publish the .NET app to 'distro' folder"
 dotnet publish -r linux-x64 -o distro
 
-# Step 9: Create a Dockerfile in 'distro' folder
-echo "INFO: Step 9: Create a Dockerfile in 'distro' folder"
+# Step 8: Create a Dockerfile in 'distro' folder
+echo "INFO: Step 8: Create a Dockerfile in 'distro' folder"
 cat <<EOL > distro/Dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
@@ -56,14 +46,14 @@ COPY ./ ./
 ENTRYPOINT ["dotnet", "Limp.Server.dll"]
 EOL
 
-# Step 10: Build the Docker image 'wasm-chat'
-echo "INFO: Step 10: Build the Docker image 'wasm-chat'"
+# Step 9: Build the Docker image 'wasm-chat'
+echo "INFO: Step 9: Build the Docker image 'wasm-chat'"
 docker build -t wasm-chat distro
 
-# Step 11: Run the Docker container with the new image and restart on failure
-echo "INFO: Step 11: Run the Docker container with the new image and restart on failure"
+# Step 10: Run the Docker container with the new image and restart on failure
+echo "INFO: Step 10: Run the Docker container with the new image and restart on failure"
 docker run -d --restart=always --network etha-chat --name wasm-chat -p 1010:443 -p 1011:80 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=1010 -e ASPNETCORE_Kestrel__Certificates__Default__Password="YourSecurePassword" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/localhost.pfx -v /root/devcert:/https/ wasm-chat
 
-# Step 12: Remove the 'distro' folder after deployment
-echo "INFO: Step 12: Remove the 'distro' folder after deployment"
+# Step 11: Remove the 'distro' folder after deployment
+echo "INFO: Step 11: Remove the 'distro' folder after deployment"
 rm -rf distro

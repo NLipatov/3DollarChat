@@ -48,6 +48,8 @@ namespace Limp.Server.Hubs
             (Context.ConnectionId,
             accessToken,
             CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
+
+            await PushOnlineUsersToClients();
         }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)

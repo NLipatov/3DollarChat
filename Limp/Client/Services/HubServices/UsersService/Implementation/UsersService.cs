@@ -38,18 +38,14 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task<HubConnection?> ConnectAsync()
         {
+            await Console.Out.WriteLineAsync("Connecting to users hub.");
+
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 
-            if (accessToken is null)
+            if (accessToken == null)
             {
                 _navigationManager.NavigateTo("signin");
                 return null;
-            }
-
-            HubConnection? existingHubConnection = await GetConnection();
-            if (existingHubConnection != null && existingHubConnection.State == HubConnectionState.Connected)
-            {
-                return existingHubConnection;
             }
 
             hubConnection = InitializeHubConnection();
@@ -120,23 +116,9 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             if (hubConnection is null)
                 hubConnection = InitializeHubConnection();
 
-            await hubConnection.StopAsync();
-            await hubConnection.StartAsync();
+            await hubConnection.DisposeAsync();
+            await ConnectAsync();
             return ex;
-        }
-        private async Task<HubConnection?> GetConnection()
-        {
-            if (hubConnection != null)
-            {
-                if (hubConnection.State != HubConnectionState.Connected)
-                {
-                    await Console.Out.WriteLineAsync("Reconnecting to users hub.");
-                    await hubConnection.StopAsync();
-                    await hubConnection.StartAsync();
-                }
-                return hubConnection;
-            }
-            return null;
         }
 
         public void RemoveConnectionIdReceived(Guid subscriptionId)

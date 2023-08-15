@@ -72,8 +72,6 @@ namespace Limp.Server.Hubs
             }
 
             await PushOnlineUsersToClients();
-
-            await PushOnlineUsersToClients();
         }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)

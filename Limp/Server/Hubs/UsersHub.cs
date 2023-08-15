@@ -58,16 +58,20 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(string accessToken)
         {
-            await Console.Out.WriteLineAsync("access token at SetUsername is string null or empty string: " + string.IsNullOrWhiteSpace(accessToken));
+            string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
+            await Console.Out.WriteLineAsync("Username from token: " + usernameFromToken);
+
             lock (this)
             {
                 var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
 
                 foreach (var userConnection in userConnections)
                 {
-                    userConnection.Username = TokenReader.GetUsernameFromAccessToken(accessToken);
+                    userConnection.Username = usernameFromToken;
                 }
             }
+
+            await PushOnlineUsersToClients();
 
             await PushOnlineUsersToClients();
         }

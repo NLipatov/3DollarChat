@@ -18,6 +18,9 @@ if [ -d "distro" ]; then
     rm -rf distro
 fi
 
+# Step 4.1: remove gitignored files and folders
+git clean -xdf
+
 # Step 5: Stop and remove any existing container with the same image
 echo "INFO: Step 5: Stop and remove any existing container with the same image"
 EXISTING_CONTAINER=$(docker ps -q -f ancestor=wasm-chat)
@@ -35,7 +38,7 @@ fi
 
 # Step 7: Publish the .NET app to 'distro' folder
 echo "INFO: Step 7: Publish the .NET app to 'distro' folder"
-dotnet publish -r linux-x64 -o distro
+dotnet publish -c Release -r linux-x64 -o distro
 
 # Step 8: Create a Dockerfile in 'distro' folder
 echo "INFO: Step 8: Create a Dockerfile in 'distro' folder"

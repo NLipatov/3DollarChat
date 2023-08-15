@@ -103,9 +103,9 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             await hubConnection.StartAsync();
 
-            hubConnection.Closed += OnConnectionLost;
-
             await hubConnection.SendAsync("SetUsername", accessToken);
+
+            hubConnection.Closed += OnConnectionLost;
 
             return hubConnection;
         }

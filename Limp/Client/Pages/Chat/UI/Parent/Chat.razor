@@ -147,6 +147,7 @@ else
         AESKey = await _localKeyManager.GetAESKeyForChat(topicName);
         if (AESKey != null)
         {
+            StateHasChanged();
             return;
         }
 

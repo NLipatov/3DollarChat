@@ -66,8 +66,16 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
         }
-        public async Task<HubConnection> ConnectAsync()
+        public async Task<HubConnection?> ConnectAsync()
         {
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+            if (accessToken is null)
+            {
+                _navigationManager.NavigateTo("signin");
+                return null;
+            }
+
             //Loading from local storage earlier saved AES keys
             InMemoryKeyStorage.AESKeyStorage = (await _browserKeyStorage.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
 
@@ -196,6 +204,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             #endregion
 
             await hubConnection.StartAsync();
+
+            
+
             await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
 
             return hubConnection;

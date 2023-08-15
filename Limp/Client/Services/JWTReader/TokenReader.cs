@@ -27,7 +27,7 @@ namespace Limp.Client.Services.JWTReader
         public static string GetUsernameFromAccessToken(string? accessToken)
         {
             if (string.IsNullOrWhiteSpace(accessToken))
-                throw new ApplicationException("Could not get an access-token from local storage");
+                throw new ApplicationException($"Passed in parameter {nameof(accessToken)} was empty string or null.");
 
             string? usernameFromAccessToken = ReadUsernameFromAccessToken(accessToken);
             if (string.IsNullOrWhiteSpace(usernameFromAccessToken))

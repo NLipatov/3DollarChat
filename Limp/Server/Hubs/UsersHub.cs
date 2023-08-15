@@ -33,6 +33,7 @@ namespace Limp.Server.Hubs
             {
                 InMemoryHubConnectionStorage.UserConnections.Add(new UserConnection
                 {
+                    Username = "Unnamed user",
                     ConnectionIds = new List<string>() { Context.ConnectionId }
                 });
             }

@@ -30,8 +30,16 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             _navigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
         }
-        public async Task<HubConnection> ConnectAsync()
+        public async Task<HubConnection?> ConnectAsync()
         {
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+            if (accessToken is null)
+            {
+                _navigationManager.NavigateTo("signin");
+                return null;
+            }
+
             HubConnection? existingHubConnection = await TryGetExistingHubConnection();
             if (existingHubConnection != null && existingHubConnection.State == HubConnectionState.Connected)
             {
@@ -95,7 +103,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             await hubConnection.StartAsync();
 
-            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
+            await hubConnection.SendAsync("SetUsername", accessToken);
 
             return hubConnection;
         }

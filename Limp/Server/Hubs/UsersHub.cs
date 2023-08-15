@@ -58,6 +58,7 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(string accessToken)
         {
+            await Console.Out.WriteLineAsync("access token at SetUsername is string null or empty string: " + string.IsNullOrWhiteSpace(accessToken));
             lock (this)
             {
                 var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
@@ -121,6 +122,14 @@ namespace Limp.Server.Hubs
             UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
             //Pushes set of clients to all the clients
             await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
+
+            await Console.Out.WriteLineAsync("Pushed as online:");
+            foreach (var item in userConnections.UserConnections)
+            {
+                await Console.Out.WriteLineAsync(item.Username);
+            }
+
+            await Console.Out.WriteLineAsync();
         }
 
         public async Task PushConId()

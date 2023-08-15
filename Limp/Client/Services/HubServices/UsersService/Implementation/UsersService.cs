@@ -10,15 +10,17 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
 using LimpShared.Models.Users;
+using Limp.Client.Services.InboxService.Implementation;
+using Limp.Client.Services.HubServices.HubServiceContract;
 
 namespace Limp.Client.Services.HubService.UsersService.Implementation
 {
-    public class UsersService : IUsersService
+    public class UsersService : IUsersService, IHubService
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
         private readonly ICallbackExecutor _callbackExecutor;
-        private HubConnection? hubConnection = null;
+        private HubConnection? hubConnection { get; set; }
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
         public UsersService
@@ -30,6 +32,10 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             _navigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
         }
+        private HubConnection InitializeHubConnection() => new HubConnectionBuilder()
+            .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
+            .Build();
+
         public async Task<HubConnection?> ConnectAsync()
         {
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
@@ -40,15 +46,13 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 return null;
             }
 
-            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
+            HubConnection? existingHubConnection = await GetConnection();
             if (existingHubConnection != null && existingHubConnection.State == HubConnectionState.Connected)
             {
                 return existingHubConnection;
             }
 
-            hubConnection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
-            .Build();
+            hubConnection = InitializeHubConnection();
 
             //Here we are registering a callbacks for specific server-triggered events.
             //Events are being triggered from SignalR hubs in server project.
@@ -103,16 +107,30 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             await hubConnection.StartAsync();
 
+            hubConnection.Closed += OnConnectionLost;
+
             await hubConnection.SendAsync("SetUsername", accessToken);
 
             return hubConnection;
         }
-        private async Task<HubConnection?> TryGetExistingHubConnection()
+        public async Task<Exception?> OnConnectionLost(Exception? ex)
+        {
+            await Console.Out.WriteLineAsync("Lost connection with users hub.");
+
+            if (hubConnection is null)
+                hubConnection = InitializeHubConnection();
+
+            await hubConnection.StopAsync();
+            await hubConnection.StartAsync();
+            return ex;
+        }
+        private async Task<HubConnection?> GetConnection()
         {
             if (hubConnection != null)
             {
                 if (hubConnection.State != HubConnectionState.Connected)
                 {
+                    await Console.Out.WriteLineAsync("Reconnecting to users hub.");
                     await hubConnection.StopAsync();
                     await hubConnection.StartAsync();
                 }

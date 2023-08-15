@@ -38,76 +38,85 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
         public async Task<HubConnection?> ConnectAsync()
         {
-            await Console.Out.WriteLineAsync("Connecting to users hub.");
-
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-            if (accessToken == null)
+            try
             {
-                _navigationManager.NavigateTo("signin");
-                return null;
-            }
+                await Console.Out.WriteLineAsync("Connecting to users hub.");
 
-            hubConnection = InitializeHubConnection();
+                string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 
-            //Here we are registering a callbacks for specific server-triggered events.
-            //Events are being triggered from SignalR hubs in server project.
-            hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
-            {
-                Console.WriteLine("\nGot online users update:");
-                foreach (var item in updatedTrackedUserConnections.UserConnections)
+                if (accessToken == null)
                 {
-                    Console.WriteLine(item.Username);
+                    _navigationManager.NavigateTo("signin");
+                    return null;
                 }
-                Console.WriteLine();
 
-                _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
-            });
+                hubConnection = InitializeHubConnection();
 
-            hubConnection.On<string>("ReceiveConnectionId", connectionId =>
+                //Here we are registering a callbacks for specific server-triggered events.
+                //Events are being triggered from SignalR hubs in server project.
+                hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+                {
+                    Console.WriteLine("\nGot online users update:");
+                    foreach (var item in updatedTrackedUserConnections.UserConnections)
+                    {
+                        Console.WriteLine(item.Username);
+                    }
+                    Console.WriteLine();
+
+                    _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
+                });
+
+                hubConnection.On<string>("ReceiveConnectionId", connectionId =>
+                {
+                    _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
+                });
+
+                hubConnection.On<string>("OnNameResolve", async username =>
+                {
+                    _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
+
+                    await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
+                });
+
+                hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+                });
+
+                hubConnection.On<NotificationSubscriptionDTO[]>("ReceiveWebPushSubscriptions", subscriptions =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
+                });
+
+                hubConnection.On<NotificationSubscriptionDTO[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
+                });
+
+                hubConnection.On("WebPushSubscriptionSetChanged", () =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
+                });
+
+                hubConnection.On<IsUserExistDTO>("UserExistanceResponse", async isUserExistDTO =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
+                });
+
+                await hubConnection.StartAsync();
+
+                await hubConnection.SendAsync("SetUsername", accessToken);
+
+                hubConnection.Closed += OnConnectionLost;
+
+                return hubConnection;
+            }
+            catch (Exception ex)
             {
-                _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
-            });
-
-            hubConnection.On<string>("OnNameResolve", async username =>
-            {
-                _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
-
-                await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
-            });
-
-            hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
-            });
-
-            hubConnection.On<NotificationSubscriptionDTO[]>("ReceiveWebPushSubscriptions", subscriptions =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
-            });
-
-            hubConnection.On<NotificationSubscriptionDTO[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
-            });
-
-            hubConnection.On("WebPushSubscriptionSetChanged", () =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
-            });
-
-            hubConnection.On<IsUserExistDTO>("UserExistanceResponse", async isUserExistDTO =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
-            });
-
-            await hubConnection.StartAsync();
-
-            await hubConnection.SendAsync("SetUsername", accessToken);
-
-            hubConnection.Closed += OnConnectionLost;
-
-            return hubConnection;
+                await Console.Out.WriteLineAsync("Exception occured");
+                await Console.Out.WriteLineAsync(ex.Message);
+            }
+            return await ConnectAsync();
         }
         public async Task<Exception?> OnConnectionLost(Exception? ex)
         {

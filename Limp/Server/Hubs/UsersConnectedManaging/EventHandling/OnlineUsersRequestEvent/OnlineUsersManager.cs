@@ -7,16 +7,27 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
     {
         public UserConnectionsReport FormUsersOnlineMessage()
         {
-            UserConnection[] uConnections = InMemoryHubConnectionStorage.UsersHubConnections
+            List<UserConnection> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
                 .Where(x => x.Value.Count > 0)
                 .Select(x => new UserConnection
                 {
                     Username = x.Key,
                     ConnectionIds = x.Value,
                 })
-                .ToArray();
+                .ToList();
 
-            return new() { FormedAt = DateTime.UtcNow, UserConnections = uConnections };
+            List<UserConnection> uConnections = InMemoryHubConnectionStorage.UsersHubConnections
+                .Where(x => x.Value.Count > 0)
+                .Select(x => new UserConnection
+                {
+                    Username = x.Key,
+                    ConnectionIds = x.Value,
+                })
+                .ToList();
+
+            UserConnection[] commonConnections = uConnections.Where(u => mdConnections.Any(md => md.Username == u.Username)).ToArray();
+
+            return new() { FormedAt = DateTime.UtcNow, UserConnections = commonConnections };
         }
     }
 }

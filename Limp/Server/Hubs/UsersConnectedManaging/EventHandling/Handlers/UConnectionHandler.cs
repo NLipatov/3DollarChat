@@ -1,18 +1,22 @@
 ﻿using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Models.Authentication.Models;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class UConnectionHandler : IUserConnectedHandler<UsersHub>
     {
-        public void OnConnect(string connectionId)
+        private readonly IServerHttpClient _serverHttpClient;
+        public UConnectionHandler(IServerHttpClient serverHttpClient)
+        {
+            _serverHttpClient = serverHttpClient;
+        }
+        public async void OnConnect(string connectionId)
         {
             if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                bool added = InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(Guid.NewGuid().ToString(), new List<string>() { connectionId });
-                if (!added)
-                    throw new ApplicationException($"Cannot add a user to a {nameof(InMemoryHubConnectionStorage.UsersHubConnections)} collection.");
+                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(connectionId, new List<string>() { connectionId });
             }
         }
 
@@ -20,12 +24,12 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         (string connectionId,
         Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
-            string? existingUserUsername = InMemoryHubConnectionStorage.UsersHubConnections.FirstOrDefault(x => x.Value.Contains(connectionId)).Key;
-            if (!string.IsNullOrWhiteSpace(existingUserUsername))
+            if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
             {
-                bool deleted = InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(existingUserUsername, out _);
-                if (!deleted)
-                    throw new ApplicationException($"Cannot delete user from a {nameof(InMemoryHubConnectionStorage.UsersHubConnections)} collection.");
+                var targetConnection = InMemoryHubConnectionStorage.UsersHubConnections
+                    .First(x => x.Value.Contains(connectionId));
+
+                targetConnection.Value.Remove(connectionId);
             }
 
             foreach (var connection in InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Value.Count == 0))
@@ -42,28 +46,20 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
         Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
         {
-            string username = TokenReader.GetUsernameFromAccessToken(accessToken);
-            var existingConnection = InMemoryHubConnectionStorage.UsersHubConnections.FirstOrDefault(x => x.Value.Contains(connectionId)).Key;
+            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
 
-            if (existingConnection is not null)
+            //If there is a connection that has its connection id as a key, than its a unnamed connection.
+            //we already have an proper username for this connection, so lets change a connection key
+            if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Key == connectionId))
             {
-                bool added = InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(username, InMemoryHubConnectionStorage.UsersHubConnections[existingConnection]);
-                if (!added)
-                    throw new ApplicationException($"Cannot add a user connection to {nameof(InMemoryHubConnectionStorage.UsersHubConnections)}.");
-
-                bool deleted = InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(existingConnection, out var _);
-                if (!deleted)
-                    throw new ApplicationException($"Cannot delete a user connection from {nameof(InMemoryHubConnectionStorage.UsersHubConnections)}.");
-            }
-            else
-            {
-                bool added = InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(username, new List<string> { connectionId });
-                if (!added)
-                    throw new ApplicationException($"Cannot add a user connection to {nameof(InMemoryHubConnectionStorage.UsersHubConnections)}.");
+                //setup a new item with all the old connections
+                var connectionToBeDeleted = InMemoryHubConnectionStorage.UsersHubConnections.FirstOrDefault(x => x.Key == connectionId);
+                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(username, connectionToBeDeleted.Value);
+                //remove the old item
+                InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(connectionToBeDeleted);
             }
 
-            if (CallUserHubMethodsOnUsernameResolved is not null)
-                await CallUserHubMethodsOnUsernameResolved(username);
+            await CallUserHubMethodsOnUsernameResolved(username);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using Limp.Client.Services.HubService.AuthService;
+﻿using Limp.Client.Services.HubConnectionProvider;
+using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using LimpShared.Models.Authentication.Models;
@@ -13,6 +14,8 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         private readonly IAuthService _authService;
         private readonly IUsersService _usersService;
         private readonly IHubServiceSubscriptionManager _hubServiceSubscriptionManager;
+        private readonly IHubConnectionProvider _hubConnectionProvider;
+
         private Action<AuthResult> _onLogInResponseCallback { get; set; }
 
         private Guid ComponentId { get; set; }
@@ -25,12 +28,14 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
             (IJSRuntime jSRuntime,
             IAuthService authService,
             IUsersService usersService,
-            IHubServiceSubscriptionManager hubServiceSubscriptionManager)
+            IHubServiceSubscriptionManager hubServiceSubscriptionManager,
+            IHubConnectionProvider hubConnectionProvider)
         {
             _jSRuntime = jSRuntime;
             _authService = authService;
             _usersService = usersService;
             _hubServiceSubscriptionManager = hubServiceSubscriptionManager;
+            _hubConnectionProvider = hubConnectionProvider;
 
             //This id will be needed on dispose stage
             //On dispose stage we need to clear out all of the component event subscriptions
@@ -72,6 +77,8 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
 
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", result!.JWTPair!.AccessToken);
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
+
+            await _hubConnectionProvider.ReconnectToHubs();
         }
     }
 }

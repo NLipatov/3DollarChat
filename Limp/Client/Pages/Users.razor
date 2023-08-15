@@ -30,7 +30,7 @@
             }
 
             <Virtualize 
-                Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).ToArray() ?? new UserConnection[0]"
+                Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).Distinct().ToArray() ?? new UserConnection[0]"
                 Context="connection">
 
                 <ContactBar Username="@connection.Username"

@@ -1,6 +1,4 @@
-﻿using ClientServerCommon.Models;
-using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.JWTReader;
+﻿using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -31,23 +29,45 @@ namespace Limp.Server.Hubs
         }
         public async override Task OnConnectedAsync()
         {
-            _userConnectedHandler.OnConnect(Context.ConnectionId);
+            lock (this)
+            {
+                InMemoryHubConnectionStorage.UserConnections.Add(new UserConnection
+                {
+                    ConnectionIds = new List<string>() { Context.ConnectionId }
+                });
+            }
+
             await PushOnlineUsersToClients();
         }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
         {
-            _userConnectedHandler.OnDisconnect(Context.ConnectionId);
+            lock (this)
+            {
+                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
+
+                foreach (var userConnection in userConnections)
+                {
+                    userConnection.ConnectionIds.Remove(Context.ConnectionId);
+                }
+            }
+
             await PushOnlineUsersToClients();
         }
 
         public async Task SetUsername(string accessToken)
         {
-            await _userConnectedHandler
-            .OnUsernameResolved
-            (Context.ConnectionId,
-            accessToken,
-            CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
+            lock (this)
+            {
+                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
+
+                foreach (var userConnection in userConnections)
+                {
+                    userConnection.Username = TokenReader.GetUsernameFromAccessToken(accessToken);
+                }
+            }
+
+            await PushOnlineUsersToClients();
         }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
@@ -58,16 +78,28 @@ namespace Limp.Server.Hubs
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
-                await PostAnRSAPublic(new PublicKeyDTO 
-                { 
-                    Key = RSAPublicKey.Value!.ToString(), 
-                    Username = username 
+                await PostAnRSAPublic(new PublicKeyDTO
+                {
+                    Key = RSAPublicKey.Value!.ToString(),
+                    Username = username
                 });
             }
             else
             {
                 throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
             }
+
+            lock (this)
+            {
+                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
+
+                foreach (var userConnection in userConnections)
+                {
+                    userConnection.RSAPublicKey = RSAPublicKey;
+                }
+            }
+
+            await PushOnlineUsersToClients();
         }
 
         private async Task OnUsernameResolvedHandlers(string username)
@@ -103,7 +135,7 @@ namespace Limp.Server.Hubs
         public async Task IsUserOnline(string username)
         {
             string[] userHubConnections =
-                InMemoryHubConnectionStorage.UsersHubConnections.Where(x=>x.Key == username).SelectMany(x=>x.Value).ToArray();
+                InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
 
             string[] messageHubConnections =
                 InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();

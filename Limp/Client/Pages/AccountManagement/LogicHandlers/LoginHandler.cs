@@ -1,4 +1,5 @@
 ﻿using Limp.Client.Services.HubService.AuthService;
+using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
@@ -10,6 +11,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly IAuthService _authService;
+        private readonly IUsersService _usersService;
         private readonly IHubServiceSubscriptionManager _hubServiceSubscriptionManager;
         private Action<AuthResult> _onLogInResponseCallback { get; set; }
 
@@ -22,10 +24,12 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         public LoginHandler
             (IJSRuntime jSRuntime,
             IAuthService authService,
+            IUsersService usersService,
             IHubServiceSubscriptionManager hubServiceSubscriptionManager)
         {
             _jSRuntime = jSRuntime;
             _authService = authService;
+            _usersService = usersService;
             _hubServiceSubscriptionManager = hubServiceSubscriptionManager;
 
             //This id will be needed on dispose stage
@@ -42,6 +46,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
             if (authResult.Result != AuthResultType.Fail)
             {
                 await StoreTokensAsync(authResult);
+                await _usersService.ConnectAsync();
             }
 
             _onLogInResponseCallback.Invoke(authResult);

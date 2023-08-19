@@ -92,6 +92,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         {
             hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
+            .AddMessagePackProtocol()
             .Build();
         }
 

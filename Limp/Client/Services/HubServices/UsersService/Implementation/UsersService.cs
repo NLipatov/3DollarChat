@@ -139,6 +139,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
         {
             hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
+            .AddMessagePackProtocol()
             .Build();
         }
 

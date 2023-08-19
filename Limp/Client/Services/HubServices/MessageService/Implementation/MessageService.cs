@@ -120,6 +120,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
         {
             hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
+            .AddMessagePackProtocol()
             .Build();
         }
 

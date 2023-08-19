@@ -1,4 +1,4 @@
-﻿using ClientServerCommon.Models;
+﻿using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
@@ -9,7 +9,6 @@ using Limp.Server.WebPushNotifications;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
-using WebPush;
 
 namespace Limp.Server.Hubs.MessageDispatcher
 {
@@ -40,13 +39,27 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async override Task OnConnectedAsync()
         {
-            _userConnectedHandler.OnConnect(Context.ConnectionId);
+            InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
+
             await base.OnConnectedAsync();
         }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
         {
-            _userConnectedHandler.OnDisconnect(Context.ConnectionId, RemoveUserFromGroup: Groups.RemoveFromGroupAsync);
+            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+
+            foreach (var key in keys)
+            {
+                var oldConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections[key];
+                var newConnections = oldConnections.Where(x => x != Context.ConnectionId).ToList();
+                if (newConnections.Any())
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryUpdate(key, newConnections, oldConnections);
+                else
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(key, out _);
+
+                await PushOnlineUsersToClients();
+            }
+
             await base.OnDisconnectedAsync(exception);
         }
 
@@ -60,18 +73,30 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task SetUsername(string accessToken)
         {
+            string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
+
             await _userConnectedHandler.OnUsernameResolved
             (Context.ConnectionId, accessToken,
             Groups.AddToGroupAsync,
             Clients.Caller.SendAsync,
             Clients.Caller.SendAsync);
-            await PushOnlineUsersToClients();
+
+            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+
+            foreach (var key in keys)
+            {
+                var connections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections[key];
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(key, out _);
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(usernameFromToken, connections);
+
+                await PushOnlineUsersToClients();
+            }
         }
 
         public async Task PushOnlineUsersToClients()
         {
-            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
-            await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
+            UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
+            await Clients.All.SendAsync("ReceiveOnlineUsers", report);
         }
 
         /// <summary>
@@ -83,6 +108,9 @@ namespace Limp.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
+            if (string.IsNullOrWhiteSpace(message.Sender))
+                throw new ArgumentException("Invalid message sender.");
+
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
@@ -92,7 +120,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
             await _messageSendHandler.SendAsync(message, Clients);
         }
-        public async Task MessageReceived(Guid messageId, string topicName) 
+        public async Task MessageReceived(Guid messageId, string topicName)
             => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
 
         /// <summary>

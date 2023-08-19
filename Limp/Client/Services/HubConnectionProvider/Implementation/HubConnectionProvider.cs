@@ -85,16 +85,16 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             await _authService.DisconnectAsync();
         }
 
-        public async Task ReconnectToHubs()
+        public async Task ForceReconnectToHubs()
         {
-            await Console.Out.WriteLineAsync("Reconnecting to hubs...");
+            await Console.Out.WriteLineAsync("Force reconnecting to hubs...");
 
             await _messageService.DisconnectAsync();
             await _usersService.DisconnectAsync();
             await _authService.DisconnectAsync();
 
-            await _messageService.ConnectAsync();
             await _usersService.ConnectAsync();
+            await _messageService.ConnectAsync();
             await _authService.ConnectAsync();
         }
     }

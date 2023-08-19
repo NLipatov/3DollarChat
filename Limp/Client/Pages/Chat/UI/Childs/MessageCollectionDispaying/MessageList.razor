@@ -15,7 +15,7 @@
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup).ToList()" Context="message">
+    <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()" Context="message">
         <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage" />
     </Virtualize>
 </div>

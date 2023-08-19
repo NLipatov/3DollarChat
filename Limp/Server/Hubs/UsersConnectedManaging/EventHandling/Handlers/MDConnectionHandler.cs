@@ -29,8 +29,11 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         (string connectionId, 
         Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
+            if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
+                return;
+
             var targetConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                .First(x => x.Value.Contains(connectionId));
+                .FirstOrDefault(x => x.Value.Contains(connectionId));
 
             await RemoveUserFromGroup(connectionId, targetConnection.Key, default);
 

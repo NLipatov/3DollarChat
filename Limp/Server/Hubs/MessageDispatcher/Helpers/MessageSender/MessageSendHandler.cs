@@ -1,4 +1,5 @@
 ﻿using Confluent.Kafka;
+using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -9,12 +10,17 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
     {
         public async Task SendAsync(Message message, IHubCallerClients clients)
         {
+            var receiverConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == message.TargetGroup);
+
+            if (!receiverConnection.Any(x => x.Key == message.TargetGroup))
+                throw new ArgumentException($"Message could not be send because there is no user connected with such username: '{message.TargetGroup}'.");
+
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 return;
 
             //For personal chat we have Group with only one person in it
             //Send to members of this single-membered Group a message
-            await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message.ToReceiverRepresentation());
+            await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message);
         }
 
         public async Task MarkAsReaded(Guid messageId, string messageSender, IHubCallerClients clients)

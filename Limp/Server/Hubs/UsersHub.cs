@@ -29,49 +29,44 @@ namespace Limp.Server.Hubs
         }
         public async override Task OnConnectedAsync()
         {
-            lock (this)
-            {
-                InMemoryHubConnectionStorage.UserConnections.Add(new UserConnection
-                {
-                    Username = "Unnamed user",
-                    ConnectionIds = new List<string>() { Context.ConnectionId }
-                });
-            }
+            InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
 
-            await PushOnlineUsersToClients();
+            await base.OnConnectedAsync();
         }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
         {
-            lock (this)
-            {
-                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
+            var keys = InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x=>x.Key);
 
-                foreach (var userConnection in userConnections)
-                {
-                    userConnection.ConnectionIds.Remove(Context.ConnectionId);
-                }
+            foreach (var key in keys)
+            {
+                var oldConnections = InMemoryHubConnectionStorage.UsersHubConnections[key];
+                var newConnections = oldConnections.Where(x=>x != Context.ConnectionId).ToList();
+                if (newConnections.Any())
+                    InMemoryHubConnectionStorage.UsersHubConnections.TryUpdate(key, newConnections, oldConnections);
+                else
+                    InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
+
+                await PushOnlineUsersToClients();
             }
 
-            await PushOnlineUsersToClients();
+            await base.OnDisconnectedAsync(exception);
         }
 
         public async Task SetUsername(string accessToken)
         {
             string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
-            await Console.Out.WriteLineAsync("Username from token: " + usernameFromToken);
 
-            lock (this)
+            var keys = InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+
+            foreach (var key in keys)
             {
-                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
+                var connections = InMemoryHubConnectionStorage.UsersHubConnections[key];
+                InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
+                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(usernameFromToken, connections);
 
-                foreach (var userConnection in userConnections)
-                {
-                    userConnection.Username = usernameFromToken;
-                }
+                await PushOnlineUsersToClients();
             }
-
-            await PushOnlineUsersToClients();
         }
 
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
@@ -93,16 +88,6 @@ namespace Limp.Server.Hubs
                 throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
             }
 
-            lock (this)
-            {
-                var userConnections = InMemoryHubConnectionStorage.UserConnections.Where(x => x.ConnectionIds.Contains(Context.ConnectionId));
-
-                foreach (var userConnection in userConnections)
-                {
-                    userConnection.RSAPublicKey = RSAPublicKey;
-                }
-            }
-
             await PushOnlineUsersToClients();
         }
 
@@ -121,17 +106,9 @@ namespace Limp.Server.Hubs
         public async Task PushOnlineUsersToClients()
         {
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
-            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
+            UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
             //Pushes set of clients to all the clients
-            await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
-
-            await Console.Out.WriteLineAsync("Pushed as online:");
-            foreach (var item in userConnections.UserConnections)
-            {
-                await Console.Out.WriteLineAsync(item.Username);
-            }
-
-            await Console.Out.WriteLineAsync();
+            await Clients.All.SendAsync("ReceiveOnlineUsers", report);
         }
 
         public async Task PushConId()

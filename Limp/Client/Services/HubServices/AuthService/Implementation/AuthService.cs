@@ -16,7 +16,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
         private readonly ICallbackExecutor _callbackExecutor;
-        private HubConnection? hubConnection = null;
+        private HubConnection? hubConnection { get; set; }
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         private ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue = new();
         public AuthService
@@ -28,28 +28,40 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             _navigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
         }
+
         public async Task<HubConnection> ConnectAsync()
         {
-            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
-
-            if (existingHubConnection?.State == HubConnectionState.Connected)
+            if (hubConnection?.State == HubConnectionState.Connected)
             {
-                return existingHubConnection;
+                return hubConnection;
             }
             else
             {
-                if (existingHubConnection != null)
+                if (hubConnection is null)
                 {
-                    await existingHubConnection.StopAsync();
-                    await existingHubConnection.StartAsync();
-
-                    return existingHubConnection;
+                    InitializeHubConnection();
+                    RegisterHubEventHandlers();
+                }
+                else
+                {
+                    await hubConnection.DisposeAsync();
+                    InitializeHubConnection();
+                    RegisterHubEventHandlers();
                 }
             }
 
-            hubConnection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
-            .Build();
+            if (hubConnection == null)
+                throw new ArgumentException($"Could not initialize {nameof(hubConnection)}.");
+
+            await hubConnection.StartAsync();
+
+            return hubConnection;
+        }
+
+        private void RegisterHubEventHandlers()
+        {
+            if (hubConnection == null)
+                InitializeHubConnection();
 
             hubConnection.On<AuthResult>("OnTokensRefresh", async result =>
             {
@@ -74,24 +86,13 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnLogIn");
             });
-
-            await hubConnection.StartAsync();
-
-            return hubConnection;
         }
 
-        private async Task<HubConnection?> TryGetExistingHubConnection()
+        private void InitializeHubConnection()
         {
-            if (hubConnection != null)
-            {
-                if (hubConnection.State != HubConnectionState.Connected)
-                {
-                    await hubConnection.StopAsync();
-                    await hubConnection.StartAsync();
-                }
-                return hubConnection;
-            }
-            return null;
+            hubConnection = new HubConnectionBuilder()
+            .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
+            .Build();
         }
 
         public async Task DisconnectAsync()
@@ -183,8 +184,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
         public async Task LogIn(UserAuthentication userAuthentication)
         {
-            if (hubConnection == null)
-                throw new ApplicationException("No connection with Hub.");
+            hubConnection = await ConnectAsync();
 
             await hubConnection.SendAsync("LogIn", userAuthentication);
         }

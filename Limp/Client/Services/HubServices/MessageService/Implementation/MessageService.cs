@@ -7,12 +7,12 @@ using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.A
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
-using Limp.Client.Pages.Chat.Logic.TokenRelatedOperations;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.InboxService;
+using Limp.Client.Services.JWTReader;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
@@ -66,11 +66,11 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
         }
-        public async Task<HubConnection?> ConnectAsync()
+        public async Task<HubConnection> ConnectAsync()
         {
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 
-            if (accessToken is null)
+            if (string.IsNullOrWhiteSpace(accessToken))
             {
                 _navigationManager.NavigateTo("signin");
                 return null;
@@ -79,17 +79,55 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             //Loading from local storage earlier saved AES keys
             InMemoryKeyStorage.AESKeyStorage = (await _browserKeyStorage.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
 
-            HubConnection? existingHubConnection = await TryGetExistingHubConnection();
-            if (existingHubConnection != null)
+            if (hubConnection?.State == HubConnectionState.Connected)
             {
-                return existingHubConnection;
+                return hubConnection;
+            }
+            else
+            {
+                if (hubConnection is null)
+                {
+                    InitializeHubConnection();
+                    RegisterHubEventHandlers();
+                }
+                else
+                {
+                    await hubConnection.DisposeAsync();
+                    InitializeHubConnection();
+                    RegisterHubEventHandlers();
+                }
             }
 
+            if (hubConnection == null)
+                throw new ArgumentException($"{nameof(MessageService)} {nameof(hubConnection)} initialization failed. {nameof(hubConnection)} is null.");
+
+            await hubConnection.StartAsync();
+
+            await hubConnection.SendAsync("SetUsername", accessToken);
+
+            hubConnection.Closed += OnConnectionLost;
+
+            return hubConnection;
+        }
+
+        private async Task OnConnectionLost(Exception? exception)
+        {
+            await Console.Out.WriteLineAsync("MessageHub connection lost. Reconnecting.");
+            await ConnectAsync();
+        }
+
+        private void InitializeHubConnection()
+        {
             hubConnection = new HubConnectionBuilder()
             .WithUrl(_navigationManager.ToAbsoluteUri("/messageDispatcherHub"))
             .Build();
+        }
 
-            #region Event handlers registration
+        private void RegisterHubEventHandlers()
+        {
+            if (hubConnection is null)
+                throw new NullReferenceException($"Could not register event handlers - hub was null.");
+
             hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
@@ -107,7 +145,19 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                     if (message.Type is MessageType.UserMessage)
                     {
-                        string decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                        if (string.IsNullOrWhiteSpace(message.Sender))
+                            throw new ArgumentException($"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
+
+                        string decryptedMessageText = string.Empty;
+                        try
+                        {
+                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                        }
+                        catch (Exception ex)
+                        {
+                            await Console.Out.WriteLineAsync("Cannot decrypt received user message. Regenerating AES key.");
+                            await NegotiateOnAESAsync(message.Sender);
+                        }
 
                         if (!string.IsNullOrWhiteSpace(decryptedMessageText))
                         {
@@ -120,7 +170,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                         else
                         {
                             if (message.Sender is not null)
-                                await RequestForPartnerPublicKey(message.Sender);
+                                await NegotiateOnAESAsync(message.Sender);
                         }
                     }
                     else if (message.Type == MessageType.AESAccept)
@@ -181,7 +231,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                 //Now we can send an encrypted offer on AES Key
                 //We will encrypt our offer with a partners RSA Public Key
-                await GenerateAESAndSendItToPartner(_cryptographyService!, partnersUsername, partnersPublicKey);
+                await RegenerateAESAsync(_cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
             hubConnection.On<string>("OnMyNameResolve", async username =>
@@ -200,17 +250,8 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                 await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
             });
-
-            #endregion
-
-            await hubConnection.StartAsync();
-
-            
-
-            await hubConnection.SendAsync("SetUsername", await JWTHelper.GetAccessTokenAsync(_jSRuntime));
-
-            return hubConnection;
         }
+
         private async Task<HubConnection?> TryGetExistingHubConnection()
         {
             if (hubConnection != null)
@@ -231,7 +272,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 await _usersService.SetRSAPublicKey(accessToken, RSAPublicKey);
             }
         }
-        private async Task GenerateAESAndSendItToPartner
+        private async Task RegenerateAESAsync
         (ICryptographyService cryptographyService,
         string partnersUsername,
         string partnersPublicKey)
@@ -263,7 +304,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 {
                     Type = MessageType.AESOffer,
                     DateSent = DateTime.UtcNow,
-                    Sender = myName,
+                    Sender = TokenReader.GetUsernameFromAccessToken(await JWTHelper.GetAccessTokenAsync(_jSRuntime)),
                     TargetGroup = partnersUsername,
                     Cryptogramm = new()
                     {
@@ -271,8 +312,15 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                     }
                 };
 
-                if (hubConnection != null)
-                    await hubConnection.SendAsync("Dispatch", offerOnAES);
+                if (hubConnection?.State != HubConnectionState.Connected)
+                {
+                    if (hubConnection is not null)
+                        await hubConnection.DisposeAsync();
+
+                    await ConnectAsync();
+                }
+
+                await hubConnection!.SendAsync("Dispatch", offerOnAES);
             });
         }
 
@@ -282,16 +330,12 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
             hubConnection = null;
         }
 
-        public async Task RequestForPartnerPublicKey(string partnerUsername)
+        public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            if (hubConnection != null)
-            {
-                await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
-            }
-            else
-            {
-                await ReconnectAsync();
-            }
+            if (hubConnection?.State != HubConnectionState.Connected)
+                hubConnection = await ConnectAsync();
+
+            await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
         }
 
         public async Task ReconnectAsync()
@@ -359,7 +403,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 if (hubConnection.State is HubConnectionState.Connected)
                 {
                     await hubConnection.SendAsync("MessageHasBeenRead", messageId, messageSender);
-                }    
+                }
             }
 
             throw new ArgumentException("Notification was not sent because hub connection is lost.");

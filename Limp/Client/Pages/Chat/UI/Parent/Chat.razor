@@ -156,7 +156,7 @@ else
 
     private async Task RenewAES()
     {
-        await _messageService.RequestForPartnerPublicKey(topicName);
+        await _messageService.NegotiateOnAESAsync(topicName);
     }
 
     public async Task OnAESKeyReady(string partnerName)

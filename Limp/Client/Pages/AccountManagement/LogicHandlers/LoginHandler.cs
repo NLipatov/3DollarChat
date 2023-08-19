@@ -51,7 +51,6 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
             if (authResult.Result != AuthResultType.Fail)
             {
                 await StoreTokensAsync(authResult);
-                await _usersService.ConnectAsync();
             }
 
             _onLogInResponseCallback.Invoke(authResult);
@@ -59,9 +58,6 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         public async Task OnLogIn(UserAuthentication loggingInUser, Action<AuthResult> callback)
         {
             _onLogInResponseCallback = callback;
-
-            if (!_authService.IsConnected())
-                await _authService.ConnectAsync();
 
             await _authService.LogIn(loggingInUser);
         }
@@ -78,7 +74,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", result!.JWTPair!.AccessToken);
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
 
-            await _hubConnectionProvider.ReconnectToHubs();
+            await _hubConnectionProvider.ForceReconnectToHubs();
         }
     }
 }

@@ -1,5 +1,4 @@
-﻿using LimpShared.Models.ConnectedUsersManaging;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage
 {

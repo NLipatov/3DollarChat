@@ -1,8 +1,4 @@
-﻿.section {
-    padding: 100px 0;
-}
-
-.heading h2 {
+﻿.heading h2 {
     color: #3c3c3c;
     padding-bottom: 15px;
     text-transform: capitalize;
@@ -24,7 +20,6 @@
 }
 
 .core-features {
-    height: 100vh;
     display: flex;
     align-items: center;
 }

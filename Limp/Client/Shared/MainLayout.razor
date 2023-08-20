@@ -80,7 +80,10 @@ else
 
     private async void ShowMessageToast()
     {
-        var unnotifiedAbout = _messageBox.Messages.Where(x => x.IsToastShown == false);
+        var unnotifiedAbout = _messageBox
+            .Messages
+            .Where(x => x.IsToastShown == false);
+        
         foreach (var message in unnotifiedAbout)
         {
             if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())

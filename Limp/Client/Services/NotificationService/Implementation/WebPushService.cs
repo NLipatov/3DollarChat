@@ -29,7 +29,8 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 return;
 
             NotificationSubscriptionDTO? subscription =
-                await _jSRuntime.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");
+                await _jSRuntime
+                    .InvokeAsync<NotificationSubscriptionDTO?>("blazorPushNotifications.requestSubscription");
 
             if (subscription != null)
             {
@@ -47,7 +48,11 @@ namespace Limp.Client.Services.NotificationService.Implementation
         }
 
         private async Task<bool> IsWebPushPermissionGranted()
-            => await _jSRuntime.InvokeAsync<string>("eval", "Notification.permission") == "granted";
+        {
+            var notificationPermission = await _jSRuntime
+                .InvokeAsync<string>("eval", "typeof Notification !== 'undefined' ? Notification.permission : 'denied'");
+            return notificationPermission == "granted";
+        }
 
         public async Task ResetWebPushPermission()
         {

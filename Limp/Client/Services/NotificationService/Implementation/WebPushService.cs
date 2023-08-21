@@ -1,6 +1,7 @@
 ﻿using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.LocalStorageService;
+using Limp.Client.Services.NotificationService.Implementation.Types;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.JSInterop;
 
@@ -21,7 +22,7 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
         public async Task RequestWebPushPermission()
         {
-            if (await IsWebPushPermissionGranted())
+            if (await IsWebPushPermissionGranted() != PushPermissionType.PROMPT)
                 return;
 
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
@@ -47,11 +48,17 @@ namespace Limp.Client.Services.NotificationService.Implementation
             }
         }
 
-        private async Task<bool> IsWebPushPermissionGranted()
+        private async Task<PushPermissionType> IsWebPushPermissionGranted()
         {
-            var notificationPermission = await _jSRuntime
-                .InvokeAsync<string>("eval", "typeof Notification !== 'undefined' ? Notification.permission : 'denied'");
-            return notificationPermission == "granted";
+            string permissionTypeString = await _jSRuntime
+                .InvokeAsync<string>("eval", "navigator.permissions.query({ name: 'push', userVisibleOnly: true }).then(result => result.state)");
+
+            bool isTypeParsed = Enum.TryParse(permissionTypeString, true, out PushPermissionType parsedType);
+
+            if (isTypeParsed)
+                return parsedType;
+            else
+                return PushPermissionType.UNKNOWN;
         }
 
         public async Task ResetWebPushPermission()

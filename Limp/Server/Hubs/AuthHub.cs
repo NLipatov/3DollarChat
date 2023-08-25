@@ -34,7 +34,7 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("OnTokenValidation", isTokenValid);
         }
 
-        public async Task RefreshTokens(RefreshToken refreshToken)
+        public async Task RefreshTokens(RefreshTokenDTO refreshToken)
         {
             AuthResult result = await _serverHttpClient.ExplicitJWTPairRefresh(refreshToken);
 

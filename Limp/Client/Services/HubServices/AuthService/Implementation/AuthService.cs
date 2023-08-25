@@ -118,10 +118,14 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             {
                 if (TokenReader.HasAccessTokenExpired(jwtPair.AccessToken))
                 {
+                    var userAgentString = await _jSRuntime
+                        .InvokeAsync<string?>("eval","navigator.userAgent");
+                    
                     RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
-                    await hubConnection!.SendAsync("RefreshTokens", new RefreshToken
+                    await hubConnection!.SendAsync("RefreshTokens", new RefreshTokenDTO
                     {
-                        Token = (jwtPair.RefreshToken.Token)
+                        RefreshToken = jwtPair.RefreshToken,
+                        UserAgent = userAgentString
                     });
                 }
                 else

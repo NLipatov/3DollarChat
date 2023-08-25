@@ -83,9 +83,9 @@ namespace Limp.Server.Utilities.HttpMessaging
             return result;
         }
 
-        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshToken refreshToken)
+        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDTO dto)
         {
-            var content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8, "application/json");
+            var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
 
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
 

@@ -9,7 +9,7 @@ namespace Limp.Server.Utilities.HttpMessaging
     public interface IServerHttpClient
     {
         Task<IsUserExistDTO> CheckIfUserExists(string username);
-        Task<AuthResult> ExplicitJWTPairRefresh(RefreshToken refreshToken);
+        Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDTO refreshToken);
         Task<AuthResult> GetJWTPairAsync(UserAuthentication userDTO);
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);

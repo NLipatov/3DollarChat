@@ -87,13 +87,6 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
 
             hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
-                Console.WriteLine("\nGot online users update:");
-                foreach (var item in updatedTrackedUserConnections.UserConnections)
-                {
-                    Console.WriteLine(item.Username);
-                }
-                Console.WriteLine();
-
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
 

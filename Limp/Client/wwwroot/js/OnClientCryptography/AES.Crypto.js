@@ -52,7 +52,6 @@ async function AESEncryptMessage(message, key) {
 }
 
 function ExportIV() {
-    console.log(`returning as iv: ${ab2str(iv)}`);
     return ab2str(iv);
 }
 

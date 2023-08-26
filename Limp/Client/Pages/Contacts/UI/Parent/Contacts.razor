@@ -2,13 +2,11 @@
 @using Limp.Client.Services.InboxService;
 @using LimpShared.Models.ConnectedUsersManaging
 @using Limp.Client.Pages.Contacts.UI.Child;
-@using ClientServerCommon.Models;
 @using Limp.Client.Pages.Contacts.Models;
 @using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.Services.HubService.UsersService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.UIComponents.ContactItem;
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -109,7 +107,7 @@
         await _usersService.CheckIfUserExists(username);
     }
 
-    private async Task HandleExistingUserAdditionToContacts(IsUserExistDTO isUserExistDTO)
+    private async Task HandleExistingUserAdditionToContacts(IsUserExistDto isUserExistDTO)
     {
         ContactAdditionModalDTO modalDTO = new()
             {
@@ -140,7 +138,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<string>(UpdateContact, "NewUnreadedMessage", ComponentId);
 
-        _hubServiceSubscriptionManager.AddCallback<IsUserExistDTO>(HandleExistingUserAdditionToContacts, "UserExistanceResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<IsUserExistDto>(HandleExistingUserAdditionToContacts, "UserExistanceResponse", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();

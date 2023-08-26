@@ -8,16 +8,16 @@ namespace Limp.Server.Utilities.HttpMessaging
 {
     public interface IServerHttpClient
     {
-        Task<IsUserExistDTO> CheckIfUserExists(string username);
-        Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDTO refreshToken);
+        Task<IsUserExistDto> CheckIfUserExists(string username);
+        Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDto refreshToken);
         Task<AuthResult> GetJWTPairAsync(UserAuthentication userDTO);
         Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken);
         Task<bool> IsAccessTokenValid(string accessToken);
         Task<AuthResult> Register(UserAuthentication userDTO);
-        Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO);
+        Task PostAnRSAPublic(PublicKeyDto publicKeyDTO);
         Task<string?> GetAnRSAPublicKey(string username);
-        Task AddUserWebPushSubscribtion(NotificationSubscriptionDTO subscriptionDTO);
-        Task<NotificationSubscriptionDTO[]> GetUserWebPushSubscriptionsByAccessToken(string accessToken);
-        Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove);
+        Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO);
+        Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string accessToken);
+        Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
     }
 }

@@ -33,6 +33,8 @@ using Limp.Client.Services.NotificationService;
 using Limp.Client.Services.NotificationService.Implementation;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using Limp.Client.Services.UndeliveredMessagesStore.Implementation;
+using Limp.Client.Services.UserAgentService;
+using Limp.Client.Services.UserAgentService.Implementation;
 using Ljbc1994.Blazor.IntersectionObserver;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
@@ -63,6 +65,7 @@ builder.Services.AddTransient<IUndeliveredMessageService, UndeliveredMessageServ
 builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
 builder.Services.AddTransient<ILocalStorageService,  LocalStorageService>();
+builder.Services.AddTransient<IUserAgentService, UserAgentService>();
 builder.Services.AddBlazoredToast();
 builder.Services.AddIntersectionObserver();
 

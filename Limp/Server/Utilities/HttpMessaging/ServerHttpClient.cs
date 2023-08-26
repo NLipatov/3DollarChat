@@ -1,12 +1,12 @@
 ﻿using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
-using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
 using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using LimpShared.Models.Authentication.Enums;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -61,12 +61,12 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
+            var jwtPair = JsonSerializer.Deserialize<JwtPair>(responseContent);
 
             return new AuthResult
             {
                 Result = AuthResultType.Success,
-                JWTPair = jwtPair,
+                JwtPair = jwtPair,
             };
         }
 
@@ -83,7 +83,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             return result;
         }
 
-        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDTO dto)
+        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDto dto)
         {
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
 
@@ -104,12 +104,12 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
+            var jwtPair = JsonSerializer.Deserialize<JwtPair>(responseContent);
 
             return new AuthResult()
             {
                 Result = AuthResultType.Success,
-                JWTPair = jwtPair,
+                JwtPair = jwtPair,
             };
         }
 
@@ -131,13 +131,13 @@ namespace Limp.Server.Utilities.HttpMessaging
             return result.ResultType == OperationResultType.Success;
         }
 
-        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
+        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
 
             using(HttpClient client = new())
             {
-                await client.PostAsJsonAsync(requestUrl, new PublicKeyDTO { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key});
+                await client.PostAsJsonAsync(requestUrl, new PublicKeyDto { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key});
             }
         }
 
@@ -153,7 +153,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
 
@@ -163,7 +163,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<NotificationSubscriptionDTO[]> GetUserWebPushSubscriptionsByAccessToken(string username)
+        public async Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string username)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
 
@@ -171,14 +171,14 @@ namespace Limp.Server.Utilities.HttpMessaging
             {
                 var response = await client.GetAsync(requestUrl);
                 var serializedSubscriptions = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<NotificationSubscriptionDTO[]>(serializedSubscriptions, options: new JsonSerializerOptions
+                return JsonSerializer.Deserialize<NotificationSubscriptionDto[]>(serializedSubscriptions, options: new JsonSerializerOptions
                 {
                     PropertyNameCaseInsensitive = true
-                }) ?? new NotificationSubscriptionDTO[0];
+                }) ?? new NotificationSubscriptionDto[0];
             }
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
 
@@ -190,7 +190,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<IsUserExistDTO> CheckIfUserExists(string username)
+        public async Task<IsUserExistDto> CheckIfUserExists(string username)
         {
             var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]?.Replace("{username}", username);
             
@@ -198,7 +198,7 @@ namespace Limp.Server.Utilities.HttpMessaging
 
             using (HttpClient client = new())
             {
-                var response = await client.GetFromJsonAsync<IsUserExistDTO>(requestUrl);
+                var response = await client.GetFromJsonAsync<IsUserExistDto>(requestUrl);
 
                 if (response is null)
                     throw new HttpRequestException($"Server respond with unexpected JSON value.");

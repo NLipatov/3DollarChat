@@ -46,7 +46,7 @@
 @code {
     private Modal modal = default!;
     private Guid ComponentId { get; set; }
-    private NotificationSubscriptionDTO[] webPushSubscriptions { get; set; } = new NotificationSubscriptionDTO[0];
+    private NotificationSubscriptionDto[] webPushSubscriptions { get; set; } = new NotificationSubscriptionDto[0];
     private bool subscriptionsWasLoaded { get; set; } = false;
     private Guid userAgentWebPushNotificationId { get; set; }
 
@@ -69,10 +69,10 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<NotificationSubscriptionDTO[]>(OnSubscriptionsLoaded, "ReceiveWebPushSubscriptions", ComponentId);
+            .AddCallback<NotificationSubscriptionDto[]>(OnSubscriptionsLoaded, "ReceiveWebPushSubscriptions", ComponentId);
 
         _hubServiceSubscriptionManager
-            .AddCallback<NotificationSubscriptionDTO[]>(OnRemoveSubsriptionsProcessedByHub, "RemovedFromWebPushSubscriptions", ComponentId);
+            .AddCallback<NotificationSubscriptionDto[]>(OnRemoveSubsriptionsProcessedByHub, "RemovedFromWebPushSubscriptions", ComponentId);
 
         _hubServiceSubscriptionManager
             .AddCallback(LoadWebPushSubscriptions, "WebPushSubscriptionSetChanged", ComponentId);
@@ -83,7 +83,7 @@
         await _usersService.GetUserWebPushSubscriptions(accesToken);
     }
 
-    private void OnSubscriptionsLoaded(NotificationSubscriptionDTO[] subscriptions)
+    private void OnSubscriptionsLoaded(NotificationSubscriptionDto[] subscriptions)
     {
         webPushSubscriptions = subscriptions;
         subscriptionsWasLoaded = true;
@@ -114,7 +114,7 @@
             else
             {
                 subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(_jS);
-                await RemoveWebPushSubscriptions(new NotificationSubscriptionDTO[1] { subscriptionToDelete });
+                await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
             }
         }
         else
@@ -126,7 +126,7 @@
         }
     }
 
-    private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+    private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
     {
         if (subscriptionsToRemove.Any(x => x.UserAgentId == userAgentWebPushNotificationId))
         {
@@ -136,7 +136,7 @@
         await _usersService.RemoveUserWebPushSubscriptions(subscriptionsToRemove);
     }
 
-    private async Task OnRemoveSubsriptionsProcessedByHub(NotificationSubscriptionDTO[] notificationSubscriptionDTOs)
+    private async Task OnRemoveSubsriptionsProcessedByHub(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
     {
         //If there are no more web push subscriptions left, 
         // enable requesting such permission again for this user agent

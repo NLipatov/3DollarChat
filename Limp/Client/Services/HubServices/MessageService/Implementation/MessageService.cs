@@ -174,14 +174,14 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                                 await NegotiateOnAESAsync(message.Sender);
                         }
                     }
-                    else if (message.Type == MessageType.AESAccept)
+                    else if (message.Type == MessageType.AesAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
-                    else if (message.Type == MessageType.AESOffer)
+                    else if (message.Type == MessageType.AesOffer)
                     {
                         if (hubConnection != null)
                         {
@@ -224,9 +224,9 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 //Storing Public Key in our in-memory storage
                 InMemoryKeyStorage.RSAKeyStorage.TryAdd(partnersUsername, new Key
                 {
-                    Type = KeyType.RSAPublic,
+                    Type = KeyType.RsaPublic,
                     Contact = partnersUsername,
-                    Format = KeyFormat.PEM_SPKI,
+                    Format = KeyFormat.PemSpki,
                     Value = partnersPublicKey
                 });
 
@@ -288,8 +288,6 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
                 if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
                     throw new ApplicationException("Could not properly generated an AES Key for conversation");
 
-                await Console.Out.WriteLineAsync($"AES for {partnersUsername}: {offeredAESKeyForConversation}.");
-
                 //When this callback is called, AES key for conversation is already generated
                 //We now need to encrypt this AES key and send it to partner
                 string? encryptedAESKey = (await cryptographyService
@@ -303,7 +301,7 @@ namespace Limp.Client.Services.HubServices.MessageService.Implementation
 
                 Message offerOnAES = new()
                 {
-                    Type = MessageType.AESOffer,
+                    Type = MessageType.AesOffer,
                     DateSent = DateTime.UtcNow,
                     Sender = TokenReader.GetUsernameFromAccessToken(await JWTHelper.GetAccessTokenAsync(_jSRuntime)),
                     TargetGroup = partnersUsername,

@@ -37,7 +37,7 @@
             lasttokenFetchResult.Message = "You're logged in.";
             _navigationManager.NavigateTo("/users");
         }
-        else if (string.IsNullOrWhiteSpace(authResult?.JWTPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JWTPair?.RefreshToken?.Token))
+        else if (string.IsNullOrWhiteSpace(authResult?.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JwtPair?.RefreshToken?.Token))
         {
             lasttokenFetchResult = new AuthResult
                 {

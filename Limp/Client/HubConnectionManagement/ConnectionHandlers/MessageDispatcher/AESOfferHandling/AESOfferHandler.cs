@@ -25,8 +25,8 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             {
                 Value = decryptedAESKey,
                 Contact = offerMessage.Sender,
-                Format = KeyFormat.RAW,
-                Type = KeyType.AES,
+                Format = KeyFormat.Raw,
+                Type = KeyType.Aes,
                 Author = offerMessage.Sender
             };
 
@@ -43,7 +43,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             return new Message
             {
                 Sender = offerMessage.TargetGroup,
-                Type = MessageType.AESAccept,
+                Type = MessageType.AesAccept,
                 TargetGroup = offerMessage.Sender,
             };
         }

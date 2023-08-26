@@ -30,13 +30,13 @@ namespace Limp.Client.Cryptography
 
             switch (cryptoKey.Type)
             {
-                case (KeyType.RSAPublic):
+                case (KeyType.RsaPublic):
                     InMemoryKeyStorage.MyRSAPublic = cryptoKey;
                     break;
-                case (KeyType.RSAPrivate):
+                case (KeyType.RsaPrivate):
                     InMemoryKeyStorage.MyRSAPrivate = cryptoKey;
                     break;
-                case (KeyType.AES):
+                case (KeyType.Aes):
                     InMemoryKeyStorage.AESKeyStorage.TryAdd(contact!, cryptoKey);
                     if (OnAESGeneratedCallback != null)
                     {

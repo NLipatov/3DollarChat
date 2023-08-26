@@ -16,10 +16,10 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         }
         public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            if (string.IsNullOrWhiteSpace(cryptogramm.IV))
+            if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
                 throw new ArgumentException("Please provide an IV");
 
-            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.IV);
+            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv);
 
             Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
             if (key == null)
@@ -53,7 +53,7 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return new Cryptogramm
             {
                 Cyphertext = encryptedMessage,
-                IV = iv,
+                Iv = iv,
             };
         }
     }

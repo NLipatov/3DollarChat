@@ -6,6 +6,6 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
     public interface ILoginHandler
     {
         void Dispose();
-        Task OnLogIn(UserAuthentication loggingInUser, Action<AuthResult> callback);
+        Task OnLogIn(UserAuthentication loginEventInformation, Action<AuthResult> callback);
     }
 }

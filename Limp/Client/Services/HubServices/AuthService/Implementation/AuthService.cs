@@ -68,7 +68,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 bool isRefreshSucceeded = false;
                 if (result.Result == AuthResultType.Success)
                 {
-                    JWTPair? jwtPair = result.JWTPair;
+                    JwtPair? jwtPair = result.JwtPair;
                     await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", jwtPair!.AccessToken);
                     await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", jwtPair!.RefreshToken.Token);
 
@@ -109,7 +109,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
         public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
         {
-            JWTPair? jwtPair = await GetJWTPairAsync();
+            JwtPair? jwtPair = await GetJWTPairAsync();
             if (jwtPair == null)
             {
                 await isRenewalSucceededCallback(false);
@@ -122,7 +122,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                         .InvokeAsync<string?>("eval","navigator.userAgent");
                     
                     RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
-                    await hubConnection!.SendAsync("RefreshTokens", new RefreshTokenDTO
+                    await hubConnection!.SendAsync("RefreshTokens", new RefreshTokenDto
                     {
                         RefreshToken = jwtPair.RefreshToken,
                         UserAgent = userAgentString
@@ -137,7 +137,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
 
         public async Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback)
         {
-            JWTPair? jWTPair = await GetJWTPairAsync();
+            JwtPair? jWTPair = await GetJWTPairAsync();
             if (jWTPair == null)
             {
                 await isTokenAccessValidCallback(false);
@@ -152,7 +152,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             }
         }
 
-        private async Task<JWTPair?> GetJWTPairAsync()
+        private async Task<JwtPair?> GetJWTPairAsync()
         {
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
             string? refreshToken = await JWTHelper.GetRefreshTokenAsync(_jSRuntime);
@@ -164,7 +164,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 return null;
             }
 
-            return new JWTPair
+            return new JwtPair
             {
                 AccessToken = accessToken,
                 RefreshToken = new RefreshToken

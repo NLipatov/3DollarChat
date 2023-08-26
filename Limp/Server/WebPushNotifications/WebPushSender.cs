@@ -24,7 +24,7 @@ namespace Limp.Server.WebPushNotifications
 
             await Task.WhenAll(tasks);
         }
-        private async Task SendNotificationAsync(string message, string pushLink, NotificationSubscriptionDTO notificationSubscriptionDTO)
+        private async Task SendNotificationAsync(string message, string pushLink, NotificationSubscriptionDto notificationSubscriptionDTO)
         {
 #warning ToDo: implement key generation mechanism
             // For a real application, generate your own

@@ -51,8 +51,8 @@ namespace Limp.Client.Services.JWTReader
 
             return new Key
             {
-                Format = KeyFormat.PEM_SPKI,
-                Type = KeyType.RSAPublic,
+                Format = KeyFormat.PemSpki,
+                Type = KeyType.RsaPublic,
                 Value = securityToken?.Claims?.FirstOrDefault(claim => claim.Type == "RSA Public Key")?.Value,
                 Contact = contactName,
             };

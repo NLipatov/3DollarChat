@@ -77,7 +77,7 @@ namespace Limp.Server.Hubs
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
-                await PostAnRSAPublic(new PublicKeyDTO
+                await PostAnRSAPublic(new PublicKeyDto
                 {
                     Key = RSAPublicKey.Value!.ToString(),
                     Username = username
@@ -116,7 +116,7 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
+        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
         {
             await _serverHttpClient.PostAnRSAPublic(publicKeyDTO);
         }
@@ -138,7 +138,7 @@ namespace Limp.Server.Hubs
             });
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO notificationSubscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto notificationSubscriptionDTO)
         {
             await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
@@ -151,7 +151,7 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] notificationSubscriptionDTOs)
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
         {
             await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
             await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
@@ -160,7 +160,7 @@ namespace Limp.Server.Hubs
 
         public async Task CheckIfUserExist(string username)
         {
-            IsUserExistDTO response = await _serverHttpClient.CheckIfUserExists(username);
+            IsUserExistDto response = await _serverHttpClient.CheckIfUserExists(username);
             await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }
     }

@@ -1,5 +1,4 @@
-﻿using ClientServerCommon.Models;
-using LimpShared.Models.ConnectedUsersManaging;
+﻿using LimpShared.Models.ConnectedUsersManaging;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {

@@ -1,5 +1,4 @@
-﻿using ClientServerCommon.Models;
-using LimpShared.Models.Message;
+﻿using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubServices.MessageService

@@ -107,12 +107,12 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
             });
 
-            hubConnection.On<NotificationSubscriptionDTO[]>("ReceiveWebPushSubscriptions", subscriptions =>
+            hubConnection.On<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions", subscriptions =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
             });
 
-            hubConnection.On<NotificationSubscriptionDTO[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
+            hubConnection.On<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
             });
@@ -122,7 +122,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
                 _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
             });
 
-            hubConnection.On<IsUserExistDTO>("UserExistanceResponse", async isUserExistDTO =>
+            hubConnection.On<IsUserExistDto>("UserExistanceResponse", async isUserExistDTO =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
             });
@@ -224,7 +224,7 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             }
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDTO)
         {
             if (hubConnection?.State is not HubConnectionState.Connected)
                 throw new ApplicationException("Hub is not connected.");
@@ -240,12 +240,12 @@ namespace Limp.Client.Services.HubService.UsersService.Implementation
             await hubConnection.SendAsync("GetUserWebPushSubscriptions", accessToken);
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
             //If there are no subscription with access token - throw an exception
             if (!subscriptionsToRemove.Any(x => !string.IsNullOrWhiteSpace(x.AccessToken)))
                 throw new ArgumentException
-                    ($"Atleast one of parameters array should have it's {nameof(NotificationSubscriptionDTO.AccessToken)} not null");
+                    ($"Atleast one of parameters array should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
 
             if (hubConnection?.State is not HubConnectionState.Connected)
                 throw new ApplicationException("Hub is not connected.");

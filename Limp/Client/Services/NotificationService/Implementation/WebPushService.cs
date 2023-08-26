@@ -29,9 +29,9 @@ namespace Limp.Client.Services.NotificationService.Implementation
             if (string.IsNullOrWhiteSpace(accessToken))
                 return;
 
-            NotificationSubscriptionDTO? subscription =
+            NotificationSubscriptionDto? subscription =
                 await _jSRuntime
-                    .InvokeAsync<NotificationSubscriptionDTO?>("blazorPushNotifications.requestSubscription");
+                    .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
 
             if (subscription != null)
             {

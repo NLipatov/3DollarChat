@@ -2,6 +2,8 @@
 using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+using Limp.Client.Services.UserAgentService;
+using Limp.Client.Services.UserAgentService.Models;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.JSInterop;
@@ -15,6 +17,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         private readonly IUsersService _usersService;
         private readonly IHubServiceSubscriptionManager _hubServiceSubscriptionManager;
         private readonly IHubConnectionProvider _hubConnectionProvider;
+        private readonly IUserAgentService _userAgentService;
 
         private Action<AuthResult> _onLogInResponseCallback { get; set; }
 
@@ -29,13 +32,15 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
             IAuthService authService,
             IUsersService usersService,
             IHubServiceSubscriptionManager hubServiceSubscriptionManager,
-            IHubConnectionProvider hubConnectionProvider)
+            IHubConnectionProvider hubConnectionProvider,
+            IUserAgentService userAgentService)
         {
             _jSRuntime = jSRuntime;
             _authService = authService;
             _usersService = usersService;
             _hubServiceSubscriptionManager = hubServiceSubscriptionManager;
             _hubConnectionProvider = hubConnectionProvider;
+            _userAgentService = userAgentService;
 
             //This id will be needed on dispose stage
             //On dispose stage we need to clear out all of the component event subscriptions
@@ -55,24 +60,29 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
 
             _onLogInResponseCallback.Invoke(authResult);
         }
-        public async Task OnLogIn(UserAuthentication loggingInUser, Action<AuthResult> callback)
+        public async Task OnLogIn(UserAuthentication loginEventInformation, Action<AuthResult> callback)
         {
+            var userAgentInformation = await _userAgentService.GetUserAgentInformation();
+
+            loginEventInformation.UserAgent = userAgentInformation.UserAgentDescription;
+            loginEventInformation.UserAgentId = userAgentInformation.UserAgentId;
+            
             _onLogInResponseCallback = callback;
 
-            await _authService.LogIn(loggingInUser);
+            await _authService.LogIn(loginEventInformation);
         }
         private async Task StoreTokensAsync(AuthResult result)
         {
             if (result is null)
                 throw new ArgumentException($"{nameof(AuthResult)} parameter was null.");
 
-            if (string.IsNullOrWhiteSpace(result?.JWTPair?.AccessToken) || string.IsNullOrWhiteSpace(result?.JWTPair?.RefreshToken?.Token))
+            if (string.IsNullOrWhiteSpace(result?.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(result?.JwtPair?.RefreshToken?.Token))
             {
                 throw new ArgumentException("Server authentification response was invalid");
             }
 
-            await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", result!.JWTPair!.AccessToken);
-            await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JWTPair.RefreshToken.Token);
+            await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", result!.JwtPair!.AccessToken);
+            await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JwtPair.RefreshToken.Token);
 
             await _hubConnectionProvider.ForceReconnectToHubs();
         }

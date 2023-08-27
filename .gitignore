@@ -402,3 +402,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /AuthAPI/NGINX/.idea
+appsettings.Development.json

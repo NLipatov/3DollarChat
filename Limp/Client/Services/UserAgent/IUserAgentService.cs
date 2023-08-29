@@ -1,4 +1,4 @@
-﻿using Limp.Client.Services.UserAgentService.Models;
+﻿using Limp.Client.Services.UserAgent.Models;
 
 namespace Limp.Client.Services.UserAgentService;
 

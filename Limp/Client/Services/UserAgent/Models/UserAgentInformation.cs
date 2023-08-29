@@ -1,7 +1,7 @@
-﻿namespace Limp.Client.Services.UserAgentService.Models;
+﻿namespace Limp.Client.Services.UserAgent.Models;
 
 public record UserAgentInformation
 {
-    public string UserAgentDescription { get; set; } = "N/A";
-    public Guid UserAgentId { get; set; }
+    public string? UserAgentDescription { get; init; }
+    public Guid UserAgentId { get; init; }
 }

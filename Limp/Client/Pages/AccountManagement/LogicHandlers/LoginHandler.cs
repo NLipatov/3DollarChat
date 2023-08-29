@@ -3,7 +3,6 @@ using Limp.Client.Services.HubService.AuthService;
 using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Limp.Client.Services.UserAgentService;
-using Limp.Client.Services.UserAgentService.Models;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.JSInterop;
@@ -64,7 +63,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         {
             var userAgentInformation = await _userAgentService.GetUserAgentInformation();
 
-            loginEventInformation.UserAgent = userAgentInformation.UserAgentDescription;
+            loginEventInformation.UserAgent = userAgentInformation.UserAgentDescription ?? string.Empty;
             loginEventInformation.UserAgentId = userAgentInformation.UserAgentId;
             
             _onLogInResponseCallback = callback;

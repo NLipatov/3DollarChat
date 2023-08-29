@@ -11,5 +11,6 @@ namespace Limp.Client.Services.HubService.AuthService
         Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback);
         Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback);
         Task LogIn(UserAuthentication userAuthentication);
+        Task GetRefreshTokenHistory();
     }
 }

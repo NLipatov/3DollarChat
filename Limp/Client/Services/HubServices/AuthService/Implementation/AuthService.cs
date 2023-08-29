@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
+using Limp.Client.Pages.AccountManagement.RefreshTokenHistory;
 using Limp.Client.Services.JWTReader;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
@@ -85,6 +86,11 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             hubConnection.On<AuthResult>("OnLoggingIn", async result =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnLogIn");
+            });
+
+            hubConnection.On<List<TokenRefreshHistory>>("OnRefreshTokenHistoryResponse", async result =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
             });
         }
 
@@ -192,6 +198,15 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             hubConnection = await ConnectAsync();
 
             await hubConnection.SendAsync("LogIn", userAuthentication);
+        }
+
+        public async Task GetRefreshTokenHistory()
+        {
+            hubConnection = await ConnectAsync();
+            
+            var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+            await hubConnection.SendAsync("GetTokenRefreshHistory", accessToken);
         }
     }
 }

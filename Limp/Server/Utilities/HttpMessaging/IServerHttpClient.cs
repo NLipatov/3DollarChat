@@ -1,4 +1,5 @@
-﻿using LimpShared.Models.Authentication.Models;
+﻿using Limp.Client.Pages.AccountManagement.RefreshTokenHistory;
+using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using LimpShared.Models.Users;
@@ -19,5 +20,6 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO);
         Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string accessToken);
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
+        Task<List<TokenRefreshHistory>> GetTokenRefreshHistory(string accessToken);
     }
 }

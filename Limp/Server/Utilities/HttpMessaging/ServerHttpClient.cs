@@ -6,6 +6,7 @@ using LimpShared.Models.WebPushNotification;
 using System.Net;
 using System.Text;
 using System.Text.Json;
+using Limp.Client.Pages.AccountManagement.RefreshTokenHistory;
 using LimpShared.Models.Authentication.Enums;
 
 namespace Limp.Server.Utilities.HttpMessaging
@@ -187,6 +188,23 @@ namespace Limp.Server.Utilities.HttpMessaging
                 var response = await client.PatchAsJsonAsync(requestUrl,  subscriptionsToRemove);
                 if(response.StatusCode is not HttpStatusCode.OK)
                     throw new HttpRequestException($"Server did not respond with {HttpStatusCode.OK} status code.");
+            }
+        }
+
+        public async Task<List<TokenRefreshHistory>> GetTokenRefreshHistory(string accessToken)
+        {
+            var endpointUrl = _configuration["AuthAutority:Endpoints:GetTokenRefreshHistory"];
+            
+            var requestUrl = $"{_configuration[$"AuthAutority:Address"]}{endpointUrl}?accessToken={accessToken}";
+            
+            using (HttpClient client = new())
+            {
+                var response = await client.GetFromJsonAsync<List<TokenRefreshHistory>>(requestUrl);
+
+                if (response is null)
+                    throw new HttpRequestException($"Server respond with unexpected JSON value.");
+
+                return response;
             }
         }
 

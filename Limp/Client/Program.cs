@@ -35,7 +35,6 @@ using Limp.Client.Services.UndeliveredMessagesStore;
 using Limp.Client.Services.UndeliveredMessagesStore.Implementation;
 using Limp.Client.Services.UserAgent.Implementation;
 using Limp.Client.Services.UserAgentService;
-using Limp.Client.Services.UserAgentService.Implementation;
 using Ljbc1994.Blazor.IntersectionObserver;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;

@@ -27,6 +27,13 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("OnLoggingIn", result);
         }
 
+        public async Task GetTokenRefreshHistory(string accessToken)
+        {
+            var history = await _serverHttpClient.GetTokenRefreshHistory(accessToken);
+
+            await Clients.Caller.SendAsync("OnRefreshTokenHistoryResponse", history);
+        }
+
         public async Task IsTokenValid(string accessToken)
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);

@@ -5,8 +5,8 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 using System.Collections.Concurrent;
-using Limp.Client.Pages.AccountManagement.RefreshTokenHistory;
 using Limp.Client.Services.JWTReader;
+using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 
@@ -17,17 +17,20 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
         private readonly IJSRuntime _jSRuntime;
         private readonly NavigationManager _navigationManager;
         private readonly ICallbackExecutor _callbackExecutor;
+        private readonly IUserAgentService _userAgentService;
         private HubConnection? hubConnection { get; set; }
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         private ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue = new();
         public AuthService
         (IJSRuntime jSRuntime,
         NavigationManager navigationManager,
-        ICallbackExecutor callbackExecutor)
+        ICallbackExecutor callbackExecutor,
+        IUserAgentService userAgentService)
         {
             _jSRuntime = jSRuntime;
             _navigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
+            _userAgentService = userAgentService;
         }
 
         public async Task<HubConnection> ConnectAsync()
@@ -88,7 +91,7 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnLogIn");
             });
 
-            hubConnection.On<List<TokenRefreshHistory>>("OnRefreshTokenHistoryResponse", async result =>
+            hubConnection.On<List<AccessRefreshEventLog>>("OnRefreshTokenHistoryResponse", async result =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
             });
@@ -124,14 +127,15 @@ namespace Limp.Client.Services.HubService.AuthService.Implementation
             {
                 if (TokenReader.HasAccessTokenExpired(jwtPair.AccessToken))
                 {
-                    var userAgentString = await _jSRuntime
-                        .InvokeAsync<string?>("eval","navigator.userAgent");
+                    var userAgentInformation = await _userAgentService.GetUserAgentInformation();
                     
                     RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
+                    
                     await hubConnection!.SendAsync("RefreshTokens", new RefreshTokenDto
                     {
                         RefreshToken = jwtPair.RefreshToken,
-                        UserAgent = userAgentString
+                        UserAgent = userAgentInformation.UserAgentDescription,
+                        UserAgentId = userAgentInformation.UserAgentId
                     });
                 }
                 else

@@ -52,4 +52,8 @@
     <Folder Include="wwwroot\js\Notifications\" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AdditionalFiles Include="Pages\Account\RefreshTokenHistory\JwtRefreshHistory.razor" />
+  </ItemGroup>
+
 </Project>

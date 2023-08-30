@@ -6,7 +6,6 @@ using LimpShared.Models.WebPushNotification;
 using System.Net;
 using System.Text;
 using System.Text.Json;
-using Limp.Client.Pages.AccountManagement.RefreshTokenHistory;
 using LimpShared.Models.Authentication.Enums;
 
 namespace Limp.Server.Utilities.HttpMessaging
@@ -191,7 +190,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<List<TokenRefreshHistory>> GetTokenRefreshHistory(string accessToken)
+        public async Task<List<AccessRefreshEventLog>> GetTokenRefreshHistory(string accessToken)
         {
             var endpointUrl = _configuration["AuthAutority:Endpoints:GetTokenRefreshHistory"];
             
@@ -199,7 +198,7 @@ namespace Limp.Server.Utilities.HttpMessaging
             
             using (HttpClient client = new())
             {
-                var response = await client.GetFromJsonAsync<List<TokenRefreshHistory>>(requestUrl);
+                var response = await client.GetFromJsonAsync<List<AccessRefreshEventLog>>(requestUrl);
 
                 if (response is null)
                     throw new HttpRequestException($"Server respond with unexpected JSON value.");

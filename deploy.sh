@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Step 1: copying configuration
+rm /root/EthaChat/3DollarChat/Limp/Server/appsettings.Development.json
+cp /root/EthaChat/3DollarChat/Limp/Server/appsettings.json /root/EthaChat/Configuration/ChatApp/appsettings.json
+
 # Step 1: switching to dev branch
 echo "INFO: Step 1: Pull the latest changes from Git"
 git checkout dev

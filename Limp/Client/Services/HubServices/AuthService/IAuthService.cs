@@ -1,13 +1,11 @@
-﻿using LimpShared.Models.Authentication.Models.UserAuthentication;
-using Microsoft.AspNetCore.SignalR.Client;
+﻿using Limp.Client.Services.HubServices.HubServiceContract;
+using LimpShared.Models.Authentication.Models.UserAuthentication;
 
 namespace Limp.Client.Services.HubService.AuthService
 {
-    public interface IAuthService
+    public interface IAuthService : IHubService
     {
-        Task<HubConnection> ConnectAsync();
         bool IsConnected();
-        Task DisconnectAsync();
         Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback);
         Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback);
         Task LogIn(UserAuthentication userAuthentication);

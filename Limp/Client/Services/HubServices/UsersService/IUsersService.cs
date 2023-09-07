@@ -1,14 +1,12 @@
-﻿using LimpShared.Encryption;
+﻿using Limp.Client.Services.HubServices.HubServiceContract;
+using LimpShared.Encryption;
 using LimpShared.Models.WebPushNotification;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Limp.Client.Services.HubService.UsersService
 {
-    public interface IUsersService
+    public interface IUsersService : IHubService
     {
-        Task<HubConnection?> ConnectAsync();
         Task ReconnectAsync();
-        Task DisconnectAsync();
         Task SetRSAPublicKey(string accessToken, Key RSAPublicKey);
         Task ActualizeConnectedUsersAsync();
         Guid SubscribeToConnectionIdReceived(Func<string, Task> callback);

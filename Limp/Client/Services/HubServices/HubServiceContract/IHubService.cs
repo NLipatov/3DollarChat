@@ -1,7 +1,10 @@
-﻿namespace Limp.Client.Services.HubServices.HubServiceContract
+﻿using Microsoft.AspNetCore.SignalR.Client;
+
+namespace Limp.Client.Services.HubServices.HubServiceContract
 {
     public interface IHubService
     {
-        Task<Exception?> OnConnectionLost(Exception? ex);
+        Task<HubConnection> ConnectAsync();
+        Task DisconnectAsync();
     }
 }

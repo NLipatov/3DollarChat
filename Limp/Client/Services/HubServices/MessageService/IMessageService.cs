@@ -1,12 +1,10 @@
-﻿using LimpShared.Models.Message;
-using Microsoft.AspNetCore.SignalR.Client;
+﻿using Limp.Client.Services.HubServices.HubServiceContract;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.HubServices.MessageService
 {
-    public interface IMessageService
+    public interface IMessageService : IHubService
     {
-        Task<HubConnection> ConnectAsync();
-        Task DisconnectAsync();
         Task ReconnectAsync();
         bool IsConnected();
         Task SendMessage(Message message);

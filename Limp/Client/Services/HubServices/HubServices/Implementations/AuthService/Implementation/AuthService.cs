@@ -9,13 +9,14 @@ using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using HubConnectionExtensions = Limp.Client.Services.HubServices.Extensions.HubConnectionExtensions;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
 {
     public class AuthService : IAuthService
     {
+        public NavigationManager NavigationManager { get; set; }
         private readonly IJSRuntime _jSRuntime;
-        private readonly NavigationManager _navigationManager;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUserAgentService _userAgentService;
         private HubConnection? hubConnection { get; set; }
@@ -28,12 +29,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         IUserAgentService userAgentService)
         {
             _jSRuntime = jSRuntime;
-            _navigationManager = navigationManager;
+            NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _userAgentService = userAgentService;
         }
 
-        public async Task<HubConnection> ConnectAsync()
+        public async Task<HubConnection> GetHubConnectionAsync()
         {
             if (hubConnection?.State == HubConnectionState.Connected)
             {
@@ -100,7 +101,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private void InitializeHubConnection()
         {
             hubConnection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/authHub"))
+            .WithUrl(NavigationManager.ToAbsoluteUri("/authHub"))
             .AddMessagePackProtocol()
             .Build();
         }
@@ -185,7 +186,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         }
         public async Task DisconnectedAsync()
         {
-            await HubDisconnecter.DisconnectAsync(hubConnection);
+            await HubConnectionExtensions.DisconnectAsync(hubConnection);
             hubConnection = null;
         }
 
@@ -199,14 +200,14 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
 
         public async Task LogIn(UserAuthentication userAuthentication)
         {
-            hubConnection = await ConnectAsync();
+            hubConnection = await GetHubConnectionAsync();
 
             await hubConnection.SendAsync("LogIn", userAuthentication);
         }
 
         public async Task GetRefreshTokenHistory()
         {
-            hubConnection = await ConnectAsync();
+            hubConnection = await GetHubConnectionAsync();
             
             var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 

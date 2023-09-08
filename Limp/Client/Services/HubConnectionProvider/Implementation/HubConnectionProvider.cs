@@ -44,7 +44,7 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
                 return;
             }
 
-            authHubConnection = await _authService.ConnectAsync();
+            authHubConnection = await _authService.GetHubConnectionAsync();
             await RefreshTokenIfNeededAsync();
         }
 
@@ -73,8 +73,8 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
 
         private async Task ProceedHandle()
         {
-            await _usersService.ConnectAsync();
-            await _messageService.ConnectAsync();
+            await _usersService.GetHubConnectionAsync();
+            await _messageService.GetHubConnectionAsync();
             connectionState = HubConnectionProviderState.Connected;
         }
 
@@ -93,9 +93,9 @@ namespace Limp.Client.Services.HubConnectionProvider.Implementation
             await _usersService.DisconnectAsync();
             await _authService.DisconnectAsync();
 
-            await _usersService.ConnectAsync();
-            await _messageService.ConnectAsync();
-            await _authService.ConnectAsync();
+            await _usersService.GetHubConnectionAsync();
+            await _messageService.GetHubConnectionAsync();
+            await _authService.GetHubConnectionAsync();
         }
     }
 }

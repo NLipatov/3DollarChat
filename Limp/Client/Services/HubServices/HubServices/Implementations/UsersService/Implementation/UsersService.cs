@@ -1,8 +1,9 @@
 ﻿using System.Collections.Concurrent;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Limp.Client.Services.HubServices.Extensions;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
@@ -16,9 +17,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
     public class UsersService : IUsersService
     {
         private readonly IJSRuntime _jSRuntime;
-        private readonly NavigationManager _navigationManager;
+        public NavigationManager NavigationManager { get; set; }
         private readonly ICallbackExecutor _callbackExecutor;
-        private HubConnection? hubConnection { get; set; }
+        private HubConnection? HubConnectionInstance { get; set; }
 
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
@@ -28,111 +29,102 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         ICallbackExecutor callbackExecutor)
         {
             _jSRuntime = jSRuntime;
-            _navigationManager = navigationManager;
+            NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
+            InitializeHubConnection();
+            RegisterHubEventHandlers();
         }
 
-        public async Task<HubConnection?> ConnectAsync()
+        private void InitializeHubConnection()
         {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                _navigationManager.NavigateTo("signin");
-                return null;
-            }
-
-            if (hubConnection?.State == HubConnectionState.Connected)
-            {
-                return hubConnection;
-            }
-            else
-            {
-                if (hubConnection is null)
-                {
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-                else
-                {
-                    await hubConnection.DisposeAsync();
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-            }
-
-            if (hubConnection == null)
-                throw new ArgumentException($"{nameof(UsersService)} {nameof(hubConnection)} initialization failed. {nameof(hubConnection)} is null.");
-
-            await hubConnection.StartAsync();
-
-            await hubConnection.SendAsync("SetUsername", accessToken);
-
-            hubConnection.Closed += OnConnectionLost;
-
-            return hubConnection;
-        }
-
-        private async Task OnConnectionLost(Exception? exception)
-        {
-            await Console.Out.WriteLineAsync("UsersHub connection lost. Reconnecting.");
-            await ConnectAsync();
+            if (HubConnectionInstance is not null)
+                return;
+            
+            HubConnectionInstance = HubServiceConnectionBuilder
+                .Build(NavigationManager.ToAbsoluteUri("/usersHub"));
         }
 
         private void RegisterHubEventHandlers()
         {
-            if (hubConnection is null)
+            if (HubConnectionInstance is null)
                 throw new NullReferenceException($"Could not register event handlers - hub was null.");
 
-            hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
+            HubConnectionInstance.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
 
-            hubConnection.On<string>("ReceiveConnectionId", connectionId =>
+            HubConnectionInstance.On<string>("ReceiveConnectionId", connectionId =>
             {
                 _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
             });
 
-            hubConnection.On<string>("OnNameResolve", async username =>
+            HubConnectionInstance.On<string>("OnNameResolve", async username =>
             {
                 _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
+                
+                await GetHubConnectionAsync();
 
-                await hubConnection.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
+                await HubConnectionInstance.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
             });
 
-            hubConnection.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
+            HubConnectionInstance.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
             });
 
-            hubConnection.On<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions", subscriptions =>
+            HubConnectionInstance.On<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions", subscriptions =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
             });
 
-            hubConnection.On<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
+            HubConnectionInstance.On<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
             });
 
-            hubConnection.On("WebPushSubscriptionSetChanged", () =>
+            HubConnectionInstance.On("WebPushSubscriptionSetChanged", () =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
             });
 
-            hubConnection.On<IsUserExistDto>("UserExistanceResponse", async isUserExistDTO =>
+            HubConnectionInstance.On<IsUserExistDto>("UserExistanceResponse", async isUserExistDTO =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
             });
         }
 
-        private void InitializeHubConnection()
+        public async Task<HubConnection> GetHubConnectionAsync()
         {
-            hubConnection = new HubConnectionBuilder()
-            .WithUrl(_navigationManager.ToAbsoluteUri("/usersHub"))
-            .AddMessagePackProtocol()
-            .Build();
+            if (HubConnectionInstance?.State == HubConnectionState.Connected)
+                return HubConnectionInstance;
+            
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                NavigationManager.NavigateTo("signin");
+                throw new InvalidOperationException
+                    ("User is not signed in and does not have an access token yet. " +
+                     "Redirecting to a signin page.");
+            }
+
+            if (HubConnectionInstance is null)
+                throw new InvalidOperationException
+                    ($"{nameof(HubConnectionInstance)} was null after initialization.");
+
+            await HubConnectionInstance.StartAsync();
+
+            await HubConnectionInstance.SendAsync("SetUsername", accessToken);
+
+            HubConnectionInstance.Closed += OnConnectionLost;
+
+            return HubConnectionInstance;
+        }
+
+        private async Task OnConnectionLost(Exception? exception)
+        {
+            await GetHubConnectionAsync();
         }
 
         public void RemoveConnectionIdReceived(Guid subscriptionId)
@@ -174,90 +166,57 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             }
         }
 
-        public async Task DisconnectAsync()
-        {
-            await HubDisconnecter.DisconnectAsync(hubConnection);
-            hubConnection = null;
-        }
-
         public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
         {
-            if (hubConnection != null)
-            {
-                await hubConnection.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
-                InMemoryKeyStorage.isPublicKeySet = true;
-            }
-            else
-            {
-                await ReconnectAsync();
-            }
+            var hubConnection = await GetHubConnectionAsync();
+            await hubConnection.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
+            InMemoryKeyStorage.isPublicKeySet = true;
         }
 
         public async Task ActualizeConnectedUsersAsync()
         {
-            if (hubConnection != null)
-            {
-                await hubConnection.SendAsync("PushOnlineUsersToClients");
-            }
-            else
-            {
-                await ReconnectAsync();
-            }
-        }
-
-        public async Task ReconnectAsync()
-        {
-            await DisconnectAsync();
-            await ConnectAsync();
+            var hubConnection = await GetHubConnectionAsync();
+            await hubConnection.SendAsync("PushOnlineUsersToClients");
         }
 
         public async Task CheckIfUserOnline(string username)
         {
-            if (hubConnection != null)
-            {
-                await hubConnection.SendAsync("IsUserOnline", username);
-            }
-            else
-            {
-                await ReconnectAsync();
-            }
+            var hubConnection = await GetHubConnectionAsync();
+            await hubConnection.SendAsync("IsUserOnline", username);
         }
 
         public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDTO)
         {
-            if (hubConnection?.State is not HubConnectionState.Connected)
-                throw new ApplicationException("Hub is not connected.");
-
+            var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("AddUserWebPushSubscription", subscriptionDTO);
         }
 
         public async Task GetUserWebPushSubscriptions(string accessToken)
         {
-            if (hubConnection?.State is not HubConnectionState.Connected)
-                throw new ApplicationException("Hub is not connected.");
-
+            var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("GetUserWebPushSubscriptions", accessToken);
         }
 
         public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
-            //If there are no subscription with access token - throw an exception
-            if (!subscriptionsToRemove.Any(x => !string.IsNullOrWhiteSpace(x.AccessToken)))
+            if (subscriptionsToRemove.All(x => string.IsNullOrWhiteSpace(x.AccessToken)))
                 throw new ArgumentException
-                    ($"Atleast one of parameters array should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
+                    ($"At least one of parameters array " +
+                     $"should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
 
-            if (hubConnection?.State is not HubConnectionState.Connected)
-                throw new ApplicationException("Hub is not connected.");
-
+            var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);
         }
 
         public async Task CheckIfUserExists(string username)
         {
-            if (hubConnection?.State is not HubConnectionState.Connected)
-                throw new ApplicationException("Hub is not connected.");
-
+            var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("CheckIfUserExist", username);
+        }
+
+        public async Task DisconnectAsync()
+        {
+            await HubConnectionInstance.DisconnectAsync();
         }
     }
 }

@@ -5,7 +5,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 {
     public interface IUsersService : IHubService
     {
-        Task ReconnectAsync();
         Task SetRSAPublicKey(string accessToken, Key RSAPublicKey);
         Task ActualizeConnectedUsersAsync();
         Guid SubscribeToConnectionIdReceived(Func<string, Task> callback);

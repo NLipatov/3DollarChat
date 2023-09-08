@@ -1,10 +1,10 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.CommonServices
+namespace Limp.Client.Services.HubServices.Extensions
 {
-    public static class HubDisconnecter
+    public static class HubConnectionExtensions
     {
-        public static async Task DisconnectAsync(HubConnection? hubConnection)
+        public static async Task DisconnectAsync(this HubConnection? hubConnection)
         {
             if (hubConnection == null)
                 return;

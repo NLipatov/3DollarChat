@@ -4,7 +4,8 @@ namespace Limp.Client.Services.HubServices.HubServices
 {
     public interface IHubService
     {
-        Task<HubConnection> ConnectAsync();
+        public NavigationManager NavigationManager { get; set; }
+        Task<HubConnection> GetHubConnectionAsync();
         Task DisconnectAsync();
     }
 }

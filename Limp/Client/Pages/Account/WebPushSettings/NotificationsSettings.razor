@@ -78,7 +78,7 @@
             .AddCallback(LoadWebPushSubscriptions, "WebPushSubscriptionSetChanged", ComponentId);
 
         //if hub connection is not setted up already, we will set it up now
-        await _usersService.ConnectAsync();
+        await _usersService.GetHubConnectionAsync();
 
         await _usersService.GetUserWebPushSubscriptions(accesToken);
     }

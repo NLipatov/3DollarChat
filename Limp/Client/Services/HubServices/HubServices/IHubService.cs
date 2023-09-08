@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.HubServiceContract
+namespace Limp.Client.Services.HubServices.HubServices
 {
     public interface IHubService
     {

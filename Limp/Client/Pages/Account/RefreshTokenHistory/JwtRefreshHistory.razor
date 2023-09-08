@@ -1,5 +1,4 @@
 ﻿@page "/account/accesses"
-@using Limp.Client.Services.HubService.AuthService
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
 @using Limp.Client.HubInteraction.Handlers.Helpers
 @using Limp.Client.Services.UserAgent.Models
@@ -7,6 +6,7 @@
 @using LimpShared.Models.Authentication.Enums
 @using LimpShared.Models.Authentication.Models
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
 @inject IAuthService _authService 
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jS

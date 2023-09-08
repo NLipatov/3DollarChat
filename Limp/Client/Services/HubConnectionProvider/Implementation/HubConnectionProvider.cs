@@ -1,8 +1,8 @@
 ﻿using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubConnectionProvider.ConnectionStates;
-using Limp.Client.Services.HubService.AuthService;
-using Limp.Client.Services.HubService.UsersService;
-using Limp.Client.Services.HubServices.MessageService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;

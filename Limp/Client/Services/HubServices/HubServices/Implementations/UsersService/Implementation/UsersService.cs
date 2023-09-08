@@ -1,8 +1,8 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
+﻿using System.Collections.Concurrent;
+using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.HubServices.MessageService.Implementation;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
@@ -10,9 +10,8 @@ using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using System.Collections.Concurrent;
 
-namespace Limp.Client.Services.HubService.UsersService.Implementation
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
     public class UsersService : IUsersService
     {

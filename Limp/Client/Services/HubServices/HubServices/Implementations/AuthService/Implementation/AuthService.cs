@@ -1,16 +1,16 @@
-﻿using Limp.Client.HubInteraction.Handlers.Helpers;
+﻿using System.Collections.Concurrent;
+using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.JSInterop;
-using System.Collections.Concurrent;
 using Limp.Client.Services.JWTReader;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
+using Microsoft.AspNetCore.Components;
+using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.HubService.AuthService.Implementation
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
 {
     public class AuthService : IAuthService
     {

@@ -1,5 +1,5 @@
 ﻿using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubService.UsersService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
 using LimpShared.Models.WebPushNotification;

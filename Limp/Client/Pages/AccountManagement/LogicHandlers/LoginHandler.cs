@@ -1,7 +1,7 @@
 ﻿using Limp.Client.Services.HubConnectionProvider;
-using Limp.Client.Services.HubService.AuthService;
-using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;

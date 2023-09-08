@@ -1,7 +1,6 @@
-﻿using Limp.Client.Services.HubServices.HubServiceContract;
-using LimpShared.Models.Message;
+﻿using LimpShared.Models.Message;
 
-namespace Limp.Client.Services.HubServices.MessageService
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 {
     public interface IMessageService : IHubService
     {

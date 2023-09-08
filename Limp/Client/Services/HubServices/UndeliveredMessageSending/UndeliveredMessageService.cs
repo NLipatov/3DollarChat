@@ -2,7 +2,7 @@
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-using Limp.Client.Services.HubServices.MessageService;
+using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;

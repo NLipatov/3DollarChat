@@ -1,7 +1,6 @@
-﻿using Limp.Client.Services.HubServices.HubServiceContract;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
+﻿using LimpShared.Models.Authentication.Models.UserAuthentication;
 
-namespace Limp.Client.Services.HubService.AuthService
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
 {
     public interface IAuthService : IHubService
     {

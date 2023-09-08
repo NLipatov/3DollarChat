@@ -1,8 +1,7 @@
-﻿using Limp.Client.Services.HubServices.HubServiceContract;
-using LimpShared.Encryption;
+﻿using LimpShared.Encryption;
 using LimpShared.Models.WebPushNotification;
 
-namespace Limp.Client.Services.HubService.UsersService
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 {
     public interface IUsersService : IHubService
     {

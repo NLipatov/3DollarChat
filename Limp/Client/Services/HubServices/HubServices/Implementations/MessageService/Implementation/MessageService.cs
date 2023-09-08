@@ -8,9 +8,9 @@ using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.CloudKeyService;
-using Limp.Client.Services.HubService.UsersService;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.JWTReader;
 using Limp.Client.Services.UndeliveredMessagesStore;
@@ -21,7 +21,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.HubServices.MessageService.Implementation
+namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
     public class MessageService : IMessageService
     {

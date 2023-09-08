@@ -49,6 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Services\HubServices\HubServices\Implementations\" />
     <Folder Include="wwwroot\js\Notifications\" />
   </ItemGroup>
 

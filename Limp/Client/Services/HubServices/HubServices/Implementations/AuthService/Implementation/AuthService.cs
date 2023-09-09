@@ -2,6 +2,7 @@
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Limp.Client.Services.JWTReader;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
@@ -19,7 +20,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private readonly IJSRuntime _jSRuntime;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUserAgentService _userAgentService;
-        private HubConnection? hubConnection { get; set; }
+        private HubConnection? HubConnectionInstance { get; set; }
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         private ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue = new();
         public AuthService
@@ -32,43 +33,38 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _userAgentService = userAgentService;
+            InitializeHubConnection();
+            RegisterHubEventHandlers();
+        }
+
+        private void InitializeHubConnection()
+        {
+            if (HubConnectionInstance is not null)
+                return;
+            
+            HubConnectionInstance = HubServiceConnectionBuilder
+                .Build(NavigationManager.ToAbsoluteUri("/authHub"));
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            if (hubConnection?.State == HubConnectionState.Connected)
-            {
-                return hubConnection;
-            }
-            else
-            {
-                if (hubConnection is null)
-                {
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-                else
-                {
-                    await hubConnection.DisposeAsync();
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-            }
+            if (HubConnectionInstance?.State == HubConnectionState.Connected)
+                return HubConnectionInstance;
 
-            if (hubConnection == null)
-                throw new ArgumentException($"Could not initialize {nameof(hubConnection)}.");
+            if (HubConnectionInstance == null)
+                throw new ArgumentException($"Could not initialize {nameof(HubConnectionInstance)}.");
 
-            await hubConnection.StartAsync();
+            await HubConnectionInstance.StartAsync();
 
-            return hubConnection;
+            return HubConnectionInstance;
         }
 
         private void RegisterHubEventHandlers()
         {
-            if (hubConnection == null)
-                InitializeHubConnection();
+            if (HubConnectionInstance is null)
+                throw new NullReferenceException($"Could not register event handlers - hub was null.");
 
-            hubConnection.On<AuthResult>("OnTokensRefresh", async result =>
+            HubConnectionInstance.On<AuthResult>("OnTokensRefresh", async result =>
             {
                 bool isRefreshSucceeded = false;
                 if (result.Result == AuthResultType.Success)
@@ -82,43 +78,36 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 _callbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
             });
 
-            hubConnection.On<bool>("OnTokenValidation", isTokenValid =>
+            HubConnectionInstance.On<bool>("OnTokenValidation", isTokenValid =>
             {
                 _callbackExecutor.ExecuteCallbackQueue(isTokenValid, IsTokenValidCallbackQueue);
             });
 
-            hubConnection.On<AuthResult>("OnLoggingIn", async result =>
+            HubConnectionInstance.On<AuthResult>("OnLoggingIn", result =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnLogIn");
             });
 
-            hubConnection.On<List<AccessRefreshEventLog>>("OnRefreshTokenHistoryResponse", async result =>
+            HubConnectionInstance.On<List<AccessRefreshEventLog>>("OnRefreshTokenHistoryResponse", async result =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
             });
         }
 
-        private void InitializeHubConnection()
-        {
-            hubConnection = new HubConnectionBuilder()
-            .WithUrl(NavigationManager.ToAbsoluteUri("/authHub"))
-            .AddMessagePackProtocol()
-            .Build();
-        }
-
         public async Task DisconnectAsync()
         {
-            if (hubConnection != null)
+            if (HubConnectionInstance != null)
             {
-                if (hubConnection.State != HubConnectionState.Disconnected)
+                if (HubConnectionInstance.State != HubConnectionState.Disconnected)
                 {
-                    await hubConnection.StopAsync();
+                    await HubConnectionInstance.StopAsync();
                 }
             }
         }
 
         public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
         {
+            var hubConnection = await GetHubConnectionAsync();
             JwtPair? jwtPair = await GetJWTPairAsync();
             if (jwtPair == null)
             {
@@ -132,7 +121,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                     
                     RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
                     
-                    await hubConnection!.SendAsync("RefreshTokens", new RefreshTokenDto
+                    await hubConnection.SendAsync("RefreshTokens", new RefreshTokenDto
                     {
                         RefreshToken = jwtPair.RefreshToken,
                         UserAgent = userAgentInformation.UserAgentDescription,
@@ -148,6 +137,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
 
         public async Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback)
         {
+            var hubConnection = await GetHubConnectionAsync();
             JwtPair? jWTPair = await GetJWTPairAsync();
             if (jWTPair == null)
             {
@@ -159,7 +149,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 //later comes, when server responds us by calling client 'OnTokenValidation' method with boolean value
                 IsTokenValidCallbackQueue.Enqueue(isTokenAccessValidCallback);
                 //Informing server that we're waiting for it's decision on access token
-                await hubConnection!.SendAsync("IsTokenValid", jWTPair.AccessToken);
+                await hubConnection.SendAsync("IsTokenValid", jWTPair.AccessToken);
             }
         }
 
@@ -186,28 +176,28 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         }
         public async Task DisconnectedAsync()
         {
-            await HubConnectionExtensions.DisconnectAsync(hubConnection);
-            hubConnection = null;
+            await HubConnectionExtensions.DisconnectAsync(HubConnectionInstance);
+            HubConnectionInstance = null;
         }
 
         public bool IsConnected()
         {
-            if(hubConnection == null)
+            if(HubConnectionInstance == null)
                 return false;
 
-            return hubConnection.State == HubConnectionState.Connected;
+            return HubConnectionInstance.State == HubConnectionState.Connected;
         }
 
         public async Task LogIn(UserAuthentication userAuthentication)
         {
-            hubConnection = await GetHubConnectionAsync();
+            var hubConnection = await GetHubConnectionAsync();
 
             await hubConnection.SendAsync("LogIn", userAuthentication);
         }
 
         public async Task GetRefreshTokenHistory()
         {
-            hubConnection = await GetHubConnectionAsync();
+            var hubConnection = await GetHubConnectionAsync();
             
             var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 

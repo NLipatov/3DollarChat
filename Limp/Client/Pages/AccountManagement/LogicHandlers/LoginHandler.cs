@@ -13,9 +13,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly IAuthService _authService;
-        private readonly IUsersService _usersService;
         private readonly IHubServiceSubscriptionManager _hubServiceSubscriptionManager;
-        private readonly IHubConnectionProvider _hubConnectionProvider;
         private readonly IUserAgentService _userAgentService;
 
         private Action<AuthResult> _onLogInResponseCallback { get; set; }
@@ -36,9 +34,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         {
             _jSRuntime = jSRuntime;
             _authService = authService;
-            _usersService = usersService;
             _hubServiceSubscriptionManager = hubServiceSubscriptionManager;
-            _hubConnectionProvider = hubConnectionProvider;
             _userAgentService = userAgentService;
 
             //This id will be needed on dispose stage
@@ -82,8 +78,6 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
 
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", result!.JwtPair!.AccessToken);
             await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", result.JwtPair.RefreshToken.Token);
-
-            await _hubConnectionProvider.ForceReconnectToHubs();
         }
     }
 }

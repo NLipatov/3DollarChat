@@ -96,28 +96,27 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            if (HubConnectionInstance?.State == HubConnectionState.Connected)
-                return HubConnectionInstance;
-            
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 NavigationManager.NavigateTo("signin");
                 throw new InvalidOperationException
-                    ("User is not signed in and does not have an access token yet. " +
-                     "Redirecting to a signin page.");
+                ("User is not signed in and does not have an access token yet. " +
+                 "Redirecting to a signin page.");
             }
+            
+            if (HubConnectionInstance == null)
+                throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
+            
+            if (HubConnectionInstance.State is HubConnectionState.Disconnected)
+            {
+                await HubConnectionInstance.StartAsync();
 
-            if (HubConnectionInstance is null)
-                throw new InvalidOperationException
-                    ($"{nameof(HubConnectionInstance)} was null after initialization.");
+                await HubConnectionInstance.SendAsync("SetUsername", accessToken);
 
-            await HubConnectionInstance.StartAsync();
-
-            await HubConnectionInstance.SendAsync("SetUsername", accessToken);
-
-            HubConnectionInstance.Closed += OnConnectionLost;
+                HubConnectionInstance.Closed += OnConnectionLost;
+            }
 
             return HubConnectionInstance;
         }

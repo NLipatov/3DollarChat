@@ -48,13 +48,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            if (HubConnectionInstance?.State == HubConnectionState.Connected)
-                return HubConnectionInstance;
-
             if (HubConnectionInstance == null)
-                throw new ArgumentException($"Could not initialize {nameof(HubConnectionInstance)}.");
-
-            await HubConnectionInstance.StartAsync();
+                throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
+            
+            if (HubConnectionInstance.State is HubConnectionState.Disconnected)
+            {
+                await HubConnectionInstance.StartAsync();
+            }
 
             return HubConnectionInstance;
         }

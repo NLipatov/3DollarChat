@@ -65,6 +65,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             _messageBuilder = messageBuilder;
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
+            InitializeHubConnection();
+            RegisterHubEventHandlers();
         }
         public async Task<HubConnection> GetHubConnectionAsync()
         {
@@ -79,33 +81,17 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             //Loading from local storage earlier saved AES keys
             InMemoryKeyStorage.AESKeyStorage = (await _browserKeyStorage.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
 
-            if (hubConnection?.State == HubConnectionState.Connected)
-            {
-                return hubConnection;
-            }
-            else
-            {
-                if (hubConnection is null)
-                {
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-                else
-                {
-                    await hubConnection.DisposeAsync();
-                    InitializeHubConnection();
-                    RegisterHubEventHandlers();
-                }
-            }
-
             if (hubConnection == null)
-                throw new ArgumentException($"{nameof(MessageService)} {nameof(hubConnection)} initialization failed. {nameof(hubConnection)} is null.");
+                throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
+            
+            if (hubConnection.State is HubConnectionState.Disconnected)
+            {
+                await hubConnection.StartAsync();
 
-            await hubConnection.StartAsync();
+                await hubConnection.SendAsync("SetUsername", accessToken);
 
-            await hubConnection.SendAsync("SetUsername", accessToken);
-
-            hubConnection.Closed += OnConnectionLost;
+                hubConnection.Closed += OnConnectionLost;
+            }
 
             return hubConnection;
         }

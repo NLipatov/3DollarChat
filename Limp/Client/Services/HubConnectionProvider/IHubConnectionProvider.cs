@@ -4,7 +4,6 @@ namespace Limp.Client.Services.HubConnectionProvider
 {
     public interface IHubConnectionProvider
     {
-        Task ForceReconnectToHubs();
         HubConnectionProviderState GetConnectionState();
         /// <summary>
         /// Handles hub connections and server-side calls on client methods

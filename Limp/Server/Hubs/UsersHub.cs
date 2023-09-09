@@ -29,14 +29,19 @@ namespace Limp.Server.Hubs
         }
         public async override Task OnConnectedAsync()
         {
-            InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
+            InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
 
             await base.OnConnectedAsync();
         }
 
         public async override Task OnDisconnectedAsync(Exception? exception)
         {
-            var keys = InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x=>x.Key);
+            var keys = InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId))
+                .Select(x=>x.Key);
 
             foreach (var key in keys)
             {
@@ -57,7 +62,9 @@ namespace Limp.Server.Hubs
         {
             string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
 
-            var keys = InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+            var keys = InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 
             foreach (var key in keys)
             {

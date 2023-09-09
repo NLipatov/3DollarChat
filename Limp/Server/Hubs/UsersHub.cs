@@ -27,7 +27,7 @@ namespace Limp.Server.Hubs
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
         }
-        public async override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             InMemoryHubConnectionStorage
                 .UsersHubConnections
@@ -36,7 +36,7 @@ namespace Limp.Server.Hubs
             await base.OnConnectedAsync();
         }
 
-        public async override Task OnDisconnectedAsync(Exception? exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var keys = InMemoryHubConnectionStorage
                 .UsersHubConnections

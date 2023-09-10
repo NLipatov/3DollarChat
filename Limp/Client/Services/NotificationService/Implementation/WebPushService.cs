@@ -23,46 +23,68 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
         public async Task RequestWebPushPermission()
         {
-            var res = await _jSRuntime.InvokeAsync<string>("eval", "window.Notification.requestPermission();");
-            Console.WriteLine(res);
-            return;
+            var userDecisionOnWebPushPermission = await _jSRuntime
+                .InvokeAsync<string>("eval", "window.Notification.requestPermission();");
             
-            var permissionType = await IsWebPushPermissionGranted();
-            if (permissionType != PushPermissionType.PROMPT)
-            {
-                Console.WriteLine($"Push state - {permissionType}");
-                return;
-            }
-            Console.WriteLine($"Push state - {permissionType}");
+            Console.WriteLine(userDecisionOnWebPushPermission);
 
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-            if (string.IsNullOrWhiteSpace(accessToken))
+            if (userDecisionOnWebPushPermission == "granted")
             {
-                Console.WriteLine($"access token was null.");
-                return;
-            }
 
-            NotificationSubscriptionDto? subscription =
-                await _jSRuntime
-                    .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
-
-            Console.WriteLine($"formed subscription: {JsonSerializer.Serialize(subscription)}");
-            
-            if (subscription != null)
-            {
-                try
+                string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+                if (string.IsNullOrWhiteSpace(accessToken))
                 {
-                    Console.WriteLine("adding subscription to db.");
-                    subscription.AccessToken = accessToken;
-                    subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
-                    await _usersService.AddUserWebPushSubscription(subscription);
-                    Console.WriteLine($"permission added.");
+                    Console.WriteLine($"access token was null.");
+                    return;
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
+
+                var subscription =
+                    await _jSRuntime
+                        .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
+                
+                if (subscription is null)
+                    Console.WriteLine($"{nameof(subscription)} was null.");
+                
+                subscription.AccessToken = accessToken;
+                subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
+                await _usersService.AddUserWebPushSubscription(subscription);
             }
+            // return;
+            //
+            // var permissionType = await IsWebPushPermissionGranted();
+            // if (permissionType != PushPermissionType.PROMPT)
+            // {
+            //     Console.WriteLine($"Push state - {permissionType}");
+            //     return;
+            // }
+            // Console.WriteLine($"Push state - {permissionType}");
+            //
+            // string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+            // if (string.IsNullOrWhiteSpace(accessToken))
+            // {
+            //     Console.WriteLine($"access token was null.");
+            //     return;
+            // }
+            //
+            // NotificationSubscriptionDto? subscription =
+            //     await _jSRuntime
+            //         .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
+            //
+            // if (subscription != null)
+            // {
+            //     try
+            //     {
+            //         Console.WriteLine("adding subscription to db.");
+            //         subscription.AccessToken = accessToken;
+            //         subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
+            //         await _usersService.AddUserWebPushSubscription(subscription);
+            //         Console.WriteLine($"permission added.");
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         Console.WriteLine(ex.Message);
+            //     }
+            // }
         }
 
         private async Task<PushPermissionType> IsWebPushPermissionGranted()

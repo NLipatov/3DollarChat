@@ -14,7 +14,6 @@ self.addEventListener('push', event => {
     event.waitUntil(
         self.clients.matchAll({ type: 'window', includeUncontrolled: true })
             .then(clients => {
-                if (clients && clients.length === 0) {
                     //if there is no open clients, we will show notification
                     return self.registration.showNotification('η Chat', {
                         body: payload.message,
@@ -22,7 +21,6 @@ self.addEventListener('push', event => {
                         vibrate: [100, 50, 100],
                         data: { url: payload.url }
                     });
-                }
             })
     );
 });

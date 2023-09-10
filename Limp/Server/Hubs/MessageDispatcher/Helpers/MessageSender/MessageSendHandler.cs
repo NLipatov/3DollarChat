@@ -10,7 +10,9 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
     {
         public async Task SendAsync(Message message, IHubCallerClients clients)
         {
-            var receiverConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == message.TargetGroup);
+            var receiverConnection = InMemoryHubConnectionStorage
+                .MessageDispatcherHubConnections
+                .Where(x => x.Key == message.TargetGroup);
 
             if (!receiverConnection.Any(x => x.Key == message.TargetGroup))
                 throw new ArgumentException($"Message could not be send because there is no user connected with such username: '{message.TargetGroup}'.");

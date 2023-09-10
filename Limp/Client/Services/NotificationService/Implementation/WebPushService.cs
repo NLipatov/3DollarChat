@@ -23,7 +23,8 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
         public async Task RequestWebPushPermission()
         {
-            Console.WriteLine("Subscribed!");
+            var res = await _jSRuntime.InvokeAsync<string>("eval", "window.Notification.requestPermission();");
+            Console.WriteLine(res);
             return;
             
             var permissionType = await IsWebPushPermissionGranted();

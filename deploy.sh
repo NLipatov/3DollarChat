@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Step 1: copying configuration
-rm /root/EthaChat/3DollarChat/Limp/Server/appsettings.Development.json
-cp /root/EthaChat/Configuration/ChatApp/appsettings.json /root/EthaChat/3DollarChat/Limp/Server/appsettings.json
-
 # Step 1: switching to dev branch
 echo "INFO: Step 1: Pull the latest changes from Git"
 git reset --hard
@@ -34,7 +30,7 @@ if [ "$EXISTING_CONTAINER" ]; then
     docker rm "$EXISTING_CONTAINER"
 fi
 
-# Step 6: Remove the old 'auth-api' Docker image
+# Step 6: Remove the old 'wasm-chat' Docker image
 echo "INFO: Step 6: Remove the old 'wasm-chat' Docker image"
 EXISTING_IMAGE=$(docker images -q wasm-chat)
 if [ "$EXISTING_IMAGE" ]; then
@@ -57,6 +53,11 @@ EOL
 # Step 9: Build the Docker image 'wasm-chat'
 echo "INFO: Step 9: Build the Docker image 'wasm-chat'"
 docker build -t wasm-chat distro
+
+
+# Step 9: switching configuration files
+rm distro/appsettings.Development.json
+cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json
 
 # Step 10: Run the Docker container with the new image and restart on failure
 echo "INFO: Step 10: Run the Docker container with the new image and restart on failure"

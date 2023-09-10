@@ -34,7 +34,7 @@ namespace Limp.Server.WebPushNotifications
             var pushSubscription = new PushSubscription
                 (notificationSubscriptionDTO.Url, notificationSubscriptionDTO.P256dh, notificationSubscriptionDTO.Auth);
 
-            var vapidDetails = new VapidDetails("mailto:<someone@example.com>", publicKey, privateKey);
+            var vapidDetails = new VapidDetails("mail@example.com", publicKey, privateKey);
 
             var webPushClient = new WebPushClient();
             try

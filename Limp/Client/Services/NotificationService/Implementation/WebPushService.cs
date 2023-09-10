@@ -4,6 +4,7 @@ using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
 using LimpShared.Models.WebPushNotification;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.NotificationService.Implementation
@@ -13,16 +14,29 @@ namespace Limp.Client.Services.NotificationService.Implementation
         private readonly IJSRuntime _jSRuntime;
         private readonly IUsersService _usersService;
         private readonly ILocalStorageService _localStorageService;
+        private readonly NavigationManager _navigationManager;
 
-        public WebPushService(IJSRuntime jSRuntime, IUsersService usersService, ILocalStorageService localStorageService)
+        public WebPushService
+            (IJSRuntime jSRuntime, 
+                IUsersService usersService, 
+                ILocalStorageService localStorageService,
+                NavigationManager navigationManager)
         {
             _jSRuntime = jSRuntime;
             _usersService = usersService;
             _localStorageService = localStorageService;
+            _navigationManager = navigationManager;
         }
 
         public async Task RequestWebPushPermission()
         {
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                _navigationManager.NavigateTo("signin");
+                return;
+            }
+            
             var userDecisionOnWebPushPermission = await _jSRuntime
                 .InvokeAsync<string>("eval", "window.Notification.requestPermission();");
             
@@ -30,20 +44,12 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
             if (userDecisionOnWebPushPermission == "granted")
             {
-
-                string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-                if (string.IsNullOrWhiteSpace(accessToken))
-                {
-                    Console.WriteLine($"access token was null.");
-                    return;
-                }
-
                 var subscription =
                     await _jSRuntime
                         .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
                 
                 if (subscription is null)
-                    Console.WriteLine($"{nameof(subscription)} was null.");
+                    throw new ArgumentException($"{nameof(subscription)} was null.");
                 
                 subscription.AccessToken = accessToken;
                 subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();

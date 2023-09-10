@@ -61,5 +61,5 @@ docker build -t wasm-chat distro
 echo "INFO: Step 10: Run the Docker container with the new image and restart on failure"
 docker run -d --restart=always --network etha-chat --name wasm-chat -p 1010:443 -p 1011:80 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=1010 -e ASPNETCORE_Kestrel__Certificates__Default__Password="YourSecurePassword" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/localhost.pfx -v /root/devcert:/https/ wasm-chat
 
-# Step 11: Remove the 'distro' folder after deployment
-echo "INFO: Step 11: Remove the 'distro' folder after deployment"
+# Step 11: Makind deploy.sh an executable file:
+chmod +x deploy.sh

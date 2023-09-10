@@ -22,6 +22,8 @@
     flex-direction: column;
     gap: 10px;">
 
+            <Button @onclick="(() => _webPushService.RequestWebPushPermission())">Add a web push subscription</Button>
+            
             <EditableList 
                 ListHeader="Active web push subscription"
                 itemCollection="(webPushSubscriptions.Select(x=> new ItemModel {ItemName = x.Id.ToString(), IsActive = x.UserAgentId == userAgentWebPushNotificationId}).ToList())"

@@ -1,4 +1,5 @@
-﻿using Limp.Client.HubInteraction.Handlers.Helpers;
+﻿using System.Text.Json;
+using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
@@ -22,24 +23,37 @@ namespace Limp.Client.Services.NotificationService.Implementation
 
         public async Task RequestWebPushPermission()
         {
-            if (await IsWebPushPermissionGranted() != PushPermissionType.PROMPT)
+            Console.WriteLine($"{nameof(RequestWebPushPermission)}");
+            var permissionType = await IsWebPushPermissionGranted();
+            if (permissionType != PushPermissionType.PROMPT)
+            {
+                Console.WriteLine($"Push state - {permissionType}");
                 return;
+            }
+            Console.WriteLine($"Push state - {permissionType}");
 
             string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
             if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                Console.WriteLine($"access token was null.");
                 return;
+            }
 
             NotificationSubscriptionDto? subscription =
                 await _jSRuntime
                     .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
 
+            Console.WriteLine($"formed subscription: {JsonSerializer.Serialize(subscription)}");
+            
             if (subscription != null)
             {
                 try
                 {
+                    Console.WriteLine("adding subscription to db.");
                     subscription.AccessToken = accessToken;
                     subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
                     await _usersService.AddUserWebPushSubscription(subscription);
+                    Console.WriteLine($"permission added.");
                 }
                 catch (Exception ex)
                 {
@@ -53,6 +67,7 @@ namespace Limp.Client.Services.NotificationService.Implementation
             string permissionTypeString = await _jSRuntime
                 .InvokeAsync<string>("eval", "navigator.permissions.query({ name: 'push', userVisibleOnly: true }).then(result => result.state)");
 
+            Console.WriteLine("permission:" + permissionTypeString);
             bool isTypeParsed = Enum.TryParse(permissionTypeString, true, out PushPermissionType parsedType);
 
             if (isTypeParsed)

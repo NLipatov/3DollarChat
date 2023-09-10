@@ -40,10 +40,9 @@ namespace Limp.Server.WebPushNotifications
             {
                 var payload = JsonSerializer.Serialize(new
                 {
-                    body = message,
+                    message,
                     //This will redirect user to specified url
                     url = $"{pushLink}",
-                    tag = Guid.NewGuid().ToString()
                 });
                 await webPushClient.SendNotificationAsync(pushSubscription, payload, vapidDetails);
             }

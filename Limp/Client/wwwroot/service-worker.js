@@ -11,6 +11,10 @@ self.addEventListener('install', async event => {
 self.addEventListener("push", function(e){
     event.waitUntil(
         self.registration.showNotification(e.data.title, {
+            body: "You've got a new message!",
+            icon: 'icon-512.png',
+            vibrate: [100, 50, 100],
+            data: { url: payload.url },
             tag: generateUUID(),
             body: "You've got a new message!"
         })

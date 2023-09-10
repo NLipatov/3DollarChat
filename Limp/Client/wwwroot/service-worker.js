@@ -17,9 +17,7 @@ self.addEventListener('push', event => {
                     //if there is no open clients, we will show notification
                     return self.registration.showNotification('η Chat', {
                         body: payload.message,
-                        icon: 'icon-512.png',
-                        vibrate: [100, 50, 100],
-                        data: { url: payload.url }
+                        icon: 'icon-512.png'
                     });
             })
     );

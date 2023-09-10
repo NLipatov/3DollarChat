@@ -21,14 +21,14 @@
         <div class="p-2" style="    display: flex;
     flex-direction: column;
     gap: 10px;">
-
-            <Button @onclick="(() => _webPushService.RequestWebPushPermission())">Add a web push subscription</Button>
             
-            <EditableList 
+            <Button @onclick="(()=>_webPushService.RequestWebPushPermission())">Subscribe to notifications</Button>
+
+            <EditableList
                 ListHeader="Active web push subscription"
-                itemCollection="(webPushSubscriptions.Select(x=> new ItemModel {ItemName = x.Id.ToString(), IsActive = x.UserAgentId == userAgentWebPushNotificationId}).ToList())"
+                itemCollection="(webPushSubscriptions.Select(x => new ItemModel { ItemName = x.Id.ToString(), IsActive = x.UserAgentId == userAgentWebPushNotificationId }).ToList())"
                 OnItemRemoved="OnRemoveSubscriptions"
-                IconClass="bi bi-display" />
+                IconClass="bi bi-display"/>
 
             <Modal @ref="modal" Title="Current browser notifications subscriptions deleted">
                 <BodyTemplate>

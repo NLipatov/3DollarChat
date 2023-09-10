@@ -6,6 +6,7 @@ cp /root/EthaChat/Configuration/ChatApp/appsettings.json /root/EthaChat/3DollarC
 
 # Step 1: switching to dev branch
 echo "INFO: Step 1: Pull the latest changes from Git"
+git reset --hard
 git checkout dev
 
 # Step 2: Pull the latest changes from Git

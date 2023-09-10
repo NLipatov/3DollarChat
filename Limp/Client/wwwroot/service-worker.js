@@ -16,7 +16,7 @@ self.addEventListener('push', event => {
             .then(clients => {
                 if (clients && clients.length === 0) {
                     //if there is no open clients, we will show notification
-                    return self.registration.showNotification('3$ Chat', {
+                    return self.registration.showNotification('η Chat', {
                         body: payload.message,
                         icon: 'icon-512.png',
                         vibrate: [100, 50, 100],

@@ -11,7 +11,7 @@ self.addEventListener('install', async event => {
 self.addEventListener("push", function(e){
     event.waitUntil(
         self.registration.showNotification(e.data.title, {
-            tag: generateUUID().toString(),
+            tag: generateUUID(),
             body: "You've got a new message!"
         })
     );

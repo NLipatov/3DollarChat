@@ -27,14 +27,13 @@ namespace Limp.Server.WebPushNotifications
         private async Task SendNotificationAsync(string message, string pushLink, NotificationSubscriptionDto notificationSubscriptionDTO)
         {
 #warning ToDo: implement key generation mechanism
-            // For a real application, generate your own
-            var publicKey = "BLC8GOevpcpjQiLkO7JmVClQjycvTCYWm6Cq_a7wJZlstGTVZvwGFFHMYfXt6Njyvgx_GlXJeo5cSiZ1y4JOx1o";
-            var privateKey = "OrubzSz3yWACscZXjFQrrtDwCKg-TGFuWhluQ2wLXDo";
+            var publicKey = "BLo2h1C7fbDB8e0DFxzqB1JcEqTF6js2UbvOQNFS0cFe6TDjpVPTqHm4qYVGtWIGnVGLabR-EjXLbLkHQIpV3eQ";
+            var privateKey = "XqDHebLY7jfmHS0l4ZhXdpodDH2X-s719FOMFR81Irg";
 
             var pushSubscription = new PushSubscription
                 (notificationSubscriptionDTO.Url, notificationSubscriptionDTO.P256dh, notificationSubscriptionDTO.Auth);
 
-            var vapidDetails = new VapidDetails("mail@example.com", publicKey, privateKey);
+            var vapidDetails = new VapidDetails("mailto:<someone@example.com>", publicKey, privateKey);
 
             var webPushClient = new WebPushClient();
             try

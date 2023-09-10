@@ -41,6 +41,9 @@ fi
 echo "INFO: Step 7: Publish the .NET app to 'distro' folder"
 dotnet publish -c Release -r linux-x64 -o distro
 
+rm distro/appsettings.Development.json
+cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json
+
 # Step 8: Create a Dockerfile in 'distro' folder
 echo "INFO: Step 8: Create a Dockerfile in 'distro' folder"
 cat <<EOL > distro/Dockerfile
@@ -53,11 +56,6 @@ EOL
 # Step 9: Build the Docker image 'wasm-chat'
 echo "INFO: Step 9: Build the Docker image 'wasm-chat'"
 docker build -t wasm-chat distro
-
-
-# Step 9: switching configuration files
-rm distro/appsettings.Development.json
-cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json
 
 # Step 10: Run the Docker container with the new image and restart on failure
 echo "INFO: Step 10: Run the Docker container with the new image and restart on failure"

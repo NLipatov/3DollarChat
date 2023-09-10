@@ -64,4 +64,3 @@ docker run -d --restart=always --network etha-chat --name wasm-chat -p 1010:443 
 
 # Step 11: Remove the 'distro' folder after deployment
 echo "INFO: Step 11: Remove the 'distro' folder after deployment"
-rm -rf distro

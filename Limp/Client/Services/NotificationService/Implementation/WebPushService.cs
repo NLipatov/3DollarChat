@@ -38,6 +38,9 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 Console.WriteLine($"access token was null.");
                 return;
             }
+            
+            var requestResult = await _jSRuntime.InvokeAsync<string>("eval", "await window.Notification.requestPermission()");
+            Console.WriteLine($"{nameof(requestResult)}: {requestResult}.");
 
             NotificationSubscriptionDto? subscription =
                 await _jSRuntime

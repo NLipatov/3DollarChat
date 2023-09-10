@@ -8,18 +8,9 @@ self.addEventListener('install', async event => {
     self.skipWaiting();
 });
 
-self.addEventListener('push', event => {
-    const payload = event.data.json();
-
+self.addEventListener("push", function(e){
     event.waitUntil(
-        self.clients.matchAll({ type: 'window', includeUncontrolled: true })
-            .then(clients => {
-                    //if there is no open clients, we will show notification
-                    return self.registration.showNotification('η Chat', {
-                        body: payload.message,
-                        icon: 'icon-512.png'
-                    });
-            })
+        self.registration.showNotification(e.data.title, e.data)
     );
 });
 

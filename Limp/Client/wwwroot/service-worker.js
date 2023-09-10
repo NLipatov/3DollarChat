@@ -16,7 +16,6 @@ self.addEventListener("push", function(e){
             vibrate: [100, 50, 100],
             data: { url: payload.url },
             tag: generateUUID(),
-            body: "You've got a new message!"
         })
     );
 });

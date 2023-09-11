@@ -8,16 +8,29 @@ self.addEventListener('install', async event => {
     self.skipWaiting();
 });
 
-self.addEventListener("push", function(e){
-    e.waitUntil(
-        self.registration.showNotification(e.data.title, {
-            body: "You've got a new message!",
-            icon: 'icon-512.png',
-            silent: false,
-            vibrate: [100, 50, 100],
-            data: { url: e.data.url },
-            tag: generateUUID(),
-        })
+self.addEventListener('push', function(event) {
+    console.log('Push message received.');
+    let notificationTitle = 'Hello';
+    const notificationOptions = {
+        body: 'Thanks for sending this push msg.',
+        icon: 'icon-192.png',
+        badge: 'icon-192.png',
+        data: {
+            url: 'https://web.dev/push-notifications-overview/',
+        },
+    };
+
+    if (event.data) {
+        const dataText = event.data.text();
+        notificationTitle = 'Received Payload';
+        notificationOptions.body = `Push data: '${dataText}'`;
+    }
+
+    event.waitUntil(
+        self.registration.showNotification(
+            notificationTitle,
+            notificationOptions,
+        ),
     );
 });
 

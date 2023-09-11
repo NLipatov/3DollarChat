@@ -9,12 +9,13 @@ self.addEventListener('install', async event => {
 });
 
 self.addEventListener("push", function(e){
-    event.waitUntil(
+    e.waitUntil(
         self.registration.showNotification(e.data.title, {
             body: "You've got a new message!",
             icon: 'icon-512.png',
+            silent: false,
             vibrate: [100, 50, 100],
-            data: { url: payload.url },
+            data: { url: e.data.url },
             tag: generateUUID(),
         })
     );

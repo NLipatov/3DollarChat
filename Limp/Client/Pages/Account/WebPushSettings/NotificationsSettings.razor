@@ -2,6 +2,7 @@
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.LocalStorageService;
 @using Limp.Client.Services.NotificationService;
@@ -12,6 +13,7 @@
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IUsersService _usersService
+@inject IMessageService _messageService
 @inject IWebPushService _webPushService
 @inject ILocalStorageService _localStorageService
 @implements IDisposable
@@ -22,7 +24,8 @@
     flex-direction: column;
     gap: 10px;">
             
-            <Button @onclick="(()=>_webPushService.RequestWebPushPermission())">Subscribe to notifications</Button>
+            <Button style="background-color: #DCF8C6;" @onclick="(()=>_webPushService.RequestWebPushPermission())">Subscribe to notifications</Button>
+            <Button style="background-color: #DCF8C6" @onclick="(()=> _messageService.SendTestWebPush())">Send test push from the server</Button>
 
             <EditableList
                 ListHeader="Active web push subscription"

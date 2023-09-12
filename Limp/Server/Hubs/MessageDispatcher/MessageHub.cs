@@ -142,5 +142,10 @@ namespace Limp.Server.Hubs.MessageDispatcher
         {
             await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
         }
+
+        public async Task SendWebPush(string username)
+        {
+            await _webPushSender.SendPush("Test web push", string.Empty, username);
+        }
     }
 }

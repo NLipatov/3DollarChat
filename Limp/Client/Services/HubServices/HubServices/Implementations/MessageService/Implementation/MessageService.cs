@@ -392,5 +392,20 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             throw new ArgumentException("Notification was not sent because hub connection is lost.");
         }
+
+        public async Task SendTestWebPush()
+        {
+            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+
+            if (string.IsNullOrWhiteSpace(accessToken))
+            {
+                NavigationManager.NavigateTo("signin");
+                return;
+            }
+
+            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
+
+            await hubConnection.SendAsync("SendWebPush", username);
+        }
     }
 }

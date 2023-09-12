@@ -13,11 +13,6 @@ self.addEventListener('push', function(event) {
     let notificationTitle = 'Hello';
     const notificationOptions = {
         body: 'Thanks for sending this push msg.',
-        icon: 'icon-192.png',
-        badge: 'icon-192.png',
-        data: {
-            url: 'https://web.dev/push-notifications-overview/',
-        },
     };
 
     if (event.data) {
@@ -29,7 +24,7 @@ self.addEventListener('push', function(event) {
     event.waitUntil(
         self.registration.showNotification(
             notificationTitle,
-            notificationOptions,
+            notificationOptions
         ),
     );
 });

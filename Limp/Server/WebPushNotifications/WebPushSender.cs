@@ -27,8 +27,8 @@ namespace Limp.Server.WebPushNotifications
         private async Task SendNotificationAsync(string message, string pushLink, NotificationSubscriptionDto notificationSubscriptionDTO)
         {
 #warning ToDo: implement key generation mechanism
-            var publicKey = "BLo2h1C7fbDB8e0DFxzqB1JcEqTF6js2UbvOQNFS0cFe6TDjpVPTqHm4qYVGtWIGnVGLabR-EjXLbLkHQIpV3eQ";
-            var privateKey = "XqDHebLY7jfmHS0l4ZhXdpodDH2X-s719FOMFR81Irg";
+            var publicKey = "BNCAFN3E0iLenjyBVNZ0Tlm87nhPCyFpfgdxPlURSy0FVds5mapFIeUC5f2XKn7guanHBsVvyh6GpcXH1JU-1pE";
+            var privateKey = "XpxNewItAFg34Q0uOTm-jUVTgB5b47-sxiV3JxGAbTA";
 
             var pushSubscription = new PushSubscription
                 (notificationSubscriptionDTO.Url, notificationSubscriptionDTO.P256dh, notificationSubscriptionDTO.Auth);

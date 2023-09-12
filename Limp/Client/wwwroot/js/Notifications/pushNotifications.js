@@ -1,6 +1,7 @@
 (function () {
-    const applicationServerPublicKey = 'BLo2h1C7fbDB8e0DFxzqB1JcEqTF6js2UbvOQNFS0cFe6TDjpVPTqHm4qYVGtWIGnVGLabR-EjXLbLkHQIpV3eQ';
-
+    const applicationServerPublicKey = 'BNCAFN3E0iLenjyBVNZ0Tlm87nhPCyFpfgdxPlURSy0FVds5mapFIeUC5f2XKn7guanHBsVvyh6GpcXH1JU-1pE';
+    const baseUrl = window.location.origin;
+    console.log('Base URL:', baseUrl);
     window.blazorPushNotifications = {
         requestSubscription: async () => {
             const worker = await navigator.serviceWorker.getRegistration();

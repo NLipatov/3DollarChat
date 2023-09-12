@@ -1,5 +1,4 @@
-﻿using System.Text.Json;
-using Limp.Client.HubInteraction.Handlers.Helpers;
+﻿using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
@@ -55,42 +54,6 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
                 await _usersService.AddUserWebPushSubscription(subscription);
             }
-            // return;
-            //
-            // var permissionType = await IsWebPushPermissionGranted();
-            // if (permissionType != PushPermissionType.PROMPT)
-            // {
-            //     Console.WriteLine($"Push state - {permissionType}");
-            //     return;
-            // }
-            // Console.WriteLine($"Push state - {permissionType}");
-            //
-            // string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-            // if (string.IsNullOrWhiteSpace(accessToken))
-            // {
-            //     Console.WriteLine($"access token was null.");
-            //     return;
-            // }
-            //
-            // NotificationSubscriptionDto? subscription =
-            //     await _jSRuntime
-            //         .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
-            //
-            // if (subscription != null)
-            // {
-            //     try
-            //     {
-            //         Console.WriteLine("adding subscription to db.");
-            //         subscription.AccessToken = accessToken;
-            //         subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
-            //         await _usersService.AddUserWebPushSubscription(subscription);
-            //         Console.WriteLine($"permission added.");
-            //     }
-            //     catch (Exception ex)
-            //     {
-            //         Console.WriteLine(ex.Message);
-            //     }
-            // }
         }
 
         private async Task<PushPermissionType> IsWebPushPermissionGranted()

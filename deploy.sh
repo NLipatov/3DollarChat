@@ -1,51 +1,86 @@
 #!/bin/bash
 
-# Step 1: switching to dev branch
-echo "INFO: Step 1: Pull the latest changes from Git"
-git reset --hard
-git checkout dev
+BRANCH="dev"
 
-# Step 2: Pull the latest changes from Git
-echo "INFO: Step 2: Pull the latest changes from Git"
-git pull
+echo -e "\nSTEP 1: checking out to target branch and pulling the latest changes."
 
-# Step 3: Update and initialize submodules
-echo "INFO: Step 3: Update and initialize submodules"
-git submodule update --init
-
-# Step 4: If the 'distro' folder exists, delete it
-echo "INFO: Step 4: If the 'distro' folder exists, delete it"
-if [ -d "distro" ]; then
-    rm -rf distro
+if [ $# -eq 1 ]; then
+    BRANCH="$1"
+else
+    echo "INFO: No branch specified. Using the default branch '$BRANCH'."
 fi
 
-# Step 4.1: remove gitignored files and folders
-git clean -xdf
+if ! git clean -xdf; then
+  echo "ERROR: Failed to clean the untracked files present in a git working directory."
+  exit 1
+fi
 
-# Step 5: Stop and remove any existing container with the same image
-echo "INFO: Step 5: Stop and remove any existing container with the same image"
+if ! git reset --hard; then
+  echo "ERROR: Failed to reset the Git branch. Aborting script."
+  exit 1
+fi
+
+if ! git checkout "$BRANCH"; then
+  echo "ERROR: Failed to checkout the $BRANCH. Aborting script."
+  exit 1
+fi
+
+if ! git pull; then
+  echo "ERROR: Failed to pull the latest changes from Git. Aborting script."
+  exit 1
+fi
+
+if ! git submodule update --init; then
+  echo "ERROR: Failed to update and initialize submodules. Aborting script."
+  exit 1
+fi
+
+echo -e "\nSTEP 2: Removing previous build files."
+if [ -d "distro" ]; then
+    echo "INFO: Found a distro folder from the previous build. Deleting it."
+    rm -rf distro
+    echo "INFO: distro folder is deleted."
+fi
+
+echo -e "\nSTEP 3: Stop and remove any existing container with the same image."
 EXISTING_CONTAINER=$(docker ps -q -f ancestor=wasm-chat)
 if [ "$EXISTING_CONTAINER" ]; then
-    docker stop "$EXISTING_CONTAINER"
-    docker rm "$EXISTING_CONTAINER"
+    if ! docker stop "$EXISTING_CONTAINER"; then
+      echo "ERROR: Failed to stop existing container, that shares the same image - '$EXISTING_CONTAINER'."
+      exit 1
+    fi
+    if ! docker rm "$EXISTING_CONTAINER"; then
+      echo "ERROR: Failed to remove existing container - '$EXISTING_CONTAINER'."
+      exit 1
+    fi
 fi
 
-# Step 6: Remove the old 'wasm-chat' Docker image
-echo "INFO: Step 6: Remove the old 'wasm-chat' Docker image"
 EXISTING_IMAGE=$(docker images -q wasm-chat)
 if [ "$EXISTING_IMAGE" ]; then
-    docker rmi "$EXISTING_IMAGE"
+    if ! docker rmi "$EXISTING_IMAGE"; then
+      echo "ERROR: Failed to remove an old image - '$EXISTING_IMAGE'."
+      exit 1
+    fi
 fi
 
-# Step 7: Publish the .NET app to 'distro' folder
-echo "INFO: Step 7: Publish the .NET app to 'distro' folder"
-dotnet publish -c Release -r linux-x64 -o distro
+echo -e "\nSTEP 4: Building and publishing project."
+if ! dotnet publish -c Release -r linux-x64 -o distro; then
+  echo "ERROR: Failed to build and publish the project."
+  exit 1
+fi
 
 rm distro/appsettings.Development.json
-cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json
+if ! cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json; then
+  echo "ERROR: Failed to copy appsettings.json."
+  exit 1
+fi
 
-# Step 8: Create a Dockerfile in 'distro' folder
-echo "INFO: Step 8: Create a Dockerfile in 'distro' folder"
+if ! cp /root/EthaChat/Configuration/ChatApp/FCMConfiguration.json distro/FCMConfiguration.json; then
+  echo "ERROR: Failed to copy FCMConfiguration.json."
+  exit 1
+fi
+
+echo -e "\nSTEP 5: Create a Dockerfile in 'distro' folder."
 cat <<EOL > distro/Dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
 WORKDIR /app
@@ -53,13 +88,20 @@ COPY ./ ./
 ENTRYPOINT ["dotnet", "Limp.Server.dll"]
 EOL
 
-# Step 9: Build the Docker image 'wasm-chat'
-echo "INFO: Step 9: Build the Docker image 'wasm-chat'"
-docker build -t wasm-chat distro
+echo -e "\nSTEP 6: Build the Docker image 'wasm-chat'."
+if ! docker build -t wasm-chat distro; then 
+  echo "ERROR: Failed to build the Docker image."
+  exit 1
+fi
 
-# Step 10: Run the Docker container with the new image and restart on failure
-echo "INFO: Step 10: Run the Docker container with the new image and restart on failure"
-docker run -d --restart=always --network etha-chat --name wasm-chat -p 1010:443 -p 1011:80 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=1010 -e ASPNETCORE_Kestrel__Certificates__Default__Password="YourSecurePassword" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/localhost.pfx -v /root/devcert:/https/ wasm-chat
+echo -e "\nSTEP 7: Run the Docker container with the new image and restart on failure."
+if ! docker run -d --restart=always --network etha-chat --name wasm-chat -p 1010:443 -p 1011:80 -e ASPNETCORE_URLS="https://+;http://+" -e ASPNETCORE_HTTPS_PORT=1010 -e ASPNETCORE_Kestrel__Certificates__Default__Password="YourSecurePassword" -e ASPNETCORE_Kestrel__Certificates__Default__Path=/https/localhost.pfx -v /root/devcert:/https/ wasm-chat; then
+  echo "ERROR: Failed to Run the Docker container."
+  exit 1
+fi
 
-# Step 11: Makind deploy.sh an executable file:
-chmod +x deploy.sh
+echo -e "\nSTEP 8: Making a deploy.sh executable."
+if ! chmod +x deploy.sh; then
+    echo "ERROR: Failed to make deploy.sh executable."
+    exit 1
+fi

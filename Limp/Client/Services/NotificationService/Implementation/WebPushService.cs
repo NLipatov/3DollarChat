@@ -36,22 +36,18 @@ namespace Limp.Client.Services.NotificationService.Implementation
                 return;
             }
             
-            var userDecisionOnWebPushPermission = await _jSRuntime
-                .InvokeAsync<string>("eval", "window.Notification.requestPermission();");
+            var fcmToken = await _jSRuntime
+                .InvokeAsync<string>("getFCMToken");
             
-            Console.WriteLine(userDecisionOnWebPushPermission);
-
-            if (userDecisionOnWebPushPermission == "granted")
+            if (!string.IsNullOrWhiteSpace(fcmToken))
             {
-                var subscription =
-                    await _jSRuntime
-                        .InvokeAsync<NotificationSubscriptionDto?>("blazorPushNotifications.requestSubscription");
+                var subscription = new NotificationSubscriptionDto()
+                {
+                    FirebaseRegistrationToken = fcmToken,
+                    UserAgentId = await _localStorageService.GetUserAgentIdAsync(),
+                    AccessToken = await _localStorageService.ReadPropertyAsync("access-token")
+                };
                 
-                if (subscription is null)
-                    throw new ArgumentException($"{nameof(subscription)} was null.");
-                
-                subscription.AccessToken = accessToken;
-                subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
                 await _usersService.AddUserWebPushSubscription(subscription);
             }
         }

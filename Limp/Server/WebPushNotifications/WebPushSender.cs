@@ -12,14 +12,14 @@ namespace Limp.Server.WebPushNotifications
         {
             _serverHttpClient = serverHttpClient;
         }
-        public async Task SendPush(string message, string pushLink, string username)
+        public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)
         {
-            var subscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
+            var subscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(receiverUsername);
 
             var tasks = new List<Task>();
             foreach (var subscription in subscriptions)
             {
-                tasks.Add(SendNotificationAsync(message, pushLink, subscription));
+                tasks.Add(SendNotificationAsync(pushBodyText, pushLink, subscription));
             }
 
             await Task.WhenAll(tasks);

@@ -42,25 +42,14 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.0.1/chart.umd.js" integrity="sha512-gQhCDsnnnUfaRzD8k1L5llCCV6O9HN09zClIzzeJ8OJ9MpGmIlCxm+pdCkqTwqJ4JcjbojFr79rl2F1mzcoLMQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script> <!-- Add chart.js reference if Chart components are used in the application. -->
     <script src="_content/Blazor.Bootstrap/blazor.bootstrap.js"></script>
     <script src="js/Notifications/pushNotifications.js"></script>
-    <script>navigator.serviceWorker.register('service-worker.js');</script>
-    <script type="module">
-        // Import the functions you need from the SDKs you need
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.3.1/firebase-app.js";
-        // TODO: Add SDKs for Firebase products that you want to use
-        // https://firebase.google.com/docs/web/setup#available-libraries
-
-        // Your web app's Firebase configuration
-        const firebaseConfig = {
-            apiKey: "AIzaSyCexghrqeFwvGqjaTe3JIwUTrxUc2X-bdw",
-            authDomain: "ethachat-2023.firebaseapp.com",
-            projectId: "ethachat-2023",
-            storageBucket: "ethachat-2023.appspot.com",
-            messagingSenderId: "383190008660",
-            appId: "1:383190008660:web:b9045fa8b74f2ab969fec1"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
+<!--    <script>navigator.serviceWorker.register('service-worker.js');</script>-->
+    <script type="module" src="js/Notifications/firebase/firebase.js"></script>
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('firebase-messaging-sw.js');
+            });
+        }
     </script>
 </body>
 

@@ -12,8 +12,12 @@ self.addEventListener('push', function(event) {
     console.log('Push message received.');
     let notificationTitle = 'Hello';
     const notificationOptions = {
-        body: 'Thanks for sending this push msg.',
+        silent: false,
+        icon: "icon-192.png",
+        tag: generateUUID()
     };
+    
+    console.log("tag: " + notificationOptions.tag)
 
     if (event.data) {
         const dataText = event.data.text();

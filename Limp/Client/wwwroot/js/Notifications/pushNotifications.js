@@ -1,5 +1,5 @@
 (function () {
-    const applicationServerPublicKey = 'BNCAFN3E0iLenjyBVNZ0Tlm87nhPCyFpfgdxPlURSy0FVds5mapFIeUC5f2XKn7guanHBsVvyh6GpcXH1JU-1pE';
+    const applicationServerPublicKey = 'BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00';
     const baseUrl = window.location.origin;
     console.log('Base URL:', baseUrl);
     window.blazorPushNotifications = {
@@ -23,6 +23,7 @@
 
 
     async function subscribe(worker) {
+        console.log("sever key in subscribe: " + applicationServerPublicKey);
         try {
             return await worker.pushManager.subscribe({
                 userVisibleOnly: true,

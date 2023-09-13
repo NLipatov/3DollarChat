@@ -2,6 +2,6 @@
 {
     public interface IWebPushSender
     {
-        Task SendPush(string message, string pushLink, string username);
+        Task SendPush(string pushBodyText, string pushLink, string receiverUsername);
     }
 }

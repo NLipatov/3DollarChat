@@ -71,7 +71,12 @@ fi
 
 rm distro/appsettings.Development.json
 if ! cp /root/EthaChat/Configuration/ChatApp/appsettings.json distro/appsettings.json; then
-  echo "ERROR: Failed to copy a configuration."
+  echo "ERROR: Failed to copy appsettings.json."
+  exit 1
+fi
+
+if ! cp /root/EthaChat/Configuration/ChatApp/FCMConfiguration.json distro/FCMConfiguration.json; then
+  echo "ERROR: Failed to copy FCMConfiguration.json."
   exit 1
 fi
 

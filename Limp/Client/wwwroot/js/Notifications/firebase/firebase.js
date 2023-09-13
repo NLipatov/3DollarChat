@@ -14,22 +14,43 @@ initializeApp(config);
 const messaging = getMessaging();
 getToken(messaging, {vapidKey: "BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00"});
 
-Notification.requestPermission().then(function (permission) {
-    if (permission === "granted") {
-        console.log("Permission granted.");
-        getToken(messaging, { vapidKey: 'BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00' }).then(function (currentToken) {
-            if (currentToken) {
-                console.log("Current Token:", currentToken);
-                // Отправьте полученный токен на ваш сервер и обновите UI, если необходимо
-            } else {
-                console.log('No registration token available.');
-            }
-        }).catch(function (err) {
-            console.error("Error retrieving token:", err);
-        });
-    } else {
-        console.log("Permission denied.");
+window.getFCMToken = async () => {
+    try {
+        let token = await requestUserForNotificationPermission();
+        return token;
+    } catch (error) {
+        console.error("Error in GetToken:", error);
     }
-}).catch(function (error) {
-    console.error("Error requesting notification permission:", error);
-});
+}
+
+const requestUserForNotificationPermission = () => {
+    return new Promise((resolve, reject) => {
+        Notification.requestPermission()
+            .then(function (permission) {
+                if (permission === "granted") {
+                    console.log("Permission granted.");
+                    getToken(messaging, { vapidKey: 'BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00' })
+                        .then(function (currentToken) {
+                            if (currentToken) {
+                                console.log("Found a registration token to send to backend.")
+                                resolve(currentToken);
+                            } else {
+                                console.log('No registration token available.');
+                                reject('No registration token available.');
+                            }
+                        })
+                        .catch(function (err) {
+                            console.error("Error retrieving token:", err);
+                            reject(err);
+                        });
+                } else {
+                    console.log("Permission denied.");
+                    reject('Permission denied.');
+                }
+            })
+            .catch(function (error) {
+                console.error("Error requesting notification permission:", error);
+                reject(error);
+            });
+    });
+}

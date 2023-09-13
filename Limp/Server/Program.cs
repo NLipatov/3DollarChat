@@ -32,7 +32,7 @@ builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>(
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
-builder.Services.AddTransient<IWebPushSender, WebPushSender>();
+builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 
 var app = builder.Build();
 

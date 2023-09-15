@@ -14,7 +14,10 @@
 *.userprefs
 
 # Development configuration
-appsettings.Development.json
+**/appsettings.Development.json
+
+# Firebase messaging account info
+FCMConfiguration.json
 
 # Mono auto generated files
 mono_crash.*

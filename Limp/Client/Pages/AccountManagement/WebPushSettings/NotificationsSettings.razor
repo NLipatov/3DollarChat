@@ -1,0 +1,229 @@
+﻿@page "/settings/notifications"
+@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Limp.Client.Services.LocalStorageService;
+@using Limp.Client.Services.NotificationService;
+@using Limp.Client.Shared.ReuseableComponents.EditableList
+@using Limp.Client.Shared.ReuseableComponents.EditableList.Models
+@using LimpShared.Models.WebPushNotification;
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@inject IJSRuntime Js
+@inject IUsersService UsersService
+@inject IWebPushService WebPushService
+@inject ILocalStorageService LocalStorageService
+@implements IDisposable
+
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="p-2 gap-3" style="    
+        display: flex;
+        flex-direction: column;">
+            <div style="    
+            display: flex;
+            justify-items: center;
+            background-color: white;
+            padding: 1rem;
+            font-size: 1.6rem;
+            gap: 0.5rem;">
+                <Icon Name="IconName.BellFill"/>
+                <span>Notifications</span>
+                <Switch 
+                    @bind-Value="_IsEnabled"
+                    Style="margin-left: auto; font-size: 2rem;"/>
+            </div>
+            
+            @if (SubscriptionsWasLoaded && !WebPushSubscriptions.Any())
+            {
+                <Callout Type="CalloutType.Tip">
+                    Allow us to send you a notifications
+                </Callout>
+            }
+            else
+            {
+                <EditableList
+                    ListHeader="Active subscriptions"
+                    itemCollection="WebPushSubscriptions
+                    .Select(x => new ItemModel() 
+                    {
+                        ItemName = GetUserAgentItemName(x.UserAgentId), 
+                        IsActive = x.UserAgentId == UserAgentWebPushNotificationId
+                    })
+                    .ToList()"
+                    
+                    OnItemRemoved="OnRemoveSubscriptions"
+                    OnItemClicked=@(() => { })
+                    IconClass="bi bi-display"/>
+            }
+
+            <Modal @ref="_modal" Title="Current browser notifications subscriptions deleted">
+                <BodyTemplate>
+                    You have removed your current browser web push subscriptions. Please also reset your browser notification permissions.
+                </BodyTemplate>
+                <FooterTemplate>
+                    <Button Color="ButtonColor.Success" @onclick="(() => ToggleSuggestResetPermissionsModal(false))">Ok</Button>
+                </FooterTemplate>
+            </Modal>
+        </div>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized />
+    </UnauthenticatedContent>
+</AuthenticatedView>
+
+@code {
+    private Modal _modal = default!;
+    private Guid ComponentId { get; set; }
+    private NotificationSubscriptionDto[] WebPushSubscriptions { get; set; } = Array.Empty<NotificationSubscriptionDto>();
+    private bool SubscriptionsWasLoaded { get; set; } = false;
+    private Guid UserAgentWebPushNotificationId { get; set; }
+    private string? _accessToken = string.Empty;
+    private bool IsEnabled { get; set; }
+    private bool _IsEnabled
+    {
+        get => IsEnabled;
+        set
+        {
+            NotificationSwitchChanged(value);
+            IsEnabled = value;
+        }
+    }
+
+    private void NotificationSwitchChanged(bool value)
+    {
+        if (value && WebPushSubscriptions.All(x => x.UserAgentId != UserAgentWebPushNotificationId))
+        {
+            WebPushService.RequestWebPushPermission();
+        }
+        else if (!value)
+        {
+            if (WebPushSubscriptions.Any())
+            {
+                WebPushSubscriptions.First().AccessToken = _accessToken;
+                UsersService.RemoveUserWebPushSubscriptions(WebPushSubscriptions);
+            }
+        }
+    }
+
+    private string GetUserAgentItemName(Guid userAgentId)
+    {
+        if (userAgentId == UserAgentWebPushNotificationId)
+            return "Current user agent";
+        return "Different user agent";
+    }
+
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        UserAgentWebPushNotificationId = await LocalStorageService.GetUserAgentIdAsync();
+
+        _accessToken = await JWTHelper.GetAccessTokenAsync(Js);
+
+        //Shortcut for cases when user was not yet authenticated
+        if (string.IsNullOrWhiteSpace(_accessToken))
+            return;
+
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        //Subscribing to server event of updating online users
+        HubServiceSubscriptionManager
+            .AddCallback<NotificationSubscriptionDto[]>(OnSubscriptionsLoaded, "ReceiveWebPushSubscriptions", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<NotificationSubscriptionDto[]>(OnRemoveSubsriptionsProcessedByHub, "RemovedFromWebPushSubscriptions", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback(LoadWebPushSubscriptions, "WebPushSubscriptionSetChanged", ComponentId);
+
+        //if hub connection is not setted up already, we will set it up now
+        await UsersService.GetHubConnectionAsync();
+
+        await UsersService.GetUserWebPushSubscriptions(_accessToken);
+    }
+
+    private void OnSubscriptionsLoaded(NotificationSubscriptionDto[] subscriptions)
+    {
+        WebPushSubscriptions = subscriptions;
+        SubscriptionsWasLoaded = true;
+
+        if (subscriptions.Any())
+            IsEnabled = true;
+        else
+            IsEnabled = false;
+
+        StateHasChanged();
+    }
+
+    private async Task ToggleSuggestResetPermissionsModal(bool modalShoulBeDisplayed = true)
+    {
+        if (!modalShoulBeDisplayed)
+            await _modal.HideAsync();
+        else
+            await _modal.ShowAsync();
+    }
+
+    private async Task OnRemoveSubscriptions(string? subscriptionIdString = null)
+    {
+        if(!string.IsNullOrWhiteSpace(subscriptionIdString))
+        {
+            if (!Guid.TryParse(subscriptionIdString, out Guid subscriptionId))
+                throw new ArgumentException($"Could not parse {nameof(Guid)} from given string: '{subscriptionIdString}'.");
+
+            var subscriptionToDelete = WebPushSubscriptions.FirstOrDefault(x => x.Id == subscriptionId);
+            if (subscriptionToDelete is null)
+                throw new ArgumentException
+                ($"Error on web push subscription deletion:" + 
+                "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
+            else
+            {
+                subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
+                await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
+            }
+        }
+        else
+        {
+            if (WebPushSubscriptions.Any())
+                WebPushSubscriptions.First().AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
+
+            await RemoveWebPushSubscriptions(WebPushSubscriptions);
+        }
+    }
+
+    private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
+    {
+        if (subscriptionsToRemove.Any(x => x.UserAgentId == UserAgentWebPushNotificationId))
+        {
+            await ToggleSuggestResetPermissionsModal();
+        }
+
+        await UsersService.RemoveUserWebPushSubscriptions(subscriptionsToRemove);
+    }
+
+    private async Task OnRemoveSubsriptionsProcessedByHub(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
+    {
+        //If there are no more web push subscriptions left, 
+        // enable requesting such permission again for this user agent
+        if (WebPushSubscriptions.Length - notificationSubscriptionDTOs.Length == 0)
+            await WebPushService.ResetWebPushPermission();
+
+        WebPushSubscriptions = WebPushSubscriptions
+        .Where(x => notificationSubscriptionDTOs.All(s => s.Id != x.Id))
+        .ToArray();
+
+        StateHasChanged();
+    }
+
+    private async Task LoadWebPushSubscriptions()
+    {
+        string? accessToken = await JWTHelper.GetAccessTokenAsync(Js);
+        if (string.IsNullOrWhiteSpace(accessToken))
+            throw new ArgumentException
+            ("Could not get a access token from local storage to load web push subscriptions.");
+
+        await UsersService.GetUserWebPushSubscriptions(accessToken);
+    }
+}

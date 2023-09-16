@@ -14,8 +14,8 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
                 .MessageDispatcherHubConnections
                 .Where(x => x.Key == message.TargetGroup);
 
-            if (!receiverConnection.Any(x => x.Key == message.TargetGroup))
-                throw new ArgumentException($"Message could not be send because there is no user connected with such username: '{message.TargetGroup}'.");
+            if (receiverConnection.All(x => x.Key != message.TargetGroup))
+                return;
 
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 return;

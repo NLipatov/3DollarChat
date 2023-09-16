@@ -27,7 +27,8 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
                 Contact = offerMessage.Sender,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,
-                Author = offerMessage.Sender
+                Author = offerMessage.Sender,
+                IsAccepted = true
             };
 
             if (!string.IsNullOrWhiteSpace(offerMessage.Sender))

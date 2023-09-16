@@ -22,33 +22,41 @@ public class FirebasePushSender : IWebPushSender
     }
     public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)
     {
-        var subscriptions = await _serverHttpClient
-            .GetUserWebPushSubscriptionsByAccessToken(receiverUsername);
-        
-        if (!subscriptions.Any())
-            return;
-        
-        var notificationMessage = new Message()
+        try
         {
-            Notification = new Notification()
-            {
-                Title = "Etha Chat",
-                Body = pushBodyText
-            },
-            Token = subscriptions.First().FirebaseRegistrationToken
-        };
+            var subscriptions = await _serverHttpClient
+                .GetUserWebPushSubscriptionsByAccessToken(receiverUsername);
         
-        if (FirebaseApp.DefaultInstance == null)
-        {
-            var options = new AppOptions()
+            if (!subscriptions.Any())
+                return;
+        
+            var notificationMessage = new Message()
             {
-                Credential = GoogleCredential.FromFile(_configurationPath)
+                Notification = new Notification()
+                {
+                    Title = "Etha Chat",
+                    Body = pushBodyText
+                },
+                Token = subscriptions.First().FirebaseRegistrationToken
             };
-
-            FirebaseApp.Create(options);
-        }
         
-        var messaging = FirebaseMessaging.DefaultInstance;
-        await messaging.SendAsync(notificationMessage);
+            if (FirebaseApp.DefaultInstance == null)
+            {
+                var options = new AppOptions()
+                {
+                    Credential = GoogleCredential.FromFile(_configurationPath)
+                };
+
+                FirebaseApp.Create(options);
+            }
+        
+            var messaging = FirebaseMessaging.DefaultInstance;
+            await messaging.SendAsync(notificationMessage);
+
+        }
+        catch (Exception e)
+        {
+            throw new ApplicationException($"Cannot send a push {e.Message}.");
+        }
     }
 }

@@ -114,11 +114,10 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
-            //message.Sender will be overriden somewhere here: await _messageSendHandler.SendAsync(message, Clients);
+            await _messageSendHandler.SendAsync(message, Clients);
+
             if (message.Type == MessageType.UserMessage)
                 await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
-
-            await _messageSendHandler.SendAsync(message, Clients);
         }
         public async Task MessageReceived(Guid messageId, string topicName)
             => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
@@ -141,11 +140,6 @@ namespace Limp.Server.Hubs.MessageDispatcher
         public async Task MessageHasBeenRead(Guid messageId, string messageSender)
         {
             await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
-        }
-
-        public async Task SendWebPush(string username)
-        {
-            await _webPushSender.SendPush("Test web push", string.Empty, username);
         }
     }
 }

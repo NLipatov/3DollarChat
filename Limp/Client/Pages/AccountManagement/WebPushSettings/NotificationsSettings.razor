@@ -20,20 +20,37 @@
         <div class="p-2 gap-3" style="    
         display: flex;
         flex-direction: column;">
-            <div style="    
-            display: flex;
-            justify-items: center;
-            background-color: white;
-            padding: 1rem;
-            font-size: 1.6rem;
-            gap: 0.5rem;">
-                <Icon Name="IconName.BellFill"/>
-                <span>Notifications</span>
-                <Switch 
-                    @bind-Value="_IsEnabled"
-                    Style="margin-left: auto; font-size: 2rem;"/>
-            </div>
             
+            @if (NotificationsServiceWorkerIsInstalled)
+            {
+                <div style="    
+                    display: flex;
+                    justify-items: center;
+                    background-color: white;
+                    padding: 1rem;
+                    font-size: 1.6rem;
+                    gap: 0.5rem;">
+                    <Icon Name="IconName.BellFill"/>
+                    <span>Notifications</span>
+                    <Switch
+                        @bind-Value="_IsEnabled"
+                        Style="margin-left: auto; font-size: 2rem;"/>
+                </div>
+            }
+            else
+            {
+                <div style="    
+                    display: flex;
+                    justify-items: center;
+                    background-color: white;
+                    padding: 1rem;
+                    font-size: 1.6rem;
+                    gap: 0.5rem;">
+                    <Icon Name="IconName.BugFill"/>
+                    <span>No service worker is installed. Try to clear a browser cache and reload the page.</span>
+                </div>
+            }
+
             @if (SubscriptionsWasLoaded && !WebPushSubscriptions.Any())
             {
                 <Callout Type="CalloutType.Tip">
@@ -44,14 +61,8 @@
             {
                 <EditableList
                     ListHeader="Active subscriptions"
-                    itemCollection="WebPushSubscriptions
-                    .Select(x => new ItemModel() 
-                    {
-                        ItemName = GetUserAgentItemName(x.UserAgentId), 
-                        IsActive = x.UserAgentId == UserAgentWebPushNotificationId
-                    })
-                    .ToList()"
-                    
+                    itemCollection="WebPushSubscriptions .Select(x => new ItemModel() { Id = x.Id, ItemName = GetUserAgentItemName(x.UserAgentId), IsActive = x.UserAgentId == UserAgentWebPushNotificationId }) .ToList()"
+
                     OnItemRemoved="OnRemoveSubscriptions"
                     OnItemClicked=@(() => { })
                     IconClass="bi bi-display"/>
@@ -79,6 +90,7 @@
     private bool SubscriptionsWasLoaded { get; set; } = false;
     private Guid UserAgentWebPushNotificationId { get; set; }
     private string? _accessToken = string.Empty;
+    private bool NotificationsServiceWorkerIsInstalled { get; set; }
     private bool IsEnabled { get; set; }
     private bool _IsEnabled
     {
@@ -117,6 +129,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        NotificationsServiceWorkerIsInstalled = await IsServiceWorkerInstalled();
+        
         UserAgentWebPushNotificationId = await LocalStorageService.GetUserAgentIdAsync();
 
         _accessToken = await JWTHelper.GetAccessTokenAsync(Js);
@@ -166,31 +180,19 @@
             await _modal.ShowAsync();
     }
 
-    private async Task OnRemoveSubscriptions(string? subscriptionIdString = null)
+    private async Task OnRemoveSubscriptions(ItemModel itemModel)
     {
-        if(!string.IsNullOrWhiteSpace(subscriptionIdString))
-        {
-            if (!Guid.TryParse(subscriptionIdString, out Guid subscriptionId))
-                throw new ArgumentException($"Could not parse {nameof(Guid)} from given string: '{subscriptionIdString}'.");
-
-            var subscriptionToDelete = WebPushSubscriptions.FirstOrDefault(x => x.Id == subscriptionId);
-            if (subscriptionToDelete is null)
-                throw new ArgumentException
-                ($"Error on web push subscription deletion:" + 
-                "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
-            else
-            {
-                subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
-                await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
-            }
-        }
-        else
-        {
-            if (WebPushSubscriptions.Any())
-                WebPushSubscriptions.First().AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
-
-            await RemoveWebPushSubscriptions(WebPushSubscriptions);
-        }
+        var subscriptionToDelete = WebPushSubscriptions
+            .FirstOrDefault(x => x.Id == itemModel.Id);
+        
+        if (subscriptionToDelete is null)
+            throw new ArgumentException
+            ($"Error on web push subscription deletion:" + 
+            "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
+        
+        subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
+            
+        await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
     }
 
     private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
@@ -225,5 +227,10 @@
             ("Could not get a access token from local storage to load web push subscriptions.");
 
         await UsersService.GetUserWebPushSubscriptions(accessToken);
+    }
+        
+    public async Task<bool> IsServiceWorkerInstalled()
+    {
+        return await Js.InvokeAsync<bool>("isServiceWorkerInstalled");
     }
 }

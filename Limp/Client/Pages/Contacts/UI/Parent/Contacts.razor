@@ -76,7 +76,8 @@
 
     private void ToggleEditContactsMode() => contactEditionMode = !contactEditionMode;
 
-    public void NavigateToChatWithContact(string contactUsername) => _navigationManager.NavigateTo($"user/{contactUsername}");
+    public void NavigateToChatWithContact(ItemModel itemModel) 
+        => _navigationManager.NavigateTo($"user/{itemModel.ItemName}");
 
     private BadgeModel GetContactBadge(Contact contact)
     {
@@ -87,10 +88,10 @@
         };
     }
 
-    private async Task RemoveContact(string username)
+    private async Task RemoveContact(ItemModel itemModel)
     {
         //Get contact out of client's browser local storage
-        await _contactsProvider.RemoveContact(username, _jSRuntime);
+        await _contactsProvider.RemoveContact(itemModel.ItemName, _jSRuntime);
 
         //If there is no one in contact book left, toggle change mode back to false automatically
         if(!(await _contactsProvider.GetContacts(_jSRuntime)).Any())

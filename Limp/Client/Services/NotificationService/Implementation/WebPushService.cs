@@ -38,18 +38,18 @@ namespace Limp.Client.Services.NotificationService.Implementation
             
             var fcmToken = await _jSRuntime
                 .InvokeAsync<string>("getFCMToken");
+
+            if (string.IsNullOrWhiteSpace(fcmToken))
+                throw new ArgumentException($"Could not get an FCM token to subsribe to notifications");
             
-            if (!string.IsNullOrWhiteSpace(fcmToken))
+            var subscription = new NotificationSubscriptionDto()
             {
-                var subscription = new NotificationSubscriptionDto()
-                {
-                    FirebaseRegistrationToken = fcmToken,
-                    UserAgentId = await _localStorageService.GetUserAgentIdAsync(),
-                    AccessToken = await _localStorageService.ReadPropertyAsync("access-token")
-                };
-                
-                await _usersService.AddUserWebPushSubscription(subscription);
-            }
+                FirebaseRegistrationToken = fcmToken,
+                UserAgentId = await _localStorageService.GetUserAgentIdAsync(),
+                AccessToken = await _localStorageService.ReadPropertyAsync("access-token")
+            };
+            
+            await _usersService.AddUserWebPushSubscription(subscription);
         }
 
         private async Task<PushPermissionType> IsWebPushPermissionGranted()

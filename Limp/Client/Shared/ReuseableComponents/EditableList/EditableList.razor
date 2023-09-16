@@ -22,10 +22,10 @@
                 @if (EditionMode)
                 {
                     <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
-                    @onclick="(() => OnItemRemoved.InvokeAsync(item.ItemName))"></Icon>
+                    @onclick="(() => OnItemRemoved.InvokeAsync(item))"></Icon>
                 }
                 <EditableListItem 
-                    OnItemClickedAction=@((string itemName) => OnItemClicked.InvokeAsync(item.ItemName))
+                    OnItemClickedAction=@(( itemName) => OnItemClicked.InvokeAsync(item))
                     ItemModel="item"
                     IconClass=@IconClass
                     Style="width: 100%; margin-top: 10px;"/>
@@ -54,8 +54,8 @@
     }
 
     [Parameter]
-    public EventCallback<string> OnItemRemoved { get; set; }
+    public EventCallback<ItemModel> OnItemRemoved { get; set; }
 
     [Parameter]
-    public EventCallback<string> OnItemClicked { get; set; }
+    public EventCallback<ItemModel> OnItemClicked { get; set; }
 }

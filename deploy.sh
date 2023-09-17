@@ -2,6 +2,11 @@
 
 BRANCH="dev"
 
+# Redis configuration
+REDIS_CONTAINER_NAME="etha-chat-redis"
+NETWORK_NAME="etha-chat"
+REDIS_PORT="6379"
+
 echo -e "\nSTEP 1: checking out to target branch and pulling the latest changes."
 
 if [ $# -eq 1 ]; then
@@ -78,6 +83,14 @@ fi
 if ! cp /root/EthaChat/Configuration/ChatApp/FCMConfiguration.json distro/FCMConfiguration.json; then
   echo "ERROR: Failed to copy FCMConfiguration.json."
   exit 1
+fi
+
+if [ -z "$EXISTING_REDIS" ]; then
+    echo "No existing Redis container found on port $REDIS_PORT in network $NETWORK_NAME. Starting a new Redis container..."
+    # Starting a Redis container
+    docker run --restart always --network $NETWORK_NAME --name $REDIS_CONTAINER_NAME -p $REDIS_PORT:6379 -d redis redis-server --save 60 1 --loglevel warning
+else
+    echo "Redis container already exists on port $REDIS_PORT in network $NETWORK_NAME. Skipping Redis container creation."
 fi
 
 echo -e "\nSTEP 5: Create a Dockerfile in 'distro' folder."

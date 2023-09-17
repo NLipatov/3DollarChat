@@ -5,6 +5,7 @@ using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
+using Limp.Server.Utilities.Redis;
 using Limp.Server.WebPushNotifications;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
@@ -20,6 +21,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IMessageSendHandler _messageSendHandler;
         private readonly IWebPushSender _webPushSender;
+        private readonly IRedisService _redisService;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -27,7 +29,8 @@ namespace Limp.Server.Hubs.MessageDispatcher
         IUserConnectedHandler<MessageHub> userConnectedHandler,
         IOnlineUsersManager onlineUsersManager,
         IMessageSendHandler messageSender,
-        IWebPushSender webPushSender)
+        IWebPushSender webPushSender,
+        IRedisService redisService)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -35,6 +38,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             _onlineUsersManager = onlineUsersManager;
             _messageSendHandler = messageSender;
             _webPushSender = webPushSender;
+            _redisService = redisService;
         }
 
         public async override Task OnConnectedAsync()
@@ -91,6 +95,12 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
                 await PushOnlineUsersToClients();
             }
+
+            var storedMessages = await _redisService.GetSaved(usernameFromToken);
+            foreach (var message in storedMessages)
+            {
+                await Dispatch(message);
+            }
         }
 
         public async Task PushOnlineUsersToClients()
@@ -114,11 +124,16 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
-            await _messageSendHandler.SendAsync(message, Clients);
+            //Save message in redis to send it later, or send it now if user is online
+            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
+                await _messageSendHandler.SendAsync(message, Clients);
+            else
+                await _redisService.Save(message);
 
             if (message.Type == MessageType.UserMessage)
                 await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
         }
+        
         public async Task MessageReceived(Guid messageId, string topicName)
             => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
 

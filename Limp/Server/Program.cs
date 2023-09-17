@@ -5,6 +5,7 @@ using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Limp.Server.Utilities.Redis;
 using Limp.Server.WebPushNotifications;
 using Microsoft.AspNetCore.ResponseCompression;
 
@@ -33,6 +34,7 @@ builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandle
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
+builder.Services.AddTransient<IRedisService, RedisService>();
 
 var app = builder.Build();
 

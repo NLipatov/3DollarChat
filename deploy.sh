@@ -121,3 +121,6 @@ if ! chmod +x deploy.sh; then
     echo "ERROR: Failed to make deploy.sh executable."
     exit 1
 fi
+
+echo "Removing unused Docker resources."
+docker system prune -f

@@ -8,6 +8,7 @@ namespace Limp.Server.Utilities.Redis;
 public class RedisService : IRedisService
 {
     private string ServiceAddress { get; init; }
+    private string ServicePassword { get; init; }
 
     public RedisService(IConfiguration configuration)
     {
@@ -19,7 +20,7 @@ public class RedisService : IRedisService
     {
         try
         {
-            using (var redis = await ConnectionMultiplexer.ConnectAsync(ServiceAddress))
+            using (var redis = await GetRedisConnection())
             {
                 IDatabase db = redis.GetDatabase();
 
@@ -38,7 +39,7 @@ public class RedisService : IRedisService
     {
         try
         {
-            using (var redis = await ConnectionMultiplexer.ConnectAsync(ServiceAddress))
+            using (var redis = await GetRedisConnection())
             {
                 IDatabase db = redis.GetDatabase();
 
@@ -61,5 +62,16 @@ public class RedisService : IRedisService
         {
             throw new ApplicationException($"Could read messages from redis: {e.Message}");
         }
+    }
+
+    private async Task<ConnectionMultiplexer> GetRedisConnection()
+    {
+        ConfigurationOptions options = new ConfigurationOptions
+        {
+            EndPoints = new EndPointCollection { ServiceAddress },
+            Password = ServicePassword
+        };
+        
+        return await ConnectionMultiplexer.ConnectAsync(options);
     }
 }

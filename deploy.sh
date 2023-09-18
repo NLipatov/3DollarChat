@@ -85,10 +85,13 @@ if ! cp /root/EthaChat/Configuration/ChatApp/FCMConfiguration.json distro/FCMCon
   exit 1
 fi
 
+# Grabbing a password from distro/appsettings.json
+PASSWORD=$(cat distro/appsettings.json | jq -r '.Redis.Password')
+
 if [ -z "$EXISTING_REDIS" ]; then
     echo "No existing Redis container found on port $REDIS_PORT in network $NETWORK_NAME. Starting a new Redis container..."
     # Starting a Redis container
-    docker run --restart always --network $NETWORK_NAME --name $REDIS_CONTAINER_NAME -p $REDIS_PORT:6379 -d redis redis-server --save 60 1 --loglevel warning
+    docker run --restart always --network $NETWORK_NAME --name $REDIS_CONTAINER_NAME -p $REDIS_PORT:6379 -d redis redis-server --save 60 1 --loglevel warning --requirepass "$PASSWORD"
 else
     echo "Redis container already exists on port $REDIS_PORT in network $NETWORK_NAME. Skipping Redis container creation."
 fi

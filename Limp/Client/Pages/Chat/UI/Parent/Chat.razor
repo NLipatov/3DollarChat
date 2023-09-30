@@ -1,37 +1,23 @@
 ﻿@page "/user/{topicName?}"
-@using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 @using Limp.Client.Pages.Chat.UI.Childs.MessageInput
 @using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.Pages.Chat.Logic.TokenRelatedOperations;
 @using Limp.Client.Pages.Chat.UI.Childs.ChatHeader
 @using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
-@using Limp.Client.Services.UndeliveredMessagesStore;
 @using LimpShared.Models.ConnectedUsersManaging;
-@using Limp.Client.Cryptography;
-@using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 @using LimpShared.Encryption;
 @using Limp.Client.Pages;
-@using Limp.Client.Services.InboxService;
-@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 @using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
 @using Limp.Client.Pages.AuthenticationChecks
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
-@inject ICryptographyService _cryptographyService
-@inject IMessageDecryptor _messageDecryptor
-@inject IMessageBox _messageBox
-@inject IAESOfferHandler _aesOfferHandler
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IMessageBuilder _messageBuilder
 @inject IBrowserKeyStorage _localKeyManager
 @inject IUsersService _usersService
-@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
-@inject IUndeliveredMessageService _undeliveredMessageService
 @implements IDisposable
 
 @if (string.IsNullOrWhiteSpace(topicName))
@@ -53,7 +39,7 @@ else
 
             <ChatHeader IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
                         PartnerName=@topicName
-                        OnAESRenewal=@RenewAES
+                        OnAESRenewal=@(async () => await _messageService.NegotiateOnAESAsync(topicName))
                         AESKey=@AESKey />
 
 
@@ -104,8 +90,6 @@ else
     public string myUsername { get; set; } = string.Empty;
 
     private bool partnerIsOnline { get; set; }
-    private List<UserConnection> userConnections { get; set; } = new();
-    private bool AESKeyForConversationExists => _localKeyManager.GetAESKeyForChat(topicName) != null;
     private Key? AESKey { get; set; }
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
@@ -180,11 +164,6 @@ else
             return;
         }
 
-        await RenewAES();
-    }
-
-    private async Task RenewAES()
-    {
         await _messageService.NegotiateOnAESAsync(topicName);
     }
 

@@ -1,9 +1,9 @@
-.ApplicationContent {
+html{
     background-color: #ededed;
+}
+
+.ApplicationContent {
     display: flex;
-    flex-direction: row;
-    height: 100dvh;
-    width: 100dvw;
 }
 
 .RSACalculatingWarning {

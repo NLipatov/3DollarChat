@@ -238,20 +238,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
             });
         }
-
-        private async Task<HubConnection?> TryGetExistingHubConnection()
-        {
-            if (hubConnection != null)
-            {
-                if (hubConnection.State != HubConnectionState.Connected)
-                {
-                    await hubConnection.StopAsync();
-                    await hubConnection.StartAsync();
-                }
-                return hubConnection;
-            }
-            return null;
-        }
+        
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
@@ -330,7 +317,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task SendMessage(Message message)
         {
-            if (hubConnection != null)
+            if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
             {
                 await hubConnection.SendAsync("Dispatch", message);
             }

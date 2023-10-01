@@ -30,5 +30,7 @@
 @media (max-width: 640px) {
     .message-input-box {
         width: 100%;
+        height: auto;
+        padding-bottom: 3rem;
     }
 }

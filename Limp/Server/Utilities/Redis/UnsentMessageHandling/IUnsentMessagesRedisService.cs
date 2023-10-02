@@ -2,7 +2,7 @@
 
 namespace Limp.Server.Utilities.Redis;
 
-public interface IRedisService
+public interface IUnsentMessagesRedisService
 {
     Task Save(Message message);
     Task<Message[]> GetSaved(string username);

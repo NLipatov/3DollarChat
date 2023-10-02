@@ -34,7 +34,7 @@ builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandle
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
-builder.Services.AddTransient<IRedisService, RedisService>();
+builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisService>();
 
 var app = builder.Build();
 

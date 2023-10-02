@@ -9,7 +9,6 @@ using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.HubServices.Extensions;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.JWTReader;
@@ -84,14 +83,17 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             if (hubConnection == null)
                 throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
             
-            if (hubConnection.State is HubConnectionState.Disconnected)
+            while (hubConnection.State is not HubConnectionState.Connected)
             {
+                if (hubConnection.State is not HubConnectionState.Disconnected)
+                    await hubConnection.StopAsync();
+
                 await hubConnection.StartAsync();
-
-                await hubConnection.SendAsync("SetUsername", accessToken);
-
-                hubConnection.Closed += OnConnectionLost;
             }
+
+            await hubConnection.SendAsync("SetUsername", accessToken);
+
+            hubConnection.Closed += OnConnectionLost;
 
             return hubConnection;
         }
@@ -253,6 +255,15 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         {
             await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
             {
+                if (hubConnection?.State is not HubConnectionState.Connected)
+                {
+                    await GetHubConnectionAsync();
+                    while (hubConnection?.State is not HubConnectionState.Connected)
+                    {
+                        await GetHubConnectionAsync();
+                    }
+                }
+                
                 InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate = DateTime.UtcNow;
                 InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value = aesKeyForConversation;
                 await _browserKeyStorage.SaveInMemoryKeysInLocalStorage();
@@ -284,11 +295,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     }
                 };
 
-                if (hubConnection?.State != HubConnectionState.Connected)
+                if (hubConnection.State is not HubConnectionState.Connected)
                 {
-                    if (hubConnection is not null)
-                        await hubConnection.DisposeAsync();
-
                     await GetHubConnectionAsync();
                 }
 
@@ -298,13 +306,21 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task DisconnectAsync()
         {
-            await hubConnection.DisconnectAsync();
+            if (hubConnection is not null)
+                await hubConnection.StopAsync();
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            if (hubConnection?.State != HubConnectionState.Connected)
-                hubConnection = await GetHubConnectionAsync();
+            if (hubConnection?.State is not HubConnectionState.Connected)
+            {
+                if (hubConnection is not null)
+                    await hubConnection.StopAsync();
+                
+                await GetHubConnectionAsync();
+                await NegotiateOnAESAsync(partnerUsername);
+                return;
+            }
 
             await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
         }
@@ -323,7 +339,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             }
             else
             {
-                await ReconnectAsync();
+                await GetHubConnectionAsync();
                 await SendMessage(message);
             }
         }
@@ -335,6 +351,16 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             await AddAsUnreceived(text, targetGroup, myUsername, messageId);
 
             await AddToMessageBox(text, targetGroup, myUsername, messageId);
+
+            if (hubConnection?.State is not HubConnectionState.Connected)
+            {
+                if (hubConnection is not null)
+                    await hubConnection.StopAsync();
+                
+                await GetHubConnectionAsync();
+                await SendUserMessage(text, targetGroup, myUsername);
+                return;
+            }
 
             await SendMessage(messageToSend);
         }
@@ -371,6 +397,15 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             if (hubConnection is not null)
             {
+                if (hubConnection?.State is not HubConnectionState.Connected)
+                {
+                    if (hubConnection is not null)
+                        await hubConnection.StopAsync();
+                    
+                    await GetHubConnectionAsync();
+                    await NotifySenderThatMessageWasReaded(messageId, messageSender, myUsername);
+                    return;
+                }
                 if (hubConnection.State is HubConnectionState.Connected)
                 {
                     await hubConnection.SendAsync("MessageHasBeenRead", messageId, messageSender);
@@ -378,21 +413,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             }
 
             throw new ArgumentException("Notification was not sent because hub connection is lost.");
-        }
-
-        public async Task SendTestWebPush()
-        {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                NavigationManager.NavigateTo("signin");
-                return;
-            }
-
-            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
-
-            await hubConnection.SendAsync("SendWebPush", username);
         }
     }
 }

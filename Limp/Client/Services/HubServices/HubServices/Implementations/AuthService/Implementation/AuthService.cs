@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubServices.CommonServices;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Limp.Client.Services.JWTReader;
@@ -10,7 +9,6 @@ using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using HubConnectionExtensions = Limp.Client.Services.HubServices.Extensions.HubConnectionExtensions;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
 {
@@ -176,8 +174,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         }
         public async Task DisconnectedAsync()
         {
-            await HubConnectionExtensions.DisconnectAsync(HubConnectionInstance);
-            HubConnectionInstance = null;
+            
+            if (HubConnectionInstance is not null)
+                await HubConnectionInstance.StopAsync();
         }
 
         public bool IsConnected()

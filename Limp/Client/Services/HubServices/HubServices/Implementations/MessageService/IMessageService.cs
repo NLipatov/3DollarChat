@@ -10,6 +10,5 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         Task NegotiateOnAESAsync(string partnerUsername); 
         Task SendUserMessage(string text, string targetGroup, string myUsername);
         Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
-        Task SendTestWebPush();
     }
 }

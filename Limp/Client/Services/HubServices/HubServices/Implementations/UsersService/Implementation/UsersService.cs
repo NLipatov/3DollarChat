@@ -3,7 +3,6 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
-using Limp.Client.Services.HubServices.Extensions;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
@@ -215,7 +214,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 
         public async Task DisconnectAsync()
         {
-            await HubConnectionInstance.DisconnectAsync();
+            if (HubConnectionInstance is not null)
+                await HubConnectionInstance.StopAsync();
         }
     }
 }

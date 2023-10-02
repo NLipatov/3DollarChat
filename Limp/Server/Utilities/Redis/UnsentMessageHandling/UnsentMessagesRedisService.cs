@@ -5,12 +5,12 @@ using StackExchange.Redis;
 
 namespace Limp.Server.Utilities.Redis;
 
-public class RedisService : IRedisService
+public class UnsentMessagesRedisService : IUnsentMessagesRedisService
 {
     private string ServiceAddress { get; init; }
     private string ServicePassword { get; init; }
 
-    public RedisService(IConfiguration configuration)
+    public UnsentMessagesRedisService(IConfiguration configuration)
     {
         ServiceAddress = configuration.GetValue<string>("Redis:Address") 
                          ?? throw new ArgumentException("Could not read an Redis address from application configuration");

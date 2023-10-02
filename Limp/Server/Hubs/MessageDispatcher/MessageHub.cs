@@ -21,7 +21,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IMessageSendHandler _messageSendHandler;
         private readonly IWebPushSender _webPushSender;
-        private readonly IRedisService _redisService;
+        private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -30,7 +30,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
         IOnlineUsersManager onlineUsersManager,
         IMessageSendHandler messageSender,
         IWebPushSender webPushSender,
-        IRedisService redisService)
+        IUnsentMessagesRedisService unsentMessagesRedisService)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -38,7 +38,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             _onlineUsersManager = onlineUsersManager;
             _messageSendHandler = messageSender;
             _webPushSender = webPushSender;
-            _redisService = redisService;
+            _unsentMessagesRedisService = unsentMessagesRedisService;
         }
 
         public async override Task OnConnectedAsync()
@@ -96,11 +96,25 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 await PushOnlineUsersToClients();
             }
 
-            var storedMessages = await _redisService.GetSaved(usernameFromToken);
-            foreach (var message in storedMessages)
+            var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
+            foreach (var m in storedMessages.OrderBy(x=>x.DateSent))
             {
-                await Dispatch(message);
+                await Dispatch(m);
             }
+        }
+
+        private Task[] GenerateSendStoredMessagesWorkload(Message[] messages)
+        {
+            Task[] workload = new Task[messages.Length];
+            for (int i = 0; i < messages.Length; i++)
+            {
+                workload[i] = Task.Run(async () =>
+                {
+                    await Dispatch(messages[i]);
+                });
+            }
+
+            return workload;
         }
 
         public async Task PushOnlineUsersToClients()
@@ -128,7 +142,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
                 await _messageSendHandler.SendAsync(message, Clients);
             else
-                await _redisService.Save(message);
+                await _unsentMessagesRedisService.Save(message);
 
             if (message.Type == MessageType.UserMessage)
                 await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
@@ -154,7 +168,10 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task MessageHasBeenRead(Guid messageId, string messageSender)
         {
-            await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
+            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == messageSender))
+            {
+                await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
+            }
         }
     }
 }

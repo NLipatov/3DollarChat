@@ -107,15 +107,18 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             
             if (HubConnectionInstance == null)
                 throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
-            
-            if (HubConnectionInstance.State is HubConnectionState.Disconnected)
+
+            while (HubConnectionInstance.State is not HubConnectionState.Connected)
             {
+                if (HubConnectionInstance.State is not HubConnectionState.Disconnected)
+                    await HubConnectionInstance.StopAsync();
+
                 await HubConnectionInstance.StartAsync();
-
-                await HubConnectionInstance.SendAsync("SetUsername", accessToken);
-
-                HubConnectionInstance.Closed += OnConnectionLost;
             }
+
+            await HubConnectionInstance.SendAsync("SetUsername", accessToken);
+
+            HubConnectionInstance.Closed += OnConnectionLost;
 
             return HubConnectionInstance;
         }

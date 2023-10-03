@@ -54,8 +54,10 @@ else
 
     protected override async Task OnInitializedAsync()
     {
-        if (_hubConnectionProvider.GetConnectionState() is not Services.HubConnectionProvider.ConnectionStates.HubConnectionProviderState.Connected)
+        if (_hubConnectionProvider.GetConnectionState() is not HubConnectionProviderState.Connected)
+        {
             await _hubConnectionProvider.ConnectToHubs();
+        }
 
         await IsUserAuthenticated();
     }

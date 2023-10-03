@@ -100,9 +100,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 NavigationManager.NavigateTo("signin");
-                throw new InvalidOperationException
-                ("User is not signed in and does not have an access token yet. " +
-                 "Redirecting to a signin page.");
+                return null;
             }
             
             if (HubConnectionInstance == null)

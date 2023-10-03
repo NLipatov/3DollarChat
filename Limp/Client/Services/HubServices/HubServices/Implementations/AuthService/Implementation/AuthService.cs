@@ -49,9 +49,19 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             if (HubConnectionInstance == null)
                 throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
             
-            while (HubConnectionInstance.State is HubConnectionState.Disconnected)
+            while (HubConnectionInstance.State is not  HubConnectionState.Connected)
             {
-                await HubConnectionInstance.StartAsync();
+                try
+                {
+                    if (HubConnectionInstance.State is not HubConnectionState.Disconnected)
+                        await HubConnectionInstance.StopAsync();
+
+                    await HubConnectionInstance.StartAsync();
+                }
+                catch
+                {
+                    return await GetHubConnectionAsync();
+                }
             }
 
             return HubConnectionInstance;

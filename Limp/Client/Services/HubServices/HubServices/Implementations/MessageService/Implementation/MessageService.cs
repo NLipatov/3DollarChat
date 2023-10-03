@@ -85,10 +85,17 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             
             while (hubConnection.State is not HubConnectionState.Connected)
             {
-                if (hubConnection.State is not HubConnectionState.Disconnected)
-                    await hubConnection.StopAsync();
+                try
+                {
+                    if (hubConnection.State is not HubConnectionState.Disconnected)
+                        await hubConnection.StopAsync();
 
-                await hubConnection.StartAsync();
+                    await hubConnection.StartAsync();
+                }
+                catch
+                {
+                    return await GetHubConnectionAsync();
+                }
             }
 
             await hubConnection.SendAsync("SetUsername", accessToken);

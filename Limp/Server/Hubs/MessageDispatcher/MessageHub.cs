@@ -138,6 +138,8 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 throw new ArgumentException("Invalid target group of a message.");
 
+            await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+
             //Save message in redis to send it later, or send it now if user is online
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
                 await _messageSendHandler.SendAsync(message, Clients);

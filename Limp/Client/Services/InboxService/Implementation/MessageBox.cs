@@ -66,6 +66,15 @@ namespace Limp.Client.Services.InboxService.Implementation
             await _undeliveredMessagesRepository.DeleteAsync(messageId);
         }
 
+        public async Task OnRegistered(Guid messageId)
+        {
+            Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
+            if (message != null)
+                message.IsRegisteredByHub = true;
+
+            await _undeliveredMessagesRepository.DeleteAsync(messageId);
+        }
+
         public void OnToastWasShown(Guid messageId)
             => Messages.First(x => x.Id == messageId).IsToastShown = true;
 

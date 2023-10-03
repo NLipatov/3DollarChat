@@ -129,6 +129,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
             });
 
+            hubConnection.On<Guid>("MessageRegisteredByHub", (messageId) =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
+            });
+
             hubConnection.On<Message>("ReceiveMessage", async message =>
             {
                 if (message.Sender != "You")

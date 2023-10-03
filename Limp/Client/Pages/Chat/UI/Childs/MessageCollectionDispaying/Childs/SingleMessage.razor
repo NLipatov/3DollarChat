@@ -32,19 +32,28 @@
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
                     }
-                    else if (message.IsDelivered)
-                    {
-                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
-                        //issue reference: https://stackoverflow.com/a/64686984
-                        <span>
-                            <i class="fas fa-check @messageClass"></i>
-                        </span>
-                    }
-                    else if(!message.IsDelivered)
+                    else if(!message.IsRegisteredByHub)
                     {
                         <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
                             <i class="bi bi-arrow-clockwise">Resend</i>
                         </span>
+                    }
+                    else if (message.IsRegisteredByHub)
+                    {
+                        if (message.IsDelivered)
+                        {
+                            //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                            //issue reference: https://stackoverflow.com/a/64686984
+                            <span>
+                                <i class="fas fa-check @messageClass"></i>
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                <i class="bi bi-database-check @messageClass"></i>
+                            </span>
+                        }
                     }
                 }
             }

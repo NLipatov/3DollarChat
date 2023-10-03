@@ -25,6 +25,11 @@ namespace Limp.Client.Services.InboxService
         /// Marks message as delivered
         /// </summary>
         Task OnDelivered(Guid messageId);
+        
+        /// <summary>
+        /// Marks message as registered by server
+        /// </summary>
+        Task OnRegistered(Guid messageId);
 
         /// <summary>
         /// Marks message toast as shown

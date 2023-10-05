@@ -19,7 +19,7 @@
             <span>@(message.PlainText)</span>
         </div>
         <div class="timestamp">
-            <span>@message.DateSent.ToString("hh:mm")</span>
+            <span>@(message.DateSent.ToLocalTime().ToString("HH:mm"))</span>
             @if (message.Sender == myUsername)
             {
                 @if (message.Sender == myUsername)

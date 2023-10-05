@@ -144,10 +144,11 @@ namespace Limp.Server.Hubs.MessageDispatcher
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
                 await _messageSendHandler.SendAsync(message, Clients);
             else
+            {
                 await _unsentMessagesRedisService.Save(message);
-
-            if (message.Type == MessageType.UserMessage)
-                await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
+                if (message.Type == MessageType.UserMessage)
+                    await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
+            }
         }
         
         public async Task MessageReceived(Guid messageId, string topicName)

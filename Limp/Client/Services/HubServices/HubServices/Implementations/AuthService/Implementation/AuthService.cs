@@ -188,14 +188,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 await HubConnectionInstance.StopAsync();
         }
 
-        public bool IsConnected()
-        {
-            if(HubConnectionInstance == null)
-                return false;
-
-            return HubConnectionInstance.State == HubConnectionState.Connected;
-        }
-
         public async Task LogIn(UserAuthentication userAuthentication)
         {
             var hubConnection = await GetHubConnectionAsync();

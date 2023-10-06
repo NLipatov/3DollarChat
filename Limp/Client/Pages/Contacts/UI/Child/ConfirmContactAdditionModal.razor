@@ -1,40 +1,47 @@
 ﻿@using Limp.Client.Pages.Contacts.Models;
 
-<Modal 
-    @ref="modal" 
-    Title="Add user to contacts">
 
-    <BodyTemplate>
-        @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-        {
-            <span>
-                @NewContactUsername is already in your contact book
-            </span>
-        }
-        else
-        {
-            @ModalBodyText
-        }
-    </BodyTemplate>
-    <FooterTemplate>
-        @if (IsUserExists)
-        {
-            @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-            {
-                <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-            }
-            else
-            {
-                <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
-                <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
-            }
-        }
-        else
-        {
-            <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-        }
-    </FooterTemplate>
-</Modal>
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <Modal 
+            @ref="modal" 
+            Title="Add user to contacts">
+
+            <BodyTemplate>
+                @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+                {
+                    <span>
+                        @NewContactUsername is already in your contact book
+                    </span>
+                }
+                else
+                {
+                    @ModalBodyText
+                }
+            </BodyTemplate>
+            <FooterTemplate>
+                @if (IsUserExists)
+                {
+                    @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+                    {
+                        <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+                    }
+                    else
+                    {
+                        <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
+                        <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
+                    }
+                }
+                else
+                {
+                    <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+                }
+            </FooterTemplate>
+        </Modal>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
     [Parameter]

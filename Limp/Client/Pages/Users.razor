@@ -79,7 +79,14 @@
         if (string.IsNullOrWhiteSpace(accessToken))
             return string.Empty;
 
-        myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+        try
+        {
+            myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+        }
+        catch (Exception e)
+        {
+            _navigationManager.NavigateTo("/signin");
+        }
 
         return myUsername;
     }

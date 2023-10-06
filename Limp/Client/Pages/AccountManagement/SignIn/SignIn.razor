@@ -1,23 +1,10 @@
-﻿@using System.Text.Json;
-@using System.Text;
-@using System.Web;
-@using Limp.Client.Pages.AccountManagement.LogicHandlers;
-@using Limp.Client.Services.HubConnectionProvider;
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
-@using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+﻿@using Limp.Client.Pages.AccountManagement.LogicHandlers;
 @using Limp.Client.UIComponents.InputForms.Login
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using Microsoft.AspNetCore.SignalR.Client;
-@inject IConfiguration _configuration;
-@inject IJSRuntime js
 @inject NavigationManager _navigationManager
-@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IAuthService _authService
 @inject ILoginHandler _loginHandler
-@inject IUsersService _usersService
-@inject IHubConnectionProvider _hubConnectionProvider
 @page "/signIn"
 
 <LoginForm 
@@ -35,7 +22,7 @@
         if (lasttokenFetchResult.Result != AuthResultType.Fail)
         {
             lasttokenFetchResult.Message = "You're logged in.";
-            _navigationManager.NavigateTo("/users");
+            _navigationManager.NavigateTo("/contacts");
         }
         else if (string.IsNullOrWhiteSpace(authResult?.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JwtPair?.RefreshToken?.Token))
         {

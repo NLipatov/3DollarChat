@@ -7,6 +7,7 @@
 @using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Limp.Client.Services.JWTReader
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -17,56 +18,66 @@
 @using Limp.Client.Shared.ReuseableComponents.EditableList;
 @using Limp.Client.Shared.ReuseableComponents.EditableList.Models
 @using LimpShared.Models.Users;
+@using Limp.Client.HubInteraction.Handlers.Helpers
 @implements IDisposable
 
-<div class="p-2" style="  
-    width: 100%;
-    height: 100%;
-    overflow: auto;">
-    <div style="display: flex;
-            flex-direction: column;
-            gap: 10px;">
-        <SearchForContact 
-            OnNewContactSearch="OnAddContactAttempt" />
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="p-2" style="  
+            width: 100%;
+            height: 100%;
+            overflow: auto;">
+            <div style="display: flex;
+                    flex-direction: column;
+                    gap: 10px;">
+                <SearchForContact 
+                    OnNewContactSearch="OnAddContactAttempt" />
 
-        @if(ContactsList.Any())
+                @if(ContactsList.Any())
+                {
+                    <EditableList 
+                        itemCollection="ContactsList
+                            .Select(x=> new ItemModel
+                            {
+                                IsActive = x.IsOnline, 
+                                IsEncryptionSettedUp = x.IsKeyReady, 
+                                ItemName = x.Username,
+                                BadgeModel = GetContactBadge(x),
+                                ShowBadge = x.UnreadedMessagesCount > 0
+                            })
+                            .ToList()"
+                        OnItemClicked="NavigateToChatWithContact"
+                        OnItemRemoved="RemoveContact" 
+                        ListHeader="Contacts:"
+                        IconClass="bi bi-person-fill"/>
+                }
+                else
+                {
+                    <Callout Type="CalloutType.Tip">
+                        <div style="display: flex; flex-direction: column;">
+                            <h3>Your contact book is empty</h3>
+                            <span>Add someone and start a new chat!</span>
+                        </div>
+                    </Callout>
+                }
+            </div>
+        </div>
+
+        @if (contactAdditionModal is not null)
         {
-            <EditableList 
-                itemCollection="ContactsList
-                    .Select(x=> new ItemModel
-                    {
-                        IsActive = x.IsOnline, 
-                        IsEncryptionSettedUp = x.IsKeyReady, 
-                        ItemName = x.Username,
-                        BadgeModel = GetContactBadge(x),
-                        ShowBadge = x.UnreadedMessagesCount > 0
-                    })
-                    .ToList()"
-                OnItemClicked="NavigateToChatWithContact"
-                OnItemRemoved="RemoveContact" 
-                ListHeader="Contacts:"
-                IconClass="bi bi-person-fill"/>
+            <ConfirmContactAdditionModal 
+                @ref="contactAdditionModal"
+                ContactCollection="ContactsList"
+                OnContactAddition="HandleContactAddition"/>
         }
-        else
-        {
-            <Callout Type="CalloutType.Tip">
-                <div style="display: flex; flex-direction: column;">
-                    <h3>Your contact book is empty</h3>
-                    <span>Add someone and start a new chat!</span>
-                </div>
-            </Callout>
-        }
-    </div>
-</div>
-
-<ConfirmContactAdditionModal 
-    @ref="contactAdditionModal"
-    ContactCollection="ContactsList"
-    OnContactAddition="HandleContactAddition"/>
-
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
-    private ConfirmContactAdditionModal? contactAdditionModal = default!;
+    private ConfirmContactAdditionModal? contactAdditionModal { get; set; }
     private List<Contact> ContactsList = new();
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
@@ -129,6 +140,15 @@
 
     protected override async Task OnInitializedAsync()
     {
+        var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+        if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
+        {
+            _navigationManager.NavigateTo("signin");
+            return;
+        }
+
+        contactAdditionModal = new();
+        
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
@@ -178,7 +198,7 @@
 
     private void TryUpdateLastReceivedContacts(UserConnectionsReport usersOnlineMessage)
     {
-        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        if (!_usersOnlineMessage.UserConnections.Any() || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
             _usersOnlineMessage = usersOnlineMessage;
         }

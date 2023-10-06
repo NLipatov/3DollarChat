@@ -53,12 +53,4 @@
     <Folder Include="Services\HubServices\HubServices\Implementations\" />
   </ItemGroup>
 
-  <ItemGroup>
-    <_ContentIncludedByDefault Remove="Pages\AccountManagement\WebPushSettings\NotificationsSettings.razor" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <AdditionalFiles Include="Pages\Settings\PushSettings\NotificationsSettings.razor" />
-  </ItemGroup>
-
 </Project>

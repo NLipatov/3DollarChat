@@ -1,5 +1,4 @@
 ﻿@using Limp.Client.Cryptography;
-@using Limp.Client.Cryptography.KeyStorage;
 @using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -8,8 +7,6 @@
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.Services.NotificationService;
 @using Limp.Client.Shared.ChildComponents
-@using LimpShared.Encryption;
-@using LimpShared.Models.WebPushNotification;
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
 @inject IHubConnectionProvider _hubConnectionProvider

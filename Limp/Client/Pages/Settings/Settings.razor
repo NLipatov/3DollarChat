@@ -1,0 +1,35 @@
+﻿@inject NavigationManager _navigationManager
+@page "/settings"
+
+<div class="p-2">
+    <Card 
+        Color="CardColor.Primary" 
+        Class="mb-4" 
+        Style="width:100%; cursor: pointer;" 
+        @onclick=@(() => _navigationManager.NavigateTo("settings/notifications"))>
+        <CardHeader>
+            <Icon Name="IconName.BellFill"/>
+            Web Push
+        </CardHeader>
+        <CardBody>
+            <CardTitle>Manage your push notifications</CardTitle>
+            <CardText>See active subscriptions, add new one, delete old ones and so on.</CardText>
+        </CardBody>
+    </Card>
+    <Card 
+        Color="CardColor.Primary" 
+        Class="mb-4" 
+        Style="width:100%; cursor: pointer;" 
+        @onclick=@(() => _navigationManager.NavigateTo("settings/accesses"))>
+        <CardHeader>
+            <Icon Name="IconName.PersonLinesFill"/>
+            Access log
+        </CardHeader>
+            <CardBody>
+                <CardTitle>Your account access log</CardTitle>
+                <CardText>
+                    Check the User Agents that were used to log in and to refresh tokens to your access account.
+                </CardText>
+            </CardBody>
+        </Card>
+</div>

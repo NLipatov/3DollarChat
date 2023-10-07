@@ -71,11 +71,13 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             if (string.IsNullOrWhiteSpace(encryptedAESKey))
                 throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-            string? decryptedAESKey = (await _cryptographyService.DecryptAsync<RSAHandler>
-                (new Cryptogramm
-                {
-                    Cyphertext = encryptedAESKey
-                }));
+            var decryptedCryptogram = (await _cryptographyService.DecryptAsync<RSAHandler>
+            (new Cryptogramm
+            {
+                Cyphertext = encryptedAESKey
+            }));
+
+            string? decryptedAESKey = decryptedCryptogram.Cyphertext;
 
             if (string.IsNullOrWhiteSpace(decryptedAESKey))
                 throw new ArgumentException("Could not decrypt an AES Key.");

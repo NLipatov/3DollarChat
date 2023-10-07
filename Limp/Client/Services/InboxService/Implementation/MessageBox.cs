@@ -33,7 +33,7 @@ namespace Limp.Client.Services.InboxService.Implementation
         public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {
             if (isEncrypted)
-                message.PlainText = await _messageDecryptor.DecryptAsync(message);
+                message.PlainText = (await _messageDecryptor.DecryptAsync(message)).Cyphertext;
 
             Messages.Add(message);
 
@@ -48,7 +48,7 @@ namespace Limp.Client.Services.InboxService.Implementation
             {
                 foreach (var encryptedMessage in messages)
                 {
-                    encryptedMessage.PlainText = await _messageDecryptor.DecryptAsync(encryptedMessage);
+                    encryptedMessage.PlainText = (await _messageDecryptor.DecryptAsync(encryptedMessage)).Cyphertext;
                 }
             }
 

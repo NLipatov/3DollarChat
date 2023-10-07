@@ -8,7 +8,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         bool IsConnected();
         Task SendMessage(Message message);
         Task NegotiateOnAESAsync(string partnerUsername); 
-        Task SendUserMessage(string text, string targetGroup, string myUsername);
+        Task SendUserMessage(string text, string targetGroup, string myUsername, byte[]? data = null);
         Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
     }
 }

@@ -132,22 +132,31 @@ namespace Limp.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
-            if (string.IsNullOrWhiteSpace(message.Sender))
-                throw new ArgumentException("Invalid message sender.");
-
-            if (string.IsNullOrWhiteSpace(message.TargetGroup))
-                throw new ArgumentException("Invalid target group of a message.");
-
-            await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
-
-            //Save message in redis to send it later, or send it now if user is online
-            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
-                await _messageSendHandler.SendAsync(message, Clients);
-            else
+            Console.WriteLine("dispatching...");
+            try
             {
-                await _unsentMessagesRedisService.Save(message);
-                if (message.Type == MessageType.UserMessage)
-                    await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
+                if (string.IsNullOrWhiteSpace(message.Sender))
+                    throw new ArgumentException("Invalid message sender.");
+
+                if (string.IsNullOrWhiteSpace(message.TargetGroup))
+                    throw new ArgumentException("Invalid target group of a message.");
+
+                await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+
+                //Save message in redis to send it later, or send it now if user is online
+                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
+                    await _messageSendHandler.SendAsync(message, Clients);
+                else
+                {
+                    await _unsentMessagesRedisService.Save(message);
+                    if (message.Type == MessageType.UserMessage)
+                        await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
             }
         }
         

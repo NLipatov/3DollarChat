@@ -149,10 +149,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException($"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
 
-                        string decryptedMessageText = string.Empty;
+                        Cryptogramm decryptedMessageCryptogramm = new Cryptogramm();
                         try
                         {
-                            decryptedMessageText = await _messageDecryptor.DecryptAsync(message);
+                             decryptedMessageCryptogramm = await _messageDecryptor.DecryptAsync(message);
                         }
                         catch (Exception ex)
                         {
@@ -160,10 +160,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                             await NegotiateOnAESAsync(message.Sender);
                         }
 
-                        if (!string.IsNullOrWhiteSpace(decryptedMessageText))
+                        if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext) 
+                            || string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Base64Data))
                         {
                             ClientMessage clientMessage = message.AsClientMessage();
-                            clientMessage.PlainText = decryptedMessageText;
+                            clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext!;
 
                             await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
                             await _messageBox.AddMessageAsync(clientMessage, false);
@@ -347,7 +348,15 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         {
             if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
             {
-                await hubConnection.SendAsync("Dispatch", message);
+                try
+                {
+                    await hubConnection.SendAsync("Dispatch", message);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
             }
             else
             {
@@ -355,10 +364,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await SendMessage(message);
             }
         }
-        public async Task SendUserMessage(string text, string targetGroup, string myUsername)
+        public async Task SendUserMessage(string text, string targetGroup, string myUsername, byte[]? data = null)
         {
             Guid messageId = Guid.NewGuid();
-            Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
+            Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId, data);
 
             await AddAsUnreceived(text, targetGroup, myUsername, messageId);
 

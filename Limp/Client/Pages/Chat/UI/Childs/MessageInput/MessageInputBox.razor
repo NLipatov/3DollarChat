@@ -15,9 +15,9 @@
 @inject IMessageDecryptor _messageDecryptor 
 @inject IPackageFormerService _packageFormerService
 
-<div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
+<div class="message-input-box" @onkeydown="((e)=> OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput" />
-    <InputFile @key="FileInputId" OnChange="OnFileInputChange" multiple/>
+    <InputFile @key="FileInputId" OnChange="OnFileInput" multiple/>
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
 
@@ -30,28 +30,23 @@
     private List<DataFile> DataFiles { get; set; } = new();
     public Guid FileInputId = Guid.NewGuid();
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+    private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
-        {
             await SendMessage();
-        }
     }
 
-    private async Task OnFileInputChange(InputFileChangeEventArgs e)
+    private async Task OnFileInput(InputFileChangeEventArgs e)
     {
         foreach (var file in e.GetMultipleFiles())
         {
-            await FileToChunks(file);
+            var dfId = Guid.NewGuid();
+            DataFiles.Add(new DataFile()
+            {
+                Id = dfId,
+                Packages = await _packageFormerService.Split(file, 22 * 1024, dfId),
+            });
         }
-    }
-
-    private async Task FileToChunks(IBrowserFile file)
-    {
-        var df = new DataFile();
-        df.Packages = await _packageFormerService.Split(file, 22 * 1024, df.Id);
-        
-        DataFiles.Add(df);
     }
 
     private async Task SendMessage()

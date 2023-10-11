@@ -257,7 +257,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
             });
 
-            hubConnection.On<Package, string, string>("ReceiveData", (package, sender, receiver) =>
+            hubConnection.On<Guid>("OnFileTransfered", fileId =>
+            {
+                
+            });
+
+            hubConnection.On<Package, string, string>("ReceiveData", async (package, sender, receiver) =>
             {
                 var packagesExist = FileIdToPackages.ContainsKey(package.FileDataid);
                 if (!packagesExist)
@@ -268,15 +273,37 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 FileIdToPackages[package.FileDataid].Add(package);
                 if (FileIdToPackages[package.FileDataid].Count == package.Total)
                 {
-                    _messageBox.AddMessageAsync(new ClientMessage
+                    await _messageBox.AddMessageAsync(new ClientMessage
                     {
                         Packages = FileIdToPackages[package.FileDataid],
                         Sender = sender
                     },
                     isEncrypted: false);
                     FileIdToPackages.TryRemove(package.FileDataid, out _);
+                    await NotifyAboutSuccessfullDataTransfer(package.FileDataid, sender);
                 }
             });
+        }
+
+        private async Task NotifyAboutSuccessfullDataTransfer(Guid fileId, string sender)
+        {
+            if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
+            {
+                try
+                {
+                    await hubConnection.SendAsync("OnDataTranferSuccess", fileId, sender);
+                }
+                catch (Exception e)
+                {
+                    throw new ApplicationException
+                        ($"{nameof(MessageService)}.{nameof(SendMessage)}: {e.Message}.");
+                }
+            }
+            else
+            {
+                await GetHubConnectionAsync();
+                await NotifyAboutSuccessfullDataTransfer(fileId, sender);
+            }
         }
         
         public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)

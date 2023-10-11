@@ -125,6 +125,12 @@
 
     private void SubscribeToHubEvents()
     {
+        _hubServiceSubscriptionManager.AddCallback<Guid>(id =>
+        {
+            _messageBox.OnDelivered(id);
+            StateHasChanged();
+        }, "OnFileReceived", componentId);
+        
         _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
             _messageBox.OnSeen(id);

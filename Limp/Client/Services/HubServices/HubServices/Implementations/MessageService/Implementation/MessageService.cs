@@ -259,7 +259,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             hubConnection.On<Guid>("OnFileTransfered", fileId =>
             {
-                
+                _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnFileReceived");
             });
 
             hubConnection.On<Package, string, string>("ReceiveData", async (package, sender, receiver) =>

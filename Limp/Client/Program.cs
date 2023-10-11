@@ -11,6 +11,7 @@ using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
 using Limp.Client.Services.ContactsProvider;
 using Limp.Client.Services.ContactsProvider.Implementations;
+using Limp.Client.Services.DataTransmission.PackageForming;
 using Limp.Client.Services.HubConnectionProvider;
 using Limp.Client.Services.HubConnectionProvider.Implementation;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
@@ -65,6 +66,7 @@ builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
 builder.Services.AddTransient<ILocalStorageService,  LocalStorageService>();
 builder.Services.AddTransient<IUserAgentService, UserAgentService>();
+builder.Services.AddTransient<IPackageFormerService, PackageFormerService>();
 builder.Services.AddBlazoredToast();
 builder.Services.AddIntersectionObserver();
 

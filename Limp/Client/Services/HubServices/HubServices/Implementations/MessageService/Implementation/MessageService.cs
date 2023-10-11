@@ -1,4 +1,5 @@
-﻿using Limp.Client.ClientOnlyModels;
+﻿using System.Collections.Concurrent;
+using Limp.Client.ClientOnlyModels;
 using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
@@ -16,6 +17,7 @@ using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
+using LimpShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -36,6 +38,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IBrowserKeyStorage _browserKeyStorage;
         private readonly IMessageDecryptor _messageDecryptor;
         private string myName;
+        private ConcurrentDictionary<Guid, List<Package>> FileIdToPackages = new(); 
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
 
         private HubConnection? hubConnection { get; set; }
@@ -160,11 +163,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                             await NegotiateOnAESAsync(message.Sender);
                         }
 
-                        if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext) 
-                            || string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Base64Data))
+                        if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
                         {
                             ClientMessage clientMessage = message.AsClientMessage();
-                            clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext!;
+                            
+                            if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
+                                clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
 
                             await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender);
                             await _messageBox.AddMessageAsync(clientMessage, false);
@@ -251,6 +255,27 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
 
                 await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
+            });
+
+            hubConnection.On<Package, string, string>("ReceiveData", (package, sender, receiver) =>
+            {
+                var packagesExist = FileIdToPackages.ContainsKey(package.FileDataid);
+                if (!packagesExist)
+                {
+                    FileIdToPackages.TryAdd(package.FileDataid, new List<Package>(package.Total));
+                    FileIdToPackages.TryGetValue(package.FileDataid, out var savedPackages);
+                }
+                FileIdToPackages[package.FileDataid].Add(package);
+                if (FileIdToPackages[package.FileDataid].Count == package.Total)
+                {
+                    _messageBox.AddMessageAsync(new ClientMessage
+                    {
+                        Packages = FileIdToPackages[package.FileDataid],
+                        Sender = sender
+                    },
+                    isEncrypted: false);
+                    FileIdToPackages.TryRemove(package.FileDataid, out _);
+                }
             });
         }
         
@@ -354,8 +379,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine(e);
-                    throw;
+                    throw new ApplicationException
+                        ($"{nameof(MessageService)}.{nameof(SendMessage)}: {e.Message}.");
                 }
             }
             else
@@ -364,10 +389,44 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await SendMessage(message);
             }
         }
-        public async Task SendUserMessage(string text, string targetGroup, string myUsername, byte[]? data = null)
+        
+        public async Task SendUserData(List<DataFile> files, string targetGroup)
+        {
+            if (hubConnection is null || hubConnection?.State is not HubConnectionState.Connected)
+            {
+                await GetHubConnectionAsync();
+                await SendUserData(files, targetGroup);
+                return;
+            }
+            
+            try
+            {
+                var myUsername = TokenReader.GetUsernameFromAccessToken(await JWTHelper.GetAccessTokenAsync(_jSRuntime));
+                var tasks = new List<Task>();
+
+                foreach (var file in files)
+                {
+                    foreach (var package in file.Packages)
+                    {
+                        var task = hubConnection.SendAsync("DispatchData", package, targetGroup, myUsername);
+                        tasks.Add(task);
+                    }
+                }
+
+                await Task.WhenAll(tasks);
+
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException
+                    ($"{nameof(MessageService)}.{nameof(SendUserData)}: {e.Message}.");
+            }
+        }
+        
+        public async Task SendUserMessage(string text, string targetGroup, string myUsername)
         {
             Guid messageId = Guid.NewGuid();
-            Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId, data);
+            Message messageToSend = await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
 
             await AddAsUnreceived(text, targetGroup, myUsername, messageId);
 
@@ -384,6 +443,30 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             }
 
             await SendMessage(messageToSend);
+        }
+        
+        public async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId, List<DataFile> files)
+        {
+            var tasks = new List<Task>();
+    
+            foreach (var file in files)
+            {
+                var clientMessage = new ClientMessage
+                {
+                    Id = messageId,
+                    Sender = myUsername,
+                    TargetGroup = targetGroup,
+                    Packages = file.Packages,
+                    DateSent = DateTime.UtcNow
+                };
+        
+                var task = _messageBox.AddMessageAsync(clientMessage, isEncrypted: false);
+                tasks.Add(task);
+            }
+
+            await Task.WhenAll(tasks);
+
+            await AddToMessageBox(text, targetGroup, myUsername, messageId);
         }
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
@@ -409,6 +492,23 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 PlainText = text,
                 DateSent = DateTime.UtcNow
             });
+        }
+
+        private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId, List<DataFile> files)
+        {
+            foreach (var f in files)
+            {
+                await _undeliveredMessagesRepository.AddAsync(new ClientMessage
+                {
+                    Id = messageId,
+                    Sender = myUsername,
+                    TargetGroup = targetGroup,
+                    Packages = f.Packages,
+                    DateSent = DateTime.UtcNow
+                });
+            }
+
+            await AddAsUnreceived(text, targetGroup, myUsername, messageId);
         }
 
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)

@@ -25,20 +25,16 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
                 throw new ApplicationException("RSA Public key was null");
 
             await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
-
-            string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
-
-            string Base64DataDecrypted = string.Empty;
-            if (!string.IsNullOrWhiteSpace(cryptogramm.Base64Data))
+            
+            string decryptedMessage = string.Empty;
+            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
             {
-                Base64DataDecrypted = await _jSRuntime.InvokeAsync<string>
-                    ("AESDecryptData",cryptogramm.Base64Data, key.Value.ToString());
+                decryptedMessage = await _jSRuntime
+                    .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
             }
 
             return new Cryptogramm()
             {
-                Base64Data = Base64DataDecrypted,
                 Cyphertext = decryptedMessage,
                 Iv = await _jSRuntime.InvokeAsync<string>("ExportIV")
             };
@@ -56,20 +52,16 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             if (string.IsNullOrWhiteSpace(aesKey))
                 throw new ApplicationException("Could not resolve a AES key for encryption.");
 
-            string encryptedText = await _jSRuntime
-                .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
-
-            string encryptedData = string.Empty;
-            if (!string.IsNullOrWhiteSpace(cryptogramm.Base64Data))
+            string encryptedText = string.Empty;
+            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
             {
-                encryptedData = await _jSRuntime.InvokeAsync<string>
-                    ("AESEncryptData", cryptogramm.Base64Data, aesKey);
+                encryptedText = await _jSRuntime
+                .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
             }
 
             return new Cryptogramm
             {
                 Cyphertext = encryptedText,
-                Base64Data = encryptedData,
                 Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
             };
         }

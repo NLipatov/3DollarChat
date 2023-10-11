@@ -13,13 +13,12 @@ namespace Limp.Client.Pages.Chat.Logic.MessageBuilder
         {
             _cryptographyService = cryptographyService;
         }
-        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id, byte[]? data = null)
+        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id)
         {
             Cryptogramm cryptogramm = await _cryptographyService
                 .EncryptAsync<AESHandler>(new Cryptogramm
                 {
                     Cyphertext = plainMessageText,
-                    Base64Data = data is not null ? Convert.ToBase64String(data) : string.Empty
                 }, contact: topicName);
 
             Message messageToSend = new Message

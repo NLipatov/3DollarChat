@@ -9,6 +9,7 @@ using Limp.Server.Utilities.Redis;
 using Limp.Server.WebPushNotifications;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
+using LimpShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.MessageDispatcher
@@ -132,7 +133,6 @@ namespace Limp.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
-            Console.WriteLine("dispatching...");
             try
             {
                 if (string.IsNullOrWhiteSpace(message.Sender))
@@ -155,8 +155,28 @@ namespace Limp.Server.Hubs.MessageDispatcher
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
-                throw;
+                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(Dispatch)}: could not dispatch a text message: {e.Message}");
+            }
+        }
+
+        public async Task DispatchData(Package package, string receiver, string sender)
+        {
+            try
+            {
+                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == receiver))
+                {
+                    await Clients.Group(receiver).SendAsync("ReceiveData", package, sender, receiver);
+                }
+                else
+                {
+                    #warning todo: await _unsentMessagesRedisService.Save(files, targetGroup);
+                    await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
+                }
+                
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
             }
         }
         

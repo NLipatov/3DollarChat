@@ -85,7 +85,23 @@ else
         {
             if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
             {
-                _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
+                if (message.Packages.Any())
+                {
+                    if (!string.IsNullOrWhiteSpace(message.PlainText))
+                    {
+                        _toastService.ShowInfo(message.Sender + 
+                                               $": file \'{message.Packages.First().FileName}\', " + message.PlainText);
+                    }
+                    else
+                    {
+                        _toastService.ShowInfo(message.Sender + 
+                                               $": file \'{message.Packages.First().FileName}\'");
+                    }
+                }
+                else
+                {
+                    _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
+                }
             }
             _messageBox.OnToastWasShown(message.Id);
         }

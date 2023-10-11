@@ -1,4 +1,5 @@
 ﻿using LimpShared.Models.Message;
+using LimpShared.Models.Message.DataTransfer;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 {
@@ -7,8 +8,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         Task ReconnectAsync();
         bool IsConnected();
         Task SendMessage(Message message);
-        Task NegotiateOnAESAsync(string partnerUsername); 
-        Task SendUserMessage(string text, string targetGroup, string myUsername, byte[]? data = null);
+        Task NegotiateOnAESAsync(string partnerUsername);
+        Task SendUserData(List<DataFile> files, string targetGroup);
+        Task SendUserMessage(string text, string targetGroup, string myUsername);
         Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
     }
 }

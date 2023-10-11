@@ -26,7 +26,6 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return new Cryptogramm
             {
                 Cyphertext = encryptedMessage,
-                Base64Data = string.Empty,
                 Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
             };
         }
@@ -42,7 +41,6 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             return new Cryptogramm()
             {
                 Cyphertext = decryptedMessage,
-                Base64Data = string.Empty,
                 Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
             };
         }

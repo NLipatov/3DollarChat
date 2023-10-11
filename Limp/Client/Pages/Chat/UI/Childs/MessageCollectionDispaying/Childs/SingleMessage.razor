@@ -1,4 +1,5 @@
 ﻿@using Limp.Client.ClientOnlyModels;
+@using Limp.Client.Services.DataTransmission.PackageForming
 @using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
@@ -10,16 +11,38 @@
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IJSRuntime _jSRuntime
+@inject IPackageFormerService _packageFormerService
 @implements IDisposable
 
 @if(message != null)
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
-            <span>@(message.PlainText)</span>
+            @if (!string.IsNullOrWhiteSpace(DataUrl) && message.Packages.First().ContentType.Contains("image"))
+            {
+                <img style="max-width: 100%;" src="@DataUrl"/>
+            }
+            else if (!string.IsNullOrWhiteSpace(DataUrl))
+            {
+                <div>
+                    <a 
+                        href="@DataUrl" 
+                        download="@message.Packages.First().FileName"
+                       style="text-decoration: none;">
+                    <i class="bi bi-cloud-download-fill"></i>
+                    <span>Download</span>
+                </a>
+                </div>
+            }
+            
+            @if (!string.IsNullOrWhiteSpace(message.PlainText))
+            {
+                <span>@(message.PlainText)</span>
+            }
         </div>
         <div class="timestamp">
-            <span>@(message.DateSent.ToLocalTime().ToString("HH:mm"))</span>
+            <span>@message.DateSent.ToLocalTime().ToString("HH:mm")</span>
             @if (message.Sender == myUsername)
             {
                 @if (message.Sender == myUsername)
@@ -77,6 +100,7 @@
     private bool isOutcoming;
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
+    private string DataUrl { get; set; } = string.Empty;
 
     public void Dispose()
     {
@@ -84,9 +108,17 @@
         _observerService.Observe(new(), null, null);
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         componentId = Guid.NewGuid();
+
+        if (message is not null && message.Packages.Any())
+        {
+            string mimeType =  message.Packages.First().ContentType;
+            string base64Data = _packageFormerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList());
+            DataUrl = $"data:{mimeType};base64,{base64Data}";
+            StateHasChanged();
+        }
 
         SubscribeToHubEvents();
     }

@@ -51,6 +51,17 @@ async function AESEncryptText(message, key) {
     return ab2str(ciphertext);
 }
 
+async function AESDecryptText(message, key) {
+    return new TextDecoder().decode(await window.crypto.subtle.decrypt(
+        {
+            name: "AES-GCM",
+            iv: iv
+        },
+        await importSecretKey(key),
+        str2ab(message))
+    )
+}
+
 async function AESEncryptData(base64String, key) {
     const binaryData = atob(base64String);
     const encodedData = new TextEncoder().encode(binaryData);
@@ -94,15 +105,4 @@ function ExportIV() {
 
 function ImportIV(ivArrayBufferAsString) {
     iv = str2ab(ivArrayBufferAsString);
-}
-
-async function AESDecryptText(message, key) {
-    return new TextDecoder().decode(await window.crypto.subtle.decrypt(
-        {
-            name: "AES-GCM",
-            iv: iv
-        },
-        await importSecretKey(key),
-        str2ab(message))
-    )
 }

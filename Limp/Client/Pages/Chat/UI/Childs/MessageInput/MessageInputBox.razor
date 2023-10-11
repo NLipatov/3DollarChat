@@ -1,23 +1,34 @@
 ﻿@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.InboxService;
+@using System.Text
+@using Limp.Client.Cryptography.CryptoHandlers
+@using Limp.Client.Cryptography.KeyStorage
+@using Limp.Client.HubInteraction.Handlers.MessageDecryption
+@using Limp.Client.Services.DataTransmission.PackageForming
+@using LimpShared.Encryption
+@using LimpShared.Models.Message.DataTransfer
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
+@inject IJSRuntime _jSRuntime
+@inject IMessageDecryptor _messageDecryptor 
+@inject IPackageFormerService _packageFormerService
 
 <div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
-    <input @bind="messageInput" @bind:event="oninput" />
-    <InputFile OnChange="OnFileInputChange"/>
+    <input @bind="MessageInput" @bind:event="oninput" />
+    <InputFile @key="FileInputId" OnChange="OnFileInputChange" multiple/>
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
 
 @code {
     [Parameter]
-    public string topicName { get; set; } = string.Empty;
+    public string TopicName { get; set; } = string.Empty;
     [Parameter]
-    public string myUsername { get; set; } = string.Empty;
-    private string messageInput { get; set; } = string.Empty;
-    private List<byte[]> messageData { get; set; } = new();
+    public string MyUsername { get; set; } = string.Empty;
+    private string MessageInput { get; set; } = string.Empty;
+    private List<DataFile> DataFiles { get; set; } = new();
+    public Guid FileInputId = Guid.NewGuid();
 
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
@@ -31,32 +42,38 @@
     {
         foreach (var file in e.GetMultipleFiles())
         {
-            messageData.Add(await FileToBytes(file));
+            await FileToChunks(file);
         }
     }
 
-    private async Task<byte[]> FileToBytes(IBrowserFile file)
+    private async Task FileToChunks(IBrowserFile file)
     {
-        using (var s = file.OpenReadStream())
-        {
-            using (var ms = new MemoryStream())
-            {
-                await s.CopyToAsync(ms);
-                return ms.ToArray();
-            }
-        }
+        var df = new DataFile();
+        df.Packages = await _packageFormerService.Split(file, 22 * 1024, df.Id);
+        
+        DataFiles.Add(df);
     }
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(messageInput) && !messageData.Any() || string.IsNullOrWhiteSpace(topicName) || string.IsNullOrWhiteSpace(myUsername))
+        if (string.IsNullOrWhiteSpace(MessageInput) && !DataFiles.Any() || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
         {
-            messageInput = string.Empty;
+            MessageInput = string.Empty;
             return;
         }
 
-        await _messageService.SendUserMessage(messageInput, topicName, myUsername, data: messageData.Any() ? messageData[0] : null);
-        messageInput = string.Empty;
-        messageData = new List<byte[]>();
+        if (!string.IsNullOrWhiteSpace(MessageInput))
+        {
+            await _messageService.SendUserMessage(MessageInput, TopicName, MyUsername);
+        }
+        
+        if (DataFiles.Any())
+        {
+            await _messageService.SendUserData(DataFiles, TopicName);
+            FileInputId = Guid.NewGuid();
+        }
+        
+        MessageInput = string.Empty;
+        DataFiles = new(0);
     }
 }

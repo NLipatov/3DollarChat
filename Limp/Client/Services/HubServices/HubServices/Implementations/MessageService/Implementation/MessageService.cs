@@ -441,6 +441,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
 
                 await Task.WhenAll(tasks);
+                await AddDataToMessageBox(targetGroup, files);
 
             }
             catch (Exception e)
@@ -472,28 +473,18 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             await SendMessage(messageToSend);
         }
         
-        public async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId, List<DataFile> files)
+        public async Task AddDataToMessageBox(string targetGroup, List<DataFile> files)
         {
-            var tasks = new List<Task>();
-    
-            foreach (var file in files)
+            var dataMessages = files.Select(x => new ClientMessage()
             {
-                var clientMessage = new ClientMessage
-                {
-                    Id = messageId,
-                    Sender = myUsername,
-                    TargetGroup = targetGroup,
-                    Packages = file.Packages,
-                    DateSent = DateTime.UtcNow
-                };
-        
-                var task = _messageBox.AddMessageAsync(clientMessage, isEncrypted: false);
-                tasks.Add(task);
-            }
+                Packages = x.Packages,
+                Id = x.Id,
+                Sender = myName,
+                TargetGroup = targetGroup,
+                DateSent = DateTime.UtcNow
+            }).ToList();
 
-            await Task.WhenAll(tasks);
-
-            await AddToMessageBox(text, targetGroup, myUsername, messageId);
+            await _messageBox.AddMessagesAsync(dataMessages.ToArray(), false);
         }
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)

@@ -59,12 +59,12 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await _messageService.SendUserMessage(MessageInput, TopicName, MyUsername);
+            await _messageService.SendText(MessageInput, TopicName, MyUsername);
         }
         
         if (DataFiles.Any())
         {
-            await _messageService.SendUserData(DataFiles, TopicName);
+            await _messageService.SendData(DataFiles, TopicName);
             FileInputId = Guid.NewGuid();
         }
         

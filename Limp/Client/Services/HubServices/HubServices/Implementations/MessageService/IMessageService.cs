@@ -9,9 +9,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         bool IsConnected();
         Task SendMessage(Message message);
         Task NegotiateOnAESAsync(string partnerUsername);
-        Task AddDataToMessageBox(string targetGroup, List<DataFile> files);
-        Task SendUserData(List<DataFile> files, string targetGroup);
-        Task SendUserMessage(string text, string targetGroup, string myUsername);
+        Task SendData(List<DataFile> files, string targetGroup);
+        Task SendText(string text, string targetGroup, string myUsername);
         Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
     }
 }

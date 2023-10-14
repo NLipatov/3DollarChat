@@ -100,7 +100,14 @@ namespace Limp.Server.Hubs.MessageDispatcher
             var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x=>x.DateSent))
             {
-                await Dispatch(m);
+                if (m.Package is not null)
+                {
+                    await DispatchData(m.Package, m.TargetGroup, m.Sender);
+                }
+                else
+                {
+                    await Dispatch(m);
+                }
             }
         }
 
@@ -184,10 +191,18 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 }
                 else
                 {
-                    #warning todo: await _unsentMessagesRedisService.Save(files, targetGroup);
-                    await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
+                    var packageMessage = new Message
+                    {
+                        Sender = sender,
+                        TargetGroup = receiver,
+                        Package = package
+                    };
+                    await _unsentMessagesRedisService.Save(packageMessage);
+                    
+                    if(package.Index == package.Total - 1)
+                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
                 }
-                
+                await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);
             }
             catch (Exception e)
             {

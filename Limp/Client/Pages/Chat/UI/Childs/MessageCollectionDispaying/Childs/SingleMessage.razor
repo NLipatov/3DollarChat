@@ -57,9 +57,19 @@
                     }
                     else if(!message.IsRegisteredByHub)
                     {
-                        <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                            <i class="bi bi-arrow-clockwise">Resend</i>
-                        </span>
+                        @if (message.Type is MessageType.DataPackage)
+                        {
+                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
+                                <span>@($"{chunksLoaded}/{message?.Packages.Count}")</span>
+                                <i class="bi bi-arrow-clockwise">Resend</i>
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
+                                <i class="bi bi-arrow-clockwise">Resend</i>
+                            </span>
+                        }
                     }
                     else if (message.IsRegisteredByHub)
                     {
@@ -101,6 +111,7 @@
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
     private string DataUrl { get; set; } = string.Empty;
+    private int chunksLoaded { get; set; } = 0;
 
     public void Dispose()
     {
@@ -136,6 +147,15 @@
             _messageBox.OnSeen(id);
             StateHasChanged();
         }), "OnReceiverMarkedMessageAsRead", componentId);
+
+        _hubServiceSubscriptionManager.AddCallback<Guid>((messageId) =>
+        {
+            if (message?.Id != messageId)
+                return;
+            
+            chunksLoaded = chunksLoaded + 1;
+            StateHasChanged();
+        }, "OnChunkLoaded", componentId);
     }
 
     protected override async Task OnParametersSetAsync()

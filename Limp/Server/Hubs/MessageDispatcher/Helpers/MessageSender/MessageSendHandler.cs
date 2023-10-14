@@ -14,9 +14,6 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
                 .MessageDispatcherHubConnections
                 .Where(x => x.Key == message.TargetGroup);
 
-            if (receiverConnection.All(x => x.Key != message.TargetGroup))
-                return;
-
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 return;
 

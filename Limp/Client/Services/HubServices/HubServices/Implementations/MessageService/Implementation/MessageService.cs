@@ -140,6 +140,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
             {
+                _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
+                
                 SendedFileIdPackages.TryGetValue(fileId, out var sendedFilePackages);
                 
                 if (sendedFilePackages is null)
@@ -165,7 +167,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                         await hubConnection.StartAsync();
                     }
 
-                    if (message.Type is MessageType.UserMessage)
+                    if (message.Type is MessageType.TextMessage)
                     {
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException($"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
@@ -195,6 +197,27 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                         {
                             if (message.Sender is not null)
                                 await NegotiateOnAESAsync(message.Sender);
+                        }
+                    }
+                    else if (message.Type == MessageType.DataPackage)
+                    {
+                        var packagesExist = ReceivedFileIdToPackages.ContainsKey(message.Package.FileDataid);
+                        if (!packagesExist)
+                        {
+                            ReceivedFileIdToPackages.TryAdd(message.Package.FileDataid, new List<Package>(message.Package.Total));
+                            ReceivedFileIdToPackages.TryGetValue(message.Package.FileDataid, out var savedPackages);
+                        }
+                        ReceivedFileIdToPackages[message.Package.FileDataid].Add(message.Package);
+                        if (ReceivedFileIdToPackages[message.Package.FileDataid].Count == message.Package.Total)
+                        {
+                            await _messageBox.AddMessageAsync(new ClientMessage
+                                {
+                                    Packages = ReceivedFileIdToPackages[message.Package.FileDataid],
+                                    Sender = message.Sender
+                                },
+                                isEncrypted: false);
+                            ReceivedFileIdToPackages.TryRemove(message.Package.FileDataid, out _);
+                            await NotifyAboutSuccessfullDataTransfer(message.Package.FileDataid, message.Sender);
                         }
                     }
                     else if (message.Type == MessageType.AesAccept)
@@ -278,28 +301,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             hubConnection.On<Guid>("OnFileTransfered", fileId =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnFileReceived");
-            });
-
-            hubConnection.On<Package, string, string>("ReceiveData", async (package, sender, receiver) =>
-            {
-                var packagesExist = ReceivedFileIdToPackages.ContainsKey(package.FileDataid);
-                if (!packagesExist)
-                {
-                    ReceivedFileIdToPackages.TryAdd(package.FileDataid, new List<Package>(package.Total));
-                    ReceivedFileIdToPackages.TryGetValue(package.FileDataid, out var savedPackages);
-                }
-                ReceivedFileIdToPackages[package.FileDataid].Add(package);
-                if (ReceivedFileIdToPackages[package.FileDataid].Count == package.Total)
-                {
-                    await _messageBox.AddMessageAsync(new ClientMessage
-                    {
-                        Packages = ReceivedFileIdToPackages[package.FileDataid],
-                        Sender = sender
-                    },
-                    isEncrypted: false);
-                    ReceivedFileIdToPackages.TryRemove(package.FileDataid, out _);
-                    await NotifyAboutSuccessfullDataTransfer(package.FileDataid, sender);
-                }
             });
         }
 
@@ -416,33 +417,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task SendMessage(Message message)
         {
-            if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
-            {
-                try
-                {
-                    await hubConnection.SendAsync("Dispatch", message);
-                }
-                catch (Exception e)
-                {
-                    throw new ApplicationException
-                        ($"{nameof(MessageService)}.{nameof(SendMessage)}: {e.Message}.");
-                }
-            }
-            else
-            {
-                await GetHubConnectionAsync();
-                await SendMessage(message);
-            }
+            hubConnection = await GetHubConnectionAsync();
+            await hubConnection.SendAsync("Dispatch", message);
         }
         
         public async Task SendData(List<DataFile> files, string targetGroup)
         {
-            if (hubConnection is null || hubConnection?.State is not HubConnectionState.Connected)
-            {
-                await GetHubConnectionAsync();
-                await SendData(files, targetGroup);
-                return;
-            }
+            hubConnection = await GetHubConnectionAsync();
             
             try
             {
@@ -454,7 +435,15 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     SendedFileIdPackages.TryAdd(file.Id, file.Packages);
                     foreach (var package in file.Packages)
                     {
-                        var task = hubConnection.SendAsync("DispatchData", package, targetGroup, myUsername);
+                        var message = new Message()
+                        {
+                            Id = file.Id,
+                            Package = package,
+                            Sender = myName,
+                            TargetGroup = targetGroup,
+                            Type = MessageType.DataPackage
+                        };
+                        var task = hubConnection.SendAsync("Dispatch", message);
                         tasks.Add(task);
                     }
                 }
@@ -499,7 +488,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 Id = x.Id,
                 Sender = myName,
                 TargetGroup = targetGroup,
-                DateSent = DateTime.UtcNow
+                DateSent = DateTime.UtcNow,
+                Type = MessageType.DataPackage
             }).ToList();
 
             await _messageBox.AddMessagesAsync(dataMessages.ToArray(), false);

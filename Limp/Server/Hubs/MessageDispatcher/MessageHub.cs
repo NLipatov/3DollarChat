@@ -148,7 +148,14 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 if (string.IsNullOrWhiteSpace(message.TargetGroup))
                     throw new ArgumentException("Invalid target group of a message.");
 
-                await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+                if (message.Type is MessageType.TextMessage)
+                {
+                    await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+                }
+                else if (message.Type is MessageType.DataPackage)
+                {
+                    await Clients.Caller.SendAsync("PackageRegisteredByHub", message.Package.FileDataid, message.Package.Index);
+                }
 
                 //Save message in redis to send it later, or send it now if user is online
                 if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
@@ -156,13 +163,43 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 else
                 {
                     await _unsentMessagesRedisService.Save(message);
-                    if (message.Type == MessageType.UserMessage)
+                    if (message.Type == MessageType.TextMessage)
                         await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
                 }
             }
             catch (Exception e)
             {
                 throw new ApplicationException($"{nameof(MessageHub)}.{nameof(Dispatch)}: could not dispatch a text message: {e.Message}");
+            }
+        }
+
+        public async Task DispatchData(Package package, string receiver, string sender)
+        {
+            var packageMessage = new Message
+            {
+                Sender = sender,
+                TargetGroup = receiver,
+                Package = package,
+                Type = MessageType.DataPackage
+            };
+            try
+            {
+                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == receiver))
+                {
+                    await _messageSendHandler.SendAsync(packageMessage, Clients);
+                }
+                else
+                {
+                    await _unsentMessagesRedisService.Save(packageMessage);
+                    
+                    if(package.Index == package.Total - 1)
+                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
+                }
+                await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
             }
         }
 
@@ -177,36 +214,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             }
             catch (Exception e)
             {
-                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
-            }
-        }
-
-        public async Task DispatchData(Package package, string receiver, string sender)
-        {
-            try
-            {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == receiver))
-                {
-                    await Clients.Group(receiver).SendAsync("ReceiveData", package, sender, receiver);
-                }
-                else
-                {
-                    var packageMessage = new Message
-                    {
-                        Sender = sender,
-                        TargetGroup = receiver,
-                        Package = package
-                    };
-                    await _unsentMessagesRedisService.Save(packageMessage);
-                    
-                    if(package.Index == package.Total - 1)
-                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
-                }
-                await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
+                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(OnDataTranferSuccess)}: could not dispatch a data: {e.Message}");
             }
         }
         

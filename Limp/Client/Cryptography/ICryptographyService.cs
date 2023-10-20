@@ -1,5 +1,4 @@
 ﻿using Limp.Client.Cryptography.CryptoHandlers;
-using LimpShared.Encryption;
 using LimpShared.Models.Message;
 
 namespace Limp.Client.Cryptography
@@ -10,6 +9,5 @@ namespace Limp.Client.Cryptography
         Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler;
         Task GenerateAESKeyAsync(string contactName, Action<string> callback);
         Task GenerateRSAKeyPairAsync();
-        void SetAESKey(string contactName, Key key);
     }
 }

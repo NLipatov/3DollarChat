@@ -1,5 +1,4 @@
 ﻿using LimpShared.Models.Message;
-using System.Text.Json;
 using LimpShared.Models.Message.DataTransfer;
 
 namespace Limp.Client.ClientOnlyModels

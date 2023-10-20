@@ -1,16 +1,12 @@
 ﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks.Stages;
 @using Limp.Client.Services;
-@using Limp.Client.Services.HubConnectionProvider.ConnectionStates;
-@using Limp.Client.Services.HubConnectionProvider.Implementation;
-@using Limp.Client.Services.HubConnectionProvider;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Limp.Client.Services.JWTReader;
 @inject IJSRuntime _jS
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
 @inject IAuthService _authService
-@inject IHubConnectionProvider _hubConnectionProvider
 
 @if(_authenticationState == AuthenticationState.TokenActualisation)
 {
@@ -37,7 +33,6 @@ else
     [Parameter] 
     public RenderFragment? UnauthenticatedContent { get; set; }
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
-    private HubConnectionProviderState _connectionState => _hubConnectionProvider.GetConnectionState();
 
     protected override async Task OnInitializedAsync()
     {

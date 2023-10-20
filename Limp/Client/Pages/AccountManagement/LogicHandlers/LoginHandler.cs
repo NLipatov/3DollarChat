@@ -1,7 +1,5 @@
-﻿using Limp.Client.Services.HubConnectionProvider;
-using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
-using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
@@ -27,9 +25,7 @@ namespace Limp.Client.Pages.AccountManagement.LogicHandlers
         public LoginHandler
             (IJSRuntime jSRuntime,
             IAuthService authService,
-            IUsersService usersService,
             IHubServiceSubscriptionManager hubServiceSubscriptionManager,
-            IHubConnectionProvider hubConnectionProvider,
             IUserAgentService userAgentService)
         {
             _jSRuntime = jSRuntime;

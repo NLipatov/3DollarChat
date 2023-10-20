@@ -10,7 +10,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         Task SendMessage(Message message);
         Task NegotiateOnAESAsync(string partnerUsername);
         Task SendData(List<DataFile> files, string targetGroup);
+        Task SendData(Guid fileId, string targetGroup);
         Task SendText(string text, string targetGroup, string myUsername);
+        Task RequestPartnerToDeleteConvertation(string targetGroup);
         Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
     }
 }

@@ -1,10 +1,15 @@
 ﻿using Limp.Client.ClientOnlyModels;
+using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.InboxService
 {
     public interface IMessageBox
     {
         public List<ClientMessage> Messages { get; }
+
+        void Delete(string targetGroup);
+        
+        void Delete(Message message);
 
         /// <summary>
         /// Adds message to message box

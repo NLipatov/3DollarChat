@@ -140,6 +140,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
             {
+                Console.WriteLine($"package registered: {packageIndex}");
                 _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
                 
                 SendedFileIdPackages.TryGetValue(fileId, out var sendedFilePackages);
@@ -201,6 +202,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     }
                     else if (message.Type == MessageType.DataPackage)
                     {
+                        Console.WriteLine($"Received package: {message.Package?.Index}");
                         var packagesExist = ReceivedFileIdToPackages.ContainsKey(message.Package.FileDataid);
                         if (!packagesExist)
                         {
@@ -300,7 +302,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             hubConnection.On<Guid>("OnFileTransfered", fileId =>
             {
+                SendedFileIdPackages.TryRemove(fileId, out _);
                 _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnFileReceived");
+            });
+
+            hubConnection.On<string>("OnConvertationDeleteRequest", partnerName =>
+            {
+                _messageBox.Delete(partnerName);
             });
         }
 
@@ -420,18 +428,49 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("Dispatch", message);
         }
-        
+
+        public async Task SendData(Guid Id, string target)
+        {
+            SendedFileIdPackages.TryGetValue(Id, out var unreceivedPackages);
+            var tasks = new List<Task>();
+
+            foreach (var package in unreceivedPackages)
+            {
+                var message = new Message()
+                {
+                    Id = Id,
+                    Package = package,
+                    Sender = myName,
+                    TargetGroup = target,
+                    Type = MessageType.DataPackage
+                };
+                var task = Task.Run(async () =>
+                {
+                    var connection = new HubConnectionBuilder()
+                        .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
+                        .AddMessagePackProtocol()
+                        .Build();
+                    await connection.StartAsync();
+                    await connection.SendAsync("Dispatch", message);
+                    Console.WriteLine($"Sended package: {message.Package.Index}");
+                    await connection.StopAsync();
+                    await connection.DisposeAsync();
+                });
+                tasks.Add(task);
+            }
+        }
+
         public async Task SendData(List<DataFile> files, string targetGroup)
         {
             hubConnection = await GetHubConnectionAsync();
             
             try
             {
-                var myUsername = TokenReader.GetUsernameFromAccessToken(await JWTHelper.GetAccessTokenAsync(_jSRuntime));
                 var tasks = new List<Task>();
 
                 foreach (var file in files)
                 {
+                    await AddDataToMessageBox(targetGroup, files);
                     SendedFileIdPackages.TryAdd(file.Id, file.Packages);
                     foreach (var package in file.Packages)
                     {
@@ -443,13 +482,24 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                             TargetGroup = targetGroup,
                             Type = MessageType.DataPackage
                         };
-                        var task = hubConnection.SendAsync("Dispatch", message);
+                        var task = Task.Run(async () =>
+                        {
+                            var connection = new HubConnectionBuilder()
+                                .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
+                                .AddMessagePackProtocol()
+                                .Build();
+                            
+                            await connection.StartAsync();
+                            await connection.SendAsync("Dispatch", message);
+                            Console.WriteLine($"Sended package: {message.Package.Index}");
+                            await connection.StopAsync();
+                            await connection.DisposeAsync();
+                        });
                         tasks.Add(task);
                     }
                 }
 
                 await Task.WhenAll(tasks);
-                await AddDataToMessageBox(targetGroup, files);
             }
             catch (Exception e)
             {
@@ -479,7 +529,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             await SendMessage(messageToSend);
         }
-        
+
+        public async Task RequestPartnerToDeleteConvertation(string targetGroup)
+        {
+            await GetHubConnectionAsync();
+            await hubConnection!.SendAsync("DeleteConversation", myName, targetGroup);
+        }
+
         public async Task AddDataToMessageBox(string targetGroup, List<DataFile> files)
         {
             var dataMessages = files.Select(x => new ClientMessage()

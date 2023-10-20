@@ -23,6 +23,12 @@
             {
                 <img style="max-width: 100%;" src="@DataUrl"/>
             }
+            else if (!string.IsNullOrWhiteSpace(DataUrl) && message.Packages.First().ContentType.Contains("video"))
+            {
+                <video controls="controls" style="max-width: 100%;">
+                    <source src="@DataUrl" type="video/mp4">
+                </video>
+            }
             else if (!string.IsNullOrWhiteSpace(DataUrl))
             {
                 <div>
@@ -31,7 +37,7 @@
                         download="@message.Packages.First().FileName"
                        style="text-decoration: none;">
                     <i class="bi bi-cloud-download-fill"></i>
-                    <span>Download</span>
+                    <span>@message.Packages.First().FileName</span>
                 </a>
                 </div>
             }
@@ -41,7 +47,7 @@
                 <span>@(message.PlainText)</span>
             }
         </div>
-        <div class="timestamp">
+        <div class="message-footer">
             <span>@message.DateSent.ToLocalTime().ToString("HH:mm")</span>
             @if (message.Sender == myUsername)
             {
@@ -89,6 +95,12 @@
                         }
                     }
                 }
+            }
+            @if (message.Packages.Any())
+            {
+                <span @onclick="() => _messageBox.Delete(message)">
+                    <Icon Name="IconName.TrashFill" Style="color: red;"></Icon>
+                </span>
             }
         </div>
     </div>
@@ -153,7 +165,10 @@
             if (message?.Id != messageId)
                 return;
             
-            chunksLoaded = chunksLoaded + 1;
+            if (chunksLoaded + 1 > message.Packages.Count)
+                return;
+            
+            chunksLoaded += 1;
             StateHasChanged();
         }, "OnChunkLoaded", componentId);
     }

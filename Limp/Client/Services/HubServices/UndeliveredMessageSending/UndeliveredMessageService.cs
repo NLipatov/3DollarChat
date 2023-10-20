@@ -89,16 +89,23 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
                 throw new ArgumentException($"Message was not well formed." +
                     $" {nameof(message.TargetGroup)} and {nameof(message.Sender)} are required properties.");
 
-            Key? AESKey = await _browserKeyStorage.GetAESKeyForChat(message.TargetGroup);
-            if (AESKey != null)
+            if (message.Type is MessageType.TextMessage)
             {
-                Message toBeSend = await _messageBuilder.BuildMessageToBeSend
-                        (message.PlainText ?? string.Empty,
+                Key? AESKey = await _browserKeyStorage.GetAESKeyForChat(message.TargetGroup);
+                if (AESKey != null)
+                {
+                    Message toBeSend = await _messageBuilder.BuildMessageToBeSend
+                    (message.PlainText ?? string.Empty,
                         message.TargetGroup,
                         message.Sender,
                         message.Id);
 
-                await _messageService.SendMessage(toBeSend);
+                    await _messageService.SendMessage(toBeSend);
+                }
+            }
+            else if (message.Type is MessageType.DataPackage)
+            {
+                await _messageService.SendData(message.Id, message.TargetGroup);
             }
         }
 

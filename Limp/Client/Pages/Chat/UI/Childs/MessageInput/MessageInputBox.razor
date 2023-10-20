@@ -17,9 +17,36 @@
 
 <div class="message-input-box" @onkeydown="((e)=> OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput" />
-    <InputFile @key="FileInputId" OnChange="OnFileInput" multiple/>
+    
+    <label for="fileinput" class="label-wrapper" style="align-items: center;">
+        <span class="bi bi-paperclip"></span>
+        <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
+        @if (DataFiles.Any())
+        {
+            @foreach (var file in DataFiles)
+            {
+                <span title=@file.Packages.First().FileName style="    
+                        overflow: hidden;
+                        max-width: 10vw;
+                        white-space: nowrap;
+                        text-overflow: ellipsis;">
+                    @file.Packages.First().FileName
+                </span>
+            }
+        }
+    </label>
+    
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
+
+<Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">
+    <BodyTemplate>
+        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes/1024000)) MB.
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="(async ()=> await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
+    </FooterTemplate>
+</Modal>
 
 @code {
     [Parameter]
@@ -29,6 +56,8 @@
     private string MessageInput { get; set; } = string.Empty;
     private List<DataFile> DataFiles { get; set; } = new();
     public Guid FileInputId = Guid.NewGuid();
+    private Modal MaxFileSizeRestrictionModal = default!;
+    private const int MaxFileSizeBytes = 5242880;
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
@@ -40,6 +69,13 @@
     {
         foreach (var file in e.GetMultipleFiles())
         {
+            if (file.Size > MaxFileSizeBytes)
+            {
+                await MaxFileSizeRestrictionModal.ShowAsync();
+                FileInputId = Guid.NewGuid();
+                return;
+            }
+            
             var dfId = Guid.NewGuid();
             DataFiles.Add(new DataFile()
             {

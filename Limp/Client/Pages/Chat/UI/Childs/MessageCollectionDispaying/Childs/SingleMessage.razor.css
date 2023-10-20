@@ -27,7 +27,10 @@
     overflow-wrap: break-word;
 }
 
-.timestamp {
+.message-footer {
+    display: flex;
+    gap: 5px;
+    padding-left: 8px;
     margin: 4px 8px;
     font-size: 12px;
     line-height: 16px;

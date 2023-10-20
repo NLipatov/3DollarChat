@@ -140,6 +140,8 @@ namespace Limp.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
+            if(message.Type == MessageType.DataPackage)
+                Console.WriteLine(message.Package.Index);
             try
             {
                 if (string.IsNullOrWhiteSpace(message.Sender))
@@ -154,7 +156,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 }
                 else if (message.Type is MessageType.DataPackage)
                 {
-                    await Clients.Caller.SendAsync("PackageRegisteredByHub", message.Package.FileDataid, message.Package.Index);
+                    await Clients.Group(message.Sender).SendAsync("PackageRegisteredByHub", message.Package.FileDataid, message.Package.Index);
                 }
 
                 //Save message in redis to send it later, or send it now if user is online
@@ -201,6 +203,11 @@ namespace Limp.Server.Hubs.MessageDispatcher
             {
                 throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
             }
+        }
+
+        public async Task DeleteConversation(string requester, string acceptor)
+        {
+            await Clients.Group(acceptor).SendAsync("OnConvertationDeleteRequest", requester);
         }
 
         public async Task OnDataTranferSuccess(Guid fileId, string fileSender)

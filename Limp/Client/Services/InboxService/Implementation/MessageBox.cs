@@ -30,6 +30,19 @@ namespace Limp.Client.Services.InboxService.Implementation
             Messages.AddRange(undeliveredMessages);
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
+
+        public void Delete(string targetGroup)
+        {
+            Messages.RemoveAll(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+        }
+
+        public void Delete(Message message)
+        {
+            Messages.RemoveAll(x=>x.Id == message.Id);
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+        }
+
         public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {
             if (isEncrypted)

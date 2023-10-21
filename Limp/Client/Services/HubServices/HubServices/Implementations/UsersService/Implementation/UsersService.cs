@@ -219,11 +219,5 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("CheckIfUserExist", username);
         }
-
-        public async Task DisconnectAsync()
-        {
-            if (HubConnectionInstance is not null)
-                await HubConnectionInstance.StopAsync();
-        }
     }
 }

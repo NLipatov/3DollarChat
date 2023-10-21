@@ -2,11 +2,15 @@
 @using Limp.Client.Pages.AuthenticationChecks.Stages;
 @using Limp.Client.Services;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.JWTReader;
 @inject IJSRuntime _jS
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
 @inject IAuthService _authService
+@inject IMessageService MessageService
+@inject IUsersService UsersService
 
 @if(_authenticationState == AuthenticationState.TokenActualisation)
 {
@@ -58,8 +62,12 @@ else
 
     private async Task DecideOnToken(bool isAccessTokenValid)
     {
-        if(isAccessTokenValid)
+        if (isAccessTokenValid)
+        {
             _authenticationState = AuthenticationState.Authenticated;
+            await MessageService.GetHubConnectionAsync();
+            await UsersService.GetHubConnectionAsync();
+        }
         else
         {
             _authenticationState = AuthenticationState.NotAuthenticated;

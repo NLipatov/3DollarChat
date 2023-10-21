@@ -103,10 +103,6 @@ namespace Limp.Client.Services.HubServices.UndeliveredMessageSending
                     await _messageService.SendMessage(toBeSend);
                 }
             }
-            else if (message.Type is MessageType.DataPackage)
-            {
-                await _messageService.SendData(message.Id, message.TargetGroup);
-            }
         }
 
         public void Dispose()

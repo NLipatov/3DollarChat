@@ -102,17 +102,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             });
         }
 
-        public async Task DisconnectAsync()
-        {
-            if (HubConnectionInstance != null)
-            {
-                if (HubConnectionInstance.State != HubConnectionState.Disconnected)
-                {
-                    await HubConnectionInstance.StopAsync();
-                }
-            }
-        }
-
         public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
         {
             var hubConnection = await GetHubConnectionAsync();

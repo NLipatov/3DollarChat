@@ -407,12 +407,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             });
         }
 
-        public async Task DisconnectAsync()
-        {
-            if (hubConnection is not null)
-                await hubConnection.StopAsync();
-        }
-
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
             if (hubConnection?.State is not HubConnectionState.Connected)
@@ -430,7 +424,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task ReconnectAsync()
         {
-            await DisconnectAsync();
+            if (hubConnection is not null)
+            {
+                await hubConnection.StopAsync();
+                await hubConnection.DisposeAsync();
+            }
             await GetHubConnectionAsync();
         }
 
@@ -440,42 +438,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             await hubConnection.SendAsync("Dispatch", message);
         }
 
-        public async Task SendData(Guid Id, string target)
-        {
-            SendedFileIdPackages.TryGetValue(Id, out var unreceivedPackages);
-
-            Parallel.For(0, unreceivedPackages.Count, async i =>
-            {
-                var package = unreceivedPackages[i];
-                var message = new Message()
-                {
-                    Id = Id,
-                    Package = package,
-                    Sender = myName,
-                    TargetGroup = target,
-                    Type = MessageType.DataPackage
-                };
-                var connection = new HubConnectionBuilder()
-                    .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
-                    .AddMessagePackProtocol()
-                    .Build();
-
-                await connection.StartAsync();
-                await connection.SendAsync("Dispatch", message);
-                Console.WriteLine($"Sent package: {message.Package.Index}");
-                await connection.StopAsync();
-                await connection.DisposeAsync();
-            });
-        }
-
         public async Task SendData(List<DataFile> files, string targetGroup)
         {
             hubConnection = await GetHubConnectionAsync();
 
             try
             {
-                var tasks = new List<Task>();
-
                 await AddDataToMessageBox(targetGroup, files);
                 foreach (var file in files)
                 {
@@ -483,30 +451,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
                     Parallel.For(0, file.Packages.Count, async i =>
                     {
-                        var package = file.Packages[i];
-                        var message = new Message()
-                        {
-                            Id = file.Id,
-                            Package = package,
-                            Sender = myName,
-                            TargetGroup = targetGroup,
-                            Type = MessageType.DataPackage
-                        };
-
-                        var connection = new HubConnectionBuilder()
-                            .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
-                            .AddMessagePackProtocol()
-                            .Build();
-
-                        await connection.StartAsync();
-                        await connection.SendAsync("Dispatch", message);
-                        Console.WriteLine($"Sent package: {message.Package.Index}");
-                        await connection.StopAsync();
-                        await connection.DisposeAsync();
+                        await SendPackageMessage(i, file, targetGroup);
                     });
                 }
-
-                await Task.WhenAll(tasks);
             }
             catch (Exception e)
             {
@@ -514,6 +461,40 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             }
         }
 
+        private async Task SendPackageMessage(int i, DataFile file, string targetGroup)
+        {
+            SendedFileIdPackages.TryGetValue(file.Id, out var packages);
+
+            if (packages is null || packages.All(x => x.Index != i))
+            {
+                return;
+            }
+            
+            var package = file.Packages[i];
+            var message = new Message()
+            {
+                Id = file.Id,
+                Package = package,
+                Sender = myName,
+                TargetGroup = targetGroup,
+                Type = MessageType.DataPackage
+            };
+
+            var connection = new HubConnectionBuilder()
+                .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
+                .AddMessagePackProtocol()
+                .Build();
+
+            await connection.StartAsync();
+            await connection.SendAsync("Dispatch", message);
+            Console.WriteLine($"Sent package: {message.Package.Index}");
+            await connection.StopAsync();
+            await connection.DisposeAsync();
+
+            await Task.Delay(1000);
+
+            await SendPackageMessage(i, file, targetGroup);
+        }
 
         public async Task SendText(string text, string targetGroup, string myUsername)
         {

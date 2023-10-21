@@ -100,7 +100,8 @@
         
         if (DataFiles.Any())
         {
-            await _messageService.SendData(DataFiles, TopicName);
+            var dataFilesCopy = new List<DataFile>(DataFiles);
+            Task.Run(()=> _messageService.SendData(dataFilesCopy, TopicName));
             FileInputId = Guid.NewGuid();
         }
         

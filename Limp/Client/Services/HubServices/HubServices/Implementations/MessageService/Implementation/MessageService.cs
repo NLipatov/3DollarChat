@@ -349,7 +349,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             string partnersUsername,
             string partnersPublicKey)
         {
-            await cryptographyService.GenerateAESKeyAsync(partnersUsername, async (aesKeyForConversation) =>
+            await cryptographyService.GenerateAesKeyAsync(partnersUsername, async (aesKeyForConversation) =>
             {
                 if (hubConnection?.State is not HubConnectionState.Connected)
                 {

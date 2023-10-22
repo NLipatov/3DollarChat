@@ -53,13 +53,13 @@ namespace Limp.Client.Cryptography
                 KeysGeneratedHandler.CallOnKeysGenerated();
         }
 
-        public async Task GenerateRSAKeyPairAsync()
+        public async Task GenerateRsaKeyPairAsync()
         {
             if (InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
 
-        public async Task GenerateAESKeyAsync(string contact, Action<string> callback)
+        public async Task GenerateAesKeyAsync(string contact, Action<string> callback)
         {
             OnAESGeneratedCallback = callback;
             await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);

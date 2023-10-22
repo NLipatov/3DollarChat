@@ -1,25 +1,24 @@
 ﻿@using Limp.Client.ClientOnlyModels;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying.Childs
-@using Limp.Client.Services.UndeliveredMessagesStore;
+@using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using LimpShared.Models.Message;
 @using Ljbc1994.Blazor.IntersectionObserver.Components
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
-@inject IUndeliveredMessagesRepository _undeliveredMessagesRepository
-@inject IUndeliveredMessageService _undeliveredMessageService
+@inject IMessageService _messageService
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize Items="_messageBox.Messages.Where(x=>x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()" Context="message">
-        <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage" />
+    <Virtualize Items="_messageBox.Messages.Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()" Context="message">
+        <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage"/>
     </Virtualize>
 </div>
 
 @code {
+
     [Parameter]
     public string targetGroup { get; set; } = string.Empty;
 
@@ -29,6 +28,7 @@
     private Guid ComponentId { get; set; }
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
     protected override async Task OnInitializedAsync()
     {
         ComponentId = Guid.NewGuid();
@@ -37,7 +37,7 @@
 
     private async Task ResendMessage(ClientMessage message)
     {
-        await _undeliveredMessageService.SendUndelivered(message);
+        await _messageService.SendMessage(message);
     }
 
     private void SubscribeToHubEvents()
@@ -70,10 +70,11 @@
 
     private async Task ScrollToLastMessage()
     {
-        string jsCode = 
-        @"var messagesBox = document.querySelector('.messages-box');
+        string jsCode =
+            @"var messagesBox = document.querySelector('.messages-box');
         messagesBox.scrollTop = messagesBox.scrollHeight;";
 
         await _jSRuntime.InvokeVoidAsync("eval", jsCode);
     }
+
 }

@@ -1,7 +1,6 @@
 ﻿using Limp.Client.ClientOnlyModels;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Models.Message;
 
 namespace Limp.Client.Services.InboxService.Implementation
@@ -10,25 +9,15 @@ namespace Limp.Client.Services.InboxService.Implementation
     {
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly ICallbackExecutor _callbackExecutor;
-        private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
 
         public List<ClientMessage> Messages { get; private set; } = new();
+
         public MessageBox
         (IMessageDecryptor messageDecryptor,
-        ICallbackExecutor callbackExecutor,
-        IUndeliveredMessagesRepository undeliveredMessagesRepository)
+            ICallbackExecutor callbackExecutor)
         {
             _messageDecryptor = messageDecryptor;
             _callbackExecutor = callbackExecutor;
-            _undeliveredMessagesRepository = undeliveredMessagesRepository;
-
-            _ = AddUndeliveredMessagesFromLocalStorageAsync();
-        }
-        private async Task AddUndeliveredMessagesFromLocalStorageAsync()
-        {
-            var undeliveredMessages = await _undeliveredMessagesRepository.GetUndeliveredAsync();
-            Messages.AddRange(undeliveredMessages);
-            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
         public void Delete(string targetGroup)
@@ -39,7 +28,7 @@ namespace Limp.Client.Services.InboxService.Implementation
 
         public void Delete(Message message)
         {
-            Messages.RemoveAll(x=>x.Id == message.Id);
+            Messages.RemoveAll(x => x.Id == message.Id);
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
@@ -75,8 +64,6 @@ namespace Limp.Client.Services.InboxService.Implementation
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
                 message.IsDelivered = true;
-
-            await _undeliveredMessagesRepository.DeleteAsync(messageId);
         }
 
         public async Task OnRegistered(Guid messageId)
@@ -84,8 +71,6 @@ namespace Limp.Client.Services.InboxService.Implementation
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
                 message.IsRegisteredByHub = true;
-
-            await _undeliveredMessagesRepository.DeleteAsync(messageId);
         }
 
         public void OnToastWasShown(Guid messageId)

@@ -13,7 +13,6 @@ using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.JWTReader;
-using Limp.Client.Services.UndeliveredMessagesStore;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
@@ -33,7 +32,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
-        private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
         private readonly IMessageBuilder _messageBuilder;
         private readonly IBrowserKeyStorage _browserKeyStorage;
         private readonly IMessageDecryptor _messageDecryptor;
@@ -52,7 +50,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             IAESOfferHandler aESOfferHandler,
             IUsersService usersService,
             ICallbackExecutor callbackExecutor,
-            IUndeliveredMessagesRepository undeliveredMessagesRepository,
             IMessageBuilder messageBuilder,
             IBrowserKeyStorage browserKeyStorage,
             IMessageDecryptor messageDecryptor)
@@ -64,7 +61,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             _aESOfferHandler = aESOfferHandler;
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
-            _undeliveredMessagesRepository = undeliveredMessagesRepository;
             _messageBuilder = messageBuilder;
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
@@ -429,13 +425,24 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await hubConnection.StopAsync();
                 await hubConnection.DisposeAsync();
             }
+
             await GetHubConnectionAsync();
         }
 
-        public async Task SendMessage(Message message)
+        public async Task SendMessage(ClientMessage message)
         {
             hubConnection = await GetHubConnectionAsync();
-            await hubConnection.SendAsync("Dispatch", message);
+            switch (message.Type)
+            {
+                case MessageType.TextMessage:
+                    await SendText(message.PlainText, message.TargetGroup, myName);
+                    break;
+                case MessageType.DataPackage:
+                    await SendData(message.Files, message.TargetGroup);
+                    break;
+                default:
+                    throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
+            }
         }
 
         public async Task SendData(List<DataFile> files, string targetGroup)
@@ -449,10 +456,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 {
                     SendedFileIdPackages.TryAdd(file.Id, file.Packages);
 
-                    Parallel.For(0, file.Packages.Count, async i =>
-                    {
-                        await SendPackageMessage(i, file, targetGroup);
-                    });
+                    Parallel.For(0, file.Packages.Count,
+                        async i => { await SendPackageMessage(i, file, targetGroup); });
                 }
             }
             catch (Exception e)
@@ -469,7 +474,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             {
                 return;
             }
-            
+
             var package = file.Packages[i];
             var message = new Message()
             {
@@ -502,8 +507,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             Message messageToSend =
                 await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
 
-            await AddAsUnreceived(text, targetGroup, myUsername, messageId);
-
             await AddToMessageBox(text, targetGroup, myUsername, messageId);
 
             if (hubConnection?.State is not HubConnectionState.Connected)
@@ -516,7 +519,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 return;
             }
 
-            await SendMessage(messageToSend);
+            await hubConnection.SendAsync("Dispatch", messageToSend);
         }
 
         public async Task RequestPartnerToDeleteConvertation(string targetGroup)
@@ -551,36 +554,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     DateSent = DateTime.UtcNow
                 },
                 isEncrypted: false);
-        }
-
-        private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId)
-        {
-            await _undeliveredMessagesRepository.AddAsync(new ClientMessage
-            {
-                Id = messageId,
-                Sender = myUsername,
-                TargetGroup = targetGroup,
-                PlainText = text,
-                DateSent = DateTime.UtcNow
-            });
-        }
-
-        private async Task AddAsUnreceived(string text, string targetGroup, string myUsername, Guid messageId,
-            List<DataFile> files)
-        {
-            foreach (var f in files)
-            {
-                await _undeliveredMessagesRepository.AddAsync(new ClientMessage
-                {
-                    Id = messageId,
-                    Sender = myUsername,
-                    TargetGroup = targetGroup,
-                    Packages = f.Packages,
-                    DateSent = DateTime.UtcNow
-                });
-            }
-
-            await AddAsUnreceived(text, targetGroup, myUsername, messageId);
         }
 
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)

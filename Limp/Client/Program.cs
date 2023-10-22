@@ -21,15 +21,12 @@ using Limp.Client.Services.HubServices.HubServices.Implementations.MessageServic
 using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation;
-using Limp.Client.Services.HubServices.UndeliveredMessageSending;
 using Limp.Client.Services.InboxService;
 using Limp.Client.Services.InboxService.Implementation;
 using Limp.Client.Services.LocalKeyChainService.Implementation;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService;
 using Limp.Client.Services.NotificationService.Implementation;
-using Limp.Client.Services.UndeliveredMessagesStore;
-using Limp.Client.Services.UndeliveredMessagesStore.Implementation;
 using Limp.Client.Services.UserAgent.Implementation;
 using Limp.Client.Services.UserAgentService;
 using Ljbc1994.Blazor.IntersectionObserver;
@@ -55,11 +52,9 @@ builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscrip
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
 builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
 builder.Services.AddTransient<IBrowserKeyStorage, BrowserKeyStorage>();
-builder.Services.AddTransient<IUndeliveredMessagesRepository, UndeliveredMessagesRepository>();
-builder.Services.AddTransient<IUndeliveredMessageService, UndeliveredMessageService>();
 builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
-builder.Services.AddTransient<ILocalStorageService,  LocalStorageService>();
+builder.Services.AddTransient<ILocalStorageService, LocalStorageService>();
 builder.Services.AddTransient<IUserAgentService, UserAgentService>();
 builder.Services.AddTransient<IPackageFormerService, PackageFormerService>();
 builder.Services.AddBlazoredToast();

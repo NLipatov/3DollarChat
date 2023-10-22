@@ -377,7 +377,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     .EncryptAsync<RSAHandler>
                     (new Cryptogramm { Cyphertext = offeredAESKeyForConversation },
                         //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                        PublicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
+                        publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
 
                 if (string.IsNullOrWhiteSpace(encryptedAESKey))
                     throw new ApplicationException("Could not encrypt a AES Key, got empty string.");

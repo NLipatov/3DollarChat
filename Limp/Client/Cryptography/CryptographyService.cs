@@ -9,7 +9,7 @@ namespace Limp.Client.Cryptography
     public class CryptographyService : ICryptographyService
     {
         private readonly IJSRuntime _jSRuntime;
-        private static Action<string>? OnAESGeneratedCallback { get; set; }
+        private static Action<string>? OnAesGeneratedCallback { get; set; }
 
         public CryptographyService(IJSRuntime jSRuntime)
         {
@@ -38,10 +38,12 @@ namespace Limp.Client.Cryptography
                     break;
                 case (KeyType.Aes):
                     InMemoryKeyStorage.AESKeyStorage.TryAdd(contact!, cryptoKey);
-                    if (OnAESGeneratedCallback != null)
+                    if (OnAesGeneratedCallback != null)
                     {
-                        OnAESGeneratedCallback(cryptoKey.Value.ToString());
-                        OnAESGeneratedCallback = null;
+                        OnAesGeneratedCallback(cryptoKey.Value.ToString() 
+                                               ?? throw new ArgumentException
+                                                   ("Cryptography key was not well formed."));
+                        OnAesGeneratedCallback = null;
                     }
 
                     break;
@@ -61,28 +63,28 @@ namespace Limp.Client.Cryptography
 
         public async Task GenerateAesKeyAsync(string contact, Action<string> callback)
         {
-            OnAESGeneratedCallback = callback;
+            OnAesGeneratedCallback = callback;
             await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);
         }
 
-        public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null)
             where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Decrypt(cryptogramm, contact);
+            return await cryptoHandler.Decrypt(cryptogram, contact);
         }
 
-        public async Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogramm, string? contact = null,
-            string? PublicKeyToEncryptWith = null) where T : ICryptoHandler
+        public async Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogram, string? contact = null,
+            string? publicKeyToEncryptWith = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(cryptogramm, contact, PublicKeyToEncryptWith);
+            return await cryptoHandler.Encrypt(cryptogram, contact, publicKeyToEncryptWith);
         }
     }
 }

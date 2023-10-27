@@ -100,6 +100,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
             });
+
+            HubConnectionInstance.On<string>("AuthorisationServerAddressResolved", result =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnAuthorisationServerAddressResponse");
+            });
         }
 
         public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
@@ -191,6 +196,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
 
             await hubConnection.SendAsync("GetTokenRefreshHistory", accessToken);
+        }
+
+        public async Task GetAuthorisationServerAddress()
+        {
+            var hubConnection = await GetHubConnectionAsync();
+
+            await hubConnection.SendAsync("GetAuthorisationServerAddress");
         }
     }
 }

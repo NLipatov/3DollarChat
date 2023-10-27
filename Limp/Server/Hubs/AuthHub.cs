@@ -47,5 +47,11 @@ namespace Limp.Server.Hubs
 
             await Clients.Caller.SendAsync("OnTokensRefresh", result);
         }
+
+        public async Task GetAuthorisationServerAddress()
+        {
+            var address = await _serverHttpClient.GetServerAddress();
+            await Clients.Caller.SendAsync("AuthorisationServerAddressResolved", address);
+        }
     }
 }

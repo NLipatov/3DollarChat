@@ -21,12 +21,10 @@
 
   <ItemGroup>
     <None Remove="Pages\AuthenticationChecks\UnAuthorized.razor.css" />
-    <None Remove="Pages\WebAuthn\authentication.razor.js" />
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="Pages\AuthenticationChecks\UnAuthorized.razor.css" />
-    <Content Include="Pages\WebAuthn\Authentication.razor.js" />
   </ItemGroup>
 
   <ItemGroup>

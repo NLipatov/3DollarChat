@@ -8,5 +8,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback);
         Task LogIn(UserAuthentication userAuthentication);
         Task GetRefreshTokenHistory();
+        Task GetAuthorisationServerAddress();
     }
 }

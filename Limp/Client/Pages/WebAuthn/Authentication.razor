@@ -1,84 +1,123 @@
-﻿@page "/authentication"
+﻿@page "/signin/webauth"
+@using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using LimpShared.Models.ConnectedUsersManaging
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
 @inject IJSRuntime js;
+@inject IAuthService authService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
-<div class="section">
-    <div class="container">
-        <h1 class="title is-1">Scenario: Passwordless</h1>
-        <div class="content">
-            <p>In this scenario we have removed the need for passwords. The WebAuthn flow is exactly the same as for MFA, but for security reasons we could require userVerification (this is optional).</p>
-            <p>Note: When we say passwordless, what we mean is that no password is sent over the internet or stored in a database. Password, PINs or Biometrics might be used by the authenticator on the client</p>
-        </div>
-        <div class="notification is-danger" style="display:none">
-            Please note: Your browser does not seem to support WebAuthn yet. <a href="https://caniuse.com/#search=webauthn" target="_blank">Supported browsers</a>
-        </div>
-
-        <div class="columns">
-            <div class="column is-4">
-
-                <h3 class="title is-3">New user registration</h3>
-                <form action="/mfa" method="post" id="register">
-                    <div class="field">
-                        <label class="label">Username</label>
-                        <div class="control has-icons-left has-icons-right">
-                            <input class="input" type="text" placeholder="abergs" name="username" required>
-                            <span class="icon is-small is-left">
-                                <i class="fas fa-user"></i>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <label class="label">Display name</label>
-                        <div class="control has-icons-left has-icons-right">
-                            <input class="input" type="text" placeholder="Anders Åberg" name="displayName">
-                            <span class="icon is-small is-left">
-                                <i class="fas fa-user"></i>
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="field">
-                        <div class="control">
-                            <button class="button is-link">Register user</button>
-                        </div>
-                    </div>
-                </form>
+@if (string.IsNullOrWhiteSpace(AuthorisationServerAddress))
+{
+    <span>Loading</span>
+}
+else
+{
+    <div class="section">
+        <div class="container">
+            <h1 class="title is-1">Scenario: Passwordless</h1>
+            <div class="content">
+                <p>In this scenario we have removed the need for passwords. The WebAuthn flow is exactly the same as for MFA, but for security reasons we could require userVerification (this is optional).</p>
+                <p>Note: When we say passwordless, what we mean is that no password is sent over the internet or stored in a database. Password, PINs or Biometrics might be used by the authenticator on the client</p>
             </div>
-            <div class="column is-2"></div>
-            <div class="column is-4">
+            <div class="notification is-danger" style="display:none">
+                Please note: Your browser does not seem to support WebAuthn yet. <a href="https://caniuse.com/#search=webauthn" target="_blank">Supported browsers</a>
+            </div>
 
-                <h3 class="title is-3">Sign in</h3>
-                <form action="/mfa" method="post" id="signin">
-                    <div class="field">
-                        <label class="label">Username</label>
-                        <div class="control has-icons-left has-icons-right">
-                            <input class="input" type="text" placeholder="abergs" name="username" id="login-username" required>
-                            <span class="icon is-small is-left">
-                                <i class="fas fa-user"></i>
-                            </span>
-                        </div>
-                    </div>
+            <div class="columns">
+                <div class="column is-4">
 
-                    <div class="field">
-                        <div class="control">
-                            <button class="button is-link">Sign in</button>
+                    <h3 class="title is-3">New user registration</h3>
+                    <form @onsubmit="OnRegister">
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control has-icons-left has-icons-right">
+                                <input class="input" type="text" placeholder="abergs" name="username" @bind=@Username required>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                </form>
+
+                        <div class="field">
+                            <label class="label">Display name</label>
+                            <div class="control has-icons-left has-icons-right">
+                                <input class="input" type="text" placeholder="Anders Åberg" @bind=@DisplayName name="displayName">
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-link">Register user</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="column is-2"></div>
+                <div class="column is-4">
+
+                    <h3 class="title is-3">Sign in</h3>
+                    <form action="/mfa" method="post" id="signin">
+                        <div class="field">
+                            <label class="label">Username</label>
+                            <div class="control has-icons-left has-icons-right">
+                                <input class="input" type="text" placeholder="abergs" name="username" id="login-username" required>
+                                <span class="icon is-small is-left">
+                                    <i class="fas fa-user"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="field">
+                            <div class="control">
+                                <button class="button is-link">Sign in</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </div>
-</div>
+}
 
 @code {
     private IJSObjectReference? module;
+    private Guid ComponentId { get; set; }
+    private string AuthorisationServerAddress { get; set; } = string.Empty;
+    private string Username { get; set; }
+    private string DisplayName { get; set; } = string.Empty;
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
     {
-        if (firstRender)
-        {
-            module = await js.InvokeAsync<IJSObjectReference>("import", 
-                "./Pages/WebAuthn/Authentication.razor.js");
-        }
+    //This id will be needed on dispose stage
+    //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+        SubscribeToHubEvents();
+        await authService.GetAuthorisationServerAddress();
+
+        await base.OnInitializedAsync();
     }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAuthorisationServerAddressIsResolved, "OnAuthorisationServerAddressResponse", ComponentId);
+    }
+
+    private async Task OnAuthorisationServerAddressIsResolved(string address)
+    {
+        await js.InvokeVoidAsync("setServiceAddress", address);
+        AuthorisationServerAddress = address;
+        StateHasChanged();
+    }
+
+    private async Task OnRegister()
+    {
+        await js.InvokeVoidAsync("handleRegisterSubmit", Username, DisplayName);
+    }
+
 }

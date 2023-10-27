@@ -13,6 +13,7 @@ namespace Limp.Server.Utilities.HttpMessaging
     public class ServerHttpClient : IServerHttpClient
     {
         private static IConfiguration _configuration;
+
         public ServerHttpClient(IConfiguration configuration)
         {
             _configuration = configuration;
@@ -29,7 +30,8 @@ namespace Limp.Server.Utilities.HttpMessaging
             var response = await client.PostAsync(url, content);
 
             var serializedResponse = await response.Content.ReadAsStringAsync();
-            UserAuthenticationOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserAuthenticationOperationResult>(serializedResponse);
+            UserAuthenticationOperationResult? deserializedResponse =
+                JsonSerializer.Deserialize<UserAuthenticationOperationResult>(serializedResponse);
 
             if (deserializedResponse == null)
             {
@@ -39,7 +41,9 @@ namespace Limp.Server.Utilities.HttpMessaging
             return new AuthResult
             {
                 Message = deserializedResponse.SystemMessage,
-                Result = deserializedResponse.ResultType == OperationResultType.Success ? AuthResultType.Success : AuthResultType.Fail,
+                Result = deserializedResponse.ResultType == OperationResultType.Success
+                    ? AuthResultType.Success
+                    : AuthResultType.Fail,
             };
         }
 
@@ -48,7 +52,10 @@ namespace Limp.Server.Utilities.HttpMessaging
             var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
 
             HttpClient client = new();
-            var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"], content);
+            var response =
+                await client.PostAsync(
+                    _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
+                    content);
 
             if (response.StatusCode != System.Net.HttpStatusCode.OK)
             {
@@ -72,13 +79,15 @@ namespace Limp.Server.Utilities.HttpMessaging
 
         public async Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
 
             HttpClient client = new();
 
             var response = await client.GetAsync(requestUrl);
 
-            TokenRelatedOperationResult result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
+            TokenRelatedOperationResult result =
+                JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
 
             return result;
         }
@@ -87,7 +96,8 @@ namespace Limp.Server.Utilities.HttpMessaging
         {
             var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
 
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
 
             HttpClient client = new();
 
@@ -117,13 +127,15 @@ namespace Limp.Server.Utilities.HttpMessaging
         {
             HttpClient client = new();
 
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateAccessToken"]}?accesstoken={accessToken}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateAccessToken"]}?accesstoken={accessToken}";
 
             var response = await client.GetAsync(requestUrl);
 
             var responseContent = await response.Content.ReadAsStringAsync();
 
-            TokenRelatedOperationResult? result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(responseContent);
+            TokenRelatedOperationResult? result =
+                JsonSerializer.Deserialize<TokenRelatedOperationResult>(responseContent);
 
             if (result == null)
                 return false;
@@ -133,19 +145,22 @@ namespace Limp.Server.Utilities.HttpMessaging
 
         public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
 
-            using(HttpClient client = new())
+            using (HttpClient client = new())
             {
-                await client.PostAsJsonAsync(requestUrl, new PublicKeyDto { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key});
+                await client.PostAsJsonAsync(requestUrl,
+                    new PublicKeyDto { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key });
             }
         }
 
         public async Task<string?> GetAnRSAPublicKey(string username)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
 
-        using(HttpClient client = new())
+            using (HttpClient client = new())
             {
                 var response = await client.GetAsync(requestUrl);
                 var pemEncodedKey = await response.Content.ReadAsStringAsync();
@@ -155,7 +170,8 @@ namespace Limp.Server.Utilities.HttpMessaging
 
         public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
 
             using (HttpClient client = new())
             {
@@ -165,27 +181,30 @@ namespace Limp.Server.Utilities.HttpMessaging
 
         public async Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string username)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
 
             using (HttpClient client = new())
             {
                 var response = await client.GetAsync(requestUrl);
                 var serializedSubscriptions = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<NotificationSubscriptionDto[]>(serializedSubscriptions, options: new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new NotificationSubscriptionDto[0];
+                return JsonSerializer.Deserialize<NotificationSubscriptionDto[]>(serializedSubscriptions,
+                    options: new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }) ?? new NotificationSubscriptionDto[0];
             }
         }
 
         public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
 
             using (HttpClient client = new())
             {
-                var response = await client.PatchAsJsonAsync(requestUrl,  subscriptionsToRemove);
-                if(response.StatusCode is not HttpStatusCode.OK)
+                var response = await client.PatchAsJsonAsync(requestUrl, subscriptionsToRemove);
+                if (response.StatusCode is not HttpStatusCode.OK)
                     throw new HttpRequestException($"Server did not respond with {HttpStatusCode.OK} status code.");
             }
         }
@@ -193,9 +212,9 @@ namespace Limp.Server.Utilities.HttpMessaging
         public async Task<List<AccessRefreshEventLog>> GetTokenRefreshHistory(string accessToken)
         {
             var endpointUrl = _configuration["AuthAutority:Endpoints:GetTokenRefreshHistory"];
-            
+
             var requestUrl = $"{_configuration[$"AuthAutority:Address"]}{endpointUrl}?accessToken={accessToken}";
-            
+
             using (HttpClient client = new())
             {
                 var response = await client.GetFromJsonAsync<List<AccessRefreshEventLog>>(requestUrl);
@@ -207,10 +226,20 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
+        public Task<string> GetServerAddress()
+        {
+            string authorityAddressKey = "AuthAutority:Address";
+            return Task.FromResult(_configuration[authorityAddressKey]
+                                   ??
+                                   throw new ArgumentException
+                                       ($"Could not get a value by key {authorityAddressKey} from server configuration."));
+        }
+
         public async Task<IsUserExistDto> CheckIfUserExists(string username)
         {
-            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]?.Replace("{username}", username);
-            
+            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]
+                ?.Replace("{username}", username);
+
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
 
             using (HttpClient client = new())

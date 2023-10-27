@@ -48,11 +48,9 @@
                             <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
                         </div>
 
-                        <Tooltip Class="d-inline-block" Title="Not yet available" role="button">
-                            <button disabled class="btn btn-primary btn-lg btn-block" role="button">
-                                <i class="bi bi-fingerprint"></i>Continue with WebAuthn
-                            </button>
-                        </Tooltip>
+                        <button class="btn btn-primary btn-lg btn-block" role="button" @onclick=@(() => _navigationManager.NavigateTo("signin/webauth"))>
+                            <i class="bi bi-fingerprint"></i>Continue with WebAuthn
+                        </button>
 
                         <div class="divider d-flex align-items-center my-4">
                             <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>

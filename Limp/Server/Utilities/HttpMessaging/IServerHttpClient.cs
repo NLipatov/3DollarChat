@@ -20,5 +20,6 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string accessToken);
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
         Task<List<AccessRefreshEventLog>> GetTokenRefreshHistory(string accessToken);
+        Task<string> GetServerAddress();
     }
 }

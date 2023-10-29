@@ -1,10 +1,15 @@
 ﻿"use strict";
 
+let username = "";
 let serviceAddress = "";
 
 function setServiceAddress(address){
     serviceAddress = address;
     console.log("address set: " + serviceAddress);
+}
+
+function setUsername(value){
+    username = value
 }
 
 function SetEventListeners(){
@@ -129,10 +134,8 @@ function value(selector) {
 
 //Start of section: Login
 
-async function handleSignInSubmit(event) {
-    event.preventDefault();
-
-    let username = this.username.value;
+async function handleSignInSubmit(username) {
+    setUsername(username);
 
     // prepare form post data
     var formData = new FormData();
@@ -227,7 +230,7 @@ async function verifyAssertionWithServer(assertedCredential) {
 
     let response;
     try {
-        let res = await fetch(serviceAddress + "api/WebAuthn/makeAssertion", {
+        let res = await fetch(serviceAddress + "api/WebAuthn/makeAssertion" + "/" + username, {
             method: 'POST', // or 'PUT'
             body: JSON.stringify(data), // data can be `string` or {object}!
             headers: {
@@ -363,7 +366,9 @@ async function handleRegisterSubmit(username, displayName) {
 }
 
 async function fetchMakeCredentialOptions(formData) {
-    let response = await fetch(serviceAddress + 'api/WebAuthn/makeCredentialOptions', {
+    let address = serviceAddress + 'api/WebAuthn/makeCredentialOptions';
+    
+    let response = await fetch(address, {
         method: 'POST', // or 'PUT'
         body: formData, // data can be `string` or {object}!
         headers: {

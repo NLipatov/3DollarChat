@@ -27,12 +27,14 @@
                               IsRequired="true"
                               OnInput="((value) => LoginFormModel.Username = value)" />
 
-                        <!-- Password input -->
-                        <InputBox InputText="@LoginFormModel.Password"
-                              BindEvent="oninput"
-                              IsRequired="true"
-                              Type="password"
-                              OnInput="((value) => LoginFormModel.Password = value)" />
+                        @if (!IsWebAuthnUsed)
+                        {
+                            <InputBox InputText="@LoginFormModel.Password"
+                                      BindEvent="oninput"
+                                      IsRequired="true"
+                                      Type="password"
+                                      OnInput="((value) => LoginFormModel.Password = value)" />
+                        }
 
                         <div class="d-flex justify-content-around align-items-center mb-4">
                             
@@ -44,19 +46,22 @@
                         <!-- Submit button -->
                         <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in</button>
 
-                        <div class="divider d-flex align-items-center my-4">
-                            <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
-                        </div>
+                        @if (!IsWebAuthnUsed)
+                        {
+                            <div class="divider d-flex align-items-center my-4">
+                                <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
+                            </div>
 
-                        <button class="btn btn-primary btn-lg btn-block" role="button" @onclick=@(() => _navigationManager.NavigateTo("signin/webauth"))>
-                            <i class="bi bi-fingerprint"></i>Continue with WebAuthn
-                        </button>
+                            <button class="btn btn-primary btn-lg btn-block" role="button" @onclick=@(() => _navigationManager.NavigateTo("signin/webauthn"))>
+                                <i class="bi bi-fingerprint"></i>Continue with WebAuthn
+                            </button>
 
-                        <div class="divider d-flex align-items-center my-4">
-                            <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
-                        </div>
+                            <div class="divider d-flex align-items-center my-4">
+                                <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
+                            </div>
 
-                        <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/signUp"))>Sign Up</a>
+                            <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/signUp"))>Sign Up</a>
+                        }
 
                         <div class="validation-results">
                             <DataAnnotationsValidator />
@@ -88,6 +93,9 @@ else
 
     [Parameter]
     public AuthResult LoginAttemptResult { get; set; } = new();
+
+    [Parameter]
+    public bool IsWebAuthnUsed { get; set; } = false;
 
     private LoginFormModel LoginFormModel = new();
 

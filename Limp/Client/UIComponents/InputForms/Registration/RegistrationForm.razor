@@ -26,30 +26,33 @@
                             IsRequired="true"
                             OnInput="((value) => Credentials.Username.Value = value)" />
 
-                        <RegisterFormInputBox 
-                            CheckedInput="Credentials.Password"
-                            Placeholder="Password"
-                            BindEvent="oninput"
-                            IsRequired="true"
-                            Type="password"
-                            OnInput="((value) => Credentials.Password.Value = value)" />
+                        @if (IsAuthenticationMethodRequiresPassword)
+                        {
+                            <RegisterFormInputBox 
+                                CheckedInput="Credentials.Password"
+                                Placeholder="Password"
+                                BindEvent="oninput"
+                                IsRequired="true"
+                                Type="password"
+                                OnInput="((value) => Credentials.Password.Value = value)" />
 
-                        <RegisterFormInputBox 
-                            CheckedInput="Credentials.PasswordConfirmation"
-                            Placeholder="Password confirmation"
-                            BindEvent="oninput"
-                            IsRequired="true"
-                            Type="password"
-                            OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+                            <RegisterFormInputBox 
+                                CheckedInput="Credentials.PasswordConfirmation"
+                                Placeholder="Password confirmation"
+                                BindEvent="oninput"
+                                IsRequired="true"
+                                Type="password"
+                                OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+                        }
 
                         @if (ValidateForm())
                         {
-                            <button class="btn btn-primary btn-lg btn-block">Submit</button>
+                            <button class="btn btn-primary btn-lg btn-block">Register</button>
                         }
                         else
                         {
                             <Tooltip Placement="TooltipPlacement.Right" Title="Fill in the form first">
-                                <button class="btn btn-secondary btn-lg btn-block" disabled>Submit</button>
+                                <button class="btn btn-secondary btn-lg btn-block" disabled>Register</button>
                             </Tooltip>
                         }
 
@@ -73,6 +76,9 @@
     [Parameter]
     public AuthResult RegistrationAttemptResult { get; set; } = new();
 
+    [Parameter]
+    public bool IsAuthenticationMethodRequiresPassword { get; set; } = true;
+
     private RegisterFormModel Credentials = new();
 
     private void OnRegister()
@@ -94,8 +100,15 @@
         OnRegisterEvent(authenticationData);
     }
 
-    private bool ValidateForm() 
-    => Credentials.Username.IsValid 
-    && Credentials.Password.IsValid 
-    && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
+    private bool ValidateForm()
+    {
+        switch (IsAuthenticationMethodRequiresPassword)
+        {
+            case false:
+                return Credentials.Username.IsTouched;
+            default: return Credentials.Username.IsValid 
+                   && Credentials.Password.IsValid 
+                   && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
+        }
+    }
 }

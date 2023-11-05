@@ -1,16 +1,17 @@
 ﻿@page "/settings/accesses"
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
-@using Limp.Client.HubInteraction.Handlers.Helpers
 @using Limp.Client.Services.UserAgent.Models
 @using Limp.Client.Services.UserAgentService
 @using LimpShared.Models.Authentication.Enums
 @using LimpShared.Models.Authentication.Models
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
 @inject IAuthService _authService 
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jS
 @inject IUserAgentService _userAgentService
+@inject IAuthenticationHandler AuthenticationHandler
 @implements IDisposable
 
 <AuthenticatedView>
@@ -72,7 +73,7 @@
     protected override async Task OnInitializedAsync()
     {
         //Shortcut for cases when user was not yet authenticated
-        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessTokenAsync(_jS))) return;
+        if (string.IsNullOrWhiteSpace(await AuthenticationHandler.GetAccessCredential())) return;
 
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions

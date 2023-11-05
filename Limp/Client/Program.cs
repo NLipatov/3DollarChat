@@ -5,6 +5,10 @@ using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.A
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.AccountManagement.LogicHandlers;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+using Limp.Client.Services.AuthenticationService;
+using Limp.Client.Services.AuthenticationService.Handlers;
+using Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
+using Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.ConcurrentCollectionManager;
 using Limp.Client.Services.ConcurrentCollectionManager.Implementations;
@@ -57,6 +61,9 @@ builder.Services.AddTransient<IWebPushService, WebPushService>();
 builder.Services.AddTransient<ILocalStorageService, LocalStorageService>();
 builder.Services.AddTransient<IUserAgentService, UserAgentService>();
 builder.Services.AddTransient<IPackageFormerService, PackageFormerService>();
+builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
+builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
+builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
 builder.Services.AddBlazoredToast();
 builder.Services.AddIntersectionObserver();
 

@@ -5,21 +5,20 @@ using Limp.Client.Cryptography;
 using Limp.Client.Cryptography.CryptoHandlers.Handlers;
 using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
-using Limp.Client.HubInteraction.Handlers.Helpers;
 using Limp.Client.HubInteraction.Handlers.MessageDecryption;
 using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
-using Limp.Client.Services.JWTReader;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Types;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using LimpShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -27,7 +26,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
     {
         public NavigationManager NavigationManager { get; set; }
         private readonly IMessageBox _messageBox;
-        private readonly IJSRuntime _jSRuntime;
         private readonly ICryptographyService _cryptographyService;
         private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
@@ -35,6 +33,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IMessageBuilder _messageBuilder;
         private readonly IBrowserKeyStorage _browserKeyStorage;
         private readonly IMessageDecryptor _messageDecryptor;
+        private readonly IAuthenticationHandler _authenticationHandler;
         private string myName;
         private ConcurrentDictionary<Guid, List<Package>> ReceivedFileIdToPackages = new();
         private ConcurrentDictionary<Guid, List<Package>> SendedFileIdPackages = new();
@@ -44,7 +43,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public MessageService
         (IMessageBox messageBox,
-            IJSRuntime jSRuntime,
             NavigationManager navigationManager,
             ICryptographyService cryptographyService,
             IAESOfferHandler aESOfferHandler,
@@ -52,10 +50,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             ICallbackExecutor callbackExecutor,
             IMessageBuilder messageBuilder,
             IBrowserKeyStorage browserKeyStorage,
-            IMessageDecryptor messageDecryptor)
+            IMessageDecryptor messageDecryptor,
+            IAuthenticationHandler authenticationHandler)
         {
             _messageBox = messageBox;
-            _jSRuntime = jSRuntime;
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
             _aESOfferHandler = aESOfferHandler;
@@ -64,19 +62,20 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             _messageBuilder = messageBuilder;
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
+            _authenticationHandler = authenticationHandler;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-            if (string.IsNullOrWhiteSpace(accessToken))
+            if (!await _authenticationHandler.IsSetToUseAsync())
             {
                 NavigationManager.NavigateTo("signin");
                 return null;
             }
+            
+            string? accessToken = await _authenticationHandler.GetAccessCredential();
 
             //Loading from local storage earlier saved AES keys
             InMemoryKeyStorage.AESKeyStorage =
@@ -99,8 +98,21 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     return await GetHubConnectionAsync();
                 }
             }
-
-            await hubConnection.SendAsync("SetUsername", accessToken);
+            
+            var authenticationType = await _authenticationHandler.GetAuthenticationTypeAsync();
+            if (authenticationType is AuthenticationType.WebAuthn)
+            {
+                await hubConnection.SendAsync("SetUsername", null, await _authenticationHandler.GetCredentials());
+            }
+            else if (authenticationType is AuthenticationType.JwtToken)
+            {
+                await hubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentials(), null);
+            }
+            else
+            {
+                throw new ArgumentException("Could not define used authentication mechanism.");
+            }
+            
 
             hubConnection.Closed += OnConnectionLost;
 
@@ -290,8 +302,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             hubConnection.On<string>("OnMyNameResolve", async username =>
             {
                 myName = username;
-                string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-                if (string.IsNullOrWhiteSpace(accessToken))
+                if (!await _authenticationHandler.IsSetToUseAsync())
                 {
                     NavigationManager.NavigateTo("/signIn");
                     return;
@@ -302,7 +313,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(accessToken, InMemoryKeyStorage.MyRSAPublic);
+                await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
             });
 
             hubConnection.On<Guid>("OnFileTransfered", fileId =>
@@ -336,11 +347,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             }
         }
 
-        public async Task UpdateRSAPublicKeyAsync(string accessToken, Key RSAPublicKey)
+        public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
             {
-                await _usersService.SetRSAPublicKey(accessToken, RSAPublicKey);
+                await _usersService.SetRSAPublicKey(RSAPublicKey);
             }
         }
 
@@ -386,7 +397,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 {
                     Type = MessageType.AesOffer,
                     DateSent = DateTime.UtcNow,
-                    Sender = TokenReader.GetUsernameFromAccessToken(await JWTHelper.GetAccessTokenAsync(_jSRuntime)),
+                    Sender = await _authenticationHandler.GetUsernameAsync(),
                     TargetGroup = partnersUsername,
                     Cryptogramm = new()
                     {

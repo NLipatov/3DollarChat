@@ -1,10 +1,16 @@
-﻿using Limp.Client.Services.JWTReader;
+﻿using Google.Apis.Auth.OAuth2;
+using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
+using Limp.Server.Utilities.UsernameResolver;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
+using LimpShared.Models.Authentication.Types;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
@@ -17,15 +23,18 @@ namespace Limp.Server.Hubs
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
+        private readonly IUsernameResolverService _usernameResolverService;
 
         public UsersHub
         (IServerHttpClient serverHttpClient,
         IUserConnectedHandler<UsersHub> userConnectedHandler,
-        IOnlineUsersManager onlineUsersManager)
+        IOnlineUsersManager onlineUsersManager,
+        IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
+            _usernameResolverService = usernameResolverService;
         }
         public override async Task OnConnectedAsync()
         {
@@ -60,7 +69,7 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(string accessToken)
         {
-            string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
+            string usernameFromToken = await _usernameResolverService.GetUsernameAsync(accessToken);
 
             var keys = InMemoryHubConnectionStorage
                 .UsersHubConnections
@@ -76,18 +85,32 @@ namespace Limp.Server.Hubs
             }
         }
 
-        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        public async Task SetRSAPublicKey(Key RSAPublicKey, WebAuthnPair? webAuthnPair = null, JwtPair? jwtPair = null)
         {
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
-
-            string? username = isTokenValid ? TokenReader.GetUsernameFromAccessToken(accessToken) : null;
+            bool isTokenValid = false;
+            string username = string.Empty;
+            AuthenticationType authenticationType = AuthenticationType.JwtToken; 
+            
+            if (jwtPair is not null)
+            {
+                authenticationType = AuthenticationType.JwtToken;
+                isTokenValid = await _serverHttpClient.IsAccessTokenValid(jwtPair.AccessToken);
+                username = await _usernameResolverService.GetUsernameAsync(jwtPair.AccessToken);
+            }
+            else if (webAuthnPair is not null)
+            {
+                authenticationType = AuthenticationType.WebAuthn;
+                isTokenValid = await _serverHttpClient.IsWebAuthnTokenValid(webAuthnPair);
+                username = await _usernameResolverService.GetUsernameAsync(webAuthnPair.CredentialId);
+            }
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
-                await PostAnRSAPublic(new PublicKeyDto
+                await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
                 {
                     Key = RSAPublicKey.Value!.ToString(),
-                    Username = username
+                    Username = username,
+                    AuthenticationType = authenticationType,
                 });
             }
             else
@@ -153,7 +176,7 @@ namespace Limp.Server.Hubs
 
         public async Task GetUserWebPushSubscriptions(string accessToken)
         {
-            string username = TokenReader.GetUsernameFromAccessToken(accessToken);
+            string username =  await _usernameResolverService.GetUsernameAsync(accessToken);;
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }

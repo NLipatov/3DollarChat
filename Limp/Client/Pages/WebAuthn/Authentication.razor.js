@@ -9,7 +9,7 @@ function setServiceAddress(address){
 }
 
 function setUsername(value){
-    username = value
+    username = value;
 }
 
 function SetEventListeners(){
@@ -256,7 +256,9 @@ async function verifyAssertionWithServer(assertedCredential) {
     }
 
     // show success message
-    console.log("Logged In! You\'re logged in successfully");
+    localStorage.setItem("credentialUsername", username);
+    localStorage.setItem("credentialId", response.credentialId);
+    localStorage.setItem("credentialIdCounter", response.counter);
     //await Swal.fire({
     //    title: 'Logged In!',
     //    text: 'You\'re logged in successfully.',
@@ -419,6 +421,8 @@ async function registerNewCredential(newCredential) {
 
     // show success 
     console.log("Registration Successful! You\'ve registered successfully");
+    document.querySelector('.card-body').style.display = 'none';
+    document.querySelector('.on-registration-success').style.display = 'block';
     //Swal.fire({
     //    title: 'Registration Successful!',
     //    text: 'You\'ve registered successfully.',

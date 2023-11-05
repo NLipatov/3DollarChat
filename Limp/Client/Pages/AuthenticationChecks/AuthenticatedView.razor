@@ -1,18 +1,25 @@
-﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.Pages.AuthenticationChecks.Stages;
+﻿@using Limp.Client.Pages.AuthenticationChecks.Stages;
 @using Limp.Client.Services;
+@using Limp.Client.Services.AuthenticationService.Handlers
+@using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
 @using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.JWTReader;
+@using Limp.Client.Services.LocalStorageService
 @inject IJSRuntime _jS
 @inject IConfiguration _configuration
 @inject NavigationManager _navigationManager
 @inject IAuthService _authService
 @inject IMessageService MessageService
 @inject IUsersService UsersService
+@inject ILocalStorageService LocalStorageService
+@inject IAuthenticationHandler AuthenticationHandler
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@implements IDisposable
 
-@if(_authenticationState == AuthenticationState.TokenActualisation)
+@if (_authenticationState == AuthenticationState.TokenActualisation)
 {
     <div class="d-flex flex-column align-items-center text-center">
         <p class="mt-3 mb-0">Checking if you have been authenticated</p>
@@ -32,31 +39,40 @@ else
 
 
 @code {
-    [Parameter] 
+
+    [Parameter]
     public RenderFragment? AuthenticatedContent { get; set; }
-    [Parameter] 
+
+    [Parameter]
     public RenderFragment? UnauthenticatedContent { get; set; }
+
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
+    private Guid ComponentId { get; set; }
+
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
-        if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
+        var authenticationIsReadyToUse = await AuthenticationHandler.IsSetToUseAsync();
+        if (!authenticationIsReadyToUse)
         {
             _navigationManager.NavigateTo("signin");
             return;
         }
-        
-        await _authService.RenewalAccessTokenIfExpiredAsync(isRenewalSucceededCallback: RefreshTokenAttemptResult);
+
+        HubServiceSubscriptionManager
+            .AddCallback<bool>(DecideOnToken, "OnAuthenticationCredentialsValidated", ComponentId);
+
+        await AuthenticationHandler.TriggerCredentialsValidation(await _authService.GetHubConnectionAsync());
     }
 
     private async Task RefreshTokenAttemptResult(bool isRenewalSucceededCallback)
     {
-        //If the refresh token is invalid, the user must log in again
+    //If the refresh token is invalid, the user must log in again
         if (!isRenewalSucceededCallback)
             _authenticationState = AuthenticationState.NotAuthenticated;
 
-        //Else - checking if actualised access token is valid
+    //Else - checking if actualised access token is valid
         await _authService.ValidateAccessTokenAsync(DecideOnToken);
     }
 
@@ -75,4 +91,5 @@ else
 
         StateHasChanged();
     }
+
 }

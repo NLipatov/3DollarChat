@@ -10,14 +10,10 @@
 @inject ILoginHandler _loginHandler
 
 <div class="registration-page-content">
-    <section class="vh-100">
-        <div class="container py-5 h-100">
-            <div class="row d-flex align-items-center justify-content-center h-100">
-                <div class="col-md-8 col-lg-7 col-xl-6">
-                    <img src="https://svgur.com/i/sLL.svg"
-                         class="img-fluid" alt="man inputting his account password">
-                </div>
-                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+    <section>
+        <div>
+            <div>
+                <div>
                     <EditForm Model="@Credentials" OnSubmit="OnRegister">
                         <RegisterFormInputBox 
                             CheckedInput="Credentials.Username"

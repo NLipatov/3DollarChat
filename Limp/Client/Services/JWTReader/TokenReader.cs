@@ -30,25 +30,5 @@ namespace Limp.Client.Services.JWTReader
 
             return securityToken.ValidTo <= now;
         }
-
-        public static string GetUsernameFromAccessToken(string? accessToken)
-        {
-            if (string.IsNullOrWhiteSpace(accessToken))
-                throw new ApplicationException($"Passed in parameter {nameof(accessToken)} was empty string or null.");
-
-            string? usernameFromAccessToken = ReadUsernameFromAccessToken(accessToken);
-            if (string.IsNullOrWhiteSpace(usernameFromAccessToken))
-                throw new ApplicationException("Could read username from access-token");
-
-            return usernameFromAccessToken;
-        }
-
-        private static string? ReadUsernameFromAccessToken(string accessToken)
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
-
-            return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value;
-        }
     }
 }

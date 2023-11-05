@@ -1,16 +1,16 @@
 ﻿@using Limp.Client.Cryptography;
-@using Limp.Client.HubInteraction.Handlers.Helpers;
+@using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.InboxService;
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.Shared.ChildComponents
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
-@inject IJSRuntime _jSRuntime
 @inject IToastService _toastService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IMessageBox _messageBox
 @inject NavigationManager _navigationManager
+@inject IAuthenticationHandler AuthenticationHandler
 
 @if (!isRSAGenerated)
 {
@@ -74,7 +74,7 @@ else
         
         foreach (var message in unnotifiedAbout)
         {
-            if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await GetUsername())
+            if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await AuthenticationHandler.GetUsernameAsync())
             {
                 if (message.Packages.Any())
                 {
@@ -96,15 +96,5 @@ else
             }
             _messageBox.OnToastWasShown(message.Id);
         }
-    }
-
-    private async Task<string> GetUsername()
-    {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-        if (!TokenReader.IsTokenReadable(accessToken ?? string.Empty))
-            throw new ArgumentException("Token was not readable");
-
-        return TokenReader.GetUsernameFromAccessToken(accessToken);
     }
 }

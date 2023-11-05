@@ -1,4 +1,4 @@
-﻿using Limp.Client.HubInteraction.Handlers.Helpers;
+﻿using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
@@ -14,22 +14,25 @@ namespace Limp.Client.Services.NotificationService.Implementation
         private readonly IUsersService _usersService;
         private readonly ILocalStorageService _localStorageService;
         private readonly NavigationManager _navigationManager;
+        private readonly IAuthenticationHandler _authenticationHandler;
 
         public WebPushService
             (IJSRuntime jSRuntime, 
                 IUsersService usersService, 
                 ILocalStorageService localStorageService,
-                NavigationManager navigationManager)
+                NavigationManager navigationManager,
+                IAuthenticationHandler authenticationHandler)
         {
             _jSRuntime = jSRuntime;
             _usersService = usersService;
             _localStorageService = localStorageService;
             _navigationManager = navigationManager;
+            _authenticationHandler = authenticationHandler;
         }
 
         public async Task RequestWebPushPermission()
         {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+            string? accessToken = await _authenticationHandler.GetAccessCredential();
             if (string.IsNullOrWhiteSpace(accessToken))
             {
                 _navigationManager.NavigateTo("signin");

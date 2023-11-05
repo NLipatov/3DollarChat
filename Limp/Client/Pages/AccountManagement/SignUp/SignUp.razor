@@ -4,6 +4,7 @@
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
 @using Microsoft.AspNetCore.SignalR.Client;
+@using Limp.Client.Pages.WebAuthn;
 @inject IConfiguration _configuration;
 @inject NavigationManager Navigation;
 @inject ILoginHandler _loginHandler
@@ -12,25 +13,73 @@
 
 <PageTitle>Sign Up</PageTitle>
 
-<RegistrationForm 
-    OnRegisterEvent="async (dto) => await OnRegister(dto)"
-    RegistrationAttemptResult="lastRegisterAttemptResult" />
+<div>
+    <div class="container text-center">
+        <div class="row mt-5">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="text-center">Account Registration</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group text-center">
+                            <p>Choose a registration method:</p>
+                            <div class="btn-group" data-toggle="buttons">
+                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: #712cf9;" : "background-color: white; color: black;")>
+                                    <input @onclick=@(() => IsUsingWebAuthn = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsUsingWebAuthn)> Passwordless
+                                </label>
+                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: white; color: black;" : "background-color: #712cf9;")>
+                                    <input @onclick=@(() => IsUsingWebAuthn = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsUsingWebAuthn)> With Password
+                                </label>
+                            </div>
+                        </div>
+
+                        @if (IsUsingWebAuthn)
+                        {
+                            <Authentication
+                                IsRegisterFormVisible="true"/>
+                        }
+                        else
+                        {
+                            <RegistrationForm
+                                OnRegisterEvent="async (dto) => await OnRegister(dto)"
+                                RegistrationAttemptResult="lastRegisterAttemptResult"/>
+                        }
+                    </div>
+                    <div class="on-registration-success" style="display: none; padding: 10px;">
+                        <span>Done!</span>
+                        <span>You can 
+                            <a href="/signin">
+                                login
+                            </a>
+                            now
+                        </span>
+                        <Icon Name="IconName.CheckCircleFill" Color="IconColor.Success"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 
 @code {
     private HubConnection? hubConnection;
     private AuthResult lastRegisterAttemptResult { get; set; } = new();
     private UserAuthentication? lastRegisterDTO { get; set; }
+    private bool IsUsingWebAuthn { get; set; } = true;
+    private static bool IsRegistrationAccomplished { get; set; } = false;
 
     protected override async Task OnInitializedAsync()
     {
         hubConnection = new HubConnectionBuilder()
-        .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
-        .Build();
+            .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
+            .Build();
 
         hubConnection.On<AuthResult>("OnRegister", result =>
         {
-            //If registration attempt successfull — log in and redirect user
-            if(result.Result is AuthResultType.Success)
+             //If registration attempt successfull — log in and redirect user
+            if (result.Result is AuthResultType.Success)
             {
                 LogInAndRedirect(result);
             }
@@ -44,7 +93,7 @@
 
     private void LogInAndRedirect(AuthResult result)
     {
-        //If we have DTO with wich user was registered successfully, we can automatically log that user in
+    //If we have DTO with wich user was registered successfully, we can automatically log that user in
         if (result.Result == AuthResultType.Success && lastRegisterDTO is not null)
         {
             _loginHandler.OnLogIn(lastRegisterDTO, ((authResult) =>

@@ -1,5 +1,4 @@
 ﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
-using System;
 using System.Collections.Concurrent;
 
 namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation

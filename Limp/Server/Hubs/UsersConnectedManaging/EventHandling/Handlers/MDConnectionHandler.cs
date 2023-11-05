@@ -1,18 +1,24 @@
-﻿using Limp.Client.Services.JWTReader;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.MessageDispatcher;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
+using Limp.Server.Utilities.UsernameResolver;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class MDConnectionHandler : IUserConnectedHandler<MessageHub>
     {
         private readonly IServerHttpClient _serverHttpClient;
+        private readonly IUsernameResolverService _usernameResolverService;
 
-        public MDConnectionHandler(IServerHttpClient serverHttpClient)
+        public MDConnectionHandler(IServerHttpClient serverHttpClient, IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
+            _usernameResolverService = usernameResolverService;
         }
         public void OnConnect(string connectionId)
         {
@@ -50,21 +56,30 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
         public async Task OnUsernameResolved
         (string connectionId,
-        string accessToken,
         Func<string, string, CancellationToken, Task>? AddUserToGroup,
         Func<string, string, CancellationToken, Task>? SendToCaller,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation,
-        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
+        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null,
+        WebAuthnPair? webAuthnPair = null,
+        JwtPair? jwtPair = null)
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
-
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            bool isTokenValid = false;
+            if (TokenReader.IsTokenReadable(jwtPair?.AccessToken ?? string.Empty))
+            {
+                isTokenValid = await _serverHttpClient.IsAccessTokenValid(jwtPair!.AccessToken);
+            }
+            else
+            {
+                if (webAuthnPair is not null)
+                    isTokenValid = await _serverHttpClient.IsWebAuthnTokenValid(webAuthnPair);
+            }
             if (!isTokenValid)
             {
                 throw new ArgumentException("Access-token is not valid.");
             }
 
-            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
+            var username =   await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
@@ -86,7 +101,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         {
             TokenRelatedOperationResult usernameRequestResult = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
 
-            string declaredUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
+            string declaredUsername =  await _usernameResolverService.GetUsernameAsync(accessToken);
             string? actualUsername = usernameRequestResult.Username;
 
             if(!string.IsNullOrWhiteSpace(actualUsername)

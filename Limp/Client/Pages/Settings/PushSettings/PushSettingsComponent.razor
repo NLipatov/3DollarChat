@@ -1,6 +1,6 @@
 ﻿@page "/settings/notifications"
-@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.LocalStorageService;
@@ -13,6 +13,7 @@
 @inject IUsersService UsersService
 @inject IWebPushService WebPushService
 @inject ILocalStorageService LocalStorageService
+@inject IAuthenticationHandler AuthenticationHandler
 @implements IDisposable
 
 <AuthenticatedView>
@@ -133,7 +134,7 @@
         
         UserAgentWebPushNotificationId = await LocalStorageService.GetUserAgentIdAsync();
 
-        _accessToken = await JWTHelper.GetAccessTokenAsync(Js);
+        _accessToken = await AuthenticationHandler.GetAccessCredential();
 
         //Shortcut for cases when user was not yet authenticated
         if (string.IsNullOrWhiteSpace(_accessToken))
@@ -190,7 +191,7 @@
             ($"Error on web push subscription deletion:" + 
             "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
         
-        subscriptionToDelete.AccessToken = await JWTHelper.GetAccessTokenAsync(Js);
+        subscriptionToDelete.AccessToken = await AuthenticationHandler.GetAccessCredential();
             
         await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
     }
@@ -221,7 +222,7 @@
 
     private async Task LoadWebPushSubscriptions()
     {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(Js);
+        string? accessToken = await AuthenticationHandler.GetAccessCredential();
         if (string.IsNullOrWhiteSpace(accessToken))
             throw new ArgumentException
             ("Could not get a access token from local storage to load web push subscriptions.");

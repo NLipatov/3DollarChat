@@ -6,7 +6,10 @@ using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEv
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.Kafka;
 using Limp.Server.Utilities.Redis;
+using Limp.Server.Utilities.UsernameResolver;
 using Limp.Server.WebPushNotifications;
+using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using LimpShared.Models.Message.DataTransfer;
@@ -23,6 +26,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
         private readonly IMessageSendHandler _messageSendHandler;
         private readonly IWebPushSender _webPushSender;
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
+        private readonly IUsernameResolverService _usernameResolverService;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -31,7 +35,8 @@ namespace Limp.Server.Hubs.MessageDispatcher
         IOnlineUsersManager onlineUsersManager,
         IMessageSendHandler messageSender,
         IWebPushSender webPushSender,
-        IUnsentMessagesRedisService unsentMessagesRedisService)
+        IUnsentMessagesRedisService unsentMessagesRedisService,
+        IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -40,6 +45,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
             _messageSendHandler = messageSender;
             _webPushSender = webPushSender;
             _unsentMessagesRedisService = unsentMessagesRedisService;
+            _usernameResolverService = usernameResolverService;
         }
 
         public async override Task OnConnectedAsync()
@@ -76,15 +82,17 @@ namespace Limp.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task SetUsername(string accessToken)
+        public async Task SetUsername(JwtPair? jwtPair, WebAuthnPair? webAuthnPair = null)
         {
-            string usernameFromToken = TokenReader.GetUsernameFromAccessToken(accessToken);
+            string usernameFromToken =  await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
 
             await _userConnectedHandler.OnUsernameResolved
-            (Context.ConnectionId, accessToken,
+            (Context.ConnectionId, 
             Groups.AddToGroupAsync,
             Clients.Caller.SendAsync,
-            Clients.Caller.SendAsync);
+            Clients.Caller.SendAsync,
+            webAuthnPair: webAuthnPair,
+            jwtPair: jwtPair);
 
             var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 

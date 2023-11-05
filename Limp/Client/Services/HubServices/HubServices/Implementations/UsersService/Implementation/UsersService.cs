@@ -1,9 +1,12 @@
 ﻿using System.Collections.Concurrent;
 using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.HubInteraction.Handlers.Helpers;
+using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
@@ -18,18 +21,22 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         private readonly IJSRuntime _jSRuntime;
         public NavigationManager NavigationManager { get; set; }
         private readonly ICallbackExecutor _callbackExecutor;
+        private readonly IAuthenticationHandler _authenticationHandler;
         private HubConnection? HubConnectionInstance { get; set; }
 
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
+
         public UsersService
         (IJSRuntime jSRuntime,
-        NavigationManager navigationManager,
-        ICallbackExecutor callbackExecutor)
+            NavigationManager navigationManager,
+            ICallbackExecutor callbackExecutor,
+            IAuthenticationHandler authenticationHandler)
         {
             _jSRuntime = jSRuntime;
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
+            _authenticationHandler = authenticationHandler;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -38,7 +45,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         {
             if (HubConnectionInstance is not null)
                 return;
-            
+
             HubConnectionInstance = HubServiceConnectionBuilder
                 .Build(NavigationManager.ToAbsoluteUri("/usersHub"));
         }
@@ -48,61 +55,66 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             if (HubConnectionInstance is null)
                 throw new NullReferenceException($"Could not register event handlers - hub was null.");
 
-            HubConnectionInstance.On<UserConnectionsReport>("ReceiveOnlineUsers", updatedTrackedUserConnections =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
-            });
+            HubConnectionInstance.On<UserConnectionsReport>("ReceiveOnlineUsers",
+                updatedTrackedUserConnections =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
+                });
 
-            HubConnectionInstance.On<string>("ReceiveConnectionId", connectionId =>
-            {
-                _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
-            });
+            HubConnectionInstance.On<string>("ReceiveConnectionId",
+                connectionId =>
+                {
+                    _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
+                });
 
             HubConnectionInstance.On<string>("OnNameResolve", async username =>
             {
                 _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
-                
+
                 await GetHubConnectionAsync();
 
-                await HubConnectionInstance.SendAsync("PostAnRSAPublic", username, InMemoryKeyStorage.MyRSAPublic.Value);
+                await HubConnectionInstance.SendAsync("PostAnRSAPublic", username,
+                    InMemoryKeyStorage.MyRSAPublic.Value);
             });
 
-            HubConnectionInstance.On<UserConnection>("IsUserOnlineResponse", (UserConnection) =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
-            });
+            HubConnectionInstance.On<UserConnection>("IsUserOnlineResponse",
+                (UserConnection) =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+                });
 
-            HubConnectionInstance.On<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions", subscriptions =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
-            });
+            HubConnectionInstance.On<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions",
+                subscriptions =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
+                });
 
-            HubConnectionInstance.On<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions", removedSubscriptions =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions, "RemovedFromWebPushSubscriptions");
-            });
+            HubConnectionInstance.On<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions",
+                removedSubscriptions =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions,
+                        "RemovedFromWebPushSubscriptions");
+                });
 
-            HubConnectionInstance.On("WebPushSubscriptionSetChanged", () =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
-            });
+            HubConnectionInstance.On("WebPushSubscriptionSetChanged",
+                () => { _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged"); });
 
-            HubConnectionInstance.On<IsUserExistDto>("UserExistanceResponse", async isUserExistDTO =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
-            });
+            HubConnectionInstance.On<IsUserExistDto>("UserExistanceResponse",
+                async isUserExistDTO =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
+                });
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-
-            if (string.IsNullOrWhiteSpace(accessToken))
+            var isAuthenticationIsReadyToUse = await _authenticationHandler.IsSetToUseAsync();
+            if (!isAuthenticationIsReadyToUse)
             {
                 NavigationManager.NavigateTo("signin");
                 return null;
             }
-            
+
             if (HubConnectionInstance == null)
                 throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
 
@@ -121,7 +133,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
                 }
             }
 
-            await HubConnectionInstance.SendAsync("SetUsername", accessToken);
+            await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetAccessCredential());
 
             HubConnectionInstance.Closed += OnConnectionLost;
 
@@ -141,6 +153,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
                 RemoveConnectionIdReceived(subscriptionId);
             }
         }
+
         public Guid SubscribeToConnectionIdReceived(Func<string, Task> callback)
         {
             Guid subscriptionId = Guid.NewGuid();
@@ -149,6 +162,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             {
                 SubscribeToConnectionIdReceived(callback);
             }
+
             return subscriptionId;
         }
 
@@ -160,6 +174,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             {
                 SubscribeToUsernameResolved(callback);
             }
+
             return subscriptionId;
         }
 
@@ -172,10 +187,19 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             }
         }
 
-        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        public async Task SetRSAPublicKey(Key RSAPublicKey)
         {
-            var hubConnection = await GetHubConnectionAsync();
-            await hubConnection.SendAsync("SetRSAPublicKey", accessToken, RSAPublicKey);
+            var credentials = await _authenticationHandler.GetCredentials();
+            if (credentials is WebAuthnPair)
+            {
+                var hubConnection = await GetHubConnectionAsync();
+                await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, credentials, null);
+            }
+            else if (credentials is JwtPair)
+            {
+                var hubConnection = await GetHubConnectionAsync();
+                await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, null, credentials);
+            }
             InMemoryKeyStorage.isPublicKeySet = true;
         }
 
@@ -207,8 +231,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         {
             if (subscriptionsToRemove.All(x => string.IsNullOrWhiteSpace(x.AccessToken)))
                 throw new ArgumentException
-                    ($"At least one of parameters array " +
-                     $"should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
+                ($"At least one of parameters array " +
+                 $"should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
 
             var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);

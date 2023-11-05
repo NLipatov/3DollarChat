@@ -38,7 +38,13 @@ namespace Limp.Server.Hubs
         {
             bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
 
-            await Clients.Caller.SendAsync("OnTokenValidation", isTokenValid);
+            await Clients.Caller.SendAsync("OnAuthenticationCredentialsValidated", isTokenValid);
+        }
+        
+        public async Task IsWebAuthnCredentialsAreValid(string credentialId, uint counter)
+        {
+            AuthResult result = await _serverHttpClient.RefreshCredentialId(credentialId, counter);
+            await Clients.Caller.SendAsync("OnAuthenticationCredentialsValidated", result.Result == AuthResultType.Success);
         }
 
         public async Task RefreshTokens(RefreshTokenDto refreshToken)
@@ -46,6 +52,13 @@ namespace Limp.Server.Hubs
             AuthResult result = await _serverHttpClient.ExplicitJWTPairRefresh(refreshToken);
 
             await Clients.Caller.SendAsync("OnTokensRefresh", result);
+        }
+
+        public async Task RefreshCredentialId(string credentialId, uint counter)
+        {
+            AuthResult result = await _serverHttpClient.RefreshCredentialId(credentialId, counter);
+            Guid eventId = Guid.NewGuid();
+            await Clients.Caller.SendAsync("OnCredentialIdRefresh", result, eventId);
         }
 
         public async Task GetAuthorisationServerAddress()

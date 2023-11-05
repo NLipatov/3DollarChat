@@ -3,6 +3,7 @@
 @using LimpShared.Models.ConnectedUsersManaging
 @using Limp.Client.Pages.Contacts.UI.Child;
 @using Limp.Client.Pages.Contacts.Models;
+@using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.CloudKeyService;
 @using Limp.Client.Services.ContactsProvider;
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -18,7 +19,7 @@
 @using Limp.Client.Shared.ReuseableComponents.EditableList;
 @using Limp.Client.Shared.ReuseableComponents.EditableList.Models
 @using LimpShared.Models.Users;
-@using Limp.Client.HubInteraction.Handlers.Helpers
+@inject IAuthenticationHandler AuthenticationHandler 
 @implements IDisposable
 
 <AuthenticatedView>
@@ -140,7 +141,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
+        var accessToken = await AuthenticationHandler.GetAccessCredential();
         if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
         {
             _navigationManager.NavigateTo("signin");

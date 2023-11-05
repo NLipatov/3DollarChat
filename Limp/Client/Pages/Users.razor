@@ -1,15 +1,14 @@
 ﻿@page "/users"
-@using Limp.Client.HubInteraction.Handlers.Helpers;
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
-@using Limp.Client.Services.JWTReader;
 @using Limp.Client.UIComponents.ContactItem
 @using LimpShared.Models.ConnectedUsersManaging;
 @inject NavigationManager _navigationManager
-@inject IJSRuntime _jS
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IAuthenticationHandler AuthenticationHandler
 @implements IDisposable
 
 <PageTitle>Users Online</PageTitle>
@@ -48,22 +47,18 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //Shortcut for cases when user was not yet authenticated
-        if (string.IsNullOrWhiteSpace(await JWTHelper.GetAccessTokenAsync(_jS))) return;
-
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
 
-        //Reading username from access-token
-        myUsername = await GetMyUsername();
-
-        //If username was not read, ask user to relogin
-        if(string.IsNullOrWhiteSpace(myUsername))
+        if(!await AuthenticationHandler.IsSetToUseAsync())
         {
             _navigationManager.NavigateTo("/signIn");
             return;
         }
+
+        //Reading username from access-token
+        myUsername = await AuthenticationHandler.GetUsernameAsync();
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
@@ -71,24 +66,6 @@
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
-    }
-
-    private async Task<string> GetMyUsername()
-    {
-        string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
-        if (string.IsNullOrWhiteSpace(accessToken))
-            return string.Empty;
-
-        try
-        {
-            myUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
-        }
-        catch (Exception e)
-        {
-            _navigationManager.NavigateTo("/signin");
-        }
-
-        return myUsername;
     }
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)

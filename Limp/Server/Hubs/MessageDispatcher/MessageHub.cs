@@ -1,5 +1,4 @@
-﻿using Limp.Client.Services.JWTReader;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+﻿using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;

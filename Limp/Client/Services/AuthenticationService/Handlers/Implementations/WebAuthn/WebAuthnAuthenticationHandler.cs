@@ -1,4 +1,5 @@
-﻿using Limp.Client.Services.LocalStorageService;
+﻿using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
+using Limp.Client.Services.LocalStorageService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
@@ -55,6 +56,12 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 
         await hubConnection.SendAsync("IsWebAuthnCredentialsAreValid", pair?.CredentialId ?? string.Empty,
             pair?.Counter + 1);
+    }
+
+    public Task UpdateCredentials(ICredentials newCredentials)
+    {
+        //nothing else needed
+        return Task.CompletedTask;
     }
 
     private async Task<WebAuthnPair> GetWebAuthnPairAsync()

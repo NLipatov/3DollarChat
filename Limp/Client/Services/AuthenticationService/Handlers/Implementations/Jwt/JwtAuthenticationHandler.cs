@@ -1,16 +1,21 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
 using Limp.Client.Services.LocalStorageService;
+using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 
 public class JwtAuthenticationHandler : IJwtHandler
 {
     private readonly ILocalStorageService _localStorageService;
+    private readonly IUserAgentService _userAgentService;
+    private readonly IJSRuntime _jsRuntime;
 
     private async Task<string?> GetAccessTokenAsync() =>
         await _localStorageService.ReadPropertyAsync("access-token");
@@ -18,9 +23,11 @@ public class JwtAuthenticationHandler : IJwtHandler
     private async Task<string?> GetRefreshTokenAsync() =>
         await _localStorageService.ReadPropertyAsync("refresh-token");
 
-    public JwtAuthenticationHandler(ILocalStorageService localStorageService)
+    public JwtAuthenticationHandler(ILocalStorageService localStorageService, IUserAgentService userAgentService, IJSRuntime jsRuntime)
     {
         _localStorageService = localStorageService;
+        _userAgentService = userAgentService;
+        _jsRuntime = jsRuntime;
     }
 
     public async Task<ICredentials> GetCredentials()
@@ -62,8 +69,22 @@ public class JwtAuthenticationHandler : IJwtHandler
 
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
-        JwtPair? jWtPair = await GetJwtPairAsync();
+        JwtPair jWtPair = await GetJwtPairAsync();
+        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection);
+        if (isCredentialsBeingRefreshed)
+        {
+            await Task.Delay(500);
+            await TriggerCredentialsValidation(hubConnection);   
+            return;
+        }
+
         await hubConnection.SendAsync("IsTokenValid", jWtPair.AccessToken ?? string.Empty);
+    }
+
+    public async Task UpdateCredentials(ICredentials newCredentials)
+    {
+        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", (newCredentials as JwtPair)!.AccessToken);
+        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", (newCredentials as JwtPair)!.RefreshToken.Token);
     }
 
     private async Task<JwtPair> GetJwtPairAsync()
@@ -93,5 +114,44 @@ public class JwtAuthenticationHandler : IJwtHandler
                 Token = refreshToken
             }
         };
+    }
+
+    /// <summary>
+    /// Checks if credentials are outdated and updates it
+    /// </summary>
+    /// <returns>bool which determins if credentials refresh is in progress now</returns>
+    public async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection)
+    {
+        JwtPair? jwtPair = await GetCredentials() as JwtPair;
+        if (jwtPair is not null)
+        {
+            if (await IsAccessTokenExpiredAsync())
+            {
+                var userAgentInformation = await _userAgentService.GetUserAgentInformation();
+
+                await hubConnection.SendAsync("RefreshTokens", new RefreshTokenDto
+                {
+                    RefreshToken = jwtPair.RefreshToken,
+                    UserAgent = userAgentInformation?.UserAgentDescription ?? "N/A",
+                    UserAgentId = userAgentInformation?.UserAgentId ?? Guid.Empty
+                });
+
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private async Task<bool> IsAccessTokenExpiredAsync()
+    {
+        var tokenHandler = new JwtSecurityTokenHandler();
+
+        var securityToken = tokenHandler.ReadToken(await GetAccessCredential()) as JwtSecurityToken;
+
+        if (securityToken?.ValidTo is null)
+            return false;
+
+        return securityToken.ValidTo <= DateTime.UtcNow;
     }
 }

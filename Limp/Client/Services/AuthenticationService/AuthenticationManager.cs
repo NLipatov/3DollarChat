@@ -1,7 +1,6 @@
 ﻿using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
-using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -77,5 +76,11 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
     {
         var handler = await GetAvailableHandlerAsync();
         await handler.TriggerCredentialsValidation(hubConnection);
+    }
+
+    public async Task UpdateCredentials(ICredentials newCredentials)
+    {
+        var handler = await GetAvailableHandlerAsync();
+        await handler.UpdateCredentials(newCredentials);
     }
 }

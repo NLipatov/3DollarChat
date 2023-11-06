@@ -83,16 +83,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
 
             HubConnectionInstance.On<AuthResult>("OnTokensRefresh", async result =>
             {
-                bool isRefreshSucceeded = false;
                 if (result.Result == AuthResultType.Success)
                 {
                     JwtPair? jwtPair = result.JwtPair;
                     await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", jwtPair!.AccessToken);
                     await _jSRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", jwtPair!.RefreshToken.Token);
-
-                    isRefreshSucceeded = true;
                 }
-                _callbackExecutor.ExecuteCallbackQueue(isRefreshSucceeded, RefreshTokenCallbackQueue);
+                _callbackExecutor.ExecuteCallbackQueue(result.Result == AuthResultType.Success, RefreshTokenCallbackQueue);
             });
 
             HubConnectionInstance.On<bool>("OnAuthenticationCredentialsValidated", async (isTokenValid) =>

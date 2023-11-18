@@ -98,7 +98,7 @@ fi
 
 echo -e "\nSTEP 5: Create a Dockerfile in 'distro' folder."
 cat <<EOL > distro/Dockerfile
-FROM mcr.microsoft.com/dotnet/aspnet:7.0 AS runtime
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY ./ ./
 ENTRYPOINT ["dotnet", "Limp.Server.dll"]

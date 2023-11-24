@@ -31,7 +31,8 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         }
         catch (Exception e)
         {
-            throw new ApplicationException($"Could not save message in redis: {e.Message}");
+            throw new ApplicationException($"Exception point - {nameof(UnsentMessagesRedisService)}.{nameof(Save)}:" +
+                                           $"Could not save message in redis: {e.Message}");
         }
     }
 

@@ -229,10 +229,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 
         public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
-            if (subscriptionsToRemove.All(x => string.IsNullOrWhiteSpace(x.AccessToken)))
+            if (subscriptionsToRemove.All(x => x.JwtPair is null && x.WebAuthnPair is null))
                 throw new ArgumentException
                 ($"At least one of parameters array " +
-                 $"should have it's {nameof(NotificationSubscriptionDto.AccessToken)} not null");
+                 $"should have it's {nameof(NotificationSubscriptionDto.WebAuthnPair)} or {nameof(NotificationSubscriptionDto.JwtPair)} not null");
 
             var hubConnection = await GetHubConnectionAsync();
             await hubConnection.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);

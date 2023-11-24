@@ -2,6 +2,8 @@
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.NotificationService.Implementation.Types;
+using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -30,26 +32,20 @@ namespace Limp.Client.Services.NotificationService.Implementation
             _authenticationHandler = authenticationHandler;
         }
 
-        public async Task RequestWebPushPermission()
+        public async Task RequestWebPushPermission(ICredentials credentials)
         {
-            string? accessToken = await _authenticationHandler.GetAccessCredential();
-            if (string.IsNullOrWhiteSpace(accessToken))
-            {
-                _navigationManager.NavigateTo("signin");
-                return;
-            }
-            
             var fcmToken = await _jSRuntime
                 .InvokeAsync<string>("getFCMToken");
 
             if (string.IsNullOrWhiteSpace(fcmToken))
                 throw new ArgumentException($"Could not get an FCM token to subsribe to notifications");
             
-            var subscription = new NotificationSubscriptionDto()
+            var subscription = new NotificationSubscriptionDto
             {
                 FirebaseRegistrationToken = fcmToken,
                 UserAgentId = await _localStorageService.GetUserAgentIdAsync(),
-                AccessToken = await _localStorageService.ReadPropertyAsync("access-token")
+                JwtPair = credentials as JwtPair,
+                WebAuthnPair = credentials as WebAuthnPair
             };
             
             await _usersService.AddUserWebPushSubscription(subscription);

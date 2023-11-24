@@ -7,6 +7,8 @@
 @using Limp.Client.Services.NotificationService;
 @using Limp.Client.Shared.ReuseableComponents.EditableList
 @using Limp.Client.Shared.ReuseableComponents.EditableList.Models
+@using LimpShared.Models.Authentication.Models.Credentials
+@using LimpShared.Models.Authentication.Models.Credentials.Implementation
 @using LimpShared.Models.WebPushNotification;
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime Js
@@ -91,6 +93,7 @@
     private bool SubscriptionsWasLoaded { get; set; } = false;
     private Guid UserAgentWebPushNotificationId { get; set; }
     private string? _accessToken = string.Empty;
+    private ICredentials? _credentials = null;
     private bool NotificationsServiceWorkerIsInstalled { get; set; }
     private bool IsEnabled { get; set; }
     private bool _IsEnabled
@@ -107,13 +110,14 @@
     {
         if (value && WebPushSubscriptions.All(x => x.UserAgentId != UserAgentWebPushNotificationId))
         {
-            WebPushService.RequestWebPushPermission();
+            WebPushService.RequestWebPushPermission(_credentials);
         }
         else if (!value)
         {
             if (WebPushSubscriptions.Any())
             {
-                WebPushSubscriptions.First().AccessToken = _accessToken;
+                WebPushSubscriptions.First().JwtPair = _credentials as JwtPair;
+                WebPushSubscriptions.First().WebAuthnPair = _credentials as WebAuthnPair;
                 UsersService.RemoveUserWebPushSubscriptions(WebPushSubscriptions);
             }
         }
@@ -135,6 +139,7 @@
         UserAgentWebPushNotificationId = await LocalStorageService.GetUserAgentIdAsync();
 
         _accessToken = await AuthenticationHandler.GetAccessCredential();
+        _credentials = await AuthenticationHandler.GetCredentials();
 
         //Shortcut for cases when user was not yet authenticated
         if (string.IsNullOrWhiteSpace(_accessToken))
@@ -183,6 +188,9 @@
 
     private async Task OnRemoveSubscriptions(ItemModel itemModel)
     {
+        var credentials = AuthenticationHandler.GetCredentials().Result;
+        var type = credentials.Type;
+        
         var subscriptionToDelete = WebPushSubscriptions
             .FirstOrDefault(x => x.Id == itemModel.Id);
         
@@ -190,8 +198,9 @@
             throw new ArgumentException
             ($"Error on web push subscription deletion:" + 
             "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
-        
-        subscriptionToDelete.AccessToken = await AuthenticationHandler.GetAccessCredential();
+
+        subscriptionToDelete.JwtPair = credentials as JwtPair;
+        subscriptionToDelete.WebAuthnPair = credentials as WebAuthnPair;
             
         await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
     }

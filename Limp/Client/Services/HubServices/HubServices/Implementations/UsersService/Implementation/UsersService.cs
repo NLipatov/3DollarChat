@@ -10,7 +10,6 @@ using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
@@ -19,6 +18,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         public NavigationManager NavigationManager { get; set; }
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
+        private readonly IConfiguration _configuration;
         private HubConnection? HubConnectionInstance { get; set; }
 
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
@@ -27,11 +27,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         public UsersService
         (NavigationManager navigationManager,
             ICallbackExecutor callbackExecutor,
-            IAuthenticationHandler authenticationHandler)
+            IAuthenticationHandler authenticationHandler,
+            IConfiguration configuration)
         {
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
+            _configuration = configuration;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -126,7 +128,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
                 }
                 catch
                 {
-                    await Task.Delay(500);
+                    var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
+                    await Task.Delay(interval);
                     await GetHubConnectionAsync();
                     break;
                 }

@@ -34,6 +34,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IBrowserKeyStorage _browserKeyStorage;
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
+        private readonly IConfiguration _configuration;
         private string myName;
         private ConcurrentDictionary<Guid, List<Package>> ReceivedFileIdToPackages = new();
         private ConcurrentDictionary<Guid, List<Package>> SendedFileIdPackages = new();
@@ -51,7 +52,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             IMessageBuilder messageBuilder,
             IBrowserKeyStorage browserKeyStorage,
             IMessageDecryptor messageDecryptor,
-            IAuthenticationHandler authenticationHandler)
+            IAuthenticationHandler authenticationHandler,
+            IConfiguration configuration)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -63,6 +65,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
             _authenticationHandler = authenticationHandler;
+            _configuration = configuration;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -95,7 +98,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
                 catch
                 {
-                    await Task.Delay(500);
+                    var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
+                    await Task.Delay(interval);
                     await GetHubConnectionAsync();
                     break;
                 }

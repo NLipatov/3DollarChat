@@ -23,19 +23,22 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         public ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue { get; set; } = new();
         private readonly IAuthenticationHandler _authenticationManager;
+        private readonly IConfiguration _configuration;
 
         public AuthService
         (NavigationManager navigationManager,
         ICallbackExecutor callbackExecutor,
         IUserAgentService userAgentService,
         ILocalStorageService localStorageService,
-        IAuthenticationHandler authenticationManager)
+        IAuthenticationHandler authenticationManager,
+        IConfiguration configuration)
         {
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _userAgentService = userAgentService;
             _localStorageService = localStorageService;
             _authenticationManager = authenticationManager;
+            _configuration = configuration;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -67,7 +70,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 }
                 catch
                 {
-                    await Task.Delay(500);
+                    var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
+                    await Task.Delay(interval);
                     await GetHubConnectionAsync();
                     break;
                 }

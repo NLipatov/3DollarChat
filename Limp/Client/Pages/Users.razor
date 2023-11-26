@@ -15,7 +15,7 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-    <div class="ApplicationContent p-2">
+    <div class="ApplicationContent">
             @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
             {
                 <Callout Type="CalloutType.Info">

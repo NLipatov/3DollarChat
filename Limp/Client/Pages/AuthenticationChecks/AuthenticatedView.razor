@@ -8,9 +8,7 @@
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.Services.LocalStorageService
-@inject IJSRuntime _jS
-@inject IConfiguration _configuration
-@inject NavigationManager _navigationManager
+@inject NavigationManager NavigationManager
 @inject IAuthService AuthService
 @inject IMessageService MessageService
 @inject IUsersService UsersService
@@ -19,34 +17,34 @@
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @implements IDisposable
 
-@if (_isUsersHubConnectionActive is false)
-{
-    <Callout Type="CalloutType.Warning" Heading="No connection">
-        <span>Server is not reachable, trying to reconnect</span>
-    </Callout>
-}
-else
-{
-    @if (_authenticationState == AuthenticationState.TokenActualisation)
+<div class="p-2">
+    @if (_isUsersHubConnectionActive is false)
     {
-        <div class="d-flex flex-column align-items-center text-center">
-            <p class="mt-3 mb-0">Checking if you have been authenticated</p>
-        </div>
+        <Callout Type="CalloutType.Warning" Heading="No connection">
+            <span>Server is not reachable, trying to reconnect</span>
+        </Callout>
     }
     else
     {
-        if (_authenticationState == AuthenticationState.Authenticated)
+        @if (_authenticationState == AuthenticationState.TokenActualisation)
         {
-            @AuthenticatedContent
+            <div class="d-flex flex-column align-items-center text-center">
+                <p class="mt-3 mb-0">Checking if you have been authenticated</p>
+            </div>
         }
         else
         {
-            @UnauthenticatedContent
+            if (_authenticationState == AuthenticationState.Authenticated)
+            {
+                @AuthenticatedContent
+            }
+            else
+            {
+                @UnauthenticatedContent
+            }
         }
     }
-}
-
-
+</div>
 
 @code {
 
@@ -68,7 +66,7 @@ else
         var authenticationIsReadyToUse = await AuthenticationHandler.IsSetToUseAsync();
         if (!authenticationIsReadyToUse)
         {
-            _navigationManager.NavigateTo("signin");
+            NavigationManager.NavigateTo("signin");
             return;
         }
 

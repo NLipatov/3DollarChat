@@ -10,14 +10,12 @@ using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
 {
     public class AuthService : IAuthService
     {
         public NavigationManager NavigationManager { get; set; }
-        private readonly IJSRuntime _jSRuntime;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUserAgentService _userAgentService;
         private readonly ILocalStorageService _localStorageService;
@@ -27,14 +25,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private readonly IAuthenticationHandler _authenticationManager;
 
         public AuthService
-        (IJSRuntime jSRuntime,
-        NavigationManager navigationManager,
+        (NavigationManager navigationManager,
         ICallbackExecutor callbackExecutor,
         IUserAgentService userAgentService,
         ILocalStorageService localStorageService,
         IAuthenticationHandler authenticationManager)
         {
-            _jSRuntime = jSRuntime;
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _userAgentService = userAgentService;
@@ -43,6 +39,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
+        
+        public bool IsConnected() => HubConnectionInstance?.State == HubConnectionState.Connected;
 
         private void InitializeHubConnection()
         {
@@ -69,11 +67,23 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 }
                 catch
                 {
-                    return await GetHubConnectionAsync();
+                    await Task.Delay(500);
+                    await GetHubConnectionAsync();
+                    break;
                 }
             }
 
+            HubConnectionInstance.Closed += OnConnectionLost;
+            
+            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnAuthHubConnectionStatusChanged");
+
             return HubConnectionInstance;
+        }
+
+        private async Task OnConnectionLost(Exception? arg)
+        {
+            _callbackExecutor.ExecuteSubscriptionsByName(false, "OnAuthHubConnectionStatusChanged");
+            await GetHubConnectionAsync();
         }
 
         private void RegisterHubEventHandlers()

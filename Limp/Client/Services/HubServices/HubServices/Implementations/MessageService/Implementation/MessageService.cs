@@ -95,7 +95,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
                 catch
                 {
-                    return await GetHubConnectionAsync();
+                    await Task.Delay(500);
+                    await GetHubConnectionAsync();
+                    break;
                 }
             }
             
@@ -113,6 +115,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 throw new ArgumentException("Could not define used authentication mechanism.");
             }
             
+            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
 
             hubConnection.Closed += OnConnectionLost;
 
@@ -121,7 +124,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         private async Task OnConnectionLost(Exception? exception)
         {
-            await Console.Out.WriteLineAsync("MessageHub connection lost. Reconnecting.");
+            _callbackExecutor.ExecuteSubscriptionsByName(false, "OnMessageHubConnectionStatusChanged");
             await GetHubConnectionAsync();
         }
 

@@ -4,8 +4,6 @@ using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
@@ -18,7 +16,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 {
     public class UsersService : IUsersService
     {
-        private readonly IJSRuntime _jSRuntime;
         public NavigationManager NavigationManager { get; set; }
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
@@ -28,18 +25,18 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
 
         public UsersService
-        (IJSRuntime jSRuntime,
-            NavigationManager navigationManager,
+        (NavigationManager navigationManager,
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler)
         {
-            _jSRuntime = jSRuntime;
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
+        
+        public bool IsConnected() => HubConnectionInstance?.State == HubConnectionState.Connected;
 
         private void InitializeHubConnection()
         {
@@ -129,19 +126,24 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
                 }
                 catch
                 {
-                    return await GetHubConnectionAsync();
+                    await Task.Delay(500);
+                    await GetHubConnectionAsync();
+                    break;
                 }
             }
 
             await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetAccessCredential());
 
             HubConnectionInstance.Closed += OnConnectionLost;
+            
+            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnUsersHubConnectionStatusChanged");
 
             return HubConnectionInstance;
         }
-
+        
         private async Task OnConnectionLost(Exception? exception)
         {
+            _callbackExecutor.ExecuteSubscriptionsByName(false, "OnUsersHubConnectionStatusChanged");
             await GetHubConnectionAsync();
         }
 

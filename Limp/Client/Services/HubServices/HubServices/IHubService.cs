@@ -5,5 +5,7 @@ namespace Limp.Client.Services.HubServices.HubServices
     public interface IHubService
     {
         Task<HubConnection> GetHubConnectionAsync();
+
+        bool IsConnected();
     }
 }

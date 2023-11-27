@@ -19,6 +19,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
+        private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
 
         private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
@@ -107,8 +108,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            var isAuthenticationIsReadyToUse = await _authenticationHandler.IsSetToUseAsync();
-            if (!isAuthenticationIsReadyToUse)
+            if (!await _authenticationHandler.IsSetToUseAsync())
             {
                 NavigationManager.NavigateTo("signin");
                 return null;
@@ -130,16 +130,19 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
                 {
                     var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
                     await Task.Delay(interval);
-                    await GetHubConnectionAsync();
-                    break;
+                    return await GetHubConnectionAsync();
                 }
             }
+            
+            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnUsersHubConnectionStatusChanged");
 
             await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetAccessCredential());
 
-            HubConnectionInstance.Closed += OnConnectionLost;
-            
-            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnUsersHubConnectionStatusChanged");
+            if (_isConnectionClosedCallbackSet is false)
+            {
+                HubConnectionInstance.Closed += OnConnectionLost;
+                _isConnectionClosedCallbackSet = true;
+            }
 
             return HubConnectionInstance;
         }

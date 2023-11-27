@@ -35,6 +35,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
+        private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         private ConcurrentDictionary<Guid, List<Package>> ReceivedFileIdToPackages = new();
         private ConcurrentDictionary<Guid, List<Package>> SendedFileIdPackages = new();
@@ -77,8 +78,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 NavigationManager.NavigateTo("signin");
                 return null;
             }
-            
-            string? accessToken = await _authenticationHandler.GetAccessCredential();
 
             //Loading from local storage earlier saved AES keys
             InMemoryKeyStorage.AESKeyStorage =
@@ -100,8 +99,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 {
                     var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
                     await Task.Delay(interval);
-                    await GetHubConnectionAsync();
-                    break;
+                    return await GetHubConnectionAsync();
                 }
             }
             
@@ -121,7 +119,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
 
-            hubConnection.Closed += OnConnectionLost;
+            if (_isConnectionClosedCallbackSet is false)
+            {
+                hubConnection.Closed += OnConnectionLost;
+                _isConnectionClosedCallbackSet = true;
+            }
 
             return hubConnection;
         }

@@ -19,6 +19,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IUserAgentService _userAgentService;
         private readonly ILocalStorageService _localStorageService;
+        private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
         public ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue { get; set; } = new();
@@ -76,10 +77,14 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                     break;
                 }
             }
-
-            HubConnectionInstance.Closed += OnConnectionLost;
             
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnAuthHubConnectionStatusChanged");
+
+            if (_isConnectionClosedCallbackSet is false)
+            {
+                HubConnectionInstance.Closed += OnConnectionLost;
+                _isConnectionClosedCallbackSet = true;
+            }
 
             return HubConnectionInstance;
         }

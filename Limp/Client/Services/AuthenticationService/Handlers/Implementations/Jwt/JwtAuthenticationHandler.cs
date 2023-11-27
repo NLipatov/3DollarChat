@@ -71,14 +71,11 @@ public class JwtAuthenticationHandler : IJwtHandler
     {
         JwtPair jWtPair = await GetJwtPairAsync();
         var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection);
-        if (isCredentialsBeingRefreshed)
-        {
-            await Task.Delay(500);
-            await TriggerCredentialsValidation(hubConnection);   
-            return;
-        }
 
-        await hubConnection.SendAsync("IsTokenValid", jWtPair.AccessToken ?? string.Empty);
+        if (!isCredentialsBeingRefreshed)
+        {
+            await hubConnection.SendAsync("IsTokenValid", jWtPair.AccessToken ?? string.Empty);
+        }
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)

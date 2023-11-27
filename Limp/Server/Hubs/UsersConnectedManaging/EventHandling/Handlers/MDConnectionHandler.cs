@@ -1,6 +1,4 @@
-﻿using System.Text.Json;
-using System.Text.Json.Serialization;
-using Limp.Client.Services.JWTReader;
+﻿using Limp.Client.Services.JWTReader;
 using Limp.Server.Hubs.MessageDispatcher;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
@@ -79,7 +77,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 throw new ArgumentException("Access-token is not valid.");
             }
 
-            var username =   await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
+            var username = await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key

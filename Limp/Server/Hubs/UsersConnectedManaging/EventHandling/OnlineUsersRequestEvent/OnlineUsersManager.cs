@@ -28,7 +28,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
                     Username = x.Key,
                     ConnectionIds = x.Value,
                     UsersHubConnectionIds = userHubConnections[x.Key],
-                    //MessageHubConnectionIds = messageHubConnections[x.Key]
+                    MessageHubConnectionIds = messageHubConnections[x.Key]
                 }).ToArray()
             };
         }

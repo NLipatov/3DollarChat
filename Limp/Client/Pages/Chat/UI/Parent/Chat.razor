@@ -46,7 +46,7 @@ else
 
             @if (AESKey is null || AESKey.IsAccepted is false)
             {
-                @if (partnerIsOnline)
+                @if (_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
                 {
                     <div class="card-holder">
                         <CardComponent
@@ -89,8 +89,6 @@ else
     public string topicName { get; set; } = string.Empty;
     [Parameter]
     public string myUsername { get; set; } = string.Empty;
-
-    private bool partnerIsOnline { get; set; }
     private Key? AESKey { get; set; }
     private Guid ComponentId { get; set; }
     private MessageList? MessageListComponent { get; set; } = new();
@@ -140,19 +138,10 @@ else
         {
             if (userConnection.ConnectionIds.Count > 0)
             {
-                _usersOnlineMessage.UserConnections = new UserConnection[1] { userConnection };
-                partnerIsOnline = true;
+                _usersOnlineMessage.UserConnections = new[] { userConnection };
             }
-            else
-            {
-                Console.WriteLine("Partner is offline");
-                if (AESKey is null || AESKey.IsAccepted == false)
-                    Console.WriteLine("Cannot negotiate key.");
-
-                partnerIsOnline = false;
                 
-                StateHasChanged();
-            }
+            StateHasChanged();
         }
     }
 

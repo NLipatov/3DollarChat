@@ -47,14 +47,14 @@ namespace Limp.Server.Hubs.MessageDispatcher
             _usernameResolverService = usernameResolverService;
         }
 
-        public async override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
             InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
 
             await base.OnConnectedAsync();
         }
 
-        public async override Task OnDisconnectedAsync(Exception? exception)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
             var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 

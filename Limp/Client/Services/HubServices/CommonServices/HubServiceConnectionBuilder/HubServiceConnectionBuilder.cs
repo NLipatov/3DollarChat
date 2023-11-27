@@ -4,10 +4,13 @@ namespace Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBu
 
 public static class HubServiceConnectionBuilder
 {
-    public static HubConnection Build(Uri hubAddress)
+    public static HubConnection Build(Uri hubAddress, bool useStatefulReconnect = true)
     {
         return new HubConnectionBuilder()
-            .WithUrl(hubAddress)
+            .WithUrl(hubAddress, options =>
+            {
+                options.UseStatefulReconnect = useStatefulReconnect;
+            })
             .AddMessagePackProtocol()
             .Build();
     }

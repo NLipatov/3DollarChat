@@ -7,8 +7,8 @@ using System.Net;
 using System.Text;
 using System.Text.Json;
 using LimpShared.Models.Authentication.Enums;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
-using LimpShared.Models.Authentication.Types;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {
@@ -21,21 +21,51 @@ namespace Limp.Server.Utilities.HttpMessaging
             _configuration = configuration;
         }
 
-        public async Task<bool> IsWebAuthnTokenValid(WebAuthnPair webAuthnPair)
+        public async Task<AuthResult> ValidateCredentials(CredentialsDTO credentials)
         {
             using (var client = new HttpClient())
             {
-                string url = _configuration["AuthAutority:Address"] +
-                             _configuration["AuthAutority:Endpoints:ValidateWebAuthnCredentials"];
+                var requestUrl =
+                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateCredentials"]}";
 
-                var request = await client.PostAsJsonAsync(url, webAuthnPair);
+                var request = await client.PostAsJsonAsync(requestUrl, credentials);
 
                 var response = await request.Content.ReadAsStringAsync();
 
-                if (bool.TryParse(response, out var result))
-                    return result;
+                var result = JsonSerializer.Deserialize<AuthResult>(response, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
 
-                return false;
+                return result ?? new AuthResult {Result = AuthResultType.Fail};
+            }
+        }
+
+        public async Task<AuthResult> RefreshCredentials(CredentialsDTO credentials)
+        {
+            using (var client = new HttpClient())
+            {
+                var content = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
+
+                var requestUrl =
+                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RefreshCredentials"]}";
+
+                var response = await client.PostAsync(requestUrl, content);
+                
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                var responseAuthResult = JsonSerializer.Deserialize<AuthResult>(responseContent, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                return new AuthResult
+                {
+                    Message = responseAuthResult?.Message,
+                    Result = response.StatusCode is not HttpStatusCode.OK ? AuthResultType.Fail : AuthResultType.Success,
+                    JwtPair = responseAuthResult?.JwtPair,
+                    CredentialId = responseAuthResult?.CredentialId ?? string.Empty
+                };
             }
         }
 
@@ -113,59 +143,6 @@ namespace Limp.Server.Utilities.HttpMessaging
                     JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
 
                 return result;
-            }
-        }
-
-        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshTokenDto dto)
-        {
-            using (var client = new HttpClient())
-            {
-                var content = new StringContent(JsonSerializer.Serialize(dto), Encoding.UTF8, "application/json");
-
-                var requestUrl =
-                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
-
-                var response = await client.PostAsync(requestUrl, content);
-
-                if (response.StatusCode != System.Net.HttpStatusCode.OK)
-                {
-                    return new AuthResult
-                    {
-                        Message = await response.Content.ReadAsStringAsync(),
-                        Result = AuthResultType.Fail,
-                    };
-                }
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                var jwtPair = JsonSerializer.Deserialize<JwtPair>(responseContent);
-
-                return new AuthResult()
-                {
-                    Result = AuthResultType.Success,
-                    JwtPair = jwtPair,
-                };
-            }
-        }
-
-        public async Task<bool> IsAccessTokenValid(string accessToken)
-        {
-            using (var client = new HttpClient())
-            {
-                var requestUrl =
-                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateAccessToken"]}?accesstoken={accessToken}";
-
-                var response = await client.GetAsync(requestUrl);
-
-                var responseContent = await response.Content.ReadAsStringAsync();
-
-                TokenRelatedOperationResult? result =
-                    JsonSerializer.Deserialize<TokenRelatedOperationResult>(responseContent);
-
-                if (result == null)
-                    return false;
-
-                return result.ResultType == OperationResultType.Success;
             }
         }
 
@@ -259,30 +236,6 @@ namespace Limp.Server.Utilities.HttpMessaging
                                    ??
                                    throw new ArgumentException
                                        ($"Could not get a value by key {authorityAddressKey} from server configuration."));
-        }
-
-        public async Task<AuthResult> RefreshCredentialId(string credentialId, uint counter)
-        {
-            var endpointUrl = _configuration["AuthAutority:Endpoints:RenewalCredentialId"];
-
-            var requestUrl = $"{_configuration[$"AuthAutority:Address"]}{endpointUrl}";
-
-            using (var client = new HttpClient())
-            {
-                var dto = new RefreshCredentialIdDto
-                {
-                    CredentialId = credentialId,
-                    Counter = counter
-                };
-
-                var request = await client.PostAsJsonAsync(requestUrl, dto);
-
-                var response = await request.Content.ReadAsStringAsync();
-
-                var authResult = Newtonsoft.Json.JsonConvert.DeserializeObject<AuthResult>(response);
-
-                return authResult;
-            }
         }
 
         public async Task<string> GetUsernameByCredentialId(string credentialId)

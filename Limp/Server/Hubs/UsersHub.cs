@@ -9,6 +9,7 @@ using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;
 using LimpShared.Models.ConnectedUsersManaging;
@@ -94,13 +95,15 @@ namespace Limp.Server.Hubs
             if (jwtPair is not null)
             {
                 authenticationType = AuthenticationType.JwtToken;
-                isTokenValid = await _serverHttpClient.IsAccessTokenValid(jwtPair.AccessToken);
+                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
+                isTokenValid = validationResult.Result is AuthResultType.Success;
                 username = await _usernameResolverService.GetUsernameAsync(jwtPair.AccessToken);
             }
             else if (webAuthnPair is not null)
             {
                 authenticationType = AuthenticationType.WebAuthn;
-                isTokenValid = await _serverHttpClient.IsWebAuthnTokenValid(webAuthnPair);
+                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
+                isTokenValid = validationResult.Result is AuthResultType.Success;
                 username = await _usernameResolverService.GetUsernameAsync(webAuthnPair.CredentialId);
             }
 

@@ -8,6 +8,7 @@
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Limp.Client.Services.JWTReader;
 @using Limp.Client.Services.LocalStorageService
+@using LimpShared.Models.Authentication.Models
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
 @inject IMessageService MessageService
@@ -73,7 +74,7 @@
         }
 
         HubServiceSubscriptionManager
-            .AddCallback<bool>(DecideOnToken, "OnAuthenticationCredentialsValidated", ComponentId);
+            .AddCallback<AuthResult>(DecideOnToken, "OnAuthenticationCredentialsValidated", ComponentId);
 
         HubServiceSubscriptionManager
             .AddCallback<bool>(isActive =>
@@ -95,8 +96,9 @@
         await AuthService.ValidateAccessTokenAsync(DecideOnToken);
     }
 
-    private async Task DecideOnToken(bool isAccessTokenValid)
+    private async Task DecideOnToken(AuthResult credentialsValidationResult)
     {
+        var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;
         if (isAccessTokenValid)
         {
             _authenticationState = AuthenticationState.Authenticated;

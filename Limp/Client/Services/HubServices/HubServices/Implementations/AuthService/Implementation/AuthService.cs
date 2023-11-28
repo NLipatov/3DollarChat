@@ -22,7 +22,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
         private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
-        public ConcurrentQueue<Func<bool, Task>> IsTokenValidCallbackQueue { get; set; } = new();
+        public ConcurrentQueue<Func<AuthResult, Task>> IsTokenValidCallbackQueue { get; set; } = new();
         private readonly IAuthenticationHandler _authenticationManager;
         private readonly IConfiguration _configuration;
 
@@ -100,25 +100,32 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             if (HubConnectionInstance is null)
                 throw new NullReferenceException($"Could not register event handlers - hub was null.");
 
-            HubConnectionInstance.On<AuthResult>("OnTokensRefresh", async result =>
+            HubConnectionInstance.On<AuthResult>("OnRefreshCredentials", async result =>
             {
                 if (result.JwtPair is not null)
                     await _authenticationManager.UpdateCredentials(result.JwtPair);
 
+                if (string.IsNullOrWhiteSpace(result.CredentialId))
+                    await _authenticationManager.UpdateCredentials(new WebAuthnPair{CredentialId = result.CredentialId});
+
                 _callbackExecutor.ExecuteSubscriptionsByName(true, "OnAuthenticationCredentialsValidated");
             });
 
-            HubConnectionInstance.On<bool>("OnAuthenticationCredentialsValidated", async (isTokenValid) =>
+            HubConnectionInstance.On<AuthResult>("OnValidateCredentials", async result =>
             {
-                WebAuthnPair? webAuthnPair = await GetWebAuthnPairAsync();
-                
-                _callbackExecutor.ExecuteSubscriptionsByName(isTokenValid, "OnAuthenticationCredentialsValidated");
-
-                if (webAuthnPair is not null)
+                if (!string.IsNullOrWhiteSpace(result.CredentialId))
                 {
-                    var currentCounter = uint.Parse(await _localStorageService.ReadPropertyAsync("credentialIdCounter"));
+                    var storedCredentialId = await _localStorageService.ReadPropertyAsync("credentialIdCounter");
+                    if (string.IsNullOrWhiteSpace(storedCredentialId) || storedCredentialId != result.CredentialId)
+                    {
+                        NavigationManager.NavigateTo("signin");
+                        return;
+                    }
+                    var currentCounter = uint.Parse(storedCredentialId);
                     await _localStorageService.WritePropertyAsync("credentialIdCounter", (currentCounter + 1).ToString());
                 }
+                
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnAuthenticationCredentialsValidated");
             });
 
             HubConnectionInstance.On<AuthResult>("OnLoggingIn", result =>
@@ -148,61 +155,12 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
             });
         }
 
-        public async Task RenewalAccessTokenIfExpiredAsync(Func<bool, Task> isRenewalSucceededCallback)
-        {
-            var hubConnection = await GetHubConnectionAsync();
-            JwtPair? jwtPair = await GetJWTPairAsync();
-            if (jwtPair == null)
-            {
-                await isRenewalSucceededCallback(false);
-            }
-            else
-            {
-                if (TokenReader.HasAccessTokenExpired(jwtPair.AccessToken))
-                {
-                    var userAgentInformation = await _userAgentService.GetUserAgentInformation();
-                    
-                    RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
-                    
-                    await hubConnection.SendAsync("RefreshTokens", new RefreshTokenDto
-                    {
-                        RefreshToken = jwtPair.RefreshToken,
-                        UserAgent = userAgentInformation.UserAgentDescription,
-                        UserAgentId = userAgentInformation.UserAgentId
-                    });
-                }
-                else
-                {
-                    await isRenewalSucceededCallback(true);
-                }
-            }
-        }
-
-        public async Task RenewalCredentialId(Func<bool, Task> isRenewalSucceededCallback)
-        {
-            var hubConnection = await GetHubConnectionAsync();
-            var credentialId = await _localStorageService.ReadPropertyAsync("credentialId");
-            var credentialIdCounter = await _localStorageService.ReadPropertyAsync("credentialIdCounter");
-            if (string.IsNullOrWhiteSpace(credentialId) || !uint.TryParse(credentialIdCounter, out var counter))
-            {
-                await isRenewalSucceededCallback(false);
-            }
-            else
-            {
-                var userAgentInformation = await _userAgentService.GetUserAgentInformation();
-                
-                RefreshTokenCallbackQueue.Enqueue(isRenewalSucceededCallback);
-                
-                await hubConnection.SendAsync("RefreshCredentialId", credentialId, counter+1);
-            }
-        }
-
-        public async Task ValidateAccessTokenAsync(Func<bool, Task> isTokenAccessValidCallback)
+        public async Task ValidateAccessTokenAsync(Func<AuthResult, Task> isTokenAccessValidCallback)
         {
             var authenticationIsReadyToUse = await _authenticationManager.IsSetToUseAsync();
             if (!authenticationIsReadyToUse)
             {
-                await isTokenAccessValidCallback(false);
+                await isTokenAccessValidCallback(new AuthResult(){Result = AuthResultType.Fail});
             }
             else
             {

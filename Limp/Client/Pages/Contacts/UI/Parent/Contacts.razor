@@ -142,13 +142,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var accessToken = await AuthenticationHandler.GetAccessCredential();
-        if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
-        {
-            _navigationManager.NavigateTo("signin");
-            return;
-        }
-
         contactAdditionModal = new();
         
         //This id will be needed on dispose stage

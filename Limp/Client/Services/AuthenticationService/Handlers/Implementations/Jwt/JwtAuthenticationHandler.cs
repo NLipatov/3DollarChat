@@ -1,9 +1,9 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -74,7 +74,7 @@ public class JwtAuthenticationHandler : IJwtHandler
 
         if (!isCredentialsBeingRefreshed)
         {
-            await hubConnection.SendAsync("IsTokenValid", jWtPair.AccessToken ?? string.Empty);
+            await hubConnection.SendAsync("ValidateCredentials", new CredentialsDTO{JwtPair = jWtPair});
         }
     }
 
@@ -126,12 +126,7 @@ public class JwtAuthenticationHandler : IJwtHandler
             {
                 var userAgentInformation = await _userAgentService.GetUserAgentInformation();
 
-                await hubConnection.SendAsync("RefreshTokens", new RefreshTokenDto
-                {
-                    RefreshToken = jwtPair.RefreshToken,
-                    UserAgent = userAgentInformation?.UserAgentDescription ?? "N/A",
-                    UserAgentId = userAgentInformation?.UserAgentId ?? Guid.Empty
-                });
+                await hubConnection.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
 
                 return true;
             }

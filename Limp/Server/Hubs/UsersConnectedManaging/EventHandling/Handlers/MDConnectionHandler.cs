@@ -4,6 +4,7 @@ using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.UsernameResolver;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
@@ -65,12 +66,16 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             bool isTokenValid = false;
             if (TokenReader.IsTokenReadable(jwtPair?.AccessToken ?? string.Empty))
             {
-                isTokenValid = await _serverHttpClient.IsAccessTokenValid(jwtPair!.AccessToken);
+                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
+                isTokenValid = validationResult.Result is AuthResultType.Success;
             }
             else
             {
                 if (webAuthnPair is not null)
-                    isTokenValid = await _serverHttpClient.IsWebAuthnTokenValid(webAuthnPair);
+                {
+                    var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
+                    isTokenValid = validationResult.Result is AuthResultType.Success;
+                }
             }
             if (!isTokenValid)
             {

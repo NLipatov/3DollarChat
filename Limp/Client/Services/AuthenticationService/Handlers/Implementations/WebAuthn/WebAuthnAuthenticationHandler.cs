@@ -2,6 +2,7 @@
 using Limp.Client.Services.LocalStorageService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -54,14 +55,18 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
     {
         var pair = await GetWebAuthnPairAsync();
 
-        await hubConnection.SendAsync("IsWebAuthnCredentialsAreValid", pair?.CredentialId ?? string.Empty,
-            pair?.Counter + 1);
+        await hubConnection.SendAsync("ValidateCredentials", new CredentialsDTO {WebAuthnPair = new WebAuthnPair()
+            {
+                CredentialId = pair.CredentialId,
+                Counter = pair.Counter
+            }});
     }
 
-    public Task UpdateCredentials(ICredentials newCredentials)
+    public async Task UpdateCredentials(ICredentials newCredentials)
     {
-        //nothing else needed
-        return Task.CompletedTask;
+        var counter = await GetCounter();
+        var updatedCounter = counter + 1;
+        await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter);
     }
 
     private async Task<WebAuthnPair> GetWebAuthnPairAsync()

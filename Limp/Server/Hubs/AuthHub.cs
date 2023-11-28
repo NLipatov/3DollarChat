@@ -1,6 +1,10 @@
-﻿using Limp.Server.Utilities.HttpMessaging;
+﻿using System.Text.Json;
+using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.SignalR;
 
@@ -34,31 +38,18 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("OnRefreshTokenHistoryResponse", history);
         }
 
-        public async Task IsTokenValid(string accessToken)
+        public async Task ValidateCredentials(CredentialsDTO dto)
         {
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            AuthResult result = await _serverHttpClient.ValidateCredentials(dto);
 
-            await Clients.Caller.SendAsync("OnAuthenticationCredentialsValidated", isTokenValid);
-        }
-        
-        public async Task IsWebAuthnCredentialsAreValid(string credentialId, uint counter)
-        {
-            AuthResult result = await _serverHttpClient.RefreshCredentialId(credentialId, counter);
-            await Clients.Caller.SendAsync("OnAuthenticationCredentialsValidated", result.Result == AuthResultType.Success);
+            await Clients.Caller.SendAsync("OnValidateCredentials", result);
         }
 
-        public async Task RefreshTokens(RefreshTokenDto refreshToken)
+        public async Task RefreshCredentials(CredentialsDTO dto)
         {
-            AuthResult result = await _serverHttpClient.ExplicitJWTPairRefresh(refreshToken);
-
-            await Clients.Caller.SendAsync("OnTokensRefresh", result);
-        }
-
-        public async Task RefreshCredentialId(string credentialId, uint counter)
-        {
-            AuthResult result = await _serverHttpClient.RefreshCredentialId(credentialId, counter);
-            Guid eventId = Guid.NewGuid();
-            await Clients.Caller.SendAsync("OnCredentialIdRefresh", result, eventId);
+            AuthResult result = await _serverHttpClient.RefreshCredentials(dto);
+            
+            await Clients.Caller.SendAsync("OnRefreshCredentials", result);
         }
 
         public async Task GetAuthorisationServerAddress()

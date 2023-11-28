@@ -1,6 +1,7 @@
 ﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Utilities.UsernameResolver;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
@@ -49,7 +50,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         WebAuthnPair? webAuthnPair = null,
         JwtPair? jwtPair = null)
         {
-            var username =  await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);;
+            var username =  await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{WebAuthnPair = webAuthnPair, JwtPair = jwtPair});
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key

@@ -74,7 +74,7 @@
         }
 
         HubServiceSubscriptionManager
-            .AddCallback<AuthResult>(DecideOnToken, "OnAuthenticationCredentialsValidated", ComponentId);
+            .AddCallback<AuthResult>(DecideOnToken, "OnValidateCredentials", ComponentId);
 
         HubServiceSubscriptionManager
             .AddCallback<bool>(isActive =>

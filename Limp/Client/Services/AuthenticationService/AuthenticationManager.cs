@@ -2,6 +2,7 @@
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 using LimpShared.Models.Authentication.Models.Credentials;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -27,6 +28,12 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
             return _webAuthnHandler;
 
         throw new ArgumentException("No active authentication handlers.");
+    }
+
+    public async Task<CredentialsDTO> GetCredentialsDto()
+    {
+        var handler = await GetAvailableHandlerAsync();
+        return await handler.GetCredentialsDto();
     }
 
     public async Task<ICredentials> GetCredentials()

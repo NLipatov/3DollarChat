@@ -13,7 +13,6 @@ using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
 using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Types;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using LimpShared.Models.Message.DataTransfer;
@@ -103,19 +102,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 }
             }
             
-            var authenticationType = await _authenticationHandler.GetAuthenticationTypeAsync();
-            if (authenticationType is AuthenticationType.WebAuthn)
-            {
-                await hubConnection.SendAsync("SetUsername", null, await _authenticationHandler.GetCredentials());
-            }
-            else if (authenticationType is AuthenticationType.JwtToken)
-            {
-                await hubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentials(), null);
-            }
-            else
-            {
-                throw new ArgumentException("Could not define used authentication mechanism.");
-            }
+            await hubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
             
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
 

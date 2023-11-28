@@ -238,22 +238,22 @@ namespace Limp.Server.Utilities.HttpMessaging
                                        ($"Could not get a value by key {authorityAddressKey} from server configuration."));
         }
 
-        public async Task<string> GetUsernameByCredentialId(string credentialId)
+        public async Task<AuthResult> GetUsernameByCredentials(CredentialsDTO credentials)
         {
-            var escapedCredentialId = Uri.EscapeDataString(credentialId);
-            var endpointUrl = _configuration["AuthAutority:Endpoints:UsernameByCredentialId"]
-                ?.Replace("{credentialId}", escapedCredentialId);
+            var endpointUrl = _configuration["AuthAutority:Endpoints:UsernameByCredentials"];
 
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
 
             using (HttpClient client = new())
             {
-                var response = await client.GetStringAsync(requestUrl);
-
-                if (response is null)
-                    throw new HttpRequestException($"Server respond with unexpected JSON value.");
-
-                return response;
+                var response = await client.PostAsJsonAsync(requestUrl, credentials);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<AuthResult>(responseContent, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                return result ?? new AuthResult {Message = "Could not get response from AuthAPI", Result = AuthResultType.Fail};
             }
         }
 

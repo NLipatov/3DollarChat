@@ -22,6 +22,6 @@ namespace Limp.Server.Utilities.HttpMessaging
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
         Task<List<AccessRefreshEventLog>> GetTokenRefreshHistory(string accessToken);
         Task<string> GetServerAddress();
-        Task<string> GetUsernameByCredentialId(string credentialId);
+        Task<AuthResult> GetUsernameByCredentials(CredentialsDTO credentials);
     }
 }

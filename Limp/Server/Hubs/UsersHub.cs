@@ -68,9 +68,9 @@ namespace Limp.Server.Hubs
             await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SetUsername(string accessToken)
+        public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            string usernameFromToken = await _usernameResolverService.GetUsernameAsync(accessToken);
+            string usernameFromToken = await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             var keys = InMemoryHubConnectionStorage
                 .UsersHubConnections
@@ -97,14 +97,14 @@ namespace Limp.Server.Hubs
                 authenticationType = AuthenticationType.JwtToken;
                 var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
                 isTokenValid = validationResult.Result is AuthResultType.Success;
-                username = await _usernameResolverService.GetUsernameAsync(jwtPair.AccessToken);
+                username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
             }
             else if (webAuthnPair is not null)
             {
                 authenticationType = AuthenticationType.WebAuthn;
                 var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
                 isTokenValid = validationResult.Result is AuthResultType.Success;
-                username = await _usernameResolverService.GetUsernameAsync(webAuthnPair.CredentialId);
+                username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{WebAuthnPair = webAuthnPair, JwtPair = jwtPair});
             }
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
@@ -177,9 +177,9 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task GetUserWebPushSubscriptions(string accessToken)
+        public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
-            string username =  await _usernameResolverService.GetUsernameAsync(accessToken);;
+            string username =  await _usernameResolverService.GetUsernameAsync(credentialsDto);;
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }

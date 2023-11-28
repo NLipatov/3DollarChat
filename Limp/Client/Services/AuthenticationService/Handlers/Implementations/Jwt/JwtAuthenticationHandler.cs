@@ -30,6 +30,14 @@ public class JwtAuthenticationHandler : IJwtHandler
         _jsRuntime = jsRuntime;
     }
 
+    public async Task<CredentialsDTO> GetCredentialsDto()
+    {
+        return new CredentialsDTO()
+        {
+            JwtPair = await GetCredentials() as JwtPair
+        };
+    }
+
     public async Task<ICredentials> GetCredentials()
     {
         return new JwtPair()

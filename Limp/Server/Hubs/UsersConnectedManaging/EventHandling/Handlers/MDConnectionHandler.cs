@@ -82,7 +82,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 throw new ArgumentException("Access-token is not valid.");
             }
 
-            var username = await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
+            var username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO {JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
@@ -98,24 +98,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             await AddUserToGroup(connectionId, username, default);
 
             await SendToCaller("OnMyNameResolve", username, default);
-        }
-
-        private async Task<TokenRelatedOperationResult> GetUsername(string accessToken)
-        {
-            TokenRelatedOperationResult usernameRequestResult = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-
-            string declaredUsername =  await _usernameResolverService.GetUsernameAsync(accessToken);
-            string? actualUsername = usernameRequestResult.Username;
-
-            if(!string.IsNullOrWhiteSpace(actualUsername)
-                &&
-                !string.IsNullOrWhiteSpace(declaredUsername))
-            {
-                if (!declaredUsername.Equals(actualUsername))
-                    throw new ArgumentException("Username from access-token and username from AuthAPI differs.");
-            }
-
-            return usernameRequestResult;
         }
 
         private void GuaranteeDelegatesNotNull(params object?[] delegateObjects)

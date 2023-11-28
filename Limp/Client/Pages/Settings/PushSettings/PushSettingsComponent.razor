@@ -1,5 +1,6 @@
 ﻿@page "/settings/notifications"
 @using Limp.Client.Pages.AuthenticationChecks
+@using Limp.Client.Services.AuthenticationService
 @using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
@@ -8,7 +9,9 @@
 @using Limp.Client.Shared.ReuseableComponents.EditableList
 @using Limp.Client.Shared.ReuseableComponents.EditableList.Models
 @using LimpShared.Models.Authentication.Models.Credentials
+@using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO
 @using LimpShared.Models.Authentication.Models.Credentials.Implementation
+@using LimpShared.Models.Authentication.Types
 @using LimpShared.Models.WebPushNotification;
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime Js
@@ -162,7 +165,7 @@
         //if hub connection is not setted up already, we will set it up now
         await UsersService.GetHubConnectionAsync();
 
-        await UsersService.GetUserWebPushSubscriptions(_accessToken);
+        await UsersService.GetUserWebPushSubscriptions(await GetCredentialsDTO());
     }
 
     private void OnSubscriptionsLoaded(NotificationSubscriptionDto[] subscriptions)
@@ -236,11 +239,35 @@
             throw new ArgumentException
             ("Could not get a access token from local storage to load web push subscriptions.");
 
-        await UsersService.GetUserWebPushSubscriptions(accessToken);
+        await UsersService.GetUserWebPushSubscriptions(await GetCredentialsDTO());
     }
         
     public async Task<bool> IsServiceWorkerInstalled()
     {
         return await Js.InvokeAsync<bool>("isServiceWorkerInstalled");
+    }
+
+    private async Task<CredentialsDTO> GetCredentialsDTO()
+    {
+        var credentials = await AuthenticationHandler.GetCredentials();
+        var authenticationType = await AuthenticationHandler.GetAuthenticationTypeAsync();
+        if (authenticationType is AuthenticationType.WebAuthn)
+        {
+            return new CredentialsDTO
+            {
+                WebAuthnPair = credentials as WebAuthnPair
+            };
+        }
+        if (authenticationType is AuthenticationType.JwtToken)
+        {
+            return new CredentialsDTO
+            {
+                JwtPair = credentials as JwtPair
+            };
+        }
+        
+        throw new ApplicationException($"Exception:" +
+                                       $"{nameof(PushSettingsComponent)}.{nameof(GetCredentialsDTO)}:" +
+                                       $"Unsupported authentication type - {authenticationType}.");
     }
 }

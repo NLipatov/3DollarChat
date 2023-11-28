@@ -4,6 +4,7 @@ using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Users;
@@ -135,8 +136,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             }
             
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnUsersHubConnectionStatusChanged");
-
-            await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetAccessCredential());
+            
+            await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
 
             if (_isConnectionClosedCallbackSet is false)
             {
@@ -229,10 +230,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
             await hubConnection.SendAsync("AddUserWebPushSubscription", subscriptionDTO);
         }
 
-        public async Task GetUserWebPushSubscriptions(string accessToken)
+        public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
             var hubConnection = await GetHubConnectionAsync();
-            await hubConnection.SendAsync("GetUserWebPushSubscriptions", accessToken);
+            await hubConnection.SendAsync("GetUserWebPushSubscriptions", credentialsDto);
         }
 
         public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)

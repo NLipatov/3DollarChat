@@ -1,4 +1,5 @@
 ﻿using LimpShared.Encryption;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.WebPushNotification;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
@@ -13,7 +14,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
         void RemoveUsernameResolved(Guid subscriptionId);
         Task CheckIfUserOnline(string username);
         Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDTO);
-        Task GetUserWebPushSubscriptions(string accessToken);
+        Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto);
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
         Task CheckIfUserExists(string username);
     }

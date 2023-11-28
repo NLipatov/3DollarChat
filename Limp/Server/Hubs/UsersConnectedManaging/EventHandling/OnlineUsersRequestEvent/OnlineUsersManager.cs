@@ -10,15 +10,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
             var userHubConnections = InMemoryHubConnectionStorage.UsersHubConnections;
             var messageHubConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections;
 
-            //var commonConnections = userHubConnections.Where(x => messageHubConnections.Any(m => m.Key == x.Key));
             var commonConnections = userHubConnections;
-
-            Console.WriteLine("Pushing as online:");
-            foreach (var key in commonConnections.Select(x => x.Key))
-            {
-                Console.WriteLine(key);
-            }
-            Console.WriteLine();
 
             return new()
             {
@@ -27,8 +19,12 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
                 {
                     Username = x.Key,
                     ConnectionIds = x.Value,
-                    UsersHubConnectionIds = userHubConnections[x.Key],
-                    MessageHubConnectionIds = messageHubConnections[x.Key]
+                    UsersHubConnectionIds = userHubConnections.TryGetValue(x.Key, out var usersHubConnectionIds) 
+                        ? usersHubConnectionIds 
+                        : null,
+                    MessageHubConnectionIds = messageHubConnections.TryGetValue(x.Key, out var messageHubConnectionIds) 
+                        ? messageHubConnectionIds
+                        : null
                 }).ToArray()
             };
         }

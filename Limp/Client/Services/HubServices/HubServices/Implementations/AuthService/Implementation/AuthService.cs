@@ -8,6 +8,7 @@ using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
+using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
@@ -113,19 +114,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
 
             HubConnectionInstance.On<AuthResult>("OnValidateCredentials", async result =>
             {
-                if (!string.IsNullOrWhiteSpace(result.CredentialId))
-                {
-                    var storedCredentialId = await _localStorageService.ReadPropertyAsync("credentialIdCounter");
-                    if (string.IsNullOrWhiteSpace(storedCredentialId) || storedCredentialId != result.CredentialId)
-                    {
-                        NavigationManager.NavigateTo("signin");
-                        return;
-                    }
-                    var currentCounter = uint.Parse(storedCredentialId);
-                    await _localStorageService.WritePropertyAsync("credentialIdCounter", (currentCounter + 1).ToString());
-                }
-                
-                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnAuthenticationCredentialsValidated");
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnValidateCredentials");
             });
 
             HubConnectionInstance.On<AuthResult>("OnLoggingIn", result =>

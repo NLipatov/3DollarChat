@@ -8,6 +8,7 @@ using Limp.Server.Utilities.Redis;
 using Limp.Server.Utilities.UsernameResolver;
 using Limp.Server.WebPushNotifications;
 using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
@@ -81,17 +82,17 @@ namespace Limp.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task SetUsername(JwtPair? jwtPair, WebAuthnPair? webAuthnPair = null)
+        public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            string usernameFromToken =  await _usernameResolverService.GetUsernameAsync(jwtPair?.AccessToken ?? webAuthnPair?.CredentialId);
+            string usernameFromToken =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             await _userConnectedHandler.OnUsernameResolved
             (Context.ConnectionId, 
             Groups.AddToGroupAsync,
             Clients.Caller.SendAsync,
             Clients.Caller.SendAsync,
-            webAuthnPair: webAuthnPair,
-            jwtPair: jwtPair);
+            webAuthnPair: credentialsDto.WebAuthnPair,
+            jwtPair: credentialsDto.JwtPair);
 
             var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 

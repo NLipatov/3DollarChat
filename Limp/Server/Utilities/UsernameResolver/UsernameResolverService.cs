@@ -1,28 +1,25 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Limp.Client.Services.AuthenticationService;
 using Limp.Server.Utilities.HttpMessaging;
+using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 
 namespace Limp.Server.Utilities.UsernameResolver;
 
 public class UsernameResolverService : IUsernameResolverService
 {
     private readonly IServerHttpClient _serverHttpClient;
+    private readonly IAuthenticationManager _authenticationManager;
 
     public UsernameResolverService(IServerHttpClient serverHttpClient)
     {
         _serverHttpClient = serverHttpClient;
     }
 
-    public async Task<string> GetUsernameAsync(string accessToken)
+    public async Task<string> GetUsernameAsync(CredentialsDTO credentialsDto)
     {
-        if (IsTokenReadable(accessToken))
-        {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
-
-            return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value ?? string.Empty;
-        }
-
-        return await _serverHttpClient.GetUsernameByCredentialId(accessToken);
+        var result = await _serverHttpClient.GetUsernameByCredentials(credentialsDto);
+        return result.Result is AuthResultType.Success ? result.Message : string.Empty;
     }
 
     private bool IsTokenReadable(string accessToken)

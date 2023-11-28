@@ -24,7 +24,10 @@
             }
 
             <Virtualize 
-                Items="_usersOnlineMessage?.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).DistinctBy(x=>x.Username).ToArray() ?? new UserConnection[0]"
+                Items="_usersOnlineMessage
+    .UserConnections
+    .Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0)
+    .DistinctBy(x=>x.Username).ToArray() ?? Array.Empty<UserConnection>()"
                 Context="connection">
 
                 <ContactBar Username="@connection.Username"
@@ -57,8 +60,7 @@
             return;
         }
 
-        //Reading username from access-token
-        myUsername = await AuthenticationHandler.GetUsernameAsync();
+        await GetCurrentUserUsernameAsync();
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
@@ -75,5 +77,11 @@
             _usersOnlineMessage = usersOnlineMessage;
             StateHasChanged();
         }
+    }
+
+    private async Task GetCurrentUserUsernameAsync()
+    {
+        myUsername = await AuthenticationHandler.GetUsernameAsync();
+        StateHasChanged();
     }
 }

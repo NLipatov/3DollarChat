@@ -1,10 +1,6 @@
-﻿using System.Text.Json;
-using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Encryption;
+﻿using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.SignalR;
 

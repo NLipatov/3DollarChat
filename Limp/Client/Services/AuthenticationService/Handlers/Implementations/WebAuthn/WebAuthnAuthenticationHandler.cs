@@ -1,6 +1,4 @@
-﻿using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
-using Limp.Client.Services.LocalStorageService;
-using LimpShared.Models.Authentication.Models;
+﻿using Limp.Client.Services.LocalStorageService;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
@@ -12,6 +10,14 @@ namespace Limp.Client.Services.AuthenticationService.Handlers.Implementations.We
 public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 {
     private readonly ILocalStorageService _localStorageService;
+
+    public async Task<CredentialsDTO> GetCredentialsDto()
+    {
+        return new CredentialsDTO()
+        {
+            WebAuthnPair = (await GetCredentials()) as WebAuthnPair
+        };
+    }
 
     public async Task<ICredentials> GetCredentials()
     {
@@ -55,11 +61,7 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
     {
         var pair = await GetWebAuthnPairAsync();
 
-        await hubConnection.SendAsync("ValidateCredentials", new CredentialsDTO {WebAuthnPair = new WebAuthnPair()
-            {
-                CredentialId = pair.CredentialId,
-                Counter = pair.Counter
-            }});
+        await hubConnection.SendAsync("ValidateCredentials",  await GetCredentialsDto());
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)

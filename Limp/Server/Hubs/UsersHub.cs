@@ -106,6 +106,8 @@ namespace Limp.Server.Hubs
                 isTokenValid = validationResult.Result is AuthResultType.Success;
                 username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{WebAuthnPair = webAuthnPair, JwtPair = jwtPair});
             }
+            
+            await Clients.Caller.SendAsync("OnNameResolve", username);
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {

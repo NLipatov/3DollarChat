@@ -3,6 +3,7 @@
 @using Limp.Client.Services.AuthenticationService.Handlers
 @using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Limp.Client.Services.UserIdentityService
 @using Limp.Client.UIComponents.ContactItem
 @using LimpShared.Models.ConnectedUsersManaging;
 @inject NavigationManager _navigationManager
@@ -15,26 +16,31 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-    <div class="ApplicationContent p-2">
+        <div class="ApplicationContent p-2">
             @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
             {
                 <Callout Type="CalloutType.Info">
                     <span>Looks like everyone is offline now.</span>
                 </Callout>
             }
+            else if (string.IsNullOrWhiteSpace(myUsername))
+            {
+                <Callout Type="CalloutType.Info">
+                    <span>Resolving your username.</span>
+                </Callout>
+            }
+            else
+            {
+                <Virtualize
+                    Items="_usersOnlineMessage.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).DistinctBy(x => x.Username).ToArray() ?? Array.Empty<UserConnection>()"
+                    Context="connection">
 
-            <Virtualize 
-                Items="_usersOnlineMessage
-    .UserConnections
-    .Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0)
-    .DistinctBy(x=>x.Username).ToArray() ?? Array.Empty<UserConnection>()"
-                Context="connection">
-
-                <ContactBar Username="@connection.Username"
-                            IsOnline="true"
-                            OnClickCallback="@(()=>_navigationManager.NavigateTo($"user/{connection.Username}"))" />
-            </Virtualize>
-    </div>
+                    <ContactBar Username="@connection.Username"
+                                IsOnline="true"
+                                OnClickCallback="@(() => _navigationManager.NavigateTo($"user/{connection.Username}"))"/>
+                </Virtualize>
+            }
+        </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
         <UnAuthorized/>
@@ -50,38 +56,42 @@
 
     protected override async Task OnInitializedAsync()
     {
-        //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+    //This id will be needed on dispose stage
+    //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
 
-        if(!await AuthenticationHandler.IsSetToUseAsync())
+        if (!await AuthenticationHandler.IsSetToUseAsync())
         {
             _navigationManager.NavigateTo("/signIn");
             return;
         }
 
-        await GetCurrentUserUsernameAsync();
+        myUsername = ActiveUserIdentity.GetUsername();
 
-        //Subscribing to server event of updating online users
+    //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
             .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
-        //Actualizing list of users that currently online
+        _hubServiceSubscriptionManager
+            .AddCallback<string>(MyNameResolved, "OnNameResolve", ComponentId);
+
+    //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
+    }
+
+    private void MyNameResolved(string username)
+    {
+        myUsername = ActiveUserIdentity.GetUsername();
+        StateHasChanged();
     }
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
-        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        if (_usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
             _usersOnlineMessage = usersOnlineMessage;
             StateHasChanged();
         }
     }
 
-    private async Task GetCurrentUserUsernameAsync()
-    {
-        myUsername = await AuthenticationHandler.GetUsernameAsync();
-        StateHasChanged();
-    }
 }

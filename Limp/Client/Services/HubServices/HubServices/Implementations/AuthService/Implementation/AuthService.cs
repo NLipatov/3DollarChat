@@ -2,13 +2,11 @@
 using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
-using Limp.Client.Services.JWTReader;
 using Limp.Client.Services.LocalStorageService;
 using Limp.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
-using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 

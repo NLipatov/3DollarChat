@@ -3,6 +3,7 @@ using Limp.Client.Cryptography.KeyStorage;
 using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Limp.Client.Services.UserIdentityService;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
@@ -70,6 +71,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersServ
 
             HubConnectionInstance.On<string>("OnNameResolve", async username =>
             {
+                ActiveUserIdentity.SetUsername(username);
+                
+                _callbackExecutor.ExecuteSubscriptionsByName(username, "OnNameResolve");
+                
                 _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
 
                 await GetHubConnectionAsync();

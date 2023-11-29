@@ -58,13 +58,10 @@ namespace Limp.Server.Utilities.HttpMessaging
                 {
                     PropertyNameCaseInsensitive = true
                 });
-                
-                return new AuthResult
+
+                return responseAuthResult ?? new AuthResult()
                 {
-                    Message = responseAuthResult?.Message,
-                    Result = response.StatusCode is not HttpStatusCode.OK ? AuthResultType.Fail : AuthResultType.Success,
-                    JwtPair = responseAuthResult?.JwtPair,
-                    CredentialId = responseAuthResult?.CredentialId ?? string.Empty
+                    Result = AuthResultType.Fail,
                 };
             }
         }

@@ -106,10 +106,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 if (result.JwtPair is not null)
                     await _authenticationManager.UpdateCredentials(result.JwtPair);
 
-                if (string.IsNullOrWhiteSpace(result.CredentialId))
+                if (!string.IsNullOrWhiteSpace(result.CredentialId))
                     await _authenticationManager.UpdateCredentials(new WebAuthnPair{CredentialId = result.CredentialId});
 
-                _callbackExecutor.ExecuteSubscriptionsByName(true, "OnAuthenticationCredentialsValidated");
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnValidateCredentials");
             });
 
             HubConnectionInstance.On<AuthResult>("OnValidateCredentials", async result =>

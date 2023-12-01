@@ -65,7 +65,11 @@ public class JwtAuthenticationHandler : IJwtHandler
         var tokenHandler = new JwtSecurityTokenHandler();
         var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
 
-        return securityToken?.Claims.FirstOrDefault(claim => claim.Type == "unique_name")?.Value ?? string.Empty;
+        var usernameClaimKey = "unique_name";
+        return securityToken?.Claims.FirstOrDefault(claim => claim.Type == usernameClaimKey)?.Value 
+               ?? throw new ApplicationException($"Exception:" +
+                                                 $"{nameof(JwtAuthenticationHandler)}.{nameof(GetUsernameAsync)}:" +
+                                                 $"Could not get a '{usernameClaimKey}' claim value.");
     }
 
     public async Task<bool> IsSetToUseAsync()

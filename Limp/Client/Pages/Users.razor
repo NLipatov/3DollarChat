@@ -66,23 +66,14 @@
             return;
         }
 
-        myUsername = ActiveUserIdentity.GetUsername();
+        myUsername = await AuthenticationHandler.GetUsernameAsync();
 
     //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
             .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
-        _hubServiceSubscriptionManager
-            .AddCallback<string>(MyNameResolved, "OnNameResolve", ComponentId);
-
     //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
-    }
-
-    private void MyNameResolved(string username)
-    {
-        myUsername = ActiveUserIdentity.GetUsername();
-        StateHasChanged();
     }
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
@@ -93,5 +84,4 @@
             StateHasChanged();
         }
     }
-
 }

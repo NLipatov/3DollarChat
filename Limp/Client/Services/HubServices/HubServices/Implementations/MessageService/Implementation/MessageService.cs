@@ -503,8 +503,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             await connection.StopAsync();
             await connection.DisposeAsync();
 
-            await Task.Delay(1000);
-
             await SendPackageMessage(i, file, targetGroup);
         }
 

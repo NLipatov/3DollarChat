@@ -12,7 +12,7 @@
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
-@inject IPackageFormerService _packageFormerService
+@inject IPackageMultiplexerService PackageMultiplexerService
 @implements IDisposable
 
 @if(message != null)
@@ -138,7 +138,7 @@
         if (message is not null && message.Packages.Any())
         {
             string mimeType =  message.Packages.First().ContentType;
-            string base64Data = _packageFormerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList());
+            string base64Data = PackageMultiplexerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList(), message.Sender);
             DataUrl = $"data:{mimeType};base64,{base64Data}";
             StateHasChanged();
         }

@@ -7,7 +7,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
     {
         bool IsConnected();
         Task NegotiateOnAESAsync(string partnerUsername);
-        Task SendData(List<DataFile> files, string targetGroup);
+        Task SendData(List<ClientDataFile> files, string targetGroup);
         Task SendText(string text, string targetGroup, string myUsername);
         Task SendMessage(ClientMessage message);
         Task RequestPartnerToDeleteConvertation(string targetGroup);

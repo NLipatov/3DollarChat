@@ -60,7 +60,7 @@ builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
 builder.Services.AddTransient<ILocalStorageService, LocalStorageService>();
 builder.Services.AddTransient<IUserAgentService, UserAgentService>();
-builder.Services.AddTransient<IPackageFormerService, PackageFormerService>();
+builder.Services.AddTransient<IPackageMultiplexerService, PackageMultiplexerService>();
 builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();

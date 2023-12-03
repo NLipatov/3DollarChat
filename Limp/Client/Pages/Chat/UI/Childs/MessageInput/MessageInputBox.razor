@@ -1,7 +1,9 @@
-﻿@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
+﻿@using Limp.Client.ClientOnlyModels.ClientOnlyExtentions
+@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.InboxService;
 @using System.Text
+@using Limp.Client.ClientOnlyModels
 @using Limp.Client.Cryptography.CryptoHandlers
 @using Limp.Client.Cryptography.KeyStorage
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption
@@ -13,11 +15,11 @@
 @inject IMessageBox _messageBox
 @inject IJSRuntime _jSRuntime
 @inject IMessageDecryptor _messageDecryptor 
-@inject IPackageFormerService _packageFormerService
+@inject IPackageMultiplexerService PackageMultiplexerService
 
-<div class="message-input-box" @onkeydown="((e)=> OnKeyDown(e))">
-    <input @bind="MessageInput" @bind:event="oninput" />
-    
+<div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
+    <input @bind="MessageInput" @bind:event="oninput"/>
+
     <label for="fileinput" class="label-wrapper" style="align-items: center;">
         <span class="bi bi-paperclip"></span>
         <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
@@ -35,29 +37,32 @@
             }
         }
     </label>
-    
+
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
 
 <Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">
     <BodyTemplate>
-        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes/1024000)) MB.
+        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes / 1024000)) MB.
     </BodyTemplate>
     <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="(async ()=> await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
+        <Button Color="ButtonColor.Secondary" @onclick="(async () => await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
     </FooterTemplate>
 </Modal>
 
 @code {
+
     [Parameter]
     public string TopicName { get; set; } = string.Empty;
+
     [Parameter]
     public string MyUsername { get; set; } = string.Empty;
+
     private string MessageInput { get; set; } = string.Empty;
-    private List<DataFile> DataFiles { get; set; } = new();
+    private List<ClientDataFile> DataFiles { get; set; } = new();
     public Guid FileInputId = Guid.NewGuid();
     private Modal MaxFileSizeRestrictionModal = default!;
-    private const int MaxFileSizeBytes = 5242880;
+        private const int MaxFileSizeBytes = 5242880;
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
@@ -67,22 +72,14 @@
 
     private async Task OnFileInput(InputFileChangeEventArgs e)
     {
-        foreach (var file in e.GetMultipleFiles())
+        if (e.File.Size > MaxFileSizeBytes)
         {
-            if (file.Size > MaxFileSizeBytes)
-            {
-                await MaxFileSizeRestrictionModal.ShowAsync();
-                FileInputId = Guid.NewGuid();
-                return;
-            }
-            
-            var dfId = Guid.NewGuid();
-            DataFiles.Add(new DataFile()
-            {
-                Id = dfId,
-                Packages = await _packageFormerService.Split(file, 22 * 1024, dfId),
-            });
+            await MaxFileSizeRestrictionModal.ShowAsync();
+            FileInputId = Guid.NewGuid();
+            return;
         }
+
+        var clientPackages = Split(e.File, 20 * 1024 /*KiB*/, TopicName);
     }
 
     private async Task SendMessage()
@@ -97,15 +94,104 @@
         {
             await _messageService.SendText(MessageInput, TopicName, MyUsername);
         }
-        
+
         if (DataFiles.Any())
         {
-            var dataFilesCopy = new List<DataFile>(DataFiles);
-            Task.Run(()=> _messageService.SendData(dataFilesCopy, TopicName));
+            var dataFilesCopy = new List<ClientDataFile>(DataFiles);
+            Task.Run(() => _messageService.SendData(dataFilesCopy, TopicName));
             FileInputId = Guid.NewGuid();
         }
-        
+
         MessageInput = string.Empty;
         DataFiles = new(0);
+    }
+
+    public async Task Split(IBrowserFile file, int maxPackageSizeBytes, string partnerUsername)
+    {
+        var fileDataId = Guid.NewGuid();
+        var bytes = await FileToBytes(file);
+        var aesKey = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerUsername).Value.Value.ToString();
+        var b64Decrypted = Convert.ToBase64String(bytes);
+        var b64DecryptedChunks = SplitString(b64Decrypted, maxPackageSizeBytes);
+
+        List<string> ivs = new List<string>(b64DecryptedChunks.Count);
+        List<string> b64Encrypted = new List<string>(b64DecryptedChunks.Count);
+
+        foreach (var chunk in b64DecryptedChunks)
+        {
+            var encrypted = await _jSRuntime.InvokeAsync<string>("AESEncryptText", chunk, aesKey);
+            b64Encrypted.Add(encrypted);
+
+            var iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
+            ivs.Add(iv);
+        }
+
+        var decryptedChunks = new string[b64Encrypted.Count];
+
+        for (int i = 0; i < b64Encrypted.Count; i++)
+        {            
+            await _jSRuntime.InvokeAsync<string>("ImportIV", ivs[i]);
+            decryptedChunks[i] = await _jSRuntime.InvokeAsync<string>("AESDecryptText", b64Encrypted[i], aesKey);
+        }
+        var sb = new StringBuilder();
+        foreach (var chunk in decryptedChunks)
+        {
+            sb.Append(chunk);
+        }
+
+        var res = sb.ToString();
+
+        List<ClientPackage> packages = new List<ClientPackage>(b64DecryptedChunks.Count);
+
+        for (int i = 0; i < b64Encrypted.Count; i++)
+        {
+            packages.Add(new ClientPackage
+            {
+                FileDataid = fileDataId,
+                FileName = file.Name,
+                ContentType = file.ContentType,
+                Index = i,
+                Total = b64Encrypted.Count,
+                B64Data = b64Encrypted[i],
+                IV = ivs[i],
+                PlainB64Data = decryptedChunks[i]
+            });
+        }
+        
+        DataFiles.Add(new ClientDataFile()
+        {
+            Id = fileDataId,
+            ClientPackages = packages,
+            Packages = packages
+                .Select(x => x.ToPackage())
+                .ToList(),
+        });
+        
+        StateHasChanged();
+    }
+
+    private List<string> SplitString(string input, int maxLength)
+    {
+        List<string> result = new List<string>();
+
+        for (int i = 0; i < input.Length; i += maxLength)
+        {
+            int length = Math.Min(maxLength, input.Length - i);
+            result.Add(input.Substring(i, length));
+        }
+
+        return result;
+    }
+
+    private async Task<byte[]> FileToBytes(IBrowserFile file)
+    {
+        using (var s = file.OpenReadStream(500000000))
+        {
+            using (var ms = new MemoryStream())
+            {
+                await s.CopyToAsync(ms);
+                return ms.ToArray();
+            }
+        }
     }
 }

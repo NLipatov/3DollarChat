@@ -41,6 +41,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private ConcurrentDictionary<Guid, List<ClientPackage>> ReceivedFileIdToPackages = new();
         private ConcurrentDictionary<Guid, List<ClientPackage>> SendedFileIdPackages = new();
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
+        private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
 
         private HubConnection? hubConnection { get; set; }
 
@@ -76,9 +77,8 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            //Shortcut if username is already set and connection is alive
-            if (hubConnection?.State is HubConnectionState.Connected 
-                && !string.IsNullOrWhiteSpace(myName))
+            //Shortcut connection is alive and ready to be used
+            if (hubConnection?.State is HubConnectionState.Connected && IsRoutinesCompleted)
                 return hubConnection;
             
             if (!await _authenticationHandler.IsSetToUseAsync())

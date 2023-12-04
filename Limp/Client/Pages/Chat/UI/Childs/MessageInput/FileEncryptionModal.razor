@@ -1,0 +1,51 @@
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
+@implements IDisposable
+
+<Modal @ref="modal"
+       Title="File is being encrypted">
+
+    <BodyTemplate>
+        <span>
+            Progress: <strong>@Progress</strong>%
+        </span>
+    </BodyTemplate>
+</Modal>
+
+@code {
+    private Modal? modal = default!;
+    private decimal Progress { get; set; } = 0;
+    private Guid ComponentId { get; set; }
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+        
+        HubServiceSubscriptionManager
+            .AddCallback<bool>(FileIsBeingEncrypted, "OnIsFileBeingEncrypted", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<decimal>(ChangeProgressPercentage, "OnFileEncryptionProgressChanged", ComponentId);
+    }
+
+    private async Task ChangeProgressPercentage(decimal progress)
+    {
+        Progress = progress;
+        StateHasChanged();
+    }
+
+    private async Task FileIsBeingEncrypted(bool isProcessIsActive)
+    {
+        if (isProcessIsActive)
+            await ShowModalAsync();
+        else
+            await HideModalAsync();
+    }
+    
+    public async Task ShowModalAsync() => await modal!.ShowAsync();
+
+    public async Task HideModalAsync() => await modal!.HideAsync();
+}

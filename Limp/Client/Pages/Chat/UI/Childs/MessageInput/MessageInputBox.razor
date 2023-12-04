@@ -8,6 +8,7 @@
 @using Limp.Client.Cryptography.KeyStorage
 @using Limp.Client.HubInteraction.Handlers.MessageDecryption
 @using Limp.Client.Services.DataTransmission.PackageForming
+@using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using LimpShared.Encryption
 @using LimpShared.Models.Message.DataTransfer
 @inject IMessageBuilder _messageBuilder
@@ -16,6 +17,7 @@
 @inject IJSRuntime _jSRuntime
 @inject IMessageDecryptor _messageDecryptor 
 @inject IPackageMultiplexerService PackageMultiplexerService
+@inject ICallbackExecutor CallbackExecutor
 
 <div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput"/>
@@ -50,6 +52,8 @@
     </FooterTemplate>
 </Modal>
 
+<FileEncryptionModal/>
+
 @code {
 
     [Parameter]
@@ -79,7 +83,15 @@
             return;
         }
 
-        var clientPackages = Split(e.File, 20 * 1024 /*KiB*/, TopicName);
+        try
+        {
+            CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+            await Split(e.File, 20 * 1024 /*KiB*/, TopicName);
+        }
+        finally
+        {
+            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+        }
     }
 
     private async Task SendMessage()
@@ -117,15 +129,18 @@
         List<string> ivs = new List<string>(b64DecryptedChunks.Count);
         List<string> b64Encrypted = new List<string>(b64DecryptedChunks.Count);
 
-        foreach (var chunk in b64DecryptedChunks)
+        for (int i = 0; i < b64DecryptedChunks.Count; i++)
         {
-            var encrypted = await _jSRuntime.InvokeAsync<string>("AESEncryptText", chunk, aesKey);
+            var encrypted = await _jSRuntime.InvokeAsync<string>("AESEncryptText", b64DecryptedChunks[i], aesKey);
             b64Encrypted.Add(encrypted);
 
             var iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
             ivs.Add(iv);
-        }
 
+            decimal progress = Math.Round(i / (decimal)b64DecryptedChunks.Count * 100);
+            CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
+        }
+        
         var decryptedChunks = new string[b64Encrypted.Count];
 
         for (int i = 0; i < b64Encrypted.Count; i++)
@@ -133,13 +148,6 @@
             await _jSRuntime.InvokeAsync<string>("ImportIV", ivs[i]);
             decryptedChunks[i] = await _jSRuntime.InvokeAsync<string>("AESDecryptText", b64Encrypted[i], aesKey);
         }
-        var sb = new StringBuilder();
-        foreach (var chunk in decryptedChunks)
-        {
-            sb.Append(chunk);
-        }
-
-        var res = sb.ToString();
 
         List<ClientPackage> packages = new List<ClientPackage>(b64DecryptedChunks.Count);
 

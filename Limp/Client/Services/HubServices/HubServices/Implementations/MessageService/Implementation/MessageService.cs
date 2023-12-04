@@ -76,6 +76,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
+            //Shortcut if username is already set and connection is alive
+            if (hubConnection?.State is HubConnectionState.Connected 
+                && !string.IsNullOrWhiteSpace(myName))
+                return hubConnection;
+            
             if (!await _authenticationHandler.IsSetToUseAsync())
             {
                 NavigationManager.NavigateTo("signin");

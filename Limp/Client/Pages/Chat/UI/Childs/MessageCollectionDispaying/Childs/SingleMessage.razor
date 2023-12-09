@@ -6,6 +6,8 @@
 @using Limp.Client.Services.InboxService;
 @using LimpShared.Models.Message;
 @using Ljbc1994.Blazor.IntersectionObserver
+@using System.Text
+@using Microsoft.Extensions.Primitives
 @inject IIntersectionObserverService _observerService
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
@@ -139,7 +141,12 @@
         {
             string mimeType =  message.Packages.First().ContentType;
             string base64Data = PackageMultiplexerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList(), message.Sender);
-            DataUrl = $"data:{mimeType};base64,{base64Data}";
+            var sb = new StringBuilder();
+            sb.Append("data:");
+            sb.Append(mimeType);
+            sb.Append(";base64,");
+            sb.Append(base64Data);
+            DataUrl = sb.ToString();
             StateHasChanged();
         }
 

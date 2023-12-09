@@ -79,10 +79,10 @@ public class JwtAuthenticationHandler : IJwtHandler
                !string.IsNullOrWhiteSpace(jWtPair.RefreshToken.Token);
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
+    public async Task TriggerCredentialsValidation(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
     {
         JwtPair jWtPair = await GetJwtPairAsync();
-        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection);
+        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection, revalidationCallback);
 
         if (!isCredentialsBeingRefreshed)
         {
@@ -129,13 +129,16 @@ public class JwtAuthenticationHandler : IJwtHandler
     /// Checks if credentials are outdated and updates it
     /// </summary>
     /// <returns>bool which determins if credentials refresh is in progress now</returns>
-    public async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection)
+    private async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
     {
         JwtPair? jwtPair = await GetCredentials() as JwtPair;
         if (jwtPair is not null)
         {
-            if (await IsAccessTokenExpiredAsync())
+            var tokenTtl = await GetTokenTimeToLiveAsync();
+            if (tokenTtl > 0)
             {
+                revalidationCallback?.Invoke(tokenTtl - 10);
+                
                 var userAgentInformation = await _userAgentService.GetUserAgentInformation();
 
                 await hubConnection.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
@@ -147,15 +150,15 @@ public class JwtAuthenticationHandler : IJwtHandler
         return false;
     }
 
-    private async Task<bool> IsAccessTokenExpiredAsync()
+    private async Task<int> GetTokenTimeToLiveAsync()
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var securityToken = tokenHandler.ReadToken(await GetAccessCredential()) as JwtSecurityToken;
 
         if (securityToken?.ValidTo is null)
-            return false;
+            return 0;
 
-        return securityToken.ValidTo <= DateTime.UtcNow;
+        return (int)(securityToken.ValidTo - DateTime.UtcNow).TotalSeconds;
     }
 }

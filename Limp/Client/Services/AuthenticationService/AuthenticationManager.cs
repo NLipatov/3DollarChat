@@ -79,10 +79,10 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
         }
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
+    public async Task TriggerCredentialsValidation(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
     {
         var handler = await GetAvailableHandlerAsync();
-        await handler.TriggerCredentialsValidation(hubConnection);
+        await handler.TriggerCredentialsValidation(hubConnection, revalidationCallback);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)

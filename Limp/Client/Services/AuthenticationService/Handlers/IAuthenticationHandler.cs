@@ -14,6 +14,6 @@ public interface IAuthenticationHandler
     Task<string> GetAccessCredential();
     Task<string> GetUsernameAsync();
     Task<bool> IsSetToUseAsync();
-    Task TriggerCredentialsValidation(HubConnection hubConnection);
+    Task TriggerCredentialsValidation(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null);
     Task UpdateCredentials(ICredentials newCredentials);
 }

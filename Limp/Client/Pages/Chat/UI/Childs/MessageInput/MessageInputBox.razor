@@ -120,9 +120,14 @@
 
     public async Task Split(IBrowserFile file, int maxPackageSizeBytes, string partnerUsername)
     {
+        var aesKey = InMemoryKeyStorage.AESKeyStorage
+            .First(x => x.Key == partnerUsername).Value.Value?.ToString();
+        if (string.IsNullOrWhiteSpace(aesKey))
+            throw new ArgumentException($"Exception:{nameof(MessageInputBox)}.{nameof(Split)}:" +
+                                        $"No AES key stored for {partnerUsername}.");
+        
         var fileDataId = Guid.NewGuid();
         var bytes = await FileToBytes(file);
-        var aesKey = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnerUsername).Value.Value.ToString();
         var b64Decrypted = Convert.ToBase64String(bytes);
         var b64DecryptedChunks = SplitString(b64Decrypted, maxPackageSizeBytes);
 
@@ -193,7 +198,7 @@
 
     private async Task<byte[]> FileToBytes(IBrowserFile file)
     {
-        using (var s = file.OpenReadStream(500000000))
+        using (var s = file.OpenReadStream(MaxFileSizeBytes))
         {
             using (var ms = new MemoryStream())
             {

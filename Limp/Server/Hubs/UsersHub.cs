@@ -181,7 +181,7 @@ namespace Limp.Server.Hubs
 
         public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
-            string username =  await _usernameResolverService.GetUsernameAsync(credentialsDto);;
+            string username =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }

@@ -88,13 +88,7 @@
 
     private async Task ValidateCredentials()
     {
-        await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync(), RevalidationCallback);
-    }
-    private async Task RevalidationCallback(int secondsBeforeRevalidation)
-    {
-        await Task.Delay(secondsBeforeRevalidation * 1_000);
-        Console.WriteLine("[Automatic access token renewal]");
-        await ValidateCredentials();
+        await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync());
     }
 
     private async Task RefreshTokenAttemptResult(bool isRenewalSucceededCallback)

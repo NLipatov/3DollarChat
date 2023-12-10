@@ -79,10 +79,10 @@ public class JwtAuthenticationHandler : IJwtHandler
                !string.IsNullOrWhiteSpace(jWtPair.RefreshToken.Token);
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
+    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
         JwtPair jWtPair = await GetJwtPairAsync();
-        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection, revalidationCallback);
+        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection);
 
         if (!isCredentialsBeingRefreshed)
         {
@@ -129,7 +129,7 @@ public class JwtAuthenticationHandler : IJwtHandler
     /// Checks if credentials are outdated and updates it
     /// </summary>
     /// <returns>bool which determins if credentials refresh is in progress now</returns>
-    private async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
+    private async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection)
     {
         JwtPair? jwtPair = await GetCredentials() as JwtPair;
         if (jwtPair is not null)
@@ -137,8 +137,6 @@ public class JwtAuthenticationHandler : IJwtHandler
             var tokenTtl = await GetTokenTimeToLiveAsync();
             if (tokenTtl > 0)
             {
-                revalidationCallback?.Invoke(tokenTtl - 10);
-                
                 var userAgentInformation = await _userAgentService.GetUserAgentInformation();
 
                 await hubConnection.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );

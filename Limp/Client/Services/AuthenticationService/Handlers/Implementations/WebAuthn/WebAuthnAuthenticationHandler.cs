@@ -57,7 +57,7 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
         return !string.IsNullOrWhiteSpace(webAuthnPair.CredentialId);
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection, Func<int, Task>? revalidationCallback = null)
+    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
         var pair = await GetWebAuthnPairAsync();
 

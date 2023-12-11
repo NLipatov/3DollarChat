@@ -83,15 +83,9 @@
             return;
         }
 
-        try
-        {
-            CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-            await Split(e.File, 20 * 1024 /*KiB*/, TopicName);
-        }
-        finally
-        {
-            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-        }
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+        await Split(e.File, 20 * 1024 /*KiB*/, TopicName);
+        CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
     private async Task SendMessage()

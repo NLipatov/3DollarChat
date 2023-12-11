@@ -91,16 +91,6 @@
         await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync());
     }
 
-    private async Task RefreshTokenAttemptResult(bool isRenewalSucceededCallback)
-    {
-        //If the refresh token is invalid, the user must log in again
-        if (!isRenewalSucceededCallback)
-            _authenticationState = AuthenticationState.NotAuthenticated;
-
-        //Else - checking if actualised access token is valid
-        await AuthService.ValidateAccessTokenAsync(DecideOnToken);
-    }
-
     private async Task DecideOnToken(AuthResult credentialsValidationResult)
     {
         var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;

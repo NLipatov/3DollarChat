@@ -135,10 +135,8 @@ public class JwtAuthenticationHandler : IJwtHandler
         if (jwtPair is not null)
         {
             var tokenTtl = await GetTokenTimeToLiveAsync();
-            if (tokenTtl < 0)
+            if (tokenTtl <= 0)
             {
-                var userAgentInformation = await _userAgentService.GetUserAgentInformation();
-
                 await hubConnection.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
 
                 return true;

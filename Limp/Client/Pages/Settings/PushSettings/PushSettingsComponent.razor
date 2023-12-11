@@ -26,7 +26,7 @@
         <div class="p-2 gap-3" style="    
         display: flex;
         flex-direction: column;">
-            
+
             @if (NotificationsServiceWorkerIsInstalled)
             {
                 <div style="    
@@ -67,7 +67,14 @@
             {
                 <EditableList
                     ListHeader="Active subscriptions"
-                    itemCollection="WebPushSubscriptions .Select(x => new ItemModel() { Id = x.Id, ItemName = GetUserAgentItemName(x.UserAgentId), IsActive = x.UserAgentId == UserAgentWebPushNotificationId }) .ToList()"
+                    itemCollection="WebPushSubscriptions
+                    .Select(x => new ItemModel 
+                    { 
+                        Id = x.Id, 
+                        ItemName = GetUserAgentItemName(x.UserAgentId), 
+                        IsActive = x.UserAgentId == UserAgentWebPushNotificationId 
+                    })
+                    .ToList()"
 
                     OnItemRemoved="OnRemoveSubscriptions"
                     OnItemClicked=@(() => { })
@@ -85,7 +92,7 @@
         </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
-        <UnAuthorized />
+        <UnAuthorized/>
     </UnauthenticatedContent>
 </AuthenticatedView>
 
@@ -99,6 +106,7 @@
     private ICredentials? _credentials = null;
     private bool NotificationsServiceWorkerIsInstalled { get; set; }
     private bool IsEnabled { get; set; }
+
     private bool _IsEnabled
     {
         get => IsEnabled;
@@ -138,7 +146,7 @@
     protected override async Task OnInitializedAsync()
     {
         NotificationsServiceWorkerIsInstalled = await IsServiceWorkerInstalled();
-        
+
         UserAgentWebPushNotificationId = await LocalStorageService.GetUserAgentIdAsync();
 
         _accessToken = await AuthenticationHandler.GetAccessCredential();
@@ -191,20 +199,14 @@
 
     private async Task OnRemoveSubscriptions(ItemModel itemModel)
     {
-        var credentials = AuthenticationHandler.GetCredentials().Result;
-        var type = credentials.Type;
-        
+        var credentials = await AuthenticationHandler.GetCredentials();
+
         var subscriptionToDelete = WebPushSubscriptions
-            .FirstOrDefault(x => x.Id == itemModel.Id);
-        
-        if (subscriptionToDelete is null)
-            throw new ArgumentException
-            ($"Error on web push subscription deletion:" + 
-            "there is no web push subscription with id '{subscriptionIdToDelete}' found.");
+            .First(x => x.Id == itemModel.Id);
 
         subscriptionToDelete.JwtPair = credentials as JwtPair;
         subscriptionToDelete.WebAuthnPair = credentials as WebAuthnPair;
-            
+
         await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
     }
 
@@ -226,8 +228,8 @@
             await WebPushService.ResetWebPushPermission();
 
         WebPushSubscriptions = WebPushSubscriptions
-        .Where(x => notificationSubscriptionDTOs.All(s => s.Id != x.Id))
-        .ToArray();
+            .Where(x => notificationSubscriptionDTOs.All(s => s.Id != x.Id))
+            .ToArray();
 
         StateHasChanged();
     }
@@ -237,11 +239,11 @@
         string? accessToken = await AuthenticationHandler.GetAccessCredential();
         if (string.IsNullOrWhiteSpace(accessToken))
             throw new ArgumentException
-            ("Could not get a access token from local storage to load web push subscriptions.");
+                ("Could not get a access token from local storage to load web push subscriptions.");
 
         await UsersService.GetUserWebPushSubscriptions(await GetCredentialsDTO());
     }
-        
+
     public async Task<bool> IsServiceWorkerInstalled()
     {
         return await Js.InvokeAsync<bool>("isServiceWorkerInstalled");
@@ -258,6 +260,7 @@
                 WebAuthnPair = credentials as WebAuthnPair
             };
         }
+
         if (authenticationType is AuthenticationType.JwtToken)
         {
             return new CredentialsDTO
@@ -265,9 +268,10 @@
                 JwtPair = credentials as JwtPair
             };
         }
-        
+
         throw new ApplicationException($"Exception:" +
                                        $"{nameof(PushSettingsComponent)}.{nameof(GetCredentialsDTO)}:" +
                                        $"Unsupported authentication type - {authenticationType}.");
     }
+
 }

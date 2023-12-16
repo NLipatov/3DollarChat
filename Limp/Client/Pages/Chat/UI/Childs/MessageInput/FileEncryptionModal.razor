@@ -3,7 +3,8 @@
 @implements IDisposable
 
 <Modal @ref="modal"
-       Title="File is being encrypted">
+       Title="File is being encrypted"
+       OnShown=@(()=> IsModalShown = true)>
 
     <BodyTemplate>
         <span>
@@ -16,6 +17,7 @@
     private Modal? modal = default!;
     private decimal Progress { get; set; } = 0;
     private Guid ComponentId { get; set; }
+    private bool IsModalShown { get; set; }
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
     
     protected override async Task OnInitializedAsync()
@@ -40,12 +42,22 @@
     private async Task FileIsBeingEncrypted(bool isProcessIsActive)
     {
         if (isProcessIsActive)
-            await ShowModalAsync();
+        {
+            Console.WriteLine("showing");
+            await modal?.ShowAsync();
+        }
         else
-            await HideModalAsync();
+        {
+            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
+            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
+            while (!IsModalShown)
+            {
+                //500 is not a magic value here, any positive number will do the trick 
+                await Task.Delay(500);
+            }
+            
+            await modal?.HideAsync();
+            IsModalShown = false;
+        }
     }
-    
-    public async Task ShowModalAsync() => await modal!.ShowAsync();
-
-    public async Task HideModalAsync() => await modal!.HideAsync();
 }

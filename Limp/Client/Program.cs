@@ -33,7 +33,6 @@ using Limp.Client.Services.NotificationService;
 using Limp.Client.Services.NotificationService.Implementation;
 using Limp.Client.Services.UserAgent.Implementation;
 using Limp.Client.Services.UserAgentService;
-using Ljbc1994.Blazor.IntersectionObserver;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -65,6 +64,5 @@ builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
 builder.Services.AddBlazoredToast();
-builder.Services.AddIntersectionObserver();
 
 await builder.Build().RunAsync();

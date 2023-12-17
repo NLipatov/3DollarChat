@@ -5,10 +5,8 @@
 @using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Limp.Client.Services.InboxService;
 @using LimpShared.Models.Message;
-@using Ljbc1994.Blazor.IntersectionObserver
 @using System.Text
 @using Microsoft.Extensions.Primitives
-@inject IIntersectionObserverService _observerService
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
@@ -130,7 +128,6 @@
     public void Dispose()
     {
         _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
-        _observerService.Observe(new(), null, null);
     }
 
     protected override async Task OnInitializedAsync()
@@ -198,22 +195,6 @@
 
     public async Task SetupObserver()
     {
-        await _observerService.Observe(MessageElement, (entries) =>
-        {
-            var entry = entries.FirstOrDefault();
-            if(entry is not null)
-            {
-                if (message is not null && message.Sender != myUsername)
-                {
-                    //sends sender a message has been readed confirmation
-                    _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername);
-                    //Marks message as seen
-                    _messageBox.OnSeen(message.Id);
-                }
-
-                IsIntersecting = entry.IsIntersecting;
-                StateHasChanged();
-            }
-        });
+        #warning Todo: intersection observer
     }
 }

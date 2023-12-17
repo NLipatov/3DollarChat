@@ -118,21 +118,7 @@ namespace Limp.Server.Hubs.MessageDispatcher
                 }
             }
         }
-
-        private Task[] GenerateSendStoredMessagesWorkload(Message[] messages)
-        {
-            Task[] workload = new Task[messages.Length];
-            for (int i = 0; i < messages.Length; i++)
-            {
-                workload[i] = Task.Run(async () =>
-                {
-                    await Dispatch(messages[i]);
-                });
-            }
-
-            return workload;
-        }
-
+        
         public async Task PushOnlineUsersToClients()
         {
             UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();

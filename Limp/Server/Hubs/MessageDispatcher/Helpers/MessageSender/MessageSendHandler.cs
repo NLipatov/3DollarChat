@@ -10,10 +10,6 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
     {
         public async Task SendAsync(Message message, IHubCallerClients clients)
         {
-            var receiverConnection = InMemoryHubConnectionStorage
-                .MessageDispatcherHubConnections
-                .Where(x => x.Key == message.TargetGroup);
-
             if (string.IsNullOrWhiteSpace(message.TargetGroup))
                 return;
 

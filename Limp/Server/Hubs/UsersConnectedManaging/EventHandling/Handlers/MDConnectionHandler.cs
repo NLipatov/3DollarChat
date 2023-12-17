@@ -88,14 +88,21 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
             //we already have an proper username for this connection, so lets change a connection key
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == connectionId))
             {
-                //setup a new item with all the old connections
-                var connectionToBeDeleted = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.FirstOrDefault(x => x.Key == connectionId);
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(username, connectionToBeDeleted.Value);
-                //remove the old item
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connectionToBeDeleted);
+                var oldConnections =
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == connectionId);
+                foreach (var connection in oldConnections)
+                {
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(username, connection.Value);
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connection);
+                }
             }
 
-            await AddUserToGroup(connectionId, username, default);
+            var userConnectionsIds =
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x=>x.Value);
+            foreach (var connection in userConnectionsIds)
+            {
+                await AddUserToGroup(connection, username, default);
+            }
 
             await SendToCaller("OnMyNameResolve", username, default);
         }

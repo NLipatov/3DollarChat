@@ -140,6 +140,11 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 
                 _callbackExecutor.ExecuteCallbackQueue(result.Result == AuthResultType.Success, RefreshTokenCallbackQueue);
             });
+
+            HubConnectionInstance.On<AuthResult>("OnRegister", result =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRegister");
+            });
         }
 
         public async Task ValidateAccessTokenAsync(Func<AuthResult, Task> isTokenAccessValidCallback)
@@ -158,6 +163,13 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 //Informing server that we're waiting for it's decision on access token
                 await _authenticationManager.TriggerCredentialsValidation(await GetHubConnectionAsync());
             }
+        }
+
+        public async Task Register(UserAuthentication newUserDto)
+        {
+            var hubConnection = await GetHubConnectionAsync();
+            
+            await hubConnection.SendAsync("Register", newUserDto);
         }
 
         private async Task<WebAuthnPair?> GetWebAuthnPairAsync()

@@ -8,6 +8,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
     {
         ConcurrentQueue<Func<AuthResult, Task>> IsTokenValidCallbackQueue { get; set; }
         Task ValidateAccessTokenAsync(Func<AuthResult, Task> isTokenAccessValidCallback);
+        Task Register(UserAuthentication newUserDto);
         Task LogIn(UserAuthentication userAuthentication);
         Task GetRefreshTokenHistory();
         Task GetAuthorisationServerAddress();

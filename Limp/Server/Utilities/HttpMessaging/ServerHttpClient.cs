@@ -4,6 +4,7 @@ using LimpShared.Models.Authentication.Models.UserAuthentication;
 using LimpShared.Models.Users;
 using LimpShared.Models.WebPushNotification;
 using System.Net;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.Json;
 using LimpShared.Models.Authentication.Enums;
@@ -74,7 +75,19 @@ namespace Limp.Server.Utilities.HttpMessaging
 
                 string url = _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"];
 
-                var response = await client.PostAsync(url, content);
+                HttpResponseMessage response;
+                try
+                {
+                    response = await client.PostAsync(url, content);
+                }
+                catch (Exception e)
+                {
+                    return new()
+                    {
+                        Message = "Could not get response from authentication instance.",
+                        Result = AuthResultType.Fail
+                    };
+                }
 
                 var serializedResponse = await response.Content.ReadAsStringAsync();
                 UserAuthenticationOperationResult? deserializedResponse =
@@ -82,7 +95,7 @@ namespace Limp.Server.Utilities.HttpMessaging
 
                 if (deserializedResponse == null)
                 {
-                    throw new ApplicationException("Could not get response from AuthAPI");
+                    throw new ApplicationException("Could not deserialize the response from AuthAPI");
                 }
 
                 return new AuthResult

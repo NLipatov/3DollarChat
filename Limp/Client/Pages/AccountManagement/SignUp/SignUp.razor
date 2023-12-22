@@ -3,13 +3,16 @@
 @using Limp.Client.UIComponents.InputForms.Registration
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
-@using Microsoft.AspNetCore.SignalR.Client;
 @using Limp.Client.Pages.WebAuthn;
-@inject IConfiguration _configuration;
-@inject NavigationManager Navigation;
+@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Limp.Client.Services.UserAgentService
 @inject ILoginHandler _loginHandler
 @inject NavigationManager _navigationManager
-@implements IAsyncDisposable;
+@inject IUserAgentService _userAgentService
+@inject IAuthService _authService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable;
 
 <PageTitle>Sign Up</PageTitle>
 
@@ -25,16 +28,16 @@
                         <div class="form-group text-center">
                             <p>Choose a registration method:</p>
                             <div class="btn-group" data-toggle="buttons">
-                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: #712cf9;" : "background-color: white; color: black;")>
-                                    <input @onclick=@(() => IsUsingWebAuthn = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsUsingWebAuthn)> Passwordless
+                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: #712cf9;" : "background-color: white; color: black;")>
+                                    <input @onclick=@(() => IsWebAuthnUsed = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsWebAuthnUsed)> Passwordless
                                 </label>
-                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: white; color: black;" : "background-color: #712cf9;")>
-                                    <input @onclick=@(() => IsUsingWebAuthn = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsUsingWebAuthn)> With Password
+                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: white; color: black;" : "background-color: #712cf9;")>
+                                    <input @onclick=@(() => IsWebAuthnUsed = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsWebAuthnUsed)> With Password
                                 </label>
                             </div>
                         </div>
 
-                        @if (IsUsingWebAuthn)
+                        @if (IsWebAuthnUsed)
                         {
                             <Authentication
                                 IsRegisterFormVisible="true"/>
@@ -64,36 +67,45 @@
 
 
 @code {
-    private HubConnection? hubConnection;
     private AuthResult lastRegisterAttemptResult { get; set; } = new();
     private UserAuthentication? lastRegisterDTO { get; set; }
-    private bool IsUsingWebAuthn { get; set; } = true;
-    private static bool IsRegistrationAccomplished { get; set; } = false;
+    private bool IsWebAuthnUsed { get; set; } = true;
+    private Guid ComponentId { get; set; }
+    
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        hubConnection = new HubConnectionBuilder()
-            .WithUrl(Navigation.ToAbsoluteUri("/authHub"))
-            .Build();
+        ComponentId = Guid.NewGuid();
+        
+        _hubServiceSubscriptionManager
+            .AddCallback<AuthResult>(OnRegisterResponse, "OnRegister", ComponentId);
+        base.OnInitialized();
+    }
 
-        hubConnection.On<AuthResult>("OnRegister", result =>
-        {
-             //If registration attempt successfull — log in and redirect user
-            if (result.Result is AuthResultType.Success)
-            {
-                LogInAndRedirect(result);
-            }
-            //Else - display error message to user
-            else
-                StateHasChanged();
-        });
+    private async Task OnRegister(UserAuthentication newUserDTO)
+    {
+        var userAgentInformation = await _userAgentService.GetUserAgentInformation();
+        newUserDTO.UserAgent = userAgentInformation.UserAgentDescription ?? string.Empty;
+        newUserDTO.UserAgentId = userAgentInformation.UserAgentId;
+        
+        lastRegisterDTO = newUserDTO;
 
-        await hubConnection.StartAsync();
+        await _authService.Register(newUserDTO);
+    }
+
+    private void OnRegisterResponse(AuthResult result)
+    {
+        lastRegisterAttemptResult = result;
+        
+        if (result.Result is AuthResultType.Success)
+            LogInAndRedirect(result);
+        else
+            StateHasChanged();
     }
 
     private void LogInAndRedirect(AuthResult result)
     {
-    //If we have DTO with wich user was registered successfully, we can automatically log that user in
         if (result.Result == AuthResultType.Success && lastRegisterDTO is not null)
         {
             _loginHandler.OnLogIn(lastRegisterDTO, ((authResult) =>
@@ -101,25 +113,6 @@
                 if (authResult.Result == AuthResultType.Success)
                     _navigationManager.NavigateTo("/users");
             }));
-        }
-    }
-
-    private async Task OnRegister(UserAuthentication newUserDTO)
-    {
-        lastRegisterDTO = newUserDTO;
-
-        if (hubConnection == null)
-            throw new ApplicationException("No connection with Hub.");
-
-        await hubConnection.SendAsync("Register", newUserDTO);
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        if (hubConnection != null)
-        {
-            await hubConnection.StopAsync();
-            await hubConnection.DisposeAsync();
         }
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Limp.Client.Services.LocalStorageService;
+using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
@@ -59,16 +60,34 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
-        var pair = await GetWebAuthnPairAsync();
-
-        await hubConnection.SendAsync("ValidateCredentials",  await GetCredentialsDto());
+        var dto = await GetCredentialsDto();
+        
+        if (dto.WebAuthnPair is null)
+            dto.WebAuthnPair = new();
+        
+        await hubConnection.SendAsync("ValidateCredentials",  dto);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
     {
-        var counter = await GetCounter();
-        var updatedCounter = counter + 1;
-        await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter);
+        var dto = await GetCredentialsDto();
+
+        if (dto.WebAuthnPair is null)
+            throw new ArgumentException(
+                $"Exception:{nameof(WebAuthnAuthenticationHandler)}.{nameof(UpdateCredentials)}:" +
+                $"Invalid credentials stored in local storage.");
+
+        uint updatedCounter = dto.WebAuthnPair.Counter + 1;
+        await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
+        await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
+    }
+
+    public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    {
+        var dto = await GetCredentialsDto();
+        
+        if (result.Result == AuthResultType.Success)
+            await hubConnection.SendAsync("RefreshCredentials", dto);
     }
 
     private async Task<WebAuthnPair> GetWebAuthnPairAsync()

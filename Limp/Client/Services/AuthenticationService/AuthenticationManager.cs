@@ -1,6 +1,7 @@
 ﻿using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Types;
@@ -89,5 +90,11 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
     {
         var handler = await GetAvailableHandlerAsync();
         await handler.UpdateCredentials(newCredentials);
+    }
+
+    public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    {
+        var handler = await GetAvailableHandlerAsync();
+        await handler.ExecutePostCredentialsValidation(result, hubConnection);
     }
 }

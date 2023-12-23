@@ -107,7 +107,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthServi
                 if (!string.IsNullOrWhiteSpace(result.CredentialId))
                     await _authenticationManager.UpdateCredentials(new WebAuthnPair{CredentialId = result.CredentialId});
 
-                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnValidateCredentials");
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshCredentials");
             });
 
             HubConnectionInstance.On<AuthResult>("OnValidateCredentials", async result =>

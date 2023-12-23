@@ -105,6 +105,9 @@
             _authenticationState = AuthenticationState.NotAuthenticated;
         }
 
+        await AuthenticationHandler
+            .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+
         StateHasChanged();
     }
 }

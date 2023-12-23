@@ -1,4 +1,5 @@
-﻿using LimpShared.Models.Authentication.Models.Credentials;
+﻿using LimpShared.Models.Authentication.Models;
+using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -16,4 +17,5 @@ public interface IAuthenticationHandler
     Task<bool> IsSetToUseAsync();
     Task TriggerCredentialsValidation(HubConnection hubConnection);
     Task UpdateCredentials(ICredentials newCredentials);
+    Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection);
 }

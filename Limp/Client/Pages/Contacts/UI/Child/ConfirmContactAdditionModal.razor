@@ -1,54 +1,46 @@
 ﻿@using Limp.Client.Pages.Contacts.Models;
 @using Limp.Client.Pages.AuthenticationChecks;
 
-<AuthenticatedView>
-    <AuthenticatedContent>
-        <Modal 
-            @ref="modal" 
-            Title="Add user to contacts">
+<Modal
+    @ref="modal"
+    Title="Add user to contacts">
 
-            <BodyTemplate>
-                @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-                {
-                    <span>
-                        @NewContactUsername is already in your contact book
-                    </span>
-                }
-                else
-                {
-                    @ModalBodyText
-                }
-            </BodyTemplate>
-            <FooterTemplate>
-                @if (IsUserExists)
-                {
-                    @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-                    {
-                        <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-                    }
-                    else
-                    {
-                        <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
-                        <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
-                    }
-                }
-                else
-                {
-                    <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-                }
-            </FooterTemplate>
-        </Modal>
-    </AuthenticatedContent>
-    <UnauthenticatedContent>
-    </UnauthenticatedContent>
-</AuthenticatedView>
+    <BodyTemplate>
+        @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+        {
+            <span>
+                @NewContactUsername is already in your contact book
+            </span>
+        }
+        else
+        {
+            @ModalBodyText
+        }
+    </BodyTemplate>
+    <FooterTemplate>
+        @if (IsUserExists)
+        {
+            @if (ContactCollection.Any(x => x.Username == NewContactUsername))
+            {
+                <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+            }
+            else
+            {
+                <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
+                <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
+            }
+        }
+        else
+        {
+            <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
+        }
+    </FooterTemplate>
+</Modal>
 
 @code {
-    [Parameter]
-    public List<Contact> ContactCollection { get; set; } = new();
+    [Parameter] public List<Contact> ContactCollection { get; set; } = new();
 
-    [Parameter]
-    public EventCallback<string> OnContactAddition { get; set; }
+    [Parameter] public EventCallback<string> OnContactAddition { get; set; }
 
     //reference to a modal-component
     private Modal? modal = default!;
@@ -72,16 +64,16 @@
 
     private string GetModalBodyText(ContactAdditionModalDTO modalDTO)
     {
-        if(string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
+        if (string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
         {
-            return modalDTO.IsUserExists ?
-                $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
-                :
-                $"There is no user with such username";
+            return modalDTO.IsUserExists
+                ? $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
+                : $"There is no user with such username";
         }
         else
         {
             return modalDTO.ModalBodyText;
         }
     }
+
 }

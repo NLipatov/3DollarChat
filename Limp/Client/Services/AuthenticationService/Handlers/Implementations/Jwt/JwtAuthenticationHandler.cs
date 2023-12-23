@@ -96,6 +96,11 @@ public class JwtAuthenticationHandler : IJwtHandler
         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", (newCredentials as JwtPair)!.RefreshToken.Token);
     }
 
+    public Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    {
+        return Task.CompletedTask;
+    }
+
     private async Task<JwtPair> GetJwtPairAsync()
     {
         var accessToken = await GetAccessTokenAsync();

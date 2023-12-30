@@ -101,7 +101,7 @@ cat <<EOL > distro/Dockerfile
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 COPY ./ ./
-ENTRYPOINT ["dotnet", "Limp.Server.dll"]
+ENTRYPOINT ["dotnet", "Ethachat.Server.dll"]
 EOL
 
 echo -e "\nSTEP 6: Build the Docker image 'wasm-chat'."

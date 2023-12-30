@@ -16,10 +16,8 @@ using Limp.Client.Services.InboxService;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
-using LimpShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
-using Microsoft.JSInterop;
 
 namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -39,7 +37,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IFileTransmissionManager _fileTransmissionManager;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
-        private ConcurrentDictionary<Guid, List<ClientPackage>> SendedFileIdPackages = new();
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
         private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
 
@@ -150,12 +147,10 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 });
 
             hubConnection.On<Guid>("MessageRegisteredByHub",
-                (messageId) => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"); });
+                messageId => _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"));
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
-            {
-                _fileTransmissionManager.HandlePackageRegisteredByHub(fileId, packageIndex);
-            });
+                _fileTransmissionManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
             {

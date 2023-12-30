@@ -118,7 +118,6 @@ public class FileTransmissionManager : IFileTransmissionManager
 
     public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)
     {
-        Console.WriteLine($"package registered: {packageIndex}");
         _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
 
         _uploadedFileIdToPackages.TryGetValue(fileId, out var sendedFilePackages);

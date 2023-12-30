@@ -1,4 +1,4 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender

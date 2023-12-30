@@ -1,9 +1,9 @@
 ﻿using Ethachat.Client.Services.LocalStorageService;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
-using LimpShared.Models.Authentication.Types;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;

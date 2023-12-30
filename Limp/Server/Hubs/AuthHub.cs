@@ -1,7 +1,7 @@
 ﻿using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs

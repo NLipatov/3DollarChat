@@ -23,6 +23,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\LimpShared\LimpShared\LimpShared.csproj" />
+    <ProjectReference Include="..\..\EthachatShared\EthachatShared\EthachatShared.csproj" />
     <ProjectReference Include="..\Client\Ethachat.Client.csproj" />
 	  <PackageReference Include="Confluent.Kafka" Version="2.3.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />

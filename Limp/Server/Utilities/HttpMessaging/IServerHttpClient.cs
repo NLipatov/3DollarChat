@@ -1,9 +1,9 @@
-﻿using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
-using LimpShared.Models.Users;
-using LimpShared.Models.WebPushNotification;
+﻿using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 
 namespace Limp.Server.Utilities.HttpMessaging
 {

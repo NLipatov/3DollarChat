@@ -4,12 +4,12 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.UserIdentityService;
-using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
-using LimpShared.Models.ConnectedUsersManaging;
-using LimpShared.Models.Users;
-using LimpShared.Models.WebPushNotification;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 

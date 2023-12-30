@@ -3,8 +3,8 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.InboxService;
-using LimpShared.Models.Message;
-using LimpShared.Models.Message.DataTransfer;
+using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 

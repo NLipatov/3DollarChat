@@ -1,5 +1,5 @@
-﻿using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
+﻿using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
 
 namespace Ethachat.Client.Pages.AccountManagement.LogicHandlers
 {

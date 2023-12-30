@@ -1,5 +1,5 @@
-﻿using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
+﻿using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling

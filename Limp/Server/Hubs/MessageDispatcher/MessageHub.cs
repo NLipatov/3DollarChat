@@ -7,12 +7,12 @@ using Limp.Server.Utilities.Kafka;
 using Limp.Server.Utilities.Redis;
 using Limp.Server.Utilities.UsernameResolver;
 using Limp.Server.WebPushNotifications;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
-using LimpShared.Models.ConnectedUsersManaging;
-using LimpShared.Models.Message;
-using LimpShared.Models.Message.DataTransfer;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs.MessageDispatcher

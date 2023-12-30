@@ -1,5 +1,5 @@
 ﻿using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.WebPushNotification;
+using EthachatShared.Models.WebPushNotification;
 using System.Text.Json;
 using WebPush;
 

@@ -1,5 +1,5 @@
 ﻿using Confluent.Kafka;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 using System.Text.Json;
 

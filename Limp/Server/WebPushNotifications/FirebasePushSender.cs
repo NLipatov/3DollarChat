@@ -2,7 +2,7 @@ using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
 using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.WebPushNotification;
+using EthachatShared.Models.WebPushNotification;
 
 namespace Limp.Server.WebPushNotifications;
 

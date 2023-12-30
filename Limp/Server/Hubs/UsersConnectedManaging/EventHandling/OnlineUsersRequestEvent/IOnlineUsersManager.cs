@@ -1,4 +1,4 @@
-﻿using LimpShared.Models.ConnectedUsersManaging;
+﻿using EthachatShared.Models.ConnectedUsersManaging;
 
 namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {

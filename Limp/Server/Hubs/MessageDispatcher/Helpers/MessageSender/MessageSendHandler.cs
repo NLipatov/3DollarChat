@@ -1,6 +1,6 @@
 ﻿using Confluent.Kafka;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.SignalR.Client;
 

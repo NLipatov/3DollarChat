@@ -1,6 +1,6 @@
-﻿using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.WebPushNotification;
+﻿using EthachatShared.Encryption;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.WebPushNotification;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 {

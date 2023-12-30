@@ -1,7 +1,7 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.InboxService.Implementation
 {

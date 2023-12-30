@@ -1,6 +1,6 @@
 ﻿using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 {

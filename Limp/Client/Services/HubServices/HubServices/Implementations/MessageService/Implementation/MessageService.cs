@@ -13,9 +13,9 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
-using LimpShared.Encryption;
-using LimpShared.Models.ConnectedUsersManaging;
-using LimpShared.Models.Message;
+using EthachatShared.Encryption;
+using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 

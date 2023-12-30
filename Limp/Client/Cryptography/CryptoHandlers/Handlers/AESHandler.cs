@@ -1,6 +1,6 @@
 ﻿using Ethachat.Client.Cryptography.KeyStorage;
-using LimpShared.Encryption;
-using LimpShared.Models.Message;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers

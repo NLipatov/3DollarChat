@@ -7,7 +7,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethachat.Server", "Limp\Ser
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethachat.Client", "Limp\Client\Ethachat.Client.csproj", "{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LimpShared", "LimpShared\LimpShared\LimpShared.csproj", "{96B4AD3C-504F-4466-9029-6318C32965AA}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "EthachatShared\EthachatShared\EthachatShared.csproj", "{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -23,10 +23,10 @@ Global
 		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{96B4AD3C-504F-4466-9029-6318C32965AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{96B4AD3C-504F-4466-9029-6318C32965AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{96B4AD3C-504F-4466-9029-6318C32965AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{96B4AD3C-504F-4466-9029-6318C32965AA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

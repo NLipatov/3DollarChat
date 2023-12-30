@@ -1,5 +1,5 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.InboxService
 {

@@ -1,4 +1,4 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 {

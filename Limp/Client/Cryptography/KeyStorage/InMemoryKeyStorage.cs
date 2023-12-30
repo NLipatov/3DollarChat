@@ -1,4 +1,4 @@
-﻿using LimpShared.Encryption;
+﻿using EthachatShared.Encryption;
 using System.Collections.Concurrent;
 
 namespace Ethachat.Client.Cryptography.KeyStorage;

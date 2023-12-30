@@ -1,5 +1,5 @@
 ﻿using Ethachat.Client.Cryptography.CryptoHandlers;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Cryptography
 {

@@ -1,4 +1,4 @@
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 
 namespace Limp.Server.Utilities.UsernameResolver;
 

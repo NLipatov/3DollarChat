@@ -1,5 +1,5 @@
 ﻿#nullable disable
-using LimpShared.Encryption;
+using EthachatShared.Encryption;
 
 namespace Ethachat.Client.Services.CloudKeyService.Models
 {

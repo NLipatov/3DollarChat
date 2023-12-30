@@ -3,15 +3,15 @@ using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
 using Limp.Server.Utilities.UsernameResolver;
-using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using LimpShared.Models.Authentication.Models.Credentials.Implementation;
-using LimpShared.Models.Authentication.Types;
-using LimpShared.Models.ConnectedUsersManaging;
-using LimpShared.Models.Users;
-using LimpShared.Models.WebPushNotification;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.Authentication.Types;
+using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Limp.Server.Hubs

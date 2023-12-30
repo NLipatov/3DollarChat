@@ -1,4 +1,4 @@
-﻿using LimpShared.Encryption;
+﻿using EthachatShared.Encryption;
 using Microsoft.JSInterop;
 using System.Text.Json;
 using Ethachat.Client.Cryptography.KeyStorage;

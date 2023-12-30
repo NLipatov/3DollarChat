@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 

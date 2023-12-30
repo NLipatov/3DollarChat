@@ -1,4 +1,4 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 using System.Text.Json;
 
 namespace Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions

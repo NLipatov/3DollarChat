@@ -2,8 +2,8 @@
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.CloudKeyService;
-using LimpShared.Encryption;
-using LimpShared.Models.Message;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {

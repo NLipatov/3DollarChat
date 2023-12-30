@@ -1,8 +1,8 @@
 ﻿using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService;
 using Ethachat.Client.Services.UserAgentService;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Pages.AccountManagement.LogicHandlers

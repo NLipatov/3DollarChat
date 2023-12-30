@@ -1,8 +1,8 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using Ethachat.Client.Services.AuthenticationService;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models;
 
 namespace Limp.Server.Utilities.UsernameResolver;
 

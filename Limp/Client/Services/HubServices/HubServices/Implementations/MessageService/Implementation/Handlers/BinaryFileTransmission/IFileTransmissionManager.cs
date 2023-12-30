@@ -1,5 +1,5 @@
 using Ethachat.Client.ClientOnlyModels;
-using LimpShared.Models.Message;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;

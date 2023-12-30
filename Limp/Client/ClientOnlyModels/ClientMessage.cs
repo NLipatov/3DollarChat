@@ -1,5 +1,5 @@
-﻿using LimpShared.Models.Message;
-using LimpShared.Models.Message.DataTransfer;
+﻿using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.DataTransfer;
 
 namespace Ethachat.Client.ClientOnlyModels
 {

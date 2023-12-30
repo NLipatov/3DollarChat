@@ -73,10 +73,10 @@
         }
 
         HubServiceSubscriptionManager
-            .AddCallback<AuthResult>(DecideOnToken, "OnRefreshCredentials", ComponentId);
+            .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnRefreshCredentials", ComponentId);
 
         HubServiceSubscriptionManager
-            .AddCallback<AuthResult>(DecideOnToken, "OnValidateCredentials", ComponentId);
+            .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
 
         HubServiceSubscriptionManager
             .AddCallback<bool>(isActive =>
@@ -93,7 +93,7 @@
         await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync());
     }
 
-    private async Task DecideOnToken(AuthResult credentialsValidationResult)
+    private async Task HandleAuthenticationCheckResult(AuthResult credentialsValidationResult)
     {
         var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;
         if (isAccessTokenValid)

@@ -1,7 +1,7 @@
-﻿using Limp.Client.Services.CloudKeyService.Models;
+﻿using Ethachat.Client.Services.CloudKeyService.Models;
 using LimpShared.Encryption;
 
-namespace Limp.Client.Services.CloudKeyService
+namespace Ethachat.Client.Services.CloudKeyService
 {
     public interface IBrowserKeyStorage
     {

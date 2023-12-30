@@ -1,8 +1,8 @@
-﻿using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
+﻿using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using LimpShared.Models.Message;
 
-namespace Limp.Client.HubInteraction.Handlers.MessageDecryption;
+namespace Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
 
 public class MessageDecryptor : IMessageDecryptor
 {

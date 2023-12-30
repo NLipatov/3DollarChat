@@ -1,6 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Limp.Client.Services.LocalStorageService;
-using Limp.Client.Services.UserAgentService;
+using Ethachat.Client.Services.LocalStorageService;
+using Ethachat.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
@@ -9,7 +9,7 @@ using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
+namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 
 public class JwtAuthenticationHandler : IJwtHandler
 {

@@ -1,6 +1,6 @@
 using LimpShared.Models.Message.DataTransfer;
 
-namespace Limp.Client.ClientOnlyModels;
+namespace Ethachat.Client.ClientOnlyModels;
 
 public record ClientDataFile : DataFile
 {

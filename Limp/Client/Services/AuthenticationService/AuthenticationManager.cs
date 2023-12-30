@@ -1,13 +1,13 @@
-﻿using Limp.Client.Services.AuthenticationService.Handlers;
-using Limp.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
-using Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+﻿using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
+using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.AuthenticationService;
+namespace Ethachat.Client.Services.AuthenticationService;
 
 public class AuthenticationManager : IAuthenticationHandler, IAuthenticationManager
 {

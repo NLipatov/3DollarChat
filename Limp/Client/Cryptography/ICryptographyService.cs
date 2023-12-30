@@ -1,7 +1,7 @@
-﻿using Limp.Client.Cryptography.CryptoHandlers;
+﻿using Ethachat.Client.Cryptography.CryptoHandlers;
 using LimpShared.Models.Message;
 
-namespace Limp.Client.Cryptography
+namespace Ethachat.Client.Cryptography
 {
     public interface ICryptographyService
     {

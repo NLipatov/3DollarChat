@@ -1,11 +1,11 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Services.CloudKeyService;
-using Limp.Client.Services.CloudKeyService.Models;
-using LimpShared.Encryption;
+﻿using LimpShared.Encryption;
 using Microsoft.JSInterop;
 using System.Text.Json;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.CloudKeyService;
+using Ethachat.Client.Services.CloudKeyService.Models;
 
-namespace Limp.Client.Services.LocalKeyChainService.Implementation
+namespace Ethachat.Client.Services.LocalKeyChainService.Implementation
 {
     public class BrowserKeyStorage : IBrowserKeyStorage
     {

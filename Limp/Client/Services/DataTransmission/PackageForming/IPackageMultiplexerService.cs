@@ -1,6 +1,6 @@
-﻿using Limp.Client.ClientOnlyModels;
+﻿using Ethachat.Client.ClientOnlyModels;
 
-namespace Limp.Client.Services.DataTransmission.PackageForming;
+namespace Ethachat.Client.Services.DataTransmission.PackageForming;
 
 public interface IPackageMultiplexerService
 {

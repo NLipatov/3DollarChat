@@ -1,13 +1,13 @@
 ﻿@page "/contacts"
-@using Limp.Client.Pages.AuthenticationChecks
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
-@using Limp.Client.Services.InboxService;
+@using Ethachat.Client.Pages.AuthenticationChecks
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Services.InboxService;
 @using LimpShared.Models.ConnectedUsersManaging
-@using Limp.Client.Pages.Contacts.UI.Child;
-@using Limp.Client.Pages.Contacts.Models;
-@using Limp.Client.Services.CloudKeyService;
-@using Limp.Client.Services.ContactsProvider;
+@using Ethachat.Client.Pages.Contacts.UI.Child;
+@using Ethachat.Client.Pages.Contacts.Models;
+@using Ethachat.Client.Services.CloudKeyService;
+@using Ethachat.Client.Services.ContactsProvider;
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -15,8 +15,8 @@
 @inject IJSRuntime _jSRuntime;
 @inject IBrowserKeyStorage _localKeyManager;
 @inject IMessageBox _messageBox
-@using Limp.Client.Shared.ReuseableComponents.EditableList;
-@using Limp.Client.Shared.ReuseableComponents.EditableList.Models
+@using Ethachat.Client.Shared.ReuseableComponents.EditableList;
+@using Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
 @using LimpShared.Models.Users;
 @implements IDisposable
 

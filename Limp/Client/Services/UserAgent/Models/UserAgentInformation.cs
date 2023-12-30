@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Services.UserAgent.Models;
+﻿namespace Ethachat.Client.Services.UserAgent.Models;
 
 public record UserAgentInformation
 {

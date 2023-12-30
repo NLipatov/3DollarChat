@@ -1,8 +1,8 @@
-using Limp.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels;
 using LimpShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
 
 public interface IFileTransmissionManager
 {

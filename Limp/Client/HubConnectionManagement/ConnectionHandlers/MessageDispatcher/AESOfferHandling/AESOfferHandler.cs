@@ -1,11 +1,11 @@
-﻿using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Services.CloudKeyService;
+﻿using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.CloudKeyService;
 using LimpShared.Encryption;
 using LimpShared.Models.Message;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public class AESOfferHandler : IAESOfferHandler
     {

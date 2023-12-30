@@ -1,5 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Limp.Client.Services.AuthenticationService;
+using Ethachat.Client.Services.AuthenticationService;
 using Limp.Server.Utilities.HttpMessaging;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;

@@ -1,6 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 
-namespace Limp.Client.Services.JWTReader
+namespace Ethachat.Client.Services.JWTReader
 {
     public static class TokenReader
     {

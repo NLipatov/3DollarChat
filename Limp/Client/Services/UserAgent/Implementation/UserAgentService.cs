@@ -1,9 +1,9 @@
-﻿using Limp.Client.Services.LocalStorageService;
-using Limp.Client.Services.UserAgent.Models;
-using Limp.Client.Services.UserAgentService;
+﻿using Ethachat.Client.Services.LocalStorageService;
+using Ethachat.Client.Services.UserAgent.Models;
+using Ethachat.Client.Services.UserAgentService;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.UserAgent.Implementation;
+namespace Ethachat.Client.Services.UserAgent.Implementation;
 
 public class UserAgentService : IUserAgentService
 {

@@ -1,6 +1,6 @@
 ﻿using LimpShared.Models.Message;
 
-namespace Limp.Client.Cryptography.CryptoHandlers;
+namespace Ethachat.Client.Cryptography.CryptoHandlers;
 
 public interface ICryptoHandler
 {

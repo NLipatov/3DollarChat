@@ -1,4 +1,4 @@
-namespace Limp.Client.Services.AuthenticationService;
+namespace Ethachat.Client.Services.AuthenticationService;
 
 public interface IAuthenticationManager
 {

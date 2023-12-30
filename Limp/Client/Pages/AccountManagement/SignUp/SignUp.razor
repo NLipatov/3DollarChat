@@ -1,12 +1,12 @@
 ﻿@page "/signup"
-@using Limp.Client.Pages.AccountManagement.LogicHandlers;
-@using Limp.Client.UIComponents.InputForms.Registration
+@using Ethachat.Client.Pages.AccountManagement.LogicHandlers;
+@using Ethachat.Client.UIComponents.InputForms.Registration
 @using LimpShared.Models.Authentication.Models;
 @using LimpShared.Models.Authentication.Models.UserAuthentication;
-@using Limp.Client.Pages.WebAuthn;
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService
-@using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
-@using Limp.Client.Services.UserAgentService
+@using Ethachat.Client.Pages.WebAuthn;
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Ethachat.Client.Services.UserAgentService
 @inject ILoginHandler _loginHandler
 @inject NavigationManager _navigationManager
 @inject IUserAgentService _userAgentService

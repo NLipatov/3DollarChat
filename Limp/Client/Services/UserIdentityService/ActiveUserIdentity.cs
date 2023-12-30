@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Services.UserIdentityService;
+﻿namespace Ethachat.Client.Services.UserIdentityService;
 
 public static class ActiveUserIdentity
 {

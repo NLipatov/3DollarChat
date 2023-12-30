@@ -1,6 +1,6 @@
-﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
+﻿using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
 
-namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService
+namespace Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
 {
     public interface IHubServiceSubscriptionManager
     {

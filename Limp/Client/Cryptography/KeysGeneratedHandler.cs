@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Cryptography
+﻿namespace Ethachat.Client.Cryptography
 {
     public static class KeysGeneratedHandler
     {

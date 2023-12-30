@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Services.NotificationService.Implementation.Types;
+﻿namespace Ethachat.Client.Services.NotificationService.Implementation.Types;
 
 public enum PushPermissionType
 {

@@ -2,7 +2,7 @@
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
 {
     public interface IAuthService : IHubService
     {

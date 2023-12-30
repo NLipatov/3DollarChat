@@ -1,6 +1,6 @@
 ﻿using LimpShared.Models.Authentication.Models.Credentials;
 
-namespace Limp.Client.Services.NotificationService
+namespace Ethachat.Client.Services.NotificationService
 {
     public interface IWebPushService
     {

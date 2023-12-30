@@ -1,25 +1,25 @@
 ﻿using System.Collections.Concurrent;
-using Limp.Client.ClientOnlyModels;
-using Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
-using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
-using Limp.Client.HubInteraction.Handlers.MessageDecryption;
-using Limp.Client.Pages.Chat.Logic.MessageBuilder;
-using Limp.Client.Services.AuthenticationService.Handlers;
-using Limp.Client.Services.CloudKeyService;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
-using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
-using Limp.Client.Services.InboxService;
+using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
+using Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
+using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
+using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.CloudKeyService;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
+using Ethachat.Client.Services.InboxService;
+using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using LimpShared.Encryption;
 using LimpShared.Models.ConnectedUsersManaging;
 using LimpShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
     public class MessageService : IMessageService
     {

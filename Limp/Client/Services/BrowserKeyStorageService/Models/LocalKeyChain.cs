@@ -1,7 +1,7 @@
 ﻿#nullable disable
 using LimpShared.Encryption;
 
-namespace Limp.Client.Services.CloudKeyService.Models
+namespace Ethachat.Client.Services.CloudKeyService.Models
 {
     public class LocalKeyChain
     {

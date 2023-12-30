@@ -1,6 +1,6 @@
 ﻿using System.Text.RegularExpressions;
 
-namespace Limp.Client.UIComponents.InputForms.Registration.Models
+namespace Ethachat.Client.UIComponents.InputForms.Registration.Models
 {
     /// <summary>
     /// Defines validation methods for its input boxes

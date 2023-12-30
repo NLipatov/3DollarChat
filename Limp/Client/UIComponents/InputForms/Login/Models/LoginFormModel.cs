@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Limp.Client.UIComponents.InputForms.Login.Models
+namespace Ethachat.Client.UIComponents.InputForms.Login.Models
 {
     public class LoginFormModel
     {

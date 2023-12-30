@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Services.LocalStorageService
+﻿namespace Ethachat.Client.Services.LocalStorageService
 {
     public interface ILocalStorageService
     {

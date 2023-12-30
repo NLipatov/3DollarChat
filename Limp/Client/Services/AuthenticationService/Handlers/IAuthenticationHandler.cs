@@ -4,7 +4,7 @@ using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.AuthenticationService.Handlers;
+namespace Ethachat.Client.Services.AuthenticationService.Handlers;
 
 public interface IAuthenticationHandler
 {

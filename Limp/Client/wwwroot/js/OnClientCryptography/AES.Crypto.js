@@ -22,7 +22,7 @@ const exportAESKeyToDotnet = async (key, contactName) => {
     const exportedKeyBuffer = new Uint8Array(exported);
     const exportedKeyBufferString = ab2str(exportedKeyBuffer);
 
-    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
+    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
 }
 
 function importSecretKey(ArrayBufferKeyString) {

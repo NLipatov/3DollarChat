@@ -1,8 +1,8 @@
-﻿using Limp.Client.Cryptography.KeyStorage;
+﻿using Ethachat.Client.Cryptography.KeyStorage;
 using LimpShared.Models.Message;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
+namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 {
     public class RSAHandler : ICryptoHandler
     {

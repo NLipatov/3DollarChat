@@ -1,6 +1,6 @@
-﻿using Limp.Client.Services.UserAgent.Models;
+﻿using Ethachat.Client.Services.UserAgent.Models;
 
-namespace Limp.Client.Services.UserAgentService;
+namespace Ethachat.Client.Services.UserAgentService;
 
 public interface IUserAgentService
 {

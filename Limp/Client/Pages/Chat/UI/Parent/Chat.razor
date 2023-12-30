@@ -1,17 +1,17 @@
 ﻿@page "/user/{topicName?}"
-@using Limp.Client.Pages.Chat.UI.Childs.MessageInput
-@using Limp.Client.Cryptography.KeyStorage;
-@using Limp.Client.Pages.Chat.UI.Childs.ChatHeader
-@using Limp.Client.Services.CloudKeyService;
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Ethachat.Client.Pages.Chat.UI.Childs.MessageInput
+@using Ethachat.Client.Cryptography.KeyStorage;
+@using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader
+@using Ethachat.Client.Services.CloudKeyService;
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using LimpShared.Models.ConnectedUsersManaging;
 @using LimpShared.Encryption;
-@using Limp.Client.Pages;
-@using Limp.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
-@using Limp.Client.Pages.AuthenticationChecks
-@using Limp.Client.Services.AuthenticationService.Handlers
-@using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
-@using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Pages;
+@using Ethachat.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
+@using Ethachat.Client.Pages.AuthenticationChecks
+@using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @inject NavigationManager _navigationManager
 @inject IJSRuntime _jS
 @inject IMessageService _messageService

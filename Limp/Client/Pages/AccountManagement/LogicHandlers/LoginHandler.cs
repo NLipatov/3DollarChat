@@ -1,11 +1,11 @@
-﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-using Limp.Client.Services.HubServices.HubServices.Implementations.AuthService;
-using Limp.Client.Services.UserAgentService;
+﻿using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService;
+using Ethachat.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Pages.AccountManagement.LogicHandlers
+namespace Ethachat.Client.Pages.AccountManagement.LogicHandlers
 {
     public class LoginHandler : IDisposable, ILoginHandler
     {

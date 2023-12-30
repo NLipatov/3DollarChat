@@ -2,7 +2,7 @@
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.WebPushNotification;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 {
     public interface IUsersService : IHubService
     {

@@ -1,14 +1,14 @@
-﻿using Limp.Client.Services.AuthenticationService.Handlers;
-using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
-using Limp.Client.Services.LocalStorageService;
-using Limp.Client.Services.NotificationService.Implementation.Types;
+﻿using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
+using Ethachat.Client.Services.LocalStorageService;
+using Ethachat.Client.Services.NotificationService.Implementation.Types;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.NotificationService.Implementation
+namespace Ethachat.Client.Services.NotificationService.Implementation
 {
     public class WebPushService : IWebPushService
     {

@@ -1,7 +1,7 @@
-﻿using Limp.Client.ClientOnlyModels;
+﻿using Ethachat.Client.ClientOnlyModels;
 using LimpShared.Models.Message;
 
-namespace Limp.Client.Services.InboxService
+namespace Ethachat.Client.Services.InboxService
 {
     public interface IMessageBox
     {

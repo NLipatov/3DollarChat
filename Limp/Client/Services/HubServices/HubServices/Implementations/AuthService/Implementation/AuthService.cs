@@ -1,16 +1,16 @@
 ﻿using System.Collections.Concurrent;
-using Limp.Client.Services.AuthenticationService.Handlers;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
-using Limp.Client.Services.LocalStorageService;
-using Limp.Client.Services.UserAgentService;
+using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.LocalStorageService;
+using Ethachat.Client.Services.UserAgentService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation
 {
     public class AuthService : IAuthService
     {

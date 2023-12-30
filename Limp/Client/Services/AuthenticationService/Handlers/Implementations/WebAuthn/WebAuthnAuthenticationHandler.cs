@@ -1,4 +1,4 @@
-﻿using Limp.Client.Services.LocalStorageService;
+﻿using Ethachat.Client.Services.LocalStorageService;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
@@ -6,7 +6,7 @@ using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 
 public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 {

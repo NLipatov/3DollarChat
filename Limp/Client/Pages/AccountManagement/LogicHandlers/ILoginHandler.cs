@@ -1,7 +1,7 @@
 ﻿using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.UserAuthentication;
 
-namespace Limp.Client.Pages.AccountManagement.LogicHandlers
+namespace Ethachat.Client.Pages.AccountManagement.LogicHandlers
 {
     public interface ILoginHandler
     {

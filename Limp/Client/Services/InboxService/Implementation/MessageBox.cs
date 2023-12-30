@@ -1,9 +1,9 @@
-﻿using Limp.Client.ClientOnlyModels;
-using Limp.Client.HubInteraction.Handlers.MessageDecryption;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+﻿using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using LimpShared.Models.Message;
 
-namespace Limp.Client.Services.InboxService.Implementation
+namespace Ethachat.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {

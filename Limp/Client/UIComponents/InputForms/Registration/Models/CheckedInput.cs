@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.UIComponents.InputForms.Registration.Models
+﻿namespace Ethachat.Client.UIComponents.InputForms.Registration.Models
 {
     public record CheckedInput
     {

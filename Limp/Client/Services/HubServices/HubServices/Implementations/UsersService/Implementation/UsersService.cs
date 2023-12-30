@@ -1,9 +1,9 @@
 ﻿using System.Collections.Concurrent;
-using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Services.AuthenticationService.Handlers;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
-using Limp.Client.Services.UserIdentityService;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.UserIdentityService;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
@@ -13,7 +13,7 @@ using LimpShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
     public class UsersService : IUsersService
     {

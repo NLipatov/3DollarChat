@@ -1,6 +1,6 @@
 using LimpShared.Models.Message.DataTransfer;
 
-namespace Limp.Client.ClientOnlyModels.ClientOnlyExtentions;
+namespace Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 
 public static class ClientPackageExtensions
 {

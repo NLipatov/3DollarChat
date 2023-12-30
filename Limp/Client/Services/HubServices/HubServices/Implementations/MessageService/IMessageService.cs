@@ -1,7 +1,7 @@
-﻿using Limp.Client.ClientOnlyModels;
+﻿using Ethachat.Client.ClientOnlyModels;
 using LimpShared.Models.Message.DataTransfer;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 {
     public interface IMessageService : IHubService
     {

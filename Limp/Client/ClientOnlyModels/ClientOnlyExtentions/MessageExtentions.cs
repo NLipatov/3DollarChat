@@ -1,7 +1,7 @@
 ﻿using LimpShared.Models.Message;
 using System.Text.Json;
 
-namespace Limp.Client.ClientOnlyModels.ClientOnlyExtentions
+namespace Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions
 {
     public static class MessageExtentions
     {

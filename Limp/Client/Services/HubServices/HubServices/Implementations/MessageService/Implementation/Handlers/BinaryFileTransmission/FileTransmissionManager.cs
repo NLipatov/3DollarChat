@@ -1,14 +1,14 @@
 using System.Collections.Concurrent;
-using Limp.Client.ClientOnlyModels;
-using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.InboxService;
+using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.InboxService;
 using LimpShared.Models.Message;
 using LimpShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryFileTransmission;
 
 public class FileTransmissionManager : IFileTransmissionManager

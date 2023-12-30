@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using LimpShared.Models.Message.DataTransfer;
 
-namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Helpers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Helpers;
 
 public static class DataTransferHelper
 {

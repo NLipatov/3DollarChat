@@ -98,6 +98,11 @@
         var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;
         if (isAccessTokenValid)
         {
+            if (_authenticationState is not AuthenticationState.Authenticated)
+            {
+                await AuthenticationHandler
+                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+            }
             _authenticationState = AuthenticationState.Authenticated;
             await MessageService.GetHubConnectionAsync();
             await UsersService.GetHubConnectionAsync();
@@ -106,10 +111,5 @@
         {
             _authenticationState = AuthenticationState.NotAuthenticated;
         }
-
-        await AuthenticationHandler
-            .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
-
-        StateHasChanged();
     }
 }

@@ -1,6 +1,4 @@
-﻿using Google.Apis.Auth.OAuth2;
-using Limp.Client.Services.JWTReader;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Limp.Server.Utilities.HttpMessaging;
@@ -8,7 +6,6 @@ using Limp.Server.Utilities.UsernameResolver;
 using LimpShared.Encryption;
 using LimpShared.Models.Authentication.Models;
 using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using LimpShared.Models.Authentication.Models.Credentials;
 using LimpShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using LimpShared.Models.Authentication.Models.Credentials.Implementation;
 using LimpShared.Models.Authentication.Types;

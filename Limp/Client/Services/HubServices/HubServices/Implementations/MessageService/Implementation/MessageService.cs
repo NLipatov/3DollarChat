@@ -10,6 +10,7 @@ using Limp.Client.Pages.Chat.Logic.MessageBuilder;
 using Limp.Client.Services.AuthenticationService.Handlers;
 using Limp.Client.Services.CloudKeyService;
 using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Limp.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
 using Limp.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Limp.Client.Services.InboxService;
 using LimpShared.Encryption;
@@ -35,10 +36,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
-        private readonly IJSRuntime _jsRuntime;
+        private readonly IFileTransmissionManager _fileTransmissionManager;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
-        private ConcurrentDictionary<Guid, List<ClientPackage>> ReceivedFileIdToPackages = new();
         private ConcurrentDictionary<Guid, List<ClientPackage>> SendedFileIdPackages = new();
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
         private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
@@ -57,7 +57,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             IMessageDecryptor messageDecryptor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
-            IJSRuntime jsRuntime)
+            IFileTransmissionManager fileTransmissionManager)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -70,7 +70,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             _messageDecryptor = messageDecryptor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            _jsRuntime = jsRuntime;
+            _fileTransmissionManager = fileTransmissionManager;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -154,22 +154,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
             {
-                Console.WriteLine($"package registered: {packageIndex}");
-                _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
-
-                SendedFileIdPackages.TryGetValue(fileId, out var sendedFilePackages);
-
-                if (sendedFilePackages is null)
-                    return;
-
-                var updatedPackages = sendedFilePackages.Where(x => x.Index != packageIndex).ToList();
-                SendedFileIdPackages.TryUpdate(fileId, updatedPackages, sendedFilePackages);
-
-                if (!updatedPackages.Any())
-                {
-                    _callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
-                    SendedFileIdPackages.TryRemove(fileId, out updatedPackages);
-                }
+                _fileTransmissionManager.HandlePackageRegisteredByHub(fileId, packageIndex);
             });
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
@@ -218,41 +203,9 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                     }
                     else if (message.Type == MessageType.DataPackage)
                     {
-                        await _jsRuntime.InvokeVoidAsync("ImportIV", message.Package.IV);
-                        var aesKey = InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == message.Sender).Value.Value.ToString();
-                        var decrypted = await _jsRuntime.InvokeAsync<string>("AESDecryptText", message.Package.B64Data, aesKey);
-                        
-                        Console.WriteLine($"Received package: {message.Package?.Index}");
-                        var packagesExist = ReceivedFileIdToPackages.ContainsKey(message.Package.FileDataid);
-                        if (!packagesExist)
-                        {
-                            ReceivedFileIdToPackages.TryAdd(message.Package.FileDataid,
-                                new List<ClientPackage>(message.Package.Total));
-                            ReceivedFileIdToPackages.TryGetValue(message.Package.FileDataid, out var savedPackages);
-                        }
-
-                        ReceivedFileIdToPackages[message.Package.FileDataid].Add(new ClientPackage
-                        {
-                            B64Data = message.Package.B64Data,
-                            PlainB64Data = decrypted,
-                            Index = message.Package.Index,
-                            FileDataid = message.Package.FileDataid,
-                            Total = message.Package.Total,
-                            IV = message.Package.IV,
-                            ContentType = message.Package.ContentType,
-                            FileName = message.Package.FileName
-                        });
-                        if (ReceivedFileIdToPackages[message.Package.FileDataid].Count == message.Package.Total)
-                        {
-                            await _messageBox.AddMessageAsync(new ClientMessage
-                                {
-                                    Packages = ReceivedFileIdToPackages[message.Package.FileDataid],
-                                    Sender = message.Sender,
-                                },
-                                isEncrypted: false);
-                            ReceivedFileIdToPackages.TryRemove(message.Package.FileDataid, out _);
-                            await NotifyAboutSuccessfullDataTransfer(message.Package.FileDataid, message.Sender);
-                        }
+                        Console.WriteLine(message.Package?.Index);
+                        if(await _fileTransmissionManager.StoreDataPackage(message))
+                            await NotifyAboutSuccessfullDataTransfer(message);
                     }
                     else if (message.Type == MessageType.AesAccept)
                     {
@@ -335,23 +288,22 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
                 await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
             });
 
-            hubConnection.On<Guid>("OnFileTransfered", fileId =>
+            hubConnection.On<Guid>("OnFileTransfered", messageId =>
             {
-                SendedFileIdPackages.TryRemove(fileId, out _);
-                _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnFileReceived");
+                _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived");
             });
 
             hubConnection.On<string>("OnConvertationDeleteRequest",
                 partnerName => { _messageBox.Delete(partnerName); });
         }
 
-        private async Task NotifyAboutSuccessfullDataTransfer(Guid fileId, string sender)
+        private async Task NotifyAboutSuccessfullDataTransfer(Message message)
         {
             if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
             {
                 try
                 {
-                    await hubConnection.SendAsync("OnDataTranferSuccess", fileId, sender);
+                    await hubConnection.SendAsync("OnDataTranferSuccess", message.Id, message.Sender);
                 }
                 catch (Exception e)
                 {
@@ -362,7 +314,7 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
             else
             {
                 await GetHubConnectionAsync();
-                await NotifyAboutSuccessfullDataTransfer(fileId, sender);
+                await NotifyAboutSuccessfullDataTransfer(message);
             }
         }
 
@@ -461,62 +413,17 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
 
         public async Task SendMessage(ClientMessage message)
         {
-            hubConnection = await GetHubConnectionAsync();
             switch (message.Type)
             {
                 case MessageType.TextMessage:
                     await SendText(message.PlainText, message.TargetGroup, myName);
                     break;
                 case MessageType.DataPackage:
-                    await SendData(message.ClientFiles, message.TargetGroup);
+                    await _fileTransmissionManager.SendPackage(message, GetHubConnectionAsync);
                     break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }
-        }
-
-        public async Task SendData(List<ClientDataFile> files, string targetGroup)
-        {
-            try
-            {
-                await AddDataToMessageBox(targetGroup, files);
-                foreach (var file in files)
-                {
-                    SendedFileIdPackages.TryAdd(file.Id, file.ClientPackages);
-
-                    for (int i = 0; i < file.Packages.Count; i++)
-                    {
-                        await SendPackageMessage(file.Id, file.Packages[i], targetGroup);
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException($"{nameof(MessageService)}.{nameof(SendData)}: {e.Message}.");
-            }
-        }
-        
-        private async Task SendPackageMessage(Guid fileId, Package package, string targetGroup)
-        {
-            SendedFileIdPackages.TryGetValue(fileId, out var packages);
-
-            if (packages is null || packages.All(x => x.Index != package.Index))
-            {
-                return;
-            }
-
-            var message = new Message()
-            {
-                Id = fileId,
-                Package = package,
-                Sender = myName,
-                TargetGroup = targetGroup,
-                Type = MessageType.DataPackage
-            };
-
-            var connection = await GetHubConnectionAsync();
-
-            await connection.SendAsync("Dispatch", message);
         }
 
         public async Task SendText(string text, string targetGroup, string myUsername)
@@ -544,21 +451,6 @@ namespace Limp.Client.Services.HubServices.HubServices.Implementations.MessageSe
         {
             await GetHubConnectionAsync();
             await hubConnection!.SendAsync("DeleteConversation", myName, targetGroup);
-        }
-
-        public async Task AddDataToMessageBox(string targetGroup, List<ClientDataFile> files)
-        {
-            var dataMessages = files.Select(x => new ClientMessage()
-            {
-                Id = x.Id,
-                Sender = myName,
-                TargetGroup = targetGroup,
-                DateSent = DateTime.UtcNow,
-                Type = MessageType.DataPackage,
-                Packages = x.ClientPackages
-            }).ToList();
-
-            await _messageBox.AddMessagesAsync(dataMessages.ToArray(), false);
         }
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)

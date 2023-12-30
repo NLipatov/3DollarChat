@@ -63,7 +63,9 @@ namespace Limp.Client.Services.InboxService.Implementation
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
+            {
                 message.IsDelivered = true;
+            }
         }
 
         public async Task OnRegistered(Guid messageId)

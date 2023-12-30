@@ -10,6 +10,7 @@
 @using Limp.Client.Services.DataTransmission.PackageForming
 @using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using LimpShared.Encryption
+@using LimpShared.Models.Message
 @using LimpShared.Models.Message.DataTransfer
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
@@ -104,7 +105,13 @@
         if (DataFiles.Any())
         {
             var dataFilesCopy = new List<ClientDataFile>(DataFiles);
-            Task.Run(() => _messageService.SendData(dataFilesCopy, TopicName));
+            Task.Run(() => _messageService.SendMessage(new()
+            {
+                ClientFiles = dataFilesCopy,
+                Sender = MyUsername,
+                TargetGroup = TopicName,
+                Type = MessageType.DataPackage
+            }));
             FileInputId = Guid.NewGuid();
         }
 

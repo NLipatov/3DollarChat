@@ -11,7 +11,11 @@
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize Items="_messageBox.Messages.Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()" Context="message">
+    <Virtualize 
+        Context="message"
+        Items="_messageBox.Messages
+            .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup)
+            .ToList()" >
         <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage"/>
     </Virtualize>
 </div>
@@ -34,16 +38,21 @@
         SubscribeToHubEvents();
     }
 
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager
+            .AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
+        
+        _hubServiceSubscriptionManager
+            .AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
+        
+        _hubServiceSubscriptionManager
+            .AddCallback<Guid>(MessageRegisteredByHub, "MessageRegisteredByHub", ComponentId);
+    }
+
     private async Task ResendMessage(ClientMessage message)
     {
         await _messageService.SendMessage(message);
-    }
-
-    private void SubscribeToHubEvents()
-    {
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Guid>(MessageRegisteredByHub, "MessageRegisteredByHub", ComponentId);
     }
 
     public async Task MessageRegisteredByHub(Guid id)

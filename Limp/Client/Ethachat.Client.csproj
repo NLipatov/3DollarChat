@@ -38,10 +38,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\..\LimpShared\LimpShared\LimpShared.csproj" />
     <ProjectReference Include="..\..\EthachatShared\EthachatShared\EthachatShared.csproj" />
-    <ProjectReference Include="..\..\EthachatShared\LimpShared\LimpShared.csproj" />
-    <ProjectReference Include="..\..\LimpShared\LimpShared\LimpShared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

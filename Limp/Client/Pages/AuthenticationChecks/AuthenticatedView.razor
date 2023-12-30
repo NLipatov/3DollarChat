@@ -66,12 +66,14 @@
     protected override async Task OnInitializedAsync()
     {
         _isUsersHubConnectionActive = UsersService.IsConnected();
-        var authenticationIsReadyToUse = await AuthenticationHandler.IsSetToUseAsync();
-        if (!authenticationIsReadyToUse)
+        if (!await AuthenticationHandler.IsSetToUseAsync())
         {
             NavigationManager.NavigateTo("signin");
             return;
         }
+
+        HubServiceSubscriptionManager
+            .AddCallback<AuthResult>(DecideOnToken, "OnRefreshCredentials", ComponentId);
 
         HubServiceSubscriptionManager
             .AddCallback<AuthResult>(DecideOnToken, "OnValidateCredentials", ComponentId);

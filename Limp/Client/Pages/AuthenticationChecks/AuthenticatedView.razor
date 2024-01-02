@@ -1,8 +1,10 @@
 ﻿@using Ethachat.Client.Pages.AuthenticationChecks.Stages;
+@using Ethachat.Client.Pages.HubConnectionStatus
 @using Ethachat.Client.Services;
 @using Ethachat.Client.Services.AuthenticationService.Handlers
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.HubServices.HubServices
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
@@ -19,42 +21,51 @@
 @implements IDisposable
 
 <div>
-    @if (_isUsersHubConnectionActive is false)
+
+    
+    @switch (_authenticationState)
     {
-        <div class="p-2">
-            <Callout Type="CalloutType.Warning" Heading="No connection">
-                <span>Reconnecting...</span>
-            </Callout>
-        </div>
-    }
-    else
-    {
-        @if (_authenticationState is AuthenticationState.TokenActualisation)
-        {
+        case AuthenticationState.TokenActualisation:
             <div class="d-flex flex-column align-items-center text-center">
                 <p class="mt-3 mb-0">Checking if you have been authenticated</p>
             </div>
-        }
-        else if (_authenticationState is AuthenticationState.Authenticated)
-        {
-            @AuthenticatedContent
-        }
-        else if (_authenticationState is AuthenticationState.NotAuthenticated)
-        {
+            break;
+        case AuthenticationState.Authenticated:
+            if (new[] { IsAuthHubConnectionActive, IsMessageHubConnectionActive, IsUsersHubConnectionActive }.Any(x => x != true))
+            {
+                <div class="p-2">
+                    <Callout Type="CalloutType.Warning">
+                        <span>Not all hub connections are active. Reconnecting.</span>
+                        <HubConnectionStateDisplay
+                            HubStateDictionary=@(new Dictionary<HubType, bool> { { HubType.AuthHub, IsAuthHubConnectionActive }, { HubType.MessageHub, IsMessageHubConnectionActive }, { HubType.UsersHub, IsUsersHubConnectionActive } })/>
+                    </Callout>
+                </div>
+            }
+            else
+            {
+                @AuthenticatedContent
+            }
+            break;
+        case AuthenticationState.NotAuthenticated:
             @UnauthenticatedContent
-        }
+            break;
+        default:
+            <div class="d-flex flex-column align-items-center text-center">
+                <p class="mt-3 mb-0">Unspecified authentication state. Try to reload the page.</p>
+            </div>
+            break;
     }
 </div>
 
 @code {
 
-    [Parameter]
-    public RenderFragment? AuthenticatedContent { get; set; }
+    [Parameter] public RenderFragment? AuthenticatedContent { get; set; }
 
-    [Parameter]
-    public RenderFragment? UnauthenticatedContent { get; set; }
+    [Parameter] public RenderFragment? UnauthenticatedContent { get; set; }
 
-    private bool _isUsersHubConnectionActive = false;
+    private bool IsUsersHubConnectionActive { get; set; }
+    private bool IsMessageHubConnectionActive { get; set; }
+    private bool IsAuthHubConnectionActive { get; set; }
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
     private Guid ComponentId { get; set; }
 
@@ -62,7 +73,10 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _isUsersHubConnectionActive = UsersService.IsConnected();
+        IsAuthHubConnectionActive = AuthService.IsConnected();
+        IsUsersHubConnectionActive = UsersService.IsConnected();
+        IsMessageHubConnectionActive = MessageService.IsConnected();
+        
         if (!await AuthenticationHandler.IsSetToUseAsync())
         {
             NavigationManager.NavigateTo("signin");
@@ -76,12 +90,26 @@
             .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
 
         HubServiceSubscriptionManager
-            .AddCallback<bool>(isActive =>
+            .AddCallback<bool>((state) =>
             {
-                _isUsersHubConnectionActive = isActive;
+                IsAuthHubConnectionActive = state;
+                StateHasChanged();
+            }, "OnAuthHubConnectionStatusChanged", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<bool>((state) =>
+            {
+                IsMessageHubConnectionActive = state;
+                StateHasChanged();
+            }, "OnMessageHubConnectionStatusChanged", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<bool>((state) =>
+            {
+                IsUsersHubConnectionActive = state;
                 StateHasChanged();
             }, "OnUsersHubConnectionStatusChanged", ComponentId);
-        
+
         await ValidateCredentials();
     }
 
@@ -97,10 +125,12 @@
         {
             if (_authenticationState is not AuthenticationState.Authenticated)
             {
-                _authenticationState = AuthenticationState.Authenticated;
                 await MessageService.GetHubConnectionAsync();
                 await UsersService.GetHubConnectionAsync();
-                
+                await AuthService.GetHubConnectionAsync();
+
+                _authenticationState = AuthenticationState.Authenticated;
+
                 await AuthenticationHandler
                     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
             }
@@ -109,7 +139,8 @@
         {
             _authenticationState = AuthenticationState.NotAuthenticated;
         }
-        
+
         StateHasChanged();
     }
+
 }

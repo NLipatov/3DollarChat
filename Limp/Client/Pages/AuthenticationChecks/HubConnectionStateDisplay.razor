@@ -1,0 +1,26 @@
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Ethachat.Client.Pages.HubConnectionStatus
+@inject IAuthService AuthService
+@inject IAuthService UsersService
+@inject IAuthService MessageService
+
+@foreach (var hubEntry in HubStateDictionary)
+{
+    <div style="display: flex; align-items: center;gap: 0.5rem;" xmlns="http://www.w3.org/1999/html">
+        <span style="
+        height: 0.8rem;
+        width: 0.8rem;
+        background-color: @(hubEntry.Value ? "green" : "red");
+        border-radius: 50%;
+        display: inline-block;">
+        </span>
+        
+        <span>
+            @hubEntry.Key
+        </span>
+    </div>
+}
+
+@code {
+    [Parameter] public Dictionary<HubType, bool> HubStateDictionary { get; set; }
+}

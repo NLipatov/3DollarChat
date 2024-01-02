@@ -131,8 +131,8 @@
 
                 _authenticationState = AuthenticationState.Authenticated;
 
-                await AuthenticationHandler
-                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+                // await AuthenticationHandler
+                //     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
             }
         }
         else

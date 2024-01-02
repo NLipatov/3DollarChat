@@ -1,4 +1,5 @@
-﻿using Ethachat.Client.Services.LocalStorageService;
+﻿using System.Collections.Concurrent;
+using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
@@ -60,6 +61,11 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
+        if(credentialsValidationCounter.Count != 0)
+            return;
+        
+        credentialsValidationCounter.Push(true);
+        
         var dto = await GetCredentialsDto();
         
         if (dto.WebAuthnPair is null)
@@ -80,10 +86,21 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
         uint updatedCounter = dto.WebAuthnPair.Counter + 1;
         await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
         await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
+        
+        credentialsValidationCounter.TryPop(out _);
     }
 
+    //Each item is an ongoing process of WebAuthn credentials validation.
+    //If there'll be more than one process, it can lead to the discrepancy of the counter on the backend and frontend
+    private static ConcurrentStack<bool> credentialsValidationCounter = new();
     public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
     {
+        if (credentialsValidationCounter.Count != 1)
+        {
+            credentialsValidationCounter.TryPop(out _);
+            return;
+        }
+        
         var dto = await GetCredentialsDto();
         
         if (result.Result == AuthResultType.Success)

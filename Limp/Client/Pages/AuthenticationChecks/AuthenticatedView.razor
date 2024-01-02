@@ -11,6 +11,7 @@
 @using Ethachat.Client.Services.JWTReader;
 @using Ethachat.Client.Services.LocalStorageService
 @using EthachatShared.Models.Authentication.Models
+@using System.Collections.Concurrent
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
 @inject IMessageService MessageService
@@ -131,8 +132,8 @@
 
                 _authenticationState = AuthenticationState.Authenticated;
 
-                // await AuthenticationHandler
-                //     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+                await AuthenticationHandler
+                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
             }
         }
         else

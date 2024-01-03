@@ -67,7 +67,7 @@
     private List<ClientDataFile> DataFiles { get; set; } = new();
     public Guid FileInputId = Guid.NewGuid();
     private Modal MaxFileSizeRestrictionModal = default!;
-        private const int MaxFileSizeBytes = 5242880;
+    private const long MaxFileSizeBytes = long.MaxValue;
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
@@ -128,9 +128,7 @@
                                         $"No AES key stored for {partnerUsername}.");
         
         var fileDataId = Guid.NewGuid();
-        var bytes = await FileToBytes(file);
-        var b64Decrypted = Convert.ToBase64String(bytes);
-        var b64DecryptedChunks = SplitString(b64Decrypted, maxPackageSizeBytes);
+        var b64DecryptedChunks = await PackageMultiplexerService.SplitAsync(file);
 
         List<string> ivs = new List<string>(b64DecryptedChunks.Count);
         List<string> b64Encrypted = new List<string>(b64DecryptedChunks.Count);
@@ -182,30 +180,5 @@
         });
         
         StateHasChanged();
-    }
-
-    private List<string> SplitString(string input, int maxLength)
-    {
-        List<string> result = new List<string>();
-
-        for (int i = 0; i < input.Length; i += maxLength)
-        {
-            int length = Math.Min(maxLength, input.Length - i);
-            result.Add(input.Substring(i, length));
-        }
-
-        return result;
-    }
-
-    private async Task<byte[]> FileToBytes(IBrowserFile file)
-    {
-        using (var s = file.OpenReadStream(MaxFileSizeBytes))
-        {
-            using (var ms = new MemoryStream())
-            {
-                await s.CopyToAsync(ms);
-                return ms.ToArray();
-            }
-        }
     }
 }

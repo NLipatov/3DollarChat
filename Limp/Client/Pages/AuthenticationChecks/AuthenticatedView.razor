@@ -30,20 +30,7 @@
             </div>
             break;
         case AuthenticationState.Authenticated:
-            if (new[] { IsAuthHubConnectionActive, IsMessageHubConnectionActive, IsUsersHubConnectionActive }.Any(x => x != true))
-            {
-                <div class="p-2">
-                    <Callout Type="CalloutType.Warning">
-                        <span>Not all hub connections are active. Reconnecting.</span>
-                        <HubConnectionStateDisplay
-                            HubStateDictionary=@(new Dictionary<HubType, bool> { { HubType.AuthHub, IsAuthHubConnectionActive }, { HubType.MessageHub, IsMessageHubConnectionActive }, { HubType.UsersHub, IsUsersHubConnectionActive } })/>
-                    </Callout>
-                </div>
-            }
-            else
-            {
-                @AuthenticatedContent
-            }
+            @AuthenticatedContent
             break;
         case AuthenticationState.NotAuthenticated:
             @UnauthenticatedContent
@@ -62,9 +49,9 @@
 
     [Parameter] public RenderFragment? UnauthenticatedContent { get; set; }
 
-    private bool IsUsersHubConnectionActive { get; set; }
-    private bool IsMessageHubConnectionActive { get; set; }
-    private bool IsAuthHubConnectionActive { get; set; }
+    // private bool IsUsersHubConnectionActive { get; set; }
+    // private bool IsMessageHubConnectionActive { get; set; }
+    // private bool IsAuthHubConnectionActive { get; set; }
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
     private Guid ComponentId { get; set; }
 
@@ -72,9 +59,9 @@
 
     protected override async Task OnInitializedAsync()
     {
-        IsAuthHubConnectionActive = AuthService.IsConnected();
-        IsUsersHubConnectionActive = UsersService.IsConnected();
-        IsMessageHubConnectionActive = MessageService.IsConnected();
+        // IsAuthHubConnectionActive = AuthService.IsConnected();
+        // IsUsersHubConnectionActive = UsersService.IsConnected();
+        // IsMessageHubConnectionActive = MessageService.IsConnected();
         
         if (!await AuthenticationHandler.IsSetToUseAsync())
         {
@@ -88,26 +75,26 @@
         HubServiceSubscriptionManager
             .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
 
-        HubServiceSubscriptionManager
-            .AddCallback<bool>((state) =>
-            {
-                IsAuthHubConnectionActive = state;
-                StateHasChanged();
-            }, "OnAuthHubConnectionStatusChanged", ComponentId);
-
-        HubServiceSubscriptionManager
-            .AddCallback<bool>((state) =>
-            {
-                IsMessageHubConnectionActive = state;
-                StateHasChanged();
-            }, "OnMessageHubConnectionStatusChanged", ComponentId);
-
-        HubServiceSubscriptionManager
-            .AddCallback<bool>((state) =>
-            {
-                IsUsersHubConnectionActive = state;
-                StateHasChanged();
-            }, "OnUsersHubConnectionStatusChanged", ComponentId);
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsAuthHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnAuthHubConnectionStatusChanged", ComponentId);
+        //
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsMessageHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnMessageHubConnectionStatusChanged", ComponentId);
+        //
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsUsersHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnUsersHubConnectionStatusChanged", ComponentId);
 
         await ValidateCredentials();
     }
@@ -125,6 +112,7 @@
             {
                 await AuthenticationHandler
                     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+                
                 await MessageService.GetHubConnectionAsync();
                 await UsersService.GetHubConnectionAsync();
                 await AuthService.GetHubConnectionAsync();

@@ -67,7 +67,13 @@ namespace Limp.Server.Hubs
 
         public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            string usernameFromToken = await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            AuthResult usernameRequestResult =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            if (usernameRequestResult.Result is not AuthResultType.Success)
+            {
+                await Clients.Caller.SendAsync("OnAccessTokenInvalid", usernameRequestResult);
+            }
+
+            var usernameFromToken = usernameRequestResult.Message;
 
             var keys = InMemoryHubConnectionStorage
                 .UsersHubConnections
@@ -94,14 +100,24 @@ namespace Limp.Server.Hubs
                 authenticationType = AuthenticationType.JwtToken;
                 var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
                 isTokenValid = validationResult.Result is AuthResultType.Success;
-                username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
+                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
+                
+                if (userRequestResult.Result is not AuthResultType.Success)
+                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+                username = userRequestResult.Message ?? string.Empty;
             }
             else if (webAuthnPair is not null)
             {
                 authenticationType = AuthenticationType.WebAuthn;
                 var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
                 isTokenValid = validationResult.Result is AuthResultType.Success;
-                username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{WebAuthnPair = webAuthnPair, JwtPair = jwtPair});
+                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
+                
+                if (userRequestResult.Result is not AuthResultType.Success)
+                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+                username = userRequestResult.Message ?? string.Empty;
             }
             
             await Clients.Caller.SendAsync("OnNameResolve", username);
@@ -178,7 +194,13 @@ namespace Limp.Server.Hubs
 
         public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
-            string username =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
+                
+            if (userRequestResult.Result is not AuthResultType.Success)
+                throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+            var username = userRequestResult.Message ?? string.Empty;
+            
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }

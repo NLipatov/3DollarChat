@@ -14,6 +14,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersServ
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using EthachatShared.Encryption;
+using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
@@ -151,6 +152,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
                 _fileTransmissionManager.HandlePackageRegisteredByHub(fileId, packageIndex));
+
+            hubConnection.On<AuthResult>("OnAccessTokenInvalid", (authResult) =>
+            {
+                Console.WriteLine(authResult.Message);
+            });
 
             hubConnection.On<Message>("ReceiveMessage", async message =>
             {

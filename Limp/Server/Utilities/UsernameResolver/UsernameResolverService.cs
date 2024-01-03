@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Ethachat.Client.Pages.WebAuthn;
 using Ethachat.Client.Services.AuthenticationService;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using Limp.Server.Utilities.HttpMessaging;
@@ -16,10 +17,10 @@ public class UsernameResolverService : IUsernameResolverService
         _serverHttpClient = serverHttpClient;
     }
 
-    public async Task<string> GetUsernameAsync(CredentialsDTO credentialsDto)
+    public async Task<AuthResult> GetUsernameAsync(CredentialsDTO credentialsDto)
     {
         var result = await _serverHttpClient.GetUsernameByCredentials(credentialsDto);
-        return result.Result is AuthResultType.Success ? result.Message : string.Empty;
+        return result;
     }
 
     private bool IsTokenReadable(string accessToken)

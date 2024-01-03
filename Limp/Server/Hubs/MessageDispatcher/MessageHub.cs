@@ -1,4 +1,5 @@
-﻿using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+﻿using EthachatShared.Models.Authentication.Models;
+using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
 using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -82,10 +83,17 @@ namespace Limp.Server.Hubs.MessageDispatcher
 
         public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            string usernameFromToken =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            AuthResult usernameRequestResult =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            if (usernameRequestResult.Result is not AuthResultType.Success)
+            {
+                await Clients.Caller.SendAsync("OnAccessTokenInvalid", usernameRequestResult);
+            }
+
+            var usernameFromToken = usernameRequestResult.Message ?? string.Empty;
 
             await _userConnectedHandler.OnUsernameResolved
             (Context.ConnectionId, 
+            usernameFromToken,
             Groups.AddToGroupAsync,
             Clients.Caller.SendAsync,
             Clients.Caller.SendAsync,

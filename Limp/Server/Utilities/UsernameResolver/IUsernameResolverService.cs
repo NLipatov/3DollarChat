@@ -1,8 +1,9 @@
+using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 
 namespace Limp.Server.Utilities.UsernameResolver;
 
 public interface IUsernameResolverService
 {
-    Task<string> GetUsernameAsync(CredentialsDTO credentialsDto);
+    Task<AuthResult> GetUsernameAsync(CredentialsDTO credentialsDto);
 }

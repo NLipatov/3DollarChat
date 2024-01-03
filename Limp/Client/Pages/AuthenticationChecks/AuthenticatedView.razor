@@ -22,8 +22,6 @@
 @implements IDisposable
 
 <div>
-
-    
     @switch (_authenticationState)
     {
         case AuthenticationState.TokenActualisation:
@@ -113,12 +111,11 @@
 
         await ValidateCredentials();
     }
-
+    
     private async Task ValidateCredentials()
     {
         await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync());
     }
-
     private async Task HandleAuthenticationCheckResult(AuthResult credentialsValidationResult)
     {
         var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;
@@ -126,22 +123,19 @@
         {
             if (_authenticationState is not AuthenticationState.Authenticated)
             {
+                await AuthenticationHandler
+                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
                 await MessageService.GetHubConnectionAsync();
                 await UsersService.GetHubConnectionAsync();
                 await AuthService.GetHubConnectionAsync();
 
                 _authenticationState = AuthenticationState.Authenticated;
-
-                await AuthenticationHandler
-                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
             }
         }
         else
         {
             _authenticationState = AuthenticationState.NotAuthenticated;
         }
-
         StateHasChanged();
     }
-
 }

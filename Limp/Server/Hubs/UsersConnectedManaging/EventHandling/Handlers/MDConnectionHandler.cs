@@ -55,6 +55,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
         public async Task OnUsernameResolved
         (string connectionId,
+        string username,
         Func<string, string, CancellationToken, Task>? AddUserToGroup,
         Func<string, string, CancellationToken, Task>? SendToCaller,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation,
@@ -63,26 +64,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         JwtPair? jwtPair = null)
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
-            bool isTokenValid = false;
-            if (TokenReader.IsTokenReadable(jwtPair?.AccessToken ?? string.Empty))
-            {
-                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
-                isTokenValid = validationResult.Result is AuthResultType.Success;
-            }
-            else
-            {
-                if (webAuthnPair is not null)
-                {
-                    var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
-                    isTokenValid = validationResult.Result is AuthResultType.Success;
-                }
-            }
-            if (!isTokenValid)
-            {
-                throw new ArgumentException("Access-token is not valid.");
-            }
-
-            var username = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO {JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key

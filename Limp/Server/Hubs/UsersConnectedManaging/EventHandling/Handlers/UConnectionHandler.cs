@@ -43,6 +43,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
         public async Task OnUsernameResolved
         (string connectionId,
+        string username,
         Func<string, string, CancellationToken, Task>? AddUserToGroup = null,
         Func<string, string, CancellationToken, Task>? callback = null,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
@@ -50,8 +51,6 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         WebAuthnPair? webAuthnPair = null,
         JwtPair? jwtPair = null)
         {
-            var username =  await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{WebAuthnPair = webAuthnPair, JwtPair = jwtPair});
-
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
             if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Key == connectionId))

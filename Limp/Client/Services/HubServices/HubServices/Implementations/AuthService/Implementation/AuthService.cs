@@ -101,11 +101,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
 
             HubConnectionInstance.On<AuthResult>("OnRefreshCredentials", async result =>
             {
+                if (result.Result is not AuthResultType.Success)
+                    NavigationManager.NavigateTo("signin");
+                
                 if (result.JwtPair is not null)
                     await _authenticationManager.UpdateCredentials(result.JwtPair);
-
-                if (!string.IsNullOrWhiteSpace(result.CredentialId))
-                    await _authenticationManager.UpdateCredentials(new WebAuthnPair{CredentialId = result.CredentialId});
 
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshCredentials");
             });

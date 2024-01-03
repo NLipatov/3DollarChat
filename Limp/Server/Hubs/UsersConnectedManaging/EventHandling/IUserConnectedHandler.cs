@@ -12,6 +12,7 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
         Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null);
         Task OnUsernameResolved
         (string connectionId,
+        string username,
         Func<string, string, CancellationToken, Task>? AddToUserGroup = null, 
         Func<string, string, CancellationToken, Task>? SendToCaller = null,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,

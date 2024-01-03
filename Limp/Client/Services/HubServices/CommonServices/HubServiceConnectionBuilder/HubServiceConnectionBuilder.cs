@@ -6,12 +6,24 @@ public static class HubServiceConnectionBuilder
 {
     public static HubConnection Build(Uri hubAddress, bool useStatefulReconnect = true)
     {
-        return new HubConnectionBuilder()
-            .WithUrl(hubAddress, options =>
-            {
-                options.UseStatefulReconnect = useStatefulReconnect;
-            })
-            .AddMessagePackProtocol()
-            .Build();
+        Console.WriteLine($"{nameof(HubServiceConnectionBuilder)}.{nameof(Build)}: Building hub connection at {hubAddress}");
+        HubConnection hubConnection;
+        try
+        {
+            hubConnection = new HubConnectionBuilder()
+                .WithUrl(hubAddress, options =>
+                {
+                    options.UseStatefulReconnect = useStatefulReconnect;
+                })
+                .AddMessagePackProtocol()
+                .Build();
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw;
+        }
+
+        return hubConnection;
     }
 }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Ethachat.Client.Services.LocalStorageService;
+﻿using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
@@ -11,6 +10,7 @@ namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementation
 
 public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 {
+    private static DateTime CredentialsUpdatedOn { get; set; }
     private readonly ILocalStorageService _localStorageService;
 
     public async Task<CredentialsDTO> GetCredentialsDto()
@@ -81,19 +81,12 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
         uint updatedCounter = dto.WebAuthnPair.Counter + 1;
         await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
         await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
-        CredentialsRefreshCallbackStack.TryPop(out _);
+        CredentialsUpdatedOn = DateTime.UtcNow;
     }
-
-    private static ConcurrentStack<bool> CredentialsRefreshCallbackStack = new();
-    
     public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
     {
-        CredentialsRefreshCallbackStack.Push(true);
-        if (CredentialsRefreshCallbackStack.Count != 1)
-        {
-            CredentialsRefreshCallbackStack.TryPop(out _);
+        if ((DateTime.UtcNow - CredentialsUpdatedOn).TotalMinutes < 5)
             return;
-        }
         
         var dto = await GetCredentialsDto();
         

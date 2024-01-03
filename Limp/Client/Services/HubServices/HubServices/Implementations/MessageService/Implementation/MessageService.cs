@@ -13,6 +13,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
+using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
@@ -130,10 +131,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private void InitializeHubConnection()
         {
-            hubConnection = new HubConnectionBuilder()
-                .WithUrl(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"))
-                .AddMessagePackProtocol()
-                .Build();
+            if (hubConnection is not null)
+                return;
+            
+            hubConnection = HubServiceConnectionBuilder
+                .Build(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"));
         }
 
         private void RegisterHubEventHandlers()

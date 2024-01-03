@@ -1,17 +1,16 @@
-﻿using EthachatShared.Models.Authentication.Models;
-using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using EthachatShared.Models.Authentication.Models.UserAuthentication;
-using EthachatShared.Models.Users;
-using EthachatShared.Models.WebPushNotification;
-using System.Net;
-using System.Net.Sockets;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
 using EthachatShared.Models.Authentication.Enums;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 
-namespace Limp.Server.Utilities.HttpMessaging
+namespace Ethachat.Server.Utilities.HttpMessaging
 {
     public class ServerHttpClient : IServerHttpClient
     {

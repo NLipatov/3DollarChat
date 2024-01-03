@@ -1,7 +1,7 @@
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 
-namespace Limp.Server.Utilities.UsernameResolver;
+namespace Ethachat.Server.Utilities.UsernameResolver;
 
 public interface IUsernameResolverService
 {

@@ -1,20 +1,20 @@
-﻿using EthachatShared.Models.Authentication.Models;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
-using Limp.Server.Utilities.HttpMessaging;
-using Limp.Server.Utilities.Kafka;
-using Limp.Server.Utilities.Redis;
-using Limp.Server.Utilities.UsernameResolver;
-using Limp.Server.WebPushNotifications;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.Kafka;
+using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+using Ethachat.Server.Utilities.UsernameResolver;
+using Ethachat.Server.WebPushNotifications;
+using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs.MessageDispatcher
+namespace Ethachat.Server.Hubs.MessageDispatcher
 {
     public class MessageHub : Hub
     {

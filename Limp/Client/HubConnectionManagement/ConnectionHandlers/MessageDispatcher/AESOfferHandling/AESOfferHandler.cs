@@ -1,7 +1,7 @@
 ﻿using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
-using Ethachat.Client.Services.CloudKeyService;
+using Ethachat.Client.Services.BrowserKeyStorageService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 

@@ -1,11 +1,10 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Ethachat.Client.Pages.WebAuthn;
 using Ethachat.Client.Services.AuthenticationService;
-using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
-using Limp.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.HttpMessaging;
 using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 
-namespace Limp.Server.Utilities.UsernameResolver;
+namespace Ethachat.Server.Utilities.UsernameResolver;
 
 public class UsernameResolverService : IUsernameResolverService
 {

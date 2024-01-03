@@ -2,7 +2,7 @@
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 
 public class MessageDecryptor : IMessageDecryptor
 {

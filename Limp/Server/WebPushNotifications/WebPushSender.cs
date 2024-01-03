@@ -1,9 +1,9 @@
-﻿using Limp.Server.Utilities.HttpMessaging;
+﻿using System.Text.Json;
+using Ethachat.Server.Utilities.HttpMessaging;
 using EthachatShared.Models.WebPushNotification;
-using System.Text.Json;
 using WebPush;
 
-namespace Limp.Server.WebPushNotifications
+namespace Ethachat.Server.WebPushNotifications
 {
     public class WebPushSender : IWebPushSender
     {

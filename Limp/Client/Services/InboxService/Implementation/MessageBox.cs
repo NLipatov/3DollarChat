@@ -1,5 +1,5 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
+using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message;
 

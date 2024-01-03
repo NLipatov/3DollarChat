@@ -1,6 +1,6 @@
 ﻿using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService;
-using Ethachat.Client.Services.UserAgentService;
+using Ethachat.Client.Services.UserAgent;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.JSInterop;

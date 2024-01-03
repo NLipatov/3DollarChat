@@ -1,4 +1,4 @@
-namespace Ethachat.Client.Pages.HubConnectionStatus;
+namespace Ethachat.Client.Pages.AuthenticationChecks;
 
 public enum HubType
 {

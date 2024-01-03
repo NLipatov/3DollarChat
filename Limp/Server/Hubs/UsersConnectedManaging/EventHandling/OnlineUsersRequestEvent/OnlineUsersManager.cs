@@ -1,7 +1,7 @@
-﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using EthachatShared.Models.ConnectedUsersManaging;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public class OnlineUsersManager : IOnlineUsersManager
     {

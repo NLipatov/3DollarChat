@@ -1,15 +1,16 @@
 using Blazored.Toast;
 using Ethachat.Client;
 using Ethachat.Client.Cryptography;
+using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
-using Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
 using Ethachat.Client.Pages.AccountManagement.LogicHandlers;
 using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
-using Ethachat.Client.Services.CloudKeyService;
+using Ethachat.Client.Services.BrowserKeyStorageService;
+using Ethachat.Client.Services.BrowserKeyStorageService.Implementation;
 using Ethachat.Client.Services.ConcurrentCollectionManager;
 using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
@@ -28,12 +29,11 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersServ
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.InboxService.Implementation;
-using Ethachat.Client.Services.LocalKeyChainService.Implementation;
 using Ethachat.Client.Services.LocalStorageService;
 using Ethachat.Client.Services.NotificationService;
 using Ethachat.Client.Services.NotificationService.Implementation;
+using Ethachat.Client.Services.UserAgent;
 using Ethachat.Client.Services.UserAgent.Implementation;
-using Ethachat.Client.Services.UserAgentService;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 

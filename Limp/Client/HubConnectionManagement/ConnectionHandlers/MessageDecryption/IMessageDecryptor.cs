@@ -1,6 +1,6 @@
 ﻿using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.HubInteraction.Handlers.MessageDecryption;
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 
 public interface IMessageDecryptor
 {

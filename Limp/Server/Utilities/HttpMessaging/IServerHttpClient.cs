@@ -5,7 +5,7 @@ using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
 
-namespace Limp.Server.Utilities.HttpMessaging
+namespace Ethachat.Server.Utilities.HttpMessaging
 {
     public interface IServerHttpClient
     {

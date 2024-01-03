@@ -1,13 +1,13 @@
-using Limp.Server.Extensions;
-using Limp.Server.Hubs;
-using Limp.Server.Hubs.MessageDispatcher;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
-using Limp.Server.Utilities.Redis;
-using Limp.Server.Utilities.UsernameResolver;
-using Limp.Server.WebPushNotifications;
+using Ethachat.Server.Extensions;
+using Ethachat.Server.Hubs;
+using Ethachat.Server.Hubs.MessageDispatcher;
+using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+using Ethachat.Server.Utilities.UsernameResolver;
+using Ethachat.Server.WebPushNotifications;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);

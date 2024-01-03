@@ -2,7 +2,7 @@
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling
 {
     public interface IUserConnectedHandler<T> where T : Hub
     {

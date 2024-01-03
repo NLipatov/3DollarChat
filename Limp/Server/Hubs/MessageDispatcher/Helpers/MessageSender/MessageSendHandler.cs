@@ -1,10 +1,7 @@
-﻿using Confluent.Kafka;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using EthachatShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 {
     public class MessageSendHandler : IMessageSendHandler
     {

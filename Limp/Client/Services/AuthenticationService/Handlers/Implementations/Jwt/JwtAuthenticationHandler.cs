@@ -1,6 +1,6 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
 using Ethachat.Client.Services.LocalStorageService;
-using Ethachat.Client.Services.UserAgentService;
+using Ethachat.Client.Services.UserAgent;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;

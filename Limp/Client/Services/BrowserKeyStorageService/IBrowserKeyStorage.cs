@@ -1,7 +1,7 @@
-﻿using Ethachat.Client.Services.CloudKeyService.Models;
+﻿using Ethachat.Client.Services.BrowserKeyStorageService.Models;
 using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Services.CloudKeyService
+namespace Ethachat.Client.Services.BrowserKeyStorageService
 {
     public interface IBrowserKeyStorage
     {

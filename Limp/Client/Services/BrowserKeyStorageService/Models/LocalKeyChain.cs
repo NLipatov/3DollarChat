@@ -1,7 +1,7 @@
 ﻿#nullable disable
 using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Services.CloudKeyService.Models
+namespace Ethachat.Client.Services.BrowserKeyStorageService.Models
 {
     public class LocalKeyChain
     {

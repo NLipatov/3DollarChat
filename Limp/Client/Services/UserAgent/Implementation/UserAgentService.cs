@@ -1,6 +1,5 @@
 ﻿using Ethachat.Client.Services.LocalStorageService;
 using Ethachat.Client.Services.UserAgent.Models;
-using Ethachat.Client.Services.UserAgentService;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.UserAgent.Implementation;

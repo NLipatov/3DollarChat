@@ -1,6 +1,6 @@
 ﻿using EthachatShared.Models.Message;
 
-namespace Limp.Server.Utilities.Redis;
+namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 
 public interface IUnsentMessagesRedisService
 {

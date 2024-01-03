@@ -1,4 +1,4 @@
-﻿namespace Limp.Server.WebPushNotifications
+﻿namespace Ethachat.Server.WebPushNotifications
 {
     public interface IWebPushSender
     {

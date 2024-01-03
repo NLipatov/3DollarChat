@@ -1,11 +1,10 @@
-﻿using EthachatShared.Encryption;
-using Microsoft.JSInterop;
-using System.Text.Json;
+﻿using System.Text.Json;
 using Ethachat.Client.Cryptography.KeyStorage;
-using Ethachat.Client.Services.CloudKeyService;
-using Ethachat.Client.Services.CloudKeyService.Models;
+using Ethachat.Client.Services.BrowserKeyStorageService.Models;
+using EthachatShared.Encryption;
+using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.LocalKeyChainService.Implementation
+namespace Ethachat.Client.Services.BrowserKeyStorageService.Implementation
 {
     public class BrowserKeyStorage : IBrowserKeyStorage
     {

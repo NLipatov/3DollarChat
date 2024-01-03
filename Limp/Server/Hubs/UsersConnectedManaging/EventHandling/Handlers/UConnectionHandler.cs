@@ -1,10 +1,9 @@
-﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Utilities.UsernameResolver;
+﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Models.Authentication.Models;
-using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class UConnectionHandler : IUserConnectedHandler<UsersHub>
     {

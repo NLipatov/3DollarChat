@@ -2,7 +2,6 @@
 @using Ethachat.Client.Pages.Chat.UI.Childs.MessageInput
 @using Ethachat.Client.Cryptography.KeyStorage;
 @using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader
-@using Ethachat.Client.Services.CloudKeyService;
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using EthachatShared.Models.ConnectedUsersManaging;
 @using EthachatShared.Encryption;
@@ -10,6 +9,7 @@
 @using Ethachat.Client.Pages.Chat.UI.Childs.MessageCollectionDispaying;
 @using Ethachat.Client.Pages.AuthenticationChecks
 @using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @inject NavigationManager _navigationManager

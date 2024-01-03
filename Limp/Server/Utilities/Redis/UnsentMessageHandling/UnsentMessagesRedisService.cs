@@ -3,7 +3,7 @@ using EthachatShared.Models.Message;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
 
-namespace Limp.Server.Utilities.Redis;
+namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 
 public class UnsentMessagesRedisService : IUnsentMessagesRedisService
 {

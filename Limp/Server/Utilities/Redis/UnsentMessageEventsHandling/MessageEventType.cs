@@ -1,4 +1,4 @@
-﻿namespace Limp.Server.Utilities.Redis.UnsentMessageEventsHandling;
+﻿namespace Ethachat.Server.Utilities.Redis.UnsentMessageEventsHandling;
 
 public enum MessageEventType
 {

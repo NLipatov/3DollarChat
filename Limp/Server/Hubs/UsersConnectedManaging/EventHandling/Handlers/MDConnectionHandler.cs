@@ -1,13 +1,11 @@
-﻿using Ethachat.Client.Services.JWTReader;
-using Limp.Server.Hubs.MessageDispatcher;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Utilities.HttpMessaging;
-using Limp.Server.Utilities.UsernameResolver;
+﻿using Ethachat.Server.Hubs.MessageDispatcher;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Models.Authentication.Models;
-using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class MDConnectionHandler : IUserConnectedHandler<MessageHub>
     {

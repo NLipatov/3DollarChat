@@ -1,10 +1,10 @@
-﻿using Limp.Server.Utilities.HttpMessaging;
+﻿using Ethachat.Server.Utilities.HttpMessaging;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs
+namespace Ethachat.Server.Hubs
 {
     public class AuthHub : Hub
     {

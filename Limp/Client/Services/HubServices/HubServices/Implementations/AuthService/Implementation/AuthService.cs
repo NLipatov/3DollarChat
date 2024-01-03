@@ -3,7 +3,7 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.LocalStorageService;
-using Ethachat.Client.Services.UserAgentService;
+using Ethachat.Client.Services.UserAgent;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;

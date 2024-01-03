@@ -1,10 +1,10 @@
+using Ethachat.Server.Utilities.HttpMessaging;
+using EthachatShared.Models.WebPushNotification;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using Limp.Server.Utilities.HttpMessaging;
-using EthachatShared.Models.WebPushNotification;
 
-namespace Limp.Server.WebPushNotifications;
+namespace Ethachat.Server.WebPushNotifications;
 
 public class FirebasePushSender : IWebPushSender
 {

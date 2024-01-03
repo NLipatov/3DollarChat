@@ -112,10 +112,18 @@
             {
                 await AuthenticationHandler
                     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
-                
-                await MessageService.GetHubConnectionAsync();
-                await UsersService.GetHubConnectionAsync();
-                await AuthService.GetHubConnectionAsync();
+
+                try
+                {
+                    await MessageService.GetHubConnectionAsync();
+                    await UsersService.GetHubConnectionAsync();
+                    await AuthService.GetHubConnectionAsync();
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine(e);
+                    throw;
+                }
 
                 _authenticationState = AuthenticationState.Authenticated;
             }

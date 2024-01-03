@@ -4,6 +4,7 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.UserIdentityService;
+using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
@@ -49,7 +50,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 return;
 
             HubConnectionInstance = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri("/usersHub"));
+                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.UsersHubRelativeAddress));
         }
 
         private void RegisterHubEventHandlers()

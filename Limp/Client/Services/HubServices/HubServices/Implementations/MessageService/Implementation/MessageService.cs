@@ -14,6 +14,7 @@ using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
@@ -135,7 +136,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return;
             
             hubConnection = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri("/messageDispatcherHub"));
+                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.MessageHubRelativeAddress));
         }
 
         private void RegisterHubEventHandlers()

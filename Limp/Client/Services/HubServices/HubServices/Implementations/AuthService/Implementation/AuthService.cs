@@ -4,6 +4,7 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.LocalStorageService;
 using Ethachat.Client.Services.UserAgent;
+using EthachatShared.Constants;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
@@ -51,7 +52,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
                 return;
             
             HubConnectionInstance = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri("/authHub"));
+                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.AuthHubRelativeAddress));
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()

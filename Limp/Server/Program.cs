@@ -8,6 +8,7 @@ using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
+using EthachatShared.Constants;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -64,9 +65,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<AuthHub>("/authHub");
-app.MapHub<UsersHub>("/usersHub");
-app.MapHub<MessageHub>("/messageDispatcherHub");
+app.MapHub<AuthHub>(HubRelativeAddresses.AuthHubRelativeAddress);
+app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
+app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
 app.Run();

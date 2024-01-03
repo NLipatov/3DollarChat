@@ -110,8 +110,8 @@
         {
             if (_authenticationState is not AuthenticationState.Authenticated)
             {
-                await AuthenticationHandler
-                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+                // await AuthenticationHandler
+                //     .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
 
                 try
                 {

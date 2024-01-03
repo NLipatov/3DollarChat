@@ -57,7 +57,7 @@ else
         _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
 
         await _cryptographyService.GenerateRsaKeyPairAsync();
-        KeysGeneratedHandler.SubscribeToRSAKeysGeneratedEvent(() =>
+        KeysGeneratedHandler.SubscribeToRsaKeysGeneratedEvent(() =>
         {
             isRSAGenerated = true;
             StateHasChanged();

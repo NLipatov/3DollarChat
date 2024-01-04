@@ -64,6 +64,9 @@ public class FileTransmissionManager : IFileTransmissionManager
         if (!_downloadedFileIdToPackages.ContainsKey(fileDataKey))
             _downloadedFileIdToPackages[fileDataKey] = new (message.Package.Total);
 
+        if (_downloadedFileIdToPackages[fileDataKey].Any(x => x.Index == message.Package.Index))
+            return false;
+
         _downloadedFileIdToPackages[fileDataKey].Add(await BuildClientPackageAsync(message));
         
         if (_downloadedFileIdToPackages[fileDataKey].Count == message.Package.Total)

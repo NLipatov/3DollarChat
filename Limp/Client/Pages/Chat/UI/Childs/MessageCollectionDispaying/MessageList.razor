@@ -16,7 +16,7 @@
         Items="_messageBox.Messages
             .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup)
             .ToList()" >
-        <SingleMessage message="message" myUsername=@myUsername OnResend="ResendMessage"/>
+        <SingleMessage message="message" myUsername=@myUsername/>
     </Virtualize>
 </div>
 
@@ -48,11 +48,6 @@
         
         _hubServiceSubscriptionManager
             .AddCallback<Guid>(MessageRegisteredByHub, "MessageRegisteredByHub", ComponentId);
-    }
-
-    private async Task ResendMessage(ClientMessage message)
-    {
-        await _messageService.SendMessage(message);
     }
 
     public async Task MessageRegisteredByHub(Guid id)

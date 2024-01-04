@@ -1,4 +1,5 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.Services.DataTransmission.PackageForming.Models;
 using Microsoft.AspNetCore.Components.Forms;
 
 namespace Ethachat.Client.Services.DataTransmission.PackageForming;
@@ -20,6 +21,12 @@ class PackageMultiplexerService : IPackageMultiplexerService
         var bytes = await FileToBytesAsync(file);
         var base64String = Convert.ToBase64String(bytes);
         return SplitStringToChunks(base64String, 20 * 1024 /*KiB*/);
+    }
+
+    public async Task<ByteChunks> Split(IBrowserFile file)
+    {
+        var bytes = await FileToBytesAsync(file);
+        return new ByteChunks(bytes);
     }
     
     private async Task<byte[]> FileToBytesAsync(IBrowserFile file)

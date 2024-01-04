@@ -14,7 +14,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class FileTransmissionManager : IFileTransmissionManager
 {
     private ConcurrentDictionary<Guid, List<ClientPackage>> _downloadedFileIdToPackages = new();
-    private ConcurrentDictionary<Guid, List<ClientPackage>> _uploadedFileIdToPackages = new();
+    private ConcurrentDictionary<Guid, List<int>> _uploadedFileIdToPackages = new();
     private readonly IJSRuntime _jsRuntime;
     private readonly IMessageBox _messageBox;
     private readonly ICallbackExecutor _callbackExecutor;
@@ -28,37 +28,17 @@ public class FileTransmissionManager : IFileTransmissionManager
         _messageBox = messageBox;
         _callbackExecutor = callbackExecutor;
     }
-
-    public async Task SendPackage(ClientMessage message, Func<Task<HubConnection>> getHubConnection)
-    {
-        try
-        {
-            await AddDataToMessageBox(message);
-            foreach (var file in message.ClientFiles)
-            {
-                _uploadedFileIdToPackages.TryAdd(file.Id, file.ClientPackages);
-
-                for (int i = 0; i < file.Packages.Count; i++)
-                {
-                    await SendPackageMessage(file.Id, file.Packages[i], message, getHubConnection);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            throw new ApplicationException($"{nameof(FileTransmissionManager)}.{nameof(SendPackage)}: {e.Message}.");
-        }
-    }
     
-    private async Task SendPackageMessage(Guid fileId, Package package, ClientMessage messageToSend, Func<Task<HubConnection>> getHubConnection)
+    public async Task SendDataPackage(Guid fileId, Package package, ClientMessage messageToSend, Func<Task<HubConnection>> getHubConnection)
     {
-        _uploadedFileIdToPackages.TryGetValue(fileId, out var packages);
+        var keyExist = _uploadedFileIdToPackages.ContainsKey(fileId);
+        if (!keyExist)
+            _uploadedFileIdToPackages.TryAdd(fileId, new List<int>());
 
-        if (packages is null || packages.All(x => x.Index != package.Index))
-        {
-            return;
-        }
+        var oldIndexes = _uploadedFileIdToPackages[fileId];
+        oldIndexes.Add(package.Index);
 
+        _uploadedFileIdToPackages.TryUpdate(fileId, oldIndexes, _uploadedFileIdToPackages[fileId]);
         var message = new Message
         {
             Id = fileId,
@@ -71,21 +51,6 @@ public class FileTransmissionManager : IFileTransmissionManager
         var connection = await getHubConnection();
 
         await connection.SendAsync("Dispatch", message);
-    }
-
-    public async Task AddDataToMessageBox(ClientMessage message)
-    {
-        var dataMessages = message.ClientFiles.Select(x => new ClientMessage()
-        {
-            Id = x.Packages.First().FileDataid,
-            Sender = message.Sender,
-            TargetGroup = message.TargetGroup,
-            DateSent = DateTime.UtcNow,
-            Type = MessageType.DataPackage,
-            Packages = x.ClientPackages,
-        }).ToList();
-
-        await _messageBox.AddMessagesAsync(dataMessages.ToArray(), false);
     }
 
     public async Task<bool> StoreDataPackage(Message message)
@@ -125,7 +90,7 @@ public class FileTransmissionManager : IFileTransmissionManager
         if (sendedFilePackages is null)
             return;
 
-        var updatedPackages = sendedFilePackages.Where(x => x.Index != packageIndex).ToList();
+        var updatedPackages = sendedFilePackages.Where(x => x != packageIndex).ToList();
         _uploadedFileIdToPackages.TryUpdate(fileId, updatedPackages, sendedFilePackages);
 
         if (!updatedPackages.Any())

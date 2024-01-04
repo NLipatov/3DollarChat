@@ -423,7 +423,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await SendText(message.PlainText, message.TargetGroup, myName);
                     break;
                 case MessageType.DataPackage:
-                    await _fileTransmissionManager.SendPackage(message, GetHubConnectionAsync);
+                    await _fileTransmissionManager.SendDataPackage(message.ClientFiles.First().Id, message.Package, message, GetHubConnectionAsync);
                     break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");

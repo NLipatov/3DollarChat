@@ -85,7 +85,7 @@
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await Split(e.File, 20 * 1024 /*KiB*/, TopicName);
+        await Split(e.File, TopicName);
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
@@ -119,7 +119,7 @@
         DataFiles = new(0);
     }
 
-    public async Task Split(IBrowserFile file, int maxPackageSizeBytes, string partnerUsername)
+    public async Task Split(IBrowserFile file, string partnerUsername)
     {
         var aesKey = InMemoryKeyStorage.AESKeyStorage
             .First(x => x.Key == partnerUsername).Value.Value?.ToString();
@@ -128,57 +128,72 @@
                                         $"No AES key stored for {partnerUsername}.");
         
         var fileDataId = Guid.NewGuid();
-        var b64DecryptedChunks = await PackageMultiplexerService.SplitAsync(file);
-
-        List<string> ivs = new List<string>(b64DecryptedChunks.Count);
-        List<string> b64Encrypted = new List<string>(b64DecryptedChunks.Count);
-
-        for (int i = 0; i < b64DecryptedChunks.Count; i++)
+        var plainB64Chunks = await PackageMultiplexerService.Split(file);
+        int count = plainB64Chunks.Count;
+        List<ClientPackage> localUnencryptedPackages = new(plainB64Chunks.Count);
+        Console.WriteLine("Chunks count:" + count);
+        int bytesProcessed = 0;
+        Task[] workload = new Task[count];
+        foreach (var chunk in plainB64Chunks)
         {
-            var encrypted = await _jSRuntime.InvokeAsync<string>("AESEncryptText", b64DecryptedChunks[i], aesKey);
-            b64Encrypted.Add(encrypted);
-
+            localUnencryptedPackages.Add(new ClientPackage()
+            {
+                Index = bytesProcessed,
+                Total = count,
+                PlainB64Data = chunk,
+                ContentType = file.ContentType,
+                FileName = file.Name,
+                FileDataid = fileDataId,
+            });
+            
+            var encryptedB64Chunk = await _jSRuntime.InvokeAsync<string>("AESEncryptText", chunk, aesKey);
             var iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
-            ivs.Add(iv);
 
-            decimal progress = Math.Round(i / (decimal)b64DecryptedChunks.Count * 100);
+            workload[bytesProcessed] = Task.Run(async () =>
+            {            
+                await _messageService.SendMessage(new()
+                {
+                    ClientFiles = new List<ClientDataFile>{new ()
+                    {
+                        Id = fileDataId
+                    }},
+                    Package = new ()
+                    {
+                        Index = bytesProcessed,
+                        Total = count,
+                        B64Data = encryptedB64Chunk,
+                        IV = iv,
+                        ContentType = file.ContentType,
+                        FileName = file.Name,
+                        FileDataid = fileDataId,
+                    },
+                    Type = MessageType.DataPackage,
+                    TargetGroup = TopicName,
+                    Sender = MyUsername
+                });
+            });
+            
+            
+            bytesProcessed++;
+            decimal progress = Math.Round(bytesProcessed / (decimal)count * 100);
             CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
         }
-        
-        var decryptedChunks = new string[b64Encrypted.Count];
-
-        for (int i = 0; i < b64Encrypted.Count; i++)
-        {            
-            await _jSRuntime.InvokeAsync<string>("ImportIV", ivs[i]);
-            decryptedChunks[i] = await _jSRuntime.InvokeAsync<string>("AESDecryptText", b64Encrypted[i], aesKey);
-        }
-
-        List<ClientPackage> packages = new List<ClientPackage>(b64DecryptedChunks.Count);
-
-        for (int i = 0; i < b64Encrypted.Count; i++)
-        {
-            packages.Add(new ClientPackage
-            {
-                FileDataid = fileDataId,
-                FileName = file.Name,
-                ContentType = file.ContentType,
-                Index = i,
-                Total = b64Encrypted.Count,
-                B64Data = b64Encrypted[i],
-                IV = ivs[i],
-                PlainB64Data = decryptedChunks[i]
-            });
-        }
-        
-        DataFiles.Add(new ClientDataFile()
+        await _messageBox.AddMessageAsync(new ClientMessage()
         {
             Id = fileDataId,
-            ClientPackages = packages,
-            Packages = packages
-                .Select(x => x.ToPackage())
-                .ToList(),
-        });
-        
-        StateHasChanged();
+            TargetGroup = TopicName,
+            Sender = MyUsername,
+            Packages = localUnencryptedPackages.Select(x=>new ClientPackage()
+            {
+                Index = x.Index,
+                Total = x.Total,
+                PlainB64Data = x.PlainB64Data,
+                ContentType = file.ContentType,
+                FileName = file.Name,
+                FileDataid = fileDataId,
+            }).ToList()
+        }, false);
+
+        await Task.WhenAll(workload);
     }
 }

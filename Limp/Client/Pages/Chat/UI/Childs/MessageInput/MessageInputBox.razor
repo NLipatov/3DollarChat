@@ -4,14 +4,19 @@
 @using Ethachat.Client.Services.InboxService;
 @using System.Text
 @using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Cryptography
 @using Ethachat.Client.Cryptography.CryptoHandlers
+@using Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 @using Ethachat.Client.Cryptography.KeyStorage
 @using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
 @using Ethachat.Client.Services.DataTransmission.PackageForming
+@using Ethachat.Client.Services.DataTransmission.PackageForming.Models
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Encryption
 @using EthachatShared.Models.Message
 @using EthachatShared.Models.Message.DataTransfer
+@using System.Collections
+@using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
@@ -19,6 +24,7 @@
 @inject IMessageDecryptor _messageDecryptor 
 @inject IPackageMultiplexerService PackageMultiplexerService
 @inject ICallbackExecutor CallbackExecutor
+@inject ICryptographyService CryptographyService
 
 <div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput"/>
@@ -26,19 +32,6 @@
     <label for="fileinput" class="label-wrapper" style="align-items: center;">
         <span class="bi bi-paperclip"></span>
         <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
-        @if (DataFiles.Any())
-        {
-            @foreach (var file in DataFiles)
-            {
-                <span title=@file.Packages.First().FileName style="    
-                        overflow: hidden;
-                        max-width: 10vw;
-                        white-space: nowrap;
-                        text-overflow: ellipsis;">
-                    @file.Packages.First().FileName
-                </span>
-            }
-        }
     </label>
 
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
@@ -56,7 +49,6 @@
 <FileEncryptionModal/>
 
 @code {
-
     [Parameter]
     public string TopicName { get; set; } = string.Empty;
 
@@ -64,8 +56,7 @@
     public string MyUsername { get; set; } = string.Empty;
 
     private string MessageInput { get; set; } = string.Empty;
-    private List<ClientDataFile> DataFiles { get; set; } = new();
-    public Guid FileInputId = Guid.NewGuid();
+    private Guid FileInputId = Guid.NewGuid();
     private Modal MaxFileSizeRestrictionModal = default!;
     private const long MaxFileSizeBytes = long.MaxValue;
 
@@ -85,13 +76,13 @@
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await Split(e.File, TopicName);
+        await Split(e.File);
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(MessageInput) && !DataFiles.Any() || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
+        if (string.IsNullOrWhiteSpace(MessageInput) || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
         {
             MessageInput = string.Empty;
             return;
@@ -101,52 +92,23 @@
         {
             await _messageService.SendText(MessageInput, TopicName, MyUsername);
         }
-
-        if (DataFiles.Any())
-        {
-            var dataFilesCopy = new List<ClientDataFile>(DataFiles);
-            Task.Run(() => _messageService.SendMessage(new()
-            {
-                ClientFiles = dataFilesCopy,
-                Sender = MyUsername,
-                TargetGroup = TopicName,
-                Type = MessageType.DataPackage
-            }));
-            FileInputId = Guid.NewGuid();
-        }
-
+        
         MessageInput = string.Empty;
-        DataFiles = new(0);
     }
 
-    public async Task Split(IBrowserFile file, string partnerUsername)
+    private async Task Split(IBrowserFile file)
     {
-        var aesKey = InMemoryKeyStorage.AESKeyStorage
-            .First(x => x.Key == partnerUsername).Value.Value?.ToString();
-        if (string.IsNullOrWhiteSpace(aesKey))
-            throw new ArgumentException($"Exception:{nameof(MessageInputBox)}.{nameof(Split)}:" +
-                                        $"No AES key stored for {partnerUsername}.");
-        
         var fileDataId = Guid.NewGuid();
         var plainB64Chunks = await PackageMultiplexerService.Split(file);
-        int count = plainB64Chunks.Count;
-        List<ClientPackage> localUnencryptedPackages = new(plainB64Chunks.Count);
-        Console.WriteLine("Chunks count:" + count);
-        int bytesProcessed = 0;
+        await AddPackageToAMessageBox(plainB64Chunks, fileDataId, file.Name, file.ContentType);
+        int totalChunks = plainB64Chunks.Count;
+        int chunksCounter = 0;
         foreach (var chunk in plainB64Chunks)
         {
-            localUnencryptedPackages.Add(new ClientPackage()
+            var cryptogram = await CryptographyService.EncryptAsync<AESHandler>(new()
             {
-                Index = bytesProcessed,
-                Total = count,
-                PlainB64Data = chunk,
-                ContentType = file.ContentType,
-                FileName = file.Name,
-                FileDataid = fileDataId,
-            });
-            
-            var encryptedB64Chunk = await _jSRuntime.InvokeAsync<string>("AESEncryptText", chunk, aesKey);
-            var iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
+                Cyphertext = chunk
+            }, TopicName);
 
             await _messageService.SendMessage(new()
                 {
@@ -156,10 +118,10 @@
                     }},
                     Package = new ()
                     {
-                        Index = bytesProcessed,
-                        Total = count,
-                        B64Data = encryptedB64Chunk,
-                        IV = iv,
+                        Index = chunksCounter,
+                        Total = totalChunks,
+                        B64Data = cryptogram.Cyphertext,
+                        IV = cryptogram.Iv,
                         ContentType = file.ContentType,
                         FileName = file.Name,
                         FileDataid = fileDataId,
@@ -170,25 +132,33 @@
                 });
             
             
-            bytesProcessed++;
-            decimal progress = Math.Round(bytesProcessed / (decimal)count * 100);
+            chunksCounter++;
+            decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
             CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
         }
-        
+    }
+
+    private async Task AddPackageToAMessageBox(IChunkableBinary chunks, Guid fileDataId, string fileName, string contentType)
+    {
         await _messageBox.AddMessageAsync(new ClientMessage()
         {
             Id = fileDataId,
+            Packages = 
+                Enumerable.Range(0, chunks.Count)
+                .Select((x, iteration) => new ClientPackage()
+                {
+                    Index = iteration,
+                    Total = chunks.Count,
+                    ContentType = contentType,
+                    FileName = fileName,
+                    FileDataid = fileDataId,
+                    PlainB64Data = iteration == 0 ? chunks.Base64 : string.Empty
+                })
+                .ToList(),
+            Type = MessageType.DataPackage,
             TargetGroup = TopicName,
-            Sender = MyUsername,
-            Packages = localUnencryptedPackages.Select(x=>new ClientPackage()
-            {
-                Index = x.Index,
-                Total = x.Total,
-                PlainB64Data = x.PlainB64Data,
-                ContentType = file.ContentType,
-                FileName = file.Name,
-                FileDataid = fileDataId,
-            }).ToList()
-        }, false);
+            Sender = MyUsername
+        }, 
+        isEncrypted: false);
     }
 }

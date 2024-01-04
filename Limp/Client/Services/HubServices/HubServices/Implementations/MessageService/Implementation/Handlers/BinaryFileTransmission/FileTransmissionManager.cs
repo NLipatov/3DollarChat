@@ -15,6 +15,7 @@ public class FileTransmissionManager : IFileTransmissionManager
 {
     private ConcurrentDictionary<Guid, List<ClientPackage>> _downloadedFileIdToPackages = new();
     private ConcurrentDictionary<Guid, List<int>> _uploadedFileIdToPackages = new();
+    private ConcurrentDictionary<Guid, int> _uploadedFilePackagesRemainTobeUploaded = new();
     private readonly IJSRuntime _jsRuntime;
     private readonly IMessageBox _messageBox;
     private readonly ICallbackExecutor _callbackExecutor;
@@ -86,20 +87,21 @@ public class FileTransmissionManager : IFileTransmissionManager
 
     public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)
     {
+        if (!_uploadedFilePackagesRemainTobeUploaded.TryGetValue(fileId, out int _))
+            _uploadedFilePackagesRemainTobeUploaded.TryAdd(fileId,
+                _messageBox.Messages.FirstOrDefault(x => x.Id == fileId)?.Packages.Count ?? 0);
+
+        _uploadedFilePackagesRemainTobeUploaded.TryGetValue(fileId, out int previous);
+        var current = previous - 1;
+
+        _uploadedFilePackagesRemainTobeUploaded.TryUpdate(fileId, current, previous);
+        
         _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
 
-        _uploadedFileIdToPackages.TryGetValue(fileId, out var sendedFilePackages);
-
-        if (sendedFilePackages is null)
-            return;
-
-        var updatedPackages = sendedFilePackages.Where(x => x != packageIndex).ToList();
-        _uploadedFileIdToPackages.TryUpdate(fileId, updatedPackages, sendedFilePackages);
-
-        if (!updatedPackages.Any())
+        if (current == 1)
         {
             _callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
-            _uploadedFileIdToPackages.TryRemove(fileId, out updatedPackages);
+            _uploadedFileIdToPackages.TryRemove(fileId, out _);
         }
     }
 

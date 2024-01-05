@@ -16,6 +16,9 @@ public class FileTransmissionManager : IFileTransmissionManager
     private ConcurrentDictionary<Guid, List<ClientPackage>> _downloadedFileIdToPackages = new();
     private ConcurrentDictionary<Guid, List<int>> _uploadedFileIdToPackages = new();
     private ConcurrentDictionary<Guid, int> _uploadedFilePackagesRemainTobeUploaded = new();
+    private ConcurrentDictionary<Guid, int> UploadedPackages = new();
+    private ConcurrentDictionary<Guid, int> DownloadedPackages = new();
+    private ConcurrentDictionary<Guid, int> PackageCount = new();
     private readonly IJSRuntime _jsRuntime;
     private readonly IMessageBox _messageBox;
     private readonly ICallbackExecutor _callbackExecutor;
@@ -29,16 +32,26 @@ public class FileTransmissionManager : IFileTransmissionManager
         _messageBox = messageBox;
         _callbackExecutor = callbackExecutor;
     }
-    
+
+    public async Task SendMetadata(Message message, Func<Task<HubConnection>> getHubConnection)
+    {
+        if (message.Metadata is null)
+            throw new ArgumentException($"Exception:{nameof(FileTransmissionManager)}.{nameof(SendMetadata)}: Invalid metadata.");
+        
+        var connection = await getHubConnection();
+
+        await connection.SendAsync("Dispatch", message);
+    }
+
     public async Task SendDataPackage(Guid fileId, Package package, ClientMessage messageToSend, Func<Task<HubConnection>> getHubConnection)
     {
         var keyExist = _uploadedFileIdToPackages.ContainsKey(fileId);
         if (!keyExist)
             _uploadedFileIdToPackages.TryAdd(fileId, new List<int>());
-
+        
         var oldIndexes = _uploadedFileIdToPackages[fileId];
         oldIndexes.Add(package.Index);
-
+        
         _uploadedFileIdToPackages.TryUpdate(fileId, oldIndexes, _uploadedFileIdToPackages[fileId]);
         var message = new Message
         {
@@ -46,7 +59,7 @@ public class FileTransmissionManager : IFileTransmissionManager
             Package = package,
             Sender = messageToSend.Sender,
             TargetGroup = messageToSend.TargetGroup,
-            Type = MessageType.DataPackage
+            Type = MessageType.DataPackage,
         };
 
         var connection = await getHubConnection();
@@ -63,19 +76,24 @@ public class FileTransmissionManager : IFileTransmissionManager
 
         Guid fileDataKey = message.Package.FileDataid;
         if (!_downloadedFileIdToPackages.ContainsKey(fileDataKey))
-            _downloadedFileIdToPackages[fileDataKey] = new (message.Package.Total);
+            _downloadedFileIdToPackages[fileDataKey] = new 
+                (_messageBox.Messages
+                    .First(x=>x.Type == MessageType.Metadata && x.Metadata.DataFileId == fileDataKey)
+                    .Metadata.ChunksCount);
 
         if (_downloadedFileIdToPackages[fileDataKey].Any(x => x.Index == message.Package.Index))
             return false;
 
         _downloadedFileIdToPackages[fileDataKey].Add(await BuildClientPackageAsync(message));
         
-        if (_downloadedFileIdToPackages[fileDataKey].Count == message.Package.Total)
+        if (_downloadedFileIdToPackages[fileDataKey].Count == _messageBox.Messages
+                .First(x=>x.Type == MessageType.Metadata && x.Metadata.DataFileId == fileDataKey)
+                .Metadata.ChunksCount)
         {
             await _messageBox.AddMessageAsync(new ()
                 {
                     Packages = _downloadedFileIdToPackages[fileDataKey],
-                    Sender = message.Sender,
+                    Sender = message.Sender
                 },
                 isEncrypted: false);
             _downloadedFileIdToPackages.TryRemove(fileDataKey, out _);
@@ -85,20 +103,46 @@ public class FileTransmissionManager : IFileTransmissionManager
         return false;
     }
 
+    public void StoreMetadata(Message metadataMessage)
+    {
+        if (metadataMessage.Metadata is null)
+            throw new ArgumentException(
+                $"Exception:{nameof(FileTransmissionManager)}.{nameof(StoreMetadata)}: Invalid metadata message.");
+
+        _messageBox.Messages.Add(new ClientMessage
+        {
+            Type = MessageType.Metadata,
+            Metadata = new Metadata()
+            {
+                Filename = metadataMessage.Metadata.Filename,
+                ChunksCount = metadataMessage.Metadata.ChunksCount,
+                ContentType = metadataMessage.Metadata.ContentType,
+                DataFileId = metadataMessage.Metadata.DataFileId
+            }
+        });
+    }
+
     public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)
     {
-        if (!_uploadedFilePackagesRemainTobeUploaded.TryGetValue(fileId, out int _))
-            _uploadedFilePackagesRemainTobeUploaded.TryAdd(fileId,
-                _messageBox.Messages.FirstOrDefault(x => x.Id == fileId)?.Packages.Count ?? 0);
+        if (!PackageCount.TryGetValue(fileId, out var _))
+        {
+            var metadata = _messageBox.Messages
+                .Where(x => x.Type == MessageType.Metadata)
+                .FirstOrDefault(x => x.Metadata?.DataFileId == fileId)
+                ?.Metadata;
 
-        _uploadedFilePackagesRemainTobeUploaded.TryGetValue(fileId, out int previous);
-        var current = previous - 1;
+            if (metadata is not null)
+                PackageCount.TryAdd(fileId, metadata.ChunksCount);
+        }
 
-        _uploadedFilePackagesRemainTobeUploaded.TryUpdate(fileId, current, previous);
+        if (DownloadedPackages.ContainsKey(fileId))
+            DownloadedPackages.TryUpdate(fileId, DownloadedPackages[fileId] + 1, DownloadedPackages[fileId]);
+        else
+            DownloadedPackages.TryAdd(fileId, 1);
         
         _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
 
-        if (current == 1)
+        if (PackageCount[fileId] == DownloadedPackages[fileId])
         {
             _callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
             _uploadedFileIdToPackages.TryRemove(fileId, out _);
@@ -118,10 +162,7 @@ public class FileTransmissionManager : IFileTransmissionManager
             PlainB64Data = await GetDecryptedPackageBase64Async(message),
             Index = message.Package.Index,
             FileDataid = message.Package.FileDataid,
-            Total = message.Package.Total,
             IV = message.Package.IV,
-            ContentType = message.Package.ContentType,
-            FileName = message.Package.FileName
         };
     }
 

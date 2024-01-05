@@ -9,11 +9,8 @@ public static class ClientPackageExtensions
         return new Package
         {
             Index = package.Index,
-            Total = package.Total,
             B64Data = package.B64Data,
-            ContentType = package.ContentType,
             FileDataid = package.FileDataid,
-            FileName = package.FileName,
             IV = package.IV
         };
     }

@@ -1,5 +1,4 @@
-﻿using System.Collections.Concurrent;
-using Ethachat.Client.ClientOnlyModels;
+﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
@@ -204,6 +203,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (message.Sender is not null)
                                 await NegotiateOnAESAsync(message.Sender);
                         }
+                    }
+                    else if (message.Type == MessageType.Metadata)
+                    {
+                        _fileTransmissionManager.StoreMetadata(message);
                     }
                     else if (message.Type == MessageType.DataPackage)
                     {
@@ -425,6 +428,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.DataPackage:
                     await _fileTransmissionManager.SendDataPackage(message.ClientFiles.First().Id, message.Package, message, GetHubConnectionAsync);
                     break;
+                case MessageType.Metadata:
+                    await _fileTransmissionManager.SendMetadata(message, GetHubConnectionAsync);
+                    break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }
@@ -434,7 +440,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             Guid messageId = Guid.NewGuid();
             Message messageToSend =
-                await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId);
+                await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId, MessageType.TextMessage);
 
             await AddToMessageBox(text, targetGroup, myUsername, messageId);
 

@@ -6,6 +6,7 @@
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message;
 @using System.Text
+@using EthachatShared.Models.Message.DataTransfer
 @using Microsoft.Extensions.Primitives
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
@@ -19,11 +20,11 @@
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
-            @if (!string.IsNullOrWhiteSpace(DataUrl) && message.Packages.First().ContentType.Contains("image"))
+            @if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("image"))
             {
                 <img style="max-width: 100%;" src="@DataUrl"/>
             }
-            else if (!string.IsNullOrWhiteSpace(DataUrl) && message.Packages.First().ContentType.Contains("video"))
+            else if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("video"))
             {
                 <video controls="controls" style="max-width: 100%;">
                     <source src="@DataUrl" type="video/mp4">
@@ -34,10 +35,10 @@
                 <div>
                     <a 
                         href="@DataUrl" 
-                        download="@message.Packages.First().FileName"
+                        download="@Metadata?.Filename"
                        style="text-decoration: none;">
                     <i class="bi bi-cloud-download-fill"></i>
-                    <span>@message.Packages.First().FileName</span>
+                    <span>@Metadata?.Filename</span>
                 </a>
                 </div>
             }
@@ -66,7 +67,7 @@
                         @if (message.Type is MessageType.DataPackage)
                         {
                             <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <span>@($"{chunksLoaded}/{message?.Packages.Count}")</span>
+                                <span>@($"{chunksLoaded}/{Metadata!.ChunksCount}")</span>
                                 <i class="bi bi-arrow-clockwise">Resend</i>
                             </span>
                         }
@@ -124,6 +125,7 @@
     private Guid componentId { get; set; }
     private string DataUrl { get; set; } = string.Empty;
     private int chunksLoaded { get; set; } = 0;
+    private Metadata? Metadata { get; set; }
 
     public void Dispose()
     {
@@ -136,7 +138,12 @@
 
         if (message is not null && message.Packages.Any())
         {
-            string mimeType =  message.Packages.First().ContentType;
+            Metadata = _messageBox.Messages
+                .Where(x => x.Type is MessageType.Metadata)
+                .FirstOrDefault(x => x.Metadata?.DataFileId == message.Packages.FirstOrDefault()?.FileDataid)
+                ?.Metadata;
+            
+            string mimeType =  Metadata!.ContentType;
             string base64Data = PackageMultiplexerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList(), message.Sender);
             var sb = new StringBuilder();
             sb.Append("data:");

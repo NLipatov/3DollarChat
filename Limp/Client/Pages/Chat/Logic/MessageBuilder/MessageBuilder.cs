@@ -12,7 +12,7 @@ namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
         {
             _cryptographyService = cryptographyService;
         }
-        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id)
+        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id, MessageType type)
         {
             Cryptogramm cryptogramm = await _cryptographyService
                 .EncryptAsync<AESHandler>(new Cryptogramm
@@ -22,6 +22,7 @@ namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 
             Message messageToSend = new Message
             {
+                Type = type,
                 Id = id,
                 Cryptogramm = cryptogramm,
                 DateSent = DateTime.UtcNow,

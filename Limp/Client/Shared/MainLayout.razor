@@ -3,6 +3,7 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Shared.ChildComponents
+@using EthachatShared.Models.Message
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
 @inject IToastService _toastService
@@ -19,7 +20,7 @@
         </p>
     </div>
 }
-else if(!isConnectedToHubs)
+else if (!isConnectedToHubs)
 {
     <div class="RSACalculatingWarning">
         <p>
@@ -30,14 +31,14 @@ else if(!isConnectedToHubs)
 else
 {
     <div class="ApplicationContent">
-        <SidebarMenu />
+        <SidebarMenu/>
         <div style="width: 100%;">
             @Body
         </div>
     </div>
 }
 
-<BlazoredToasts 
+<BlazoredToasts
     Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"
     Timeout="2"/>
 
@@ -67,33 +68,36 @@ else
 
     private async void ShowMessageToast()
     {
-        var unnotifiedAbout = _messageBox
+        var currentUsername = await AuthenticationHandler.GetUsernameAsync();
+        var notToastedMessages = _messageBox
             .Messages
+            .Where(x=>x.Sender != currentUsername)
             .Where(x => x.IsToastShown == false);
-        
-        foreach (var message in unnotifiedAbout)
+
+        foreach (var message in notToastedMessages)
         {
-            if (!_navigationManager.Uri.Contains($"user/{message.Sender}") && message.Sender != await AuthenticationHandler.GetUsernameAsync())
+            //If chat with sender is opened - no need to show a toast
+            if (_navigationManager.Uri.Contains($"user/{message.Sender}"))
             {
-                if (message.Packages.Any())
-                {
-                    if (!string.IsNullOrWhiteSpace(message.PlainText))
-                    {
-                        _toastService.ShowInfo(message.Sender + 
-                                               $": file \'{message.Packages.First().FileName}\', " + message.PlainText);
-                    }
-                    else
-                    {
-                        _toastService.ShowInfo(message.Sender + 
-                                               $": file \'{message.Packages.First().FileName}\'");
-                    }
-                }
-                else
-                {
-                    _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
-                }
+                _messageBox.OnToastWasShown(message.Id);
+                return;
             }
+            
+            switch (message.Type)
+            {
+                case MessageType.Metadata:
+                    var fileName = message.Metadata?.Filename ?? "BinaryFile";
+                    _toastService.ShowInfo(message.Sender + ": " + fileName);
+                    break;
+                case MessageType.TextMessage:
+                    _toastService.ShowInfo(message.Sender + ": " + message.PlainText);
+                    break;
+                default:
+                    return;
+            }
+
             _messageBox.OnToastWasShown(message.Id);
         }
     }
+
 }

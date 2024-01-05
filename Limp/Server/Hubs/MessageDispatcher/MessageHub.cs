@@ -158,6 +158,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 {
                     await Clients.Group(message.Sender).SendAsync("PackageRegisteredByHub", message.Package.FileDataid, message.Package.Index);
                 }
+                else if (message.Type is MessageType.Metadata)
+                {
+                    await Clients.Group(message.Sender).SendAsync("MetadataRegisteredByHub", message.Metadata!.DataFileId);
+                }
 
                 //Save message in redis to send it later, or send it now if user is online
                 if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
@@ -194,7 +198,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 {
                     await _unsentMessagesRedisService.Save(packageMessage);
                     
-                    if(package.Index == package.Total - 1)
+                    if(package.Index == 0)
                         await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
                 }
                 await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);

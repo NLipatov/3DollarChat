@@ -16,6 +16,7 @@
 @using EthachatShared.Models.Message
 @using EthachatShared.Models.Message.DataTransfer
 @using System.Collections
+@using System.Data.Common
 @using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
@@ -49,11 +50,9 @@
 <FileEncryptionModal/>
 
 @code {
-    [Parameter]
-    public string TopicName { get; set; } = string.Empty;
+    [Parameter] public string TopicName { get; set; } = string.Empty;
 
-    [Parameter]
-    public string MyUsername { get; set; } = string.Empty;
+    [Parameter] public string MyUsername { get; set; } = string.Empty;
 
     private string MessageInput { get; set; } = string.Empty;
     private Guid FileInputId = Guid.NewGuid();
@@ -92,18 +91,21 @@
         {
             await _messageService.SendText(MessageInput, TopicName, MyUsername);
         }
-        
+
         MessageInput = string.Empty;
     }
 
     private async Task Split(IBrowserFile file)
     {
         var fileDataId = Guid.NewGuid();
-        var plainB64Chunks = await PackageMultiplexerService.Split(file);
-        await AddPackageToAMessageBox(plainB64Chunks, fileDataId, file.Name, file.ContentType);
-        int totalChunks = plainB64Chunks.Count;
+        var chunkableBinary = await PackageMultiplexerService.Split(file);
+        int totalChunks = chunkableBinary.Count;
+        var metadataMessage = GenerateMetadataMessage(fileDataId, file.ContentType, file.Name, totalChunks);
+        await _messageBox.AddMessageAsync(metadataMessage, false);
+        await _messageService.SendMessage(metadataMessage);
+        await AddDataToMessageBox(chunkableBinary, metadataMessage);
         int chunksCounter = 0;
-        foreach (var chunk in plainB64Chunks)
+        foreach (var chunk in chunkableBinary)
         {
             var cryptogram = await CryptographyService.EncryptAsync<AESHandler>(new()
             {
@@ -111,54 +113,70 @@
             }, TopicName);
 
             await _messageService.SendMessage(new()
+            {
+                ClientFiles = new List<ClientDataFile>
                 {
-                    ClientFiles = new List<ClientDataFile>{new ()
+                    new()
                     {
                         Id = fileDataId
-                    }},
-                    Package = new ()
-                    {
-                        Index = chunksCounter,
-                        Total = totalChunks,
-                        B64Data = cryptogram.Cyphertext,
-                        IV = cryptogram.Iv,
-                        ContentType = file.ContentType,
-                        FileName = file.Name,
-                        FileDataid = fileDataId,
-                    },
-                    Type = MessageType.DataPackage,
-                    TargetGroup = TopicName,
-                    Sender = MyUsername
-                });
-            
-            
+                    }
+                },
+                Package = new()
+                {
+                    Index = chunksCounter,
+                    B64Data = cryptogram.Cyphertext,
+                    IV = cryptogram.Iv,
+                    FileDataid = fileDataId,
+                },
+                Type = MessageType.DataPackage,
+                TargetGroup = TopicName,
+                Sender = MyUsername
+            });
+
+
             chunksCounter++;
             decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
             CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
         }
     }
 
-    private async Task AddPackageToAMessageBox(IChunkableBinary chunks, Guid fileDataId, string fileName, string contentType)
+    private ClientMessage GenerateMetadataMessage(Guid fileDataId, string contentType, string fileName, int totalChunks)
+    {
+        var metadataMessage = new ClientMessage
+        {
+            Type = MessageType.Metadata,
+            Metadata = new()
+            {
+                DataFileId = fileDataId,
+                ContentType = contentType,
+                Filename = fileName,
+                ChunksCount = totalChunks
+            },
+            Sender = MyUsername,
+            TargetGroup = TopicName
+        };
+
+        return metadataMessage;
+    }
+
+    private async Task AddDataToMessageBox(IChunkableBinary chunks, ClientMessage metadataMessage)
     {
         await _messageBox.AddMessageAsync(new ClientMessage()
-        {
-            Id = fileDataId,
-            Packages = 
-                Enumerable.Range(0, chunks.Count)
-                .Select((x, iteration) => new ClientPackage()
-                {
-                    Index = iteration,
-                    Total = chunks.Count,
-                    ContentType = contentType,
-                    FileName = fileName,
-                    FileDataid = fileDataId,
-                    PlainB64Data = iteration == 0 ? chunks.Base64 : string.Empty
-                })
-                .ToList(),
-            Type = MessageType.DataPackage,
-            TargetGroup = TopicName,
-            Sender = MyUsername
-        }, 
-        isEncrypted: false);
+            {
+                Id = metadataMessage.Metadata.DataFileId,
+                Packages =
+                    Enumerable.Range(0, chunks.Count)
+                        .Select((x, iteration) => new ClientPackage()
+                        {
+                            Index = iteration,
+                            FileDataid = metadataMessage.Metadata.DataFileId,
+                            PlainB64Data = iteration == 0 ? chunks.Base64 : string.Empty
+                        })
+                        .ToList(),
+                Type = MessageType.DataPackage,
+                TargetGroup = TopicName,
+                Sender = MyUsername
+            },
+            isEncrypted: false);
     }
 }

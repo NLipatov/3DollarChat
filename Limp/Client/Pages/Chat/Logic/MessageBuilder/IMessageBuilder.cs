@@ -4,6 +4,6 @@ namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 {
     public interface IMessageBuilder
     {
-        Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id);
+        Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id, MessageType type);
     }
 }

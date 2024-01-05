@@ -1,7 +1,8 @@
-﻿using LimpShared.Models.Authentication.Models;
+﻿using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling
 {
     public interface IUserConnectedHandler<T> where T : Hub
     {
@@ -11,10 +12,12 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling
         Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null);
         Task OnUsernameResolved
         (string connectionId,
-        string accessToken, 
+        string username,
         Func<string, string, CancellationToken, Task>? AddToUserGroup = null, 
         Func<string, string, CancellationToken, Task>? SendToCaller = null,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
-        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null);
+        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null,
+        WebAuthnPair? webAuthnPair = null,
+        JwtPair? jwtPair = null);
     }
 }

@@ -1,18 +1,21 @@
-﻿using Limp.Client.Services.JWTReader;
-using Limp.Server.Hubs.MessageDispatcher;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.Authentication.Models;
+﻿using Ethachat.Server.Hubs.MessageDispatcher;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.UsernameResolver;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class MDConnectionHandler : IUserConnectedHandler<MessageHub>
     {
         private readonly IServerHttpClient _serverHttpClient;
+        private readonly IUsernameResolverService _usernameResolverService;
 
-        public MDConnectionHandler(IServerHttpClient serverHttpClient)
+        public MDConnectionHandler(IServerHttpClient serverHttpClient, IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
+            _usernameResolverService = usernameResolverService;
         }
         public void OnConnect(string connectionId)
         {
@@ -29,8 +32,11 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
         (string connectionId, 
         Func<string, string, CancellationToken, Task>? RemoveUserFromGroup = null)
         {
+            if (!InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Value.Contains(connectionId)))
+                return;
+
             var targetConnection = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                .First(x => x.Value.Contains(connectionId));
+                .FirstOrDefault(x => x.Value.Contains(connectionId));
 
             await RemoveUserFromGroup(connectionId, targetConnection.Key, default);
 
@@ -47,54 +53,37 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
         public async Task OnUsernameResolved
         (string connectionId,
-        string accessToken,
+        string username,
         Func<string, string, CancellationToken, Task>? AddUserToGroup,
         Func<string, string, CancellationToken, Task>? SendToCaller,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation,
-        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
+        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null,
+        WebAuthnPair? webAuthnPair = null,
+        JwtPair? jwtPair = null)
         {
             GuaranteeDelegatesNotNull(new object?[] { AddUserToGroup, SendToCaller });
-
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
-            if (!isTokenValid)
-            {
-                throw new ArgumentException("Access-token is not valid.");
-            }
-
-            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
 
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == connectionId))
             {
-                //setup a new item with all the old connections
-                var connectionToBeDeleted = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.FirstOrDefault(x => x.Key == connectionId);
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(username, connectionToBeDeleted.Value);
-                //remove the old item
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connectionToBeDeleted);
+                var oldConnections =
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == connectionId);
+                foreach (var connection in oldConnections)
+                {
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(username, connection.Value);
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(connection);
+                }
             }
 
-            await AddUserToGroup(connectionId, username, default);
+            var userConnectionsIds =
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x=>x.Value);
+            foreach (var connection in userConnectionsIds)
+            {
+                await AddUserToGroup(connection, username, default);
+            }
 
             await SendToCaller("OnMyNameResolve", username, default);
-        }
-
-        private async Task<TokenRelatedOperationResult> GetUsername(string accessToken)
-        {
-            TokenRelatedOperationResult usernameRequestResult = await _serverHttpClient.GetUserNameFromAccessTokenAsync(accessToken);
-
-            string declaredUsername = TokenReader.GetUsernameFromAccessToken(accessToken);
-            string? actualUsername = usernameRequestResult.Username;
-
-            if(!string.IsNullOrWhiteSpace(actualUsername)
-                &&
-                !string.IsNullOrWhiteSpace(declaredUsername))
-            {
-                if (!declaredUsername.Equals(actualUsername))
-                    throw new ArgumentException("Username from access-token and username from AuthAPI differs.");
-            }
-
-            return usernameRequestResult;
         }
 
         private void GuaranteeDelegatesNotNull(params object?[] delegateObjects)

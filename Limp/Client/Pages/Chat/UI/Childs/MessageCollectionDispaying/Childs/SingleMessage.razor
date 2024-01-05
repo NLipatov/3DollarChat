@@ -1,25 +1,55 @@
-﻿@using Limp.Client.ClientOnlyModels;
-@using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.Services.HubServices.MessageService;
-@using Limp.Client.Services.InboxService;
-@using LimpShared.Models.Message;
-@using Ljbc1994.Blazor.IntersectionObserver
-@inject IIntersectionObserverService _observerService
+﻿@using Ethachat.Client.ClientOnlyModels;
+@using Ethachat.Client.Services.DataTransmission.PackageForming
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.InboxService;
+@using EthachatShared.Models.Message;
+@using System.Text
+@using EthachatShared.Models.Message.DataTransfer
+@using Microsoft.Extensions.Primitives
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IJSRuntime _jSRuntime
+@inject IPackageMultiplexerService PackageMultiplexerService
 @implements IDisposable
 
 @if(message != null)
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
-            <span>@(message.PlainText)</span>
+            @if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("image"))
+            {
+                <img style="max-width: 100%;" src="@DataUrl"/>
+            }
+            else if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("video"))
+            {
+                <video controls="controls" style="max-width: 100%;">
+                    <source src="@DataUrl" type="video/mp4">
+                </video>
+            }
+            else if (!string.IsNullOrWhiteSpace(DataUrl))
+            {
+                <div>
+                    <a 
+                        href="@DataUrl" 
+                        download="@Metadata?.Filename"
+                       style="text-decoration: none;">
+                    <i class="bi bi-cloud-download-fill"></i>
+                    <span>@Metadata?.Filename</span>
+                </a>
+                </div>
+            }
+            
+            @if (!string.IsNullOrWhiteSpace(message.PlainText))
+            {
+                <span>@(message.PlainText)</span>
+            }
         </div>
-        <div class="timestamp">
-            <span>@message.DateSent.ToString("hh:mm")</span>
+        <div class="message-footer">
+            <span>@message.DateSent.ToLocalTime().ToString("HH:mm")</span>
             @if (message.Sender == myUsername)
             {
                 @if (message.Sender == myUsername)
@@ -32,21 +62,46 @@
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
                     }
-                    else if (message.IsDelivered)
+                    else if(!message.IsRegisteredByHub)
                     {
-                        //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
-                        //issue reference: https://stackoverflow.com/a/64686984
-                        <span>
-                            <i class="fas fa-check @messageClass"></i>
-                        </span>
+                        @if (message.Type is MessageType.DataPackage)
+                        {
+                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
+                                <span>@($"{chunksLoaded}/{Metadata!.ChunksCount}")</span>
+                                <i class="bi bi-arrow-clockwise">Resend</i>
+                            </span>
+                        }
+                        else
+                        {
+                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
+                                <i class="bi bi-arrow-clockwise">Resend</i>
+                            </span>
+                        }
                     }
-                    else if(!message.IsDelivered)
+                    else if (message.IsRegisteredByHub)
                     {
-                        <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                            <i class="bi bi-arrow-clockwise">Resend</i>
-                        </span>
+                        if (message.IsDelivered)
+                        {
+                            //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
+                            //issue reference: https://stackoverflow.com/a/64686984
+                            <span>
+                                <i class="fas fa-check @messageClass"></i>
+                            </span>
+                        }
+                        else
+                        {
+                            <span>
+                                <i class="bi bi-database-check @messageClass"></i>
+                            </span>
+                        }
                     }
                 }
+            }
+            @if (message.Packages.Any())
+            {
+                <span @onclick="() => _messageBox.Delete(message)">
+                    <Icon Name="IconName.TrashFill" Style="color: red;"></Icon>
+                </span>
             }
         </div>
     </div>
@@ -68,27 +123,65 @@
     private bool isOutcoming;
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
+    private string DataUrl { get; set; } = string.Empty;
+    private int chunksLoaded { get; set; } = 0;
+    private Metadata? Metadata { get; set; }
 
     public void Dispose()
     {
         _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
-        _observerService.Observe(new(), null, null);
     }
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         componentId = Guid.NewGuid();
+
+        if (message is not null && message.Packages.Any())
+        {
+            Metadata = _messageBox.Messages
+                .Where(x => x.Type is MessageType.Metadata)
+                .FirstOrDefault(x => x.Metadata?.DataFileId == message.Packages.FirstOrDefault()?.FileDataid)
+                ?.Metadata;
+            
+            string mimeType =  Metadata!.ContentType;
+            string base64Data = PackageMultiplexerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList(), message.Sender);
+            var sb = new StringBuilder();
+            sb.Append("data:");
+            sb.Append(mimeType);
+            sb.Append(";base64,");
+            sb.Append(base64Data);
+            DataUrl = sb.ToString();
+            StateHasChanged();
+        }
 
         SubscribeToHubEvents();
     }
 
     private void SubscribeToHubEvents()
     {
+        _hubServiceSubscriptionManager.AddCallback<Guid>(id =>
+        {
+            _messageBox.OnDelivered(id);
+            StateHasChanged();
+        }, "OnFileReceived", componentId);
+        
         _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
             _messageBox.OnSeen(id);
             StateHasChanged();
         }), "OnReceiverMarkedMessageAsRead", componentId);
+
+        _hubServiceSubscriptionManager.AddCallback<Guid>((messageId) =>
+        {
+            if (message?.Id != messageId)
+                return;
+            
+            if (chunksLoaded + 1 > message.Packages.Count)
+                return;
+            
+            chunksLoaded += 1;
+            StateHasChanged();
+        }, "OnChunkLoaded", componentId);
     }
 
     protected override async Task OnParametersSetAsync()
@@ -109,22 +202,6 @@
 
     public async Task SetupObserver()
     {
-        await _observerService.Observe(MessageElement, (entries) =>
-        {
-            var entry = entries.FirstOrDefault();
-            if(entry is not null)
-            {
-                if (message is not null && message.Sender != myUsername)
-                {
-                    //sends sender a message has been readed confirmation
-                    _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername);
-                    //Marks message as seen
-                    _messageBox.OnSeen(message.Id);
-                }
-
-                IsIntersecting = entry.IsIntersecting;
-                StateHasChanged();
-            }
-        });
+        #warning Todo: intersection observer
     }
 }

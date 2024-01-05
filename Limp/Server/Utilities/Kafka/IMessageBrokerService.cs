@@ -1,6 +1,6 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
-namespace Limp.Server.Utilities.Kafka
+namespace Ethachat.Server.Utilities.Kafka
 {
     public interface IMessageBrokerService
     {

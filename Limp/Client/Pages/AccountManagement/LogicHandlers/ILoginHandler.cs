@@ -1,11 +1,11 @@
-﻿using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
+﻿using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
 
-namespace Limp.Client.Pages.AccountManagement.LogicHandlers
+namespace Ethachat.Client.Pages.AccountManagement.LogicHandlers
 {
     public interface ILoginHandler
     {
         void Dispose();
-        Task OnLogIn(UserAuthentication loggingInUser, Action<AuthResult> callback);
+        Task OnLogIn(UserAuthentication loginEventInformation, Action<AuthResult> callback);
     }
 }

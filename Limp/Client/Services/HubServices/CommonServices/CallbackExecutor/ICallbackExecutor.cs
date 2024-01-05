@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor
+namespace Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 {
     public interface ICallbackExecutor
     {

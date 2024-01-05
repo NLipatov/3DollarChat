@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.LocalStorageService
+namespace Ethachat.Client.Services.LocalStorageService
 {
     public class LocalStorageService : ILocalStorageService
     {

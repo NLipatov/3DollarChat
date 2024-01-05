@@ -1,4 +1,10 @@
-﻿.message-input-box {
+﻿.label-wrapper {
+    display: flex;
+    cursor: pointer;
+    font-size: 1.5rem;
+}
+
+.message-input-box {
     display: flex;
     align-items: center;
     justify-content: flex-end;
@@ -30,5 +36,6 @@
 @media (max-width: 640px) {
     .message-input-box {
         width: 100%;
+        height: auto;
     }
 }

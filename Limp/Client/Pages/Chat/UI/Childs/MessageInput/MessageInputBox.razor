@@ -1,40 +1,182 @@
-﻿@using Limp.Client.Pages.Chat.Logic.MessageBuilder;
-@using Limp.Client.Services.HubServices.MessageService;
-@using Limp.Client.Services.InboxService;
+﻿@using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions
+@using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.InboxService;
+@using System.Text
+@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Cryptography
+@using Ethachat.Client.Cryptography.CryptoHandlers
+@using Ethachat.Client.Cryptography.CryptoHandlers.Handlers
+@using Ethachat.Client.Cryptography.KeyStorage
+@using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
+@using Ethachat.Client.Services.DataTransmission.PackageForming
+@using Ethachat.Client.Services.DataTransmission.PackageForming.Models
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
+@using EthachatShared.Encryption
+@using EthachatShared.Models.Message
+@using EthachatShared.Models.Message.DataTransfer
+@using System.Collections
+@using System.Data.Common
+@using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
+@inject IJSRuntime _jSRuntime
+@inject IMessageDecryptor _messageDecryptor 
+@inject IPackageMultiplexerService PackageMultiplexerService
+@inject ICallbackExecutor CallbackExecutor
+@inject ICryptographyService CryptographyService
 
-<div class="message-input-box" @onkeydown="((e)=> HandleKeyDown(e))">
-    <input @bind="messageInput" @bind:event="oninput" />
+<div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
+    <input @bind="MessageInput" @bind:event="oninput"/>
+
+    <label for="fileinput" class="label-wrapper" style="align-items: center;">
+        <span class="bi bi-paperclip"></span>
+        <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
+    </label>
+
     <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
 </div>
 
-@code {
-    [Parameter]
-    public string topicName { get; set; } = string.Empty;
-    [Parameter]
-    public string myUsername { get; set; } = string.Empty;
-    private string messageInput { get; set; } = string.Empty;
+<Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">
+    <BodyTemplate>
+        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes / 1024000)) MB.
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="(async () => await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
+    </FooterTemplate>
+</Modal>
 
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+<FileEncryptionModal/>
+
+@code {
+    [Parameter] public string TopicName { get; set; } = string.Empty;
+
+    [Parameter] public string MyUsername { get; set; } = string.Empty;
+
+    private string MessageInput { get; set; } = string.Empty;
+    private Guid FileInputId = Guid.NewGuid();
+    private Modal MaxFileSizeRestrictionModal = default!;
+    private const long MaxFileSizeBytes = long.MaxValue;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
-        {
             await SendMessage();
+    }
+
+    private async Task OnFileInput(InputFileChangeEventArgs e)
+    {
+        if (e.File.Size > MaxFileSizeBytes)
+        {
+            await MaxFileSizeRestrictionModal.ShowAsync();
+            FileInputId = Guid.NewGuid();
+            return;
         }
+
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+        await Split(e.File);
+        CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(messageInput) || string.IsNullOrWhiteSpace(topicName) || string.IsNullOrWhiteSpace(myUsername))
+        if (string.IsNullOrWhiteSpace(MessageInput) || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
         {
-            messageInput = string.Empty;
+            MessageInput = string.Empty;
             return;
         }
 
-        await _messageService.SendUserMessage(messageInput, topicName, myUsername);
-        messageInput = string.Empty;
+        if (!string.IsNullOrWhiteSpace(MessageInput))
+        {
+            await _messageService.SendText(MessageInput, TopicName, MyUsername);
+        }
+
+        MessageInput = string.Empty;
     }
 
+    private async Task Split(IBrowserFile file)
+    {
+        var fileDataId = Guid.NewGuid();
+        var chunkableBinary = await PackageMultiplexerService.Split(file);
+        int totalChunks = chunkableBinary.Count;
+        var metadataMessage = GenerateMetadataMessage(fileDataId, file.ContentType, file.Name, totalChunks);
+        await _messageBox.AddMessageAsync(metadataMessage, false);
+        await _messageService.SendMessage(metadataMessage);
+        await AddDataToMessageBox(chunkableBinary, metadataMessage);
+        int chunksCounter = 0;
+        foreach (var chunk in chunkableBinary)
+        {
+            var cryptogram = await CryptographyService.EncryptAsync<AESHandler>(new()
+            {
+                Cyphertext = chunk
+            }, TopicName);
+
+            await _messageService.SendMessage(new()
+            {
+                ClientFiles = new List<ClientDataFile>
+                {
+                    new()
+                    {
+                        Id = fileDataId
+                    }
+                },
+                Package = new()
+                {
+                    Index = chunksCounter,
+                    B64Data = cryptogram.Cyphertext,
+                    IV = cryptogram.Iv,
+                    FileDataid = fileDataId,
+                },
+                Type = MessageType.DataPackage,
+                TargetGroup = TopicName,
+                Sender = MyUsername
+            });
+
+
+            chunksCounter++;
+            decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
+            CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
+        }
+    }
+
+    private ClientMessage GenerateMetadataMessage(Guid fileDataId, string contentType, string fileName, int totalChunks)
+    {
+        var metadataMessage = new ClientMessage
+        {
+            Type = MessageType.Metadata,
+            Metadata = new()
+            {
+                DataFileId = fileDataId,
+                ContentType = contentType,
+                Filename = fileName,
+                ChunksCount = totalChunks
+            },
+            Sender = MyUsername,
+            TargetGroup = TopicName
+        };
+
+        return metadataMessage;
+    }
+
+    private async Task AddDataToMessageBox(IChunkableBinary chunks, ClientMessage metadataMessage)
+    {
+        await _messageBox.AddMessageAsync(new ClientMessage()
+            {
+                Id = metadataMessage.Metadata.DataFileId,
+                Packages =
+                    Enumerable.Range(0, chunks.Count)
+                        .Select((x, iteration) => new ClientPackage()
+                        {
+                            Index = iteration,
+                            FileDataid = metadataMessage.Metadata.DataFileId,
+                            PlainB64Data = iteration == 0 ? chunks.Base64 : string.Empty
+                        })
+                        .ToList(),
+                Type = MessageType.DataPackage,
+                TargetGroup = TopicName,
+                Sender = MyUsername
+            },
+            isEncrypted: false);
+    }
 }

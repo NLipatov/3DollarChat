@@ -13,6 +13,12 @@
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
 
+# Development configuration
+**/appsettings.Development.json
+
+# Firebase messaging account info
+FCMConfiguration.json
+
 # Mono auto generated files
 mono_crash.*
 
@@ -32,6 +38,10 @@ bld/
 [Oo]bj/
 [Ll]og/
 [Ll]ogs/
+
+# Rider related folders
+.idea
+.github
 
 # Visual Studio 2015/2017 cache/options directory
 .vs/
@@ -398,3 +408,4 @@ FodyWeavers.xsd
 # JetBrains Rider
 *.sln.iml
 /AuthAPI/NGINX/.idea
+appsettings.Development.json

@@ -1,73 +1,142 @@
-﻿using ClientServerCommon.Models;
-using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.JWTReader;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
-using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Encryption;
-using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using LimpShared.Models.ConnectedUsersManaging;
-using LimpShared.Models.Users;
-using LimpShared.Models.WebPushNotification;
+﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.UsernameResolver;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.Authentication.Types;
+using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Limp.Server.Hubs
+namespace Ethachat.Server.Hubs
 {
     public class UsersHub : Hub
     {
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
+        private readonly IUsernameResolverService _usernameResolverService;
 
         public UsersHub
         (IServerHttpClient serverHttpClient,
         IUserConnectedHandler<UsersHub> userConnectedHandler,
-        IOnlineUsersManager onlineUsersManager)
+        IOnlineUsersManager onlineUsersManager,
+        IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
+            _usernameResolverService = usernameResolverService;
         }
-        public async override Task OnConnectedAsync()
+        public override async Task OnConnectedAsync()
         {
-            _userConnectedHandler.OnConnect(Context.ConnectionId);
-            await PushOnlineUsersToClients();
-        }
+            InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
 
-        public async override Task OnDisconnectedAsync(Exception? exception)
-        {
-            _userConnectedHandler.OnDisconnect(Context.ConnectionId);
-            await PushOnlineUsersToClients();
+            await base.OnConnectedAsync();
         }
 
-        public async Task SetUsername(string accessToken)
+        public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            await _userConnectedHandler
-            .OnUsernameResolved
-            (Context.ConnectionId,
-            accessToken,
-            CallUserHubMethodsOnUsernameResolved: OnUsernameResolvedHandlers);
+            var keys = InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId))
+                .Select(x=>x.Key);
+
+            foreach (var key in keys)
+            {
+                var oldConnections = InMemoryHubConnectionStorage.UsersHubConnections[key];
+                var newConnections = oldConnections.Where(x=>x != Context.ConnectionId).ToList();
+                if (newConnections.Any())
+                    InMemoryHubConnectionStorage.UsersHubConnections.TryUpdate(key, newConnections, oldConnections);
+                else
+                    InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
+
+                await PushOnlineUsersToClients();
+            }
+
+            await base.OnDisconnectedAsync(exception);
         }
 
-        public async Task SetRSAPublicKey(string accessToken, Key RSAPublicKey)
+        public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            bool isTokenValid = await _serverHttpClient.IsAccessTokenValid(accessToken);
+            AuthResult usernameRequestResult =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            if (usernameRequestResult.Result is not AuthResultType.Success)
+            {
+                await Clients.Caller.SendAsync("OnAccessTokenInvalid", usernameRequestResult);
+            }
 
-            string? username = isTokenValid ? TokenReader.GetUsernameFromAccessToken(accessToken) : null;
+            var usernameFromToken = usernameRequestResult.Message;
+
+            var keys = InMemoryHubConnectionStorage
+                .UsersHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+
+            foreach (var key in keys)
+            {
+                var connections = InMemoryHubConnectionStorage.UsersHubConnections[key];
+                InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
+                InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(usernameFromToken, connections);
+
+                await PushOnlineUsersToClients();
+            }
+        }
+
+        public async Task SetRSAPublicKey(Key RSAPublicKey, WebAuthnPair? webAuthnPair = null, JwtPair? jwtPair = null)
+        {
+            bool isTokenValid = false;
+            string username = string.Empty;
+            AuthenticationType authenticationType = AuthenticationType.JwtToken; 
+            
+            if (jwtPair is not null)
+            {
+                authenticationType = AuthenticationType.JwtToken;
+                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
+                isTokenValid = validationResult.Result is AuthResultType.Success;
+                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
+                
+                if (userRequestResult.Result is not AuthResultType.Success)
+                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+                username = userRequestResult.Message ?? string.Empty;
+            }
+            else if (webAuthnPair is not null)
+            {
+                authenticationType = AuthenticationType.WebAuthn;
+                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
+                isTokenValid = validationResult.Result is AuthResultType.Success;
+                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
+                
+                if (userRequestResult.Result is not AuthResultType.Success)
+                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+                username = userRequestResult.Message ?? string.Empty;
+            }
+            
+            await Clients.Caller.SendAsync("OnNameResolve", username);
 
             if (isTokenValid && !string.IsNullOrWhiteSpace(username))
             {
-                await PostAnRSAPublic(new PublicKeyDTO 
-                { 
-                    Key = RSAPublicKey.Value!.ToString(), 
-                    Username = username 
+                await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
+                {
+                    Key = RSAPublicKey.Value!.ToString(),
+                    Username = username,
+                    AuthenticationType = authenticationType,
                 });
             }
             else
             {
                 throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
             }
+
+            await PushOnlineUsersToClients();
         }
 
         private async Task OnUsernameResolvedHandlers(string username)
@@ -85,9 +154,9 @@ namespace Limp.Server.Hubs
         public async Task PushOnlineUsersToClients()
         {
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
-            UserConnectionsReport userConnections = _onlineUsersManager.FormUsersOnlineMessage();
+            UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
             //Pushes set of clients to all the clients
-            await Clients.All.SendAsync("ReceiveOnlineUsers", userConnections);
+            await Clients.All.SendAsync("ReceiveOnlineUsers", report);
         }
 
         public async Task PushConId()
@@ -95,7 +164,7 @@ namespace Limp.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
+        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
         {
             await _serverHttpClient.PostAnRSAPublic(publicKeyDTO);
         }
@@ -103,7 +172,7 @@ namespace Limp.Server.Hubs
         public async Task IsUserOnline(string username)
         {
             string[] userHubConnections =
-                InMemoryHubConnectionStorage.UsersHubConnections.Where(x=>x.Key == username).SelectMany(x=>x.Value).ToArray();
+                InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
 
             string[] messageHubConnections =
                 InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
@@ -117,20 +186,26 @@ namespace Limp.Server.Hubs
             });
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDTO notificationSubscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto notificationSubscriptionDTO)
         {
             await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task GetUserWebPushSubscriptions(string accessToken)
+        public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
-            string username = TokenReader.GetUsernameFromAccessToken(accessToken);
+            var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
+                
+            if (userRequestResult.Result is not AuthResultType.Success)
+                throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                
+            var username = userRequestResult.Message ?? string.Empty;
+            
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] notificationSubscriptionDTOs)
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
         {
             await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
             await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
@@ -139,7 +214,7 @@ namespace Limp.Server.Hubs
 
         public async Task CheckIfUserExist(string username)
         {
-            IsUserExistDTO response = await _serverHttpClient.CheckIfUserExists(username);
+            IsUserExistDto response = await _serverHttpClient.CheckIfUserExists(username);
             await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }
     }

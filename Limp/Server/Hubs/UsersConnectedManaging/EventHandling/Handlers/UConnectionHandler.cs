@@ -1,17 +1,19 @@
-﻿using Limp.Client.Services.JWTReader;
-using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Limp.Server.Utilities.HttpMessaging;
-using LimpShared.Models.Authentication.Models;
+﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using Ethachat.Server.Utilities.UsernameResolver;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 {
     public class UConnectionHandler : IUserConnectedHandler<UsersHub>
     {
-        private readonly IServerHttpClient _serverHttpClient;
-        public UConnectionHandler(IServerHttpClient serverHttpClient)
+        private readonly IUsernameResolverService _usernameResolverService;
+
+        public UConnectionHandler(IUsernameResolverService usernameResolverService)
         {
-            _serverHttpClient = serverHttpClient;
+            _usernameResolverService = usernameResolverService;
         }
+        
         public async void OnConnect(string connectionId)
         {
             if (!InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Value.Contains(connectionId)))
@@ -40,14 +42,14 @@ namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
 
         public async Task OnUsernameResolved
         (string connectionId,
-        string accessToken,
+        string username,
         Func<string, string, CancellationToken, Task>? AddUserToGroup = null,
         Func<string, string, CancellationToken, Task>? callback = null,
         Func<string, TokenRelatedOperationResult, CancellationToken, Task>? OnFaultTokenRelatedOperation = null,
-        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null)
+        Func<string, Task>? CallUserHubMethodsOnUsernameResolved = null,
+        WebAuthnPair? webAuthnPair = null,
+        JwtPair? jwtPair = null)
         {
-            var username = TokenReader.GetUsernameFromAccessToken(accessToken);
-
             //If there is a connection that has its connection id as a key, than its a unnamed connection.
             //we already have an proper username for this connection, so lets change a connection key
             if (InMemoryHubConnectionStorage.UsersHubConnections.Any(x => x.Key == connectionId))

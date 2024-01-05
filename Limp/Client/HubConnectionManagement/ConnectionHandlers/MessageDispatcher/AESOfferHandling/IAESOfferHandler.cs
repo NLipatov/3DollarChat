@@ -1,6 +1,6 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public interface IAESOfferHandler
     {

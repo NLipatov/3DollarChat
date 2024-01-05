@@ -1,9 +1,7 @@
-﻿using Confluent.Kafka;
-using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
-using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 {
     public class MessageSendHandler : IMessageSendHandler
     {
@@ -14,7 +12,7 @@ namespace Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender
 
             //For personal chat we have Group with only one person in it
             //Send to members of this single-membered Group a message
-            await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message.ToReceiverRepresentation());
+            await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message);
         }
 
         public async Task MarkAsReaded(Guid messageId, string messageSender, IHubCallerClients clients)

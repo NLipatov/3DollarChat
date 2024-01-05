@@ -1,8 +1,8 @@
-﻿@using ClientServerCommon.Models;
-@using Limp.Client.Pages.Contacts.Models;
+﻿@using Ethachat.Client.Pages.Contacts.Models;
+@using Ethachat.Client.Pages.AuthenticationChecks;
 
-<Modal 
-    @ref="modal" 
+<Modal
+    @ref="modal"
     Title="Add user to contacts">
 
     <BodyTemplate>
@@ -38,11 +38,9 @@
 </Modal>
 
 @code {
-    [Parameter]
-    public List<Contact> ContactCollection { get; set; } = new();
+    [Parameter] public List<Contact> ContactCollection { get; set; } = new();
 
-    [Parameter]
-    public EventCallback<string> OnContactAddition { get; set; }
+    [Parameter] public EventCallback<string> OnContactAddition { get; set; }
 
     //reference to a modal-component
     private Modal? modal = default!;
@@ -66,16 +64,16 @@
 
     private string GetModalBodyText(ContactAdditionModalDTO modalDTO)
     {
-        if(string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
+        if (string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
         {
-            return modalDTO.IsUserExists ?
-                $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
-                :
-                $"There is no user with such username";
+            return modalDTO.IsUserExists
+                ? $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
+                : $"There is no user with such username";
         }
         else
         {
             return modalDTO.ModalBodyText;
         }
     }
+
 }

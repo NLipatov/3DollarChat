@@ -1,4 +1,4 @@
-﻿@using Limp.Client.Shared.ReuseableComponents.EditableList.Models;
+﻿@using Ethachat.Client.Shared.ReuseableComponents.EditableList.Models;
 
 <div style="cursor: pointer; @Style" @onclick="HandleClick">
     <div class="item-card @(ItemModel.IsActive ? "active" : "")">
@@ -7,7 +7,7 @@
                 <i class="@IconClass item-icon"></i>
             </div>
             <div>
-                <a href="/user/@ItemModel.ItemName" class="username" style="color: black; text-decoration: none;">@ItemModel.ItemName</a>
+                <span class="username" style="color: black; text-decoration: none;">@ItemModel.ItemName</span>
             </div>
             @if (ItemModel.IsEncryptionSettedUp)
             {

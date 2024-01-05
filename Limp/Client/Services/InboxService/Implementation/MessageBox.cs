@@ -1,39 +1,41 @@
-﻿using Limp.Client.ClientOnlyModels;
-using Limp.Client.HubInteraction.Handlers.MessageDecryption;
-using Limp.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Limp.Client.Services.UndeliveredMessagesStore;
-using LimpShared.Models.Message;
+﻿using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.Services.InboxService.Implementation
+namespace Ethachat.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly ICallbackExecutor _callbackExecutor;
-        private readonly IUndeliveredMessagesRepository _undeliveredMessagesRepository;
 
         public List<ClientMessage> Messages { get; private set; } = new();
+
         public MessageBox
         (IMessageDecryptor messageDecryptor,
-        ICallbackExecutor callbackExecutor,
-        IUndeliveredMessagesRepository undeliveredMessagesRepository)
+            ICallbackExecutor callbackExecutor)
         {
             _messageDecryptor = messageDecryptor;
             _callbackExecutor = callbackExecutor;
-            _undeliveredMessagesRepository = undeliveredMessagesRepository;
-
-            _ = AddUndeliveredMessagesFromLocalStorageAsync();
         }
-        private async Task AddUndeliveredMessagesFromLocalStorageAsync()
+
+        public void Delete(string targetGroup)
         {
-            var undeliveredMessages = await _undeliveredMessagesRepository.GetUndeliveredAsync();
-            Messages.AddRange(undeliveredMessages);
+            Messages.RemoveAll(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
+
+        public void Delete(Message message)
+        {
+            Messages.RemoveAll(x => x.Id == message.Id);
+            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+        }
+
         public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
         {
             if (isEncrypted)
-                message.PlainText = await _messageDecryptor.DecryptAsync(message);
+                message.PlainText = (await _messageDecryptor.DecryptAsync(message)).Cyphertext;
 
             Messages.Add(message);
 
@@ -48,7 +50,7 @@ namespace Limp.Client.Services.InboxService.Implementation
             {
                 foreach (var encryptedMessage in messages)
                 {
-                    encryptedMessage.PlainText = await _messageDecryptor.DecryptAsync(encryptedMessage);
+                    encryptedMessage.PlainText = (await _messageDecryptor.DecryptAsync(encryptedMessage)).Cyphertext;
                 }
             }
 
@@ -61,9 +63,16 @@ namespace Limp.Client.Services.InboxService.Implementation
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
+            {
                 message.IsDelivered = true;
+            }
+        }
 
-            await _undeliveredMessagesRepository.DeleteAsync(messageId);
+        public async Task OnRegistered(Guid messageId)
+        {
+            Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
+            if (message != null)
+                message.IsRegisteredByHub = true;
         }
 
         public void OnToastWasShown(Guid messageId)

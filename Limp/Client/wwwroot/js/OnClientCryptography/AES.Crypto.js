@@ -22,7 +22,7 @@ const exportAESKeyToDotnet = async (key, contactName) => {
     const exportedKeyBuffer = new Uint8Array(exported);
     const exportedKeyBufferString = ab2str(exportedKeyBuffer);
 
-    DotNet.invokeMethodAsync("Limp.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
+    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
 }
 
 function importSecretKey(ArrayBufferKeyString) {
@@ -35,7 +35,7 @@ function importSecretKey(ArrayBufferKeyString) {
     );
 }
 
-async function AESEncryptMessage(message, key) {
+async function AESEncryptText(message, key) {
     const encoded = new TextEncoder().encode(message);
     // The iv must never be reused with a given key.
     iv = window.crypto.getRandomValues(new Uint8Array(12));
@@ -51,16 +51,7 @@ async function AESEncryptMessage(message, key) {
     return ab2str(ciphertext);
 }
 
-function ExportIV() {
-    console.log(`returning as iv: ${ab2str(iv)}`);
-    return ab2str(iv);
-}
-
-function ImportIV(ivArrayBufferAsString) {
-    iv = str2ab(ivArrayBufferAsString);
-}
-
-async function AESDecryptMessage(message, key) {
+async function AESDecryptText(message, key) {
     return new TextDecoder().decode(await window.crypto.subtle.decrypt(
         {
             name: "AES-GCM",
@@ -69,4 +60,49 @@ async function AESDecryptMessage(message, key) {
         await importSecretKey(key),
         str2ab(message))
     )
+}
+
+async function AESEncryptData(base64String, key) {
+    const binaryData = atob(base64String);
+    const encodedData = new TextEncoder().encode(binaryData);
+
+    const encryptedDataArrayBuffer = await crypto.subtle.encrypt(
+        {
+            name: 'AES-GCM',
+            iv: iv,
+        },
+        await importSecretKey(key),
+        encodedData
+    );
+
+    const encryptedData = new Uint8Array(encryptedDataArrayBuffer);
+    const encryptedBase64String = btoa(String.fromCharCode.apply(null, encryptedData));
+
+    return encryptedBase64String;
+}
+
+async function AESDecryptData(encryptedBase64String, key) {
+    const encryptedData = new Uint8Array(Array.from(atob(encryptedBase64String)).map(char => char.charCodeAt(0)));
+
+    const decryptedDataArrayBuffer = await crypto.subtle.decrypt(
+        {
+            name: 'AES-GCM',
+            iv: iv,
+        },
+        await importSecretKey(key),
+        encryptedData
+    );
+
+    const decryptedData = new Uint8Array(decryptedDataArrayBuffer);
+    const decryptedBase64String = btoa(String.fromCharCode.apply(null, decryptedData));
+
+    return decryptedBase64String;
+}
+
+function ExportIV() {
+    return ab2str(iv);
+}
+
+function ImportIV(ivArrayBufferAsString) {
+    iv = str2ab(ivArrayBufferAsString);
 }

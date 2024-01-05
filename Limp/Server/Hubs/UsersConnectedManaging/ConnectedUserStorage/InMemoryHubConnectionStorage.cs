@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage
 {
     public static class InMemoryHubConnectionStorage
     {

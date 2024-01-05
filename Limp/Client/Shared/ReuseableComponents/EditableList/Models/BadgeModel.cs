@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Shared.ReuseableComponents.EditableList.Models
+﻿namespace Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
 {
     public record BadgeModel
     {

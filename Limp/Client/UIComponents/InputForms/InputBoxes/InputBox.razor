@@ -8,7 +8,7 @@
         required="@IsRequired" 
         type="@Type" @bind=InputText 
         @bind:event="@BindEvent" 
-        @onchange="@(() =>OnInput.InvokeAsync(InputText))" 
+        @onchange="@(async () =>await OnInput.InvokeAsync(InputText))" 
         class="form-control form-control-lg" />
         @if(!string.IsNullOrWhiteSpace(Label))
         {
@@ -30,7 +30,7 @@
     public string BindEvent { get; set; } = "oninput";
 
     [Parameter]
-    public bool IsRequired { get; set; } = false;
+    public bool IsRequired { get; set; }
 
     [Parameter]
     public string Type { get; set; }

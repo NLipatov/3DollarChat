@@ -1,6 +1,6 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
-namespace Limp.Server.Hubs.MessageDispatcher.Helpers
+namespace Ethachat.Server.Hubs.MessageDispatcher.Helpers
 {
     internal static class MessageExtensions
     {

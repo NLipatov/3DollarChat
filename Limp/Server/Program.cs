@@ -1,11 +1,14 @@
-using Limp.Server.Extensions;
-using Limp.Server.Hubs;
-using Limp.Server.Hubs.MessageDispatcher;
-using Limp.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
-using Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
-using Limp.Server.WebPushNotifications;
+using Ethachat.Server.Extensions;
+using Ethachat.Server.Hubs;
+using Ethachat.Server.Hubs.MessageDispatcher;
+using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
+using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+using Ethachat.Server.Utilities.UsernameResolver;
+using Ethachat.Server.WebPushNotifications;
+using EthachatShared.Constants;
 using Microsoft.AspNetCore.ResponseCompression;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,7 +18,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddControllersWithViews();
 builder.Services.AddRazorPages();
 
-builder.Services.AddSignalR();
+builder.Services.AddSignalR()
+    .AddMessagePackProtocol();
+
 builder.Services.AddResponseCompression(opts =>
 {
     opts.MimeTypes = ResponseCompressionDefaults.MimeTypes.Concat(
@@ -30,7 +35,9 @@ builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>(
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
-builder.Services.AddTransient<IWebPushSender, WebPushSender>();
+builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
+builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisService>();
+builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 
 var app = builder.Build();
 
@@ -58,9 +65,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<AuthHub>("/authHub");
-app.MapHub<UsersHub>("/usersHub");
-app.MapHub<MessageHub>("/messageDispatcherHub");
+app.MapHub<AuthHub>(HubRelativeAddresses.AuthHubRelativeAddress);
+app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
+app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
 app.Run();

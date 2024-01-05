@@ -1,6 +1,6 @@
 ﻿using System.Collections.Concurrent;
 
-namespace Limp.Client.Services.ConcurrentCollectionManager.Implementations
+namespace Ethachat.Client.Services.ConcurrentCollectionManager.Implementations
 {
     public class ConcurrentCollectionManager : IConcurrentCollectionManager
     {

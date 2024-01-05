@@ -1,5 +1,22 @@
 ﻿"use strict";
 
+let username = "";
+let serviceAddress = "";
+
+function setServiceAddress(address){
+    serviceAddress = address;
+    console.log("address set: " + serviceAddress);
+}
+
+function setUsername(value){
+    username = value;
+}
+
+function SetEventListeners(){
+    document.getElementById('signin').addEventListener('submit', handleSignInSubmit);
+    document.getElementById('register').addEventListener('submit', handleRegisterSubmit);
+}
+
 //Start of section: helper-functions
 
 function coerceToArrayBuffer(thing, name) {
@@ -117,12 +134,8 @@ function value(selector) {
 
 //Start of section: Login
 
-document.getElementById('signin').addEventListener('submit', handleSignInSubmit);
-
-async function handleSignInSubmit(event) {
-    event.preventDefault();
-
-    let username = this.username.value;
+async function handleSignInSubmit(username) {
+    setUsername(username);
 
     // prepare form post data
     var formData = new FormData();
@@ -131,7 +144,7 @@ async function handleSignInSubmit(event) {
     // send to server for registering
     let makeAssertionOptions;
     try {
-        var res = await fetch('https://localhost:9000/api/WebAuthn/assertionOptions', {
+        var res = await fetch(serviceAddress + 'api/WebAuthn/assertionOptions', {
             method: 'POST', // or 'PUT'
             body: formData, // data can be `string` or {object}!
             headers: {
@@ -217,7 +230,7 @@ async function verifyAssertionWithServer(assertedCredential) {
 
     let response;
     try {
-        let res = await fetch("https://localhost:9000/api/WebAuthn/makeAssertion", {
+        let res = await fetch(serviceAddress + "api/WebAuthn/makeAssertion" + "/" + username, {
             method: 'POST', // or 'PUT'
             body: JSON.stringify(data), // data can be `string` or {object}!
             headers: {
@@ -243,7 +256,9 @@ async function verifyAssertionWithServer(assertedCredential) {
     }
 
     // show success message
-    console.log("Logged In! You\'re logged in successfully");
+    localStorage.setItem("credentialUsername", username);
+    localStorage.setItem("credentialId", response.credentialId);
+    localStorage.setItem("credentialIdCounter", response.counter);
     //await Swal.fire({
     //    title: 'Logged In!',
     //    text: 'You\'re logged in successfully.',
@@ -257,15 +272,10 @@ async function verifyAssertionWithServer(assertedCredential) {
 
 //End of section: Login
 
-//Start of section: Register
-document.getElementById('register').addEventListener('submit', handleRegisterSubmit);
-
-async function handleRegisterSubmit(event) {
-    event.preventDefault();
-
-    let username = this.username.value;
-    let displayName = this.displayName.value;
-
+async function handleRegisterSubmit(username, displayName) {
+    console.log("got username - " + username)
+    console.log("got displayName - " + displayName)
+    
     // possible values: none, direct, indirect
     let attestation_type = "none";
     // possible values: <empty>, platform, cross-platform
@@ -276,9 +286,7 @@ async function handleRegisterSubmit(event) {
 
     // possible values: discouraged, preferred, required
     let residentKey = "discouraged";
-
-
-
+    
     // prepare form post data
     var data = new FormData();
     data.append('username', username);
@@ -360,7 +368,9 @@ async function handleRegisterSubmit(event) {
 }
 
 async function fetchMakeCredentialOptions(formData) {
-    let response = await fetch('https://localhost:9000/api/WebAuthn/makeCredentialOptions', {
+    let address = serviceAddress + 'api/WebAuthn/makeCredentialOptions';
+    
+    let response = await fetch(address, {
         method: 'POST', // or 'PUT'
         body: formData, // data can be `string` or {object}!
         headers: {
@@ -411,6 +421,8 @@ async function registerNewCredential(newCredential) {
 
     // show success 
     console.log("Registration Successful! You\'ve registered successfully");
+    document.querySelector('.card-body').style.display = 'none';
+    document.querySelector('.on-registration-success').style.display = 'block';
     //Swal.fire({
     //    title: 'Registration Successful!',
     //    text: 'You\'ve registered successfully.',
@@ -423,7 +435,7 @@ async function registerNewCredential(newCredential) {
 }
 
 async function registerCredentialWithServer(formData) {
-    let response = await fetch('https://localhost:9000/api/WebAuthn/makeCredential', {
+    let response = await fetch(serviceAddress + 'api/WebAuthn/makeCredential', {
         method: 'POST', // or 'PUT'
         body: JSON.stringify(formData), // data can be `string` or {object}!
         headers: {

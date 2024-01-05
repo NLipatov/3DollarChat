@@ -1,8 +1,8 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
-namespace Limp.Client.HubInteraction.Handlers.MessageDecryption;
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 
 public interface IMessageDecryptor
 {
-    Task<string> DecryptAsync(Message encryptedMessage);
+    Task<Cryptogramm> DecryptAsync(Message encryptedMessage);
 }

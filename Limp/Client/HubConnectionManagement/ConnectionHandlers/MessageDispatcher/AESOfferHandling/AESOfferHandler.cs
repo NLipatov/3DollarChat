@@ -1,11 +1,11 @@
-﻿using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using Limp.Client.Cryptography.KeyStorage;
-using Limp.Client.Services.CloudKeyService;
-using LimpShared.Encryption;
-using LimpShared.Models.Message;
+﻿using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.BrowserKeyStorageService;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling
 {
     public class AESOfferHandler : IAESOfferHandler
     {
@@ -25,9 +25,10 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             {
                 Value = decryptedAESKey,
                 Contact = offerMessage.Sender,
-                Format = KeyFormat.RAW,
-                Type = KeyType.AES,
-                Author = offerMessage.Sender
+                Format = KeyFormat.Raw,
+                Type = KeyType.Aes,
+                Author = offerMessage.Sender,
+                IsAccepted = true
             };
 
             if (!string.IsNullOrWhiteSpace(offerMessage.Sender))
@@ -43,7 +44,7 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             return new Message
             {
                 Sender = offerMessage.TargetGroup,
-                Type = MessageType.AESAccept,
+                Type = MessageType.AesAccept,
                 TargetGroup = offerMessage.Sender,
             };
         }
@@ -70,11 +71,13 @@ namespace Limp.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
             if (string.IsNullOrWhiteSpace(encryptedAESKey))
                 throw new ArgumentException("AESOffer message was not containing any AES Encrypted string.");
 
-            string? decryptedAESKey = (await _cryptographyService.DecryptAsync<RSAHandler>
-                (new Cryptogramm
-                {
-                    Cyphertext = encryptedAESKey
-                }));
+            var decryptedCryptogram = (await _cryptographyService.DecryptAsync<RSAHandler>
+            (new Cryptogramm
+            {
+                Cyphertext = encryptedAESKey
+            }));
+
+            string? decryptedAESKey = decryptedCryptogram.Cyphertext;
 
             if (string.IsNullOrWhiteSpace(decryptedAESKey))
                 throw new ArgumentException("Could not decrypt an AES Key.");

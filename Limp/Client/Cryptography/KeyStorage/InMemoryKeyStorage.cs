@@ -1,7 +1,7 @@
-﻿using LimpShared.Encryption;
+﻿using EthachatShared.Encryption;
 using System.Collections.Concurrent;
 
-namespace Limp.Client.Cryptography.KeyStorage;
+namespace Ethachat.Client.Cryptography.KeyStorage;
 
 public static class InMemoryKeyStorage
 {

@@ -1,124 +1,128 @@
-﻿@using Limp.Client.HubInteraction.Handlers.Helpers;
-@using Limp.Client.Pages.AuthenticationChecks.Stages;
-@using Limp.Client.Services;
-@using Limp.Client.Services.HubConnectionProvider.ConnectionStates;
-@using Limp.Client.Services.HubConnectionProvider.Implementation;
-@using Limp.Client.Services.HubConnectionProvider;
-@using Limp.Client.Services.HubService.AuthService;
-@using Limp.Client.Services.JWTReader;
-@inject IJSRuntime _jS
-@inject IConfiguration _configuration
-@inject NavigationManager _navigationManager
-@inject IAuthService _authService
-@inject IHubConnectionProvider _hubConnectionProvider
+﻿@using Ethachat.Client.Pages.AuthenticationChecks.Stages;
+@using Ethachat.Client.Services;
+@using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.HubServices.HubServices
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Services.JWTReader;
+@using Ethachat.Client.Services.LocalStorageService
+@using EthachatShared.Models.Authentication.Models
+@using System.Collections.Concurrent
+@inject NavigationManager NavigationManager
+@inject IAuthService AuthService
+@inject IMessageService MessageService
+@inject IUsersService UsersService
+@inject ILocalStorageService LocalStorageService
+@inject IAuthenticationHandler AuthenticationHandler
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@implements IDisposable
 
-@if (isConnectedToAuthHub)
-{
-    if(_authenticationState == AuthenticationState.TokenActualisation)
+<div>
+    @switch (_authenticationState)
     {
-        <div class="d-flex flex-column align-items-center text-center">
-            <p class="mt-3 mb-0">Checking if you have been authenticated</p>
-        </div>
-    }
-    else
-    {
-        if (_authenticationState == AuthenticationState.Authenticated)
-        {
+        case AuthenticationState.TokenActualisation:
+            <div class="d-flex flex-column align-items-center text-center">
+                <p class="mt-3 mb-0">Checking if you have been authenticated</p>
+            </div>
+            break;
+        case AuthenticationState.Authenticated:
             @AuthenticatedContent
-        }
-        else
-        {
+            break;
+        case AuthenticationState.NotAuthenticated:
             @UnauthenticatedContent
-        }
+            break;
+        default:
+            <div class="d-flex flex-column align-items-center text-center">
+                <p class="mt-3 mb-0">Unspecified authentication state. Try to reload the page.</p>
+            </div>
+            break;
     }
-}
-else
-{
-    <div class="d-flex flex-column align-items-center text-center">
-        <img class="img-fluid" style="max-height: 50vh;" src="https://svgur.com/i/ssH.svg" alt="Server technician adjusting wiring" />
-        <p class="mt-3 mb-0">Connectivity error</p>
-        <p class="mb-3">Cannot connect to a server</p>
-    </div>
-}
-
-
+</div>
 
 @code {
-    [Parameter] 
-    public RenderFragment? AuthenticatedContent { get; set; }
-    [Parameter] 
-    public RenderFragment? UnauthenticatedContent { get; set; }
+
+    [Parameter] public RenderFragment? AuthenticatedContent { get; set; }
+
+    [Parameter] public RenderFragment? UnauthenticatedContent { get; set; }
+
+    // private bool IsUsersHubConnectionActive { get; set; }
+    // private bool IsMessageHubConnectionActive { get; set; }
+    // private bool IsAuthHubConnectionActive { get; set; }
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
-    private HubConnectionProviderState _connectionState => _hubConnectionProvider.GetConnectionState();
-    private bool isConnectedToAuthHub => _authService.IsConnected();
+    private Guid ComponentId { get; set; }
+
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
-        if (_hubConnectionProvider.GetConnectionState() is not Services.HubConnectionProvider.ConnectionStates.HubConnectionProviderState.Connected)
-            await _hubConnectionProvider.ConnectToHubs();
-
-        await IsUserAuthenticated();
-    }
-
-    private async Task IsUserAuthenticated()
-    {
-        if (isConnectedToAuthHub)
+        // IsAuthHubConnectionActive = AuthService.IsConnected();
+        // IsUsersHubConnectionActive = UsersService.IsConnected();
+        // IsMessageHubConnectionActive = MessageService.IsConnected();
+        
+        if (!await AuthenticationHandler.IsSetToUseAsync())
         {
-            //If the access token has expired, we will try to update it
-            await _authService.RenewalAccessTokenIfExpiredAsync(isRenewalSucceededCallback: RefreshTokenAttemptResult);
+            NavigationManager.NavigateTo("signin");
+            return;
+        }
+
+        HubServiceSubscriptionManager
+            .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnRefreshCredentials", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
+
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsAuthHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnAuthHubConnectionStatusChanged", ComponentId);
+        //
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsMessageHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnMessageHubConnectionStatusChanged", ComponentId);
+        //
+        // HubServiceSubscriptionManager
+        //     .AddCallback<bool>((state) =>
+        //     {
+        //         IsUsersHubConnectionActive = state;
+        //         StateHasChanged();
+        //     }, "OnUsersHubConnectionStatusChanged", ComponentId);
+
+        await ValidateCredentials();
+    }
+    
+    private async Task ValidateCredentials()
+    {
+        await AuthenticationHandler.TriggerCredentialsValidation(await AuthService.GetHubConnectionAsync());
+    }
+    private async Task HandleAuthenticationCheckResult(AuthResult credentialsValidationResult)
+    {
+        var isAccessTokenValid = credentialsValidationResult.Result is AuthResultType.Success;
+        if (isAccessTokenValid)
+        {
+            if (_authenticationState is not AuthenticationState.Authenticated)
+            {
+                await MessageService.GetHubConnectionAsync();
+                await UsersService.GetHubConnectionAsync();
+                await AuthService.GetHubConnectionAsync();
+
+                _authenticationState = AuthenticationState.Authenticated;
+                
+                await AuthenticationHandler
+                    .ExecutePostCredentialsValidation(credentialsValidationResult, await AuthService.GetHubConnectionAsync());
+            }
         }
         else
         {
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jS);
-            if (string.IsNullOrWhiteSpace(accessToken) || !TokenReader.IsTokenReadable(accessToken))
-            {
-                _navigationManager.NavigateTo("signin");
-                return;
-            }
-
-            //Make an attempt to reconnect to hubs
-            await ReconnectToHubsIfNeededAsync();
-            //If we still have no connection to hub make nothing
-            if (!isConnectedToAuthHub)
-            {
-                return;
-            }
-            //If we are now connected to hub, make sure that user is authenticated
-            else
-            {
-                await IsUserAuthenticated();
-            }
-        }
-    }
-
-    private async Task RefreshTokenAttemptResult(bool isRenewalSucceededCallback)
-    {
-        //If the refresh token is invalid, the user must log in again
-        if (!isRenewalSucceededCallback)
-            _authenticationState = AuthenticationState.NotAuthenticated;
-
-        //Else - checking if actualised access token is valid
-        await _authService.ValidateAccessTokenAsync(DecideOnToken);
-    }
-
-    private async Task DecideOnToken(bool isAccessTokenValid)
-    {
-        if(isAccessTokenValid)
-            _authenticationState = AuthenticationState.Authenticated;
-        else
-        {
             _authenticationState = AuthenticationState.NotAuthenticated;
         }
-
         StateHasChanged();
-    }
-
-    private async Task ReconnectToHubsIfNeededAsync()
-    {
-        if (!isConnectedToAuthHub)
-        {
-            await _hubConnectionProvider.DisposeAsync();
-            await _hubConnectionProvider.ConnectToHubs();
-        }
     }
 }

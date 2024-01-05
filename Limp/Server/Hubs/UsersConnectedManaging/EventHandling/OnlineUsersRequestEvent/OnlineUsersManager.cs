@@ -1,33 +1,32 @@
-﻿using Limp.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using LimpShared.Models.ConnectedUsersManaging;
+﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using EthachatShared.Models.ConnectedUsersManaging;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public class OnlineUsersManager : IOnlineUsersManager
     {
         public UserConnectionsReport FormUsersOnlineMessage()
         {
-            List<UserConnection> mdConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-                .Where(x => x.Value.Count > 0)
-                .Select(x => new UserConnection
+            var userHubConnections = InMemoryHubConnectionStorage.UsersHubConnections;
+            var messageHubConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections;
+
+            var commonConnections = userHubConnections;
+
+            return new()
+            {
+                FormedAt = DateTime.UtcNow,
+                UserConnections = commonConnections.Select(x => new UserConnection
                 {
                     Username = x.Key,
                     ConnectionIds = x.Value,
-                })
-                .ToList();
-
-            List<UserConnection> uConnections = InMemoryHubConnectionStorage.UsersHubConnections
-                .Where(x => x.Value.Count > 0)
-                .Select(x => new UserConnection
-                {
-                    Username = x.Key,
-                    ConnectionIds = x.Value,
-                })
-                .ToList();
-
-            UserConnection[] commonConnections = uConnections.Where(u => mdConnections.Any(md => md.Username == u.Username)).ToArray();
-
-            return new() { FormedAt = DateTime.UtcNow, UserConnections = commonConnections };
+                    UsersHubConnectionIds = userHubConnections.TryGetValue(x.Key, out var usersHubConnectionIds) 
+                        ? usersHubConnectionIds 
+                        : null,
+                    MessageHubConnectionIds = messageHubConnections.TryGetValue(x.Key, out var messageHubConnectionIds) 
+                        ? messageHubConnectionIds
+                        : null
+                }).ToArray()
+            };
         }
     }
 }

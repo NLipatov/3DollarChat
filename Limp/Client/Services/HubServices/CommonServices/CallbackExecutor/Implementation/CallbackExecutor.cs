@@ -1,8 +1,8 @@
-﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
 
-namespace Limp.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation
+namespace Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation
 {
     public class CallbackExecutor : ICallbackExecutor
     {

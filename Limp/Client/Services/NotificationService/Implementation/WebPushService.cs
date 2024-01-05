@@ -1,53 +1,70 @@
-﻿using Limp.Client.HubInteraction.Handlers.Helpers;
-using Limp.Client.Services.HubService.UsersService;
-using Limp.Client.Services.LocalStorageService;
-using LimpShared.Models.WebPushNotification;
+﻿using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
+using Ethachat.Client.Services.LocalStorageService;
+using Ethachat.Client.Services.NotificationService.Implementation.Types;
+using EthachatShared.Models.Authentication.Models.Credentials;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.WebPushNotification;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.NotificationService.Implementation
+namespace Ethachat.Client.Services.NotificationService.Implementation
 {
     public class WebPushService : IWebPushService
     {
         private readonly IJSRuntime _jSRuntime;
         private readonly IUsersService _usersService;
         private readonly ILocalStorageService _localStorageService;
+        private readonly NavigationManager _navigationManager;
+        private readonly IAuthenticationHandler _authenticationHandler;
 
-        public WebPushService(IJSRuntime jSRuntime, IUsersService usersService, ILocalStorageService localStorageService)
+        public WebPushService
+            (IJSRuntime jSRuntime, 
+                IUsersService usersService, 
+                ILocalStorageService localStorageService,
+                NavigationManager navigationManager,
+                IAuthenticationHandler authenticationHandler)
         {
             _jSRuntime = jSRuntime;
             _usersService = usersService;
             _localStorageService = localStorageService;
+            _navigationManager = navigationManager;
+            _authenticationHandler = authenticationHandler;
         }
 
-        public async Task RequestWebPushPermission()
+        public async Task RequestWebPushPermission(ICredentials credentials)
         {
-            if (await IsWebPushPermissionGranted())
-                return;
+            var fcmToken = await _jSRuntime
+                .InvokeAsync<string>("getFCMToken");
 
-            string? accessToken = await JWTHelper.GetAccessTokenAsync(_jSRuntime);
-            if (string.IsNullOrWhiteSpace(accessToken))
-                return;
-
-            NotificationSubscriptionDTO? subscription =
-                await _jSRuntime.InvokeAsync<NotificationSubscriptionDTO>("blazorPushNotifications.requestSubscription");
-
-            if (subscription != null)
+            if (string.IsNullOrWhiteSpace(fcmToken))
+                throw new ArgumentException($"Could not get an FCM token to subsribe to notifications");
+            
+            var subscription = new NotificationSubscriptionDto
             {
-                try
-                {
-                    subscription.AccessToken = accessToken;
-                    subscription.UserAgentId = await _localStorageService.GetUserAgentIdAsync();
-                    await _usersService.AddUserWebPushSubscription(subscription);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.Message);
-                }
-            }
+                FirebaseRegistrationToken = fcmToken,
+                UserAgentId = await _localStorageService.GetUserAgentIdAsync(),
+                JwtPair = credentials as JwtPair,
+                WebAuthnPair = credentials as WebAuthnPair
+            };
+            
+            await _usersService.AddUserWebPushSubscription(subscription);
         }
 
-        private async Task<bool> IsWebPushPermissionGranted()
-            => await _jSRuntime.InvokeAsync<string>("eval", "Notification.permission") == "granted";
+        private async Task<PushPermissionType> IsWebPushPermissionGranted()
+        {
+            string permissionTypeString = await _jSRuntime
+                .InvokeAsync<string>("eval", "navigator.permissions.query({ name: 'push', userVisibleOnly: true }).then(result => result.state)");
+
+            Console.WriteLine("permission:" + permissionTypeString);
+            bool isTypeParsed = Enum.TryParse(permissionTypeString, true, out PushPermissionType parsedType);
+
+            if (isTypeParsed)
+                return parsedType;
+            else
+                return PushPermissionType.UNKNOWN;
+        }
 
         public async Task ResetWebPushPermission()
         {

@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Pages.Contacts.Models
+﻿namespace Ethachat.Client.Pages.Contacts.Models
 {
     public class Contact
     {

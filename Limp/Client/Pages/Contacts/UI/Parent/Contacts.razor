@@ -1,14 +1,13 @@
 ﻿@page "/contacts"
-@using Limp.Client.Services.InboxService;
-@using LimpShared.Models.ConnectedUsersManaging
-@using Limp.Client.Pages.Contacts.UI.Child;
-@using ClientServerCommon.Models;
-@using Limp.Client.Pages.Contacts.Models;
-@using Limp.Client.Services.CloudKeyService;
-@using Limp.Client.Services.ContactsProvider;
-@using Limp.Client.Services.HubService.UsersService;
-@using Limp.Client.Services.HubServices.CommonServices.SubscriptionService;
-@using Limp.Client.UIComponents.ContactItem;
+@using Ethachat.Client.Pages.AuthenticationChecks
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Services.InboxService;
+@using EthachatShared.Models.ConnectedUsersManaging
+@using Ethachat.Client.Pages.Contacts.UI.Child;
+@using Ethachat.Client.Pages.Contacts.Models;
+@using Ethachat.Client.Services.BrowserKeyStorageService
+@using Ethachat.Client.Services.ContactsProvider;
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -16,59 +15,68 @@
 @inject IJSRuntime _jSRuntime;
 @inject IBrowserKeyStorage _localKeyManager;
 @inject IMessageBox _messageBox
-@using Limp.Client.Shared.ReuseableComponents.EditableList;
-@using Limp.Client.Shared.ReuseableComponents.EditableList.Models
-@using LimpShared.Models.Users;
+@using Ethachat.Client.Shared.ReuseableComponents.EditableList;
+@using Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
+@using EthachatShared.Models.Users;
 @implements IDisposable
 
-<div class="p-2" style="  
-    width: 100%;
-    height: 100%;
-    overflow: auto;">
-    <div style="display: flex;
-            flex-direction: column;
-            gap: 10px;">
-        <SearchForContact 
-            OnNewContactSearch="OnAddContactAttempt" />
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="p-2" style="  
+            width: 100%;
+            height: 100%;
+            overflow: auto;">
+            <div style="display: flex;
+                    flex-direction: column;
+                    gap: 10px;">
+                <SearchForContact 
+                    OnNewContactSearch="OnAddContactAttempt" />
 
-        @if(ContactsList.Any())
+                @if(ContactsList.Any())
+                {
+                    <EditableList 
+                        itemCollection="ContactsList
+                            .Select(x=> new ItemModel
+                            {
+                                IsActive = x.IsOnline, 
+                                IsEncryptionSettedUp = x.IsKeyReady, 
+                                ItemName = x.Username,
+                                BadgeModel = GetContactBadge(x),
+                                ShowBadge = x.UnreadedMessagesCount > 0
+                            })
+                            .ToList()"
+                        OnItemClicked="NavigateToChatWithContact"
+                        OnItemRemoved="RemoveContact" 
+                        ListHeader="Contacts:"
+                        IconClass="bi bi-person-fill"/>
+                }
+                else
+                {
+                    <Callout Type="CalloutType.Tip">
+                        <div style="display: flex; flex-direction: column;">
+                            <h3>Your contact book is empty</h3>
+                            <span>Add someone and start a new chat!</span>
+                        </div>
+                    </Callout>
+                }
+            </div>
+        </div>
+
+        @if (contactAdditionModal is not null)
         {
-            <EditableList 
-                itemCollection="ContactsList
-                    .Select(x=> new ItemModel
-                    {
-                        IsActive = x.IsOnline, 
-                        IsEncryptionSettedUp = x.IsKeyReady, 
-                        ItemName = x.Username,
-                        BadgeModel = GetContactBadge(x),
-                        ShowBadge = x.UnreadedMessagesCount > 0
-                    })
-                    .ToList()"
-                OnItemClicked="NavigateToChatWithContact"
-                OnItemRemoved="RemoveContact" 
-                ListHeader="Contacts:"
-                IconClass="bi bi-person-fill"/>
+            <ConfirmContactAdditionModal 
+                @ref="contactAdditionModal"
+                ContactCollection="ContactsList"
+                OnContactAddition="HandleContactAddition"/>
         }
-        else
-        {
-            <Callout Type="CalloutType.Tip">
-                <div style="display: flex; flex-direction: column;">
-                    <h3>Your contact book is empty</h3>
-                    <span>Add someone and start a new chat!</span>
-                </div>
-            </Callout>
-        }
-    </div>
-</div>
-
-<ConfirmContactAdditionModal 
-    @ref="contactAdditionModal"
-    ContactCollection="ContactsList"
-    OnContactAddition="HandleContactAddition"/>
-
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>
 
 @code {
-    private ConfirmContactAdditionModal? contactAdditionModal = default!;
+    private ConfirmContactAdditionModal? contactAdditionModal { get; set; }
     private List<Contact> ContactsList = new();
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
@@ -78,7 +86,8 @@
 
     private void ToggleEditContactsMode() => contactEditionMode = !contactEditionMode;
 
-    public void NavigateToChatWithContact(string contactUsername) => _navigationManager.NavigateTo($"user/{contactUsername}");
+    public void NavigateToChatWithContact(ItemModel itemModel) 
+        => _navigationManager.NavigateTo($"user/{itemModel.ItemName}");
 
     private BadgeModel GetContactBadge(Contact contact)
     {
@@ -89,10 +98,10 @@
         };
     }
 
-    private async Task RemoveContact(string username)
+    private async Task RemoveContact(ItemModel itemModel)
     {
         //Get contact out of client's browser local storage
-        await _contactsProvider.RemoveContact(username, _jSRuntime);
+        await _contactsProvider.RemoveContact(itemModel.ItemName, _jSRuntime);
 
         //If there is no one in contact book left, toggle change mode back to false automatically
         if(!(await _contactsProvider.GetContacts(_jSRuntime)).Any())
@@ -109,7 +118,7 @@
         await _usersService.CheckIfUserExists(username);
     }
 
-    private async Task HandleExistingUserAdditionToContacts(IsUserExistDTO isUserExistDTO)
+    private async Task HandleExistingUserAdditionToContacts(IsUserExistDto isUserExistDTO)
     {
         ContactAdditionModalDTO modalDTO = new()
             {
@@ -130,6 +139,8 @@
 
     protected override async Task OnInitializedAsync()
     {
+        contactAdditionModal = new();
+        
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
@@ -140,7 +151,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<string>(UpdateContact, "NewUnreadedMessage", ComponentId);
 
-        _hubServiceSubscriptionManager.AddCallback<IsUserExistDTO>(HandleExistingUserAdditionToContacts, "UserExistanceResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<IsUserExistDto>(HandleExistingUserAdditionToContacts, "UserExistanceResponse", ComponentId);
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
@@ -179,7 +190,7 @@
 
     private void TryUpdateLastReceivedContacts(UserConnectionsReport usersOnlineMessage)
     {
-        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        if (!_usersOnlineMessage.UserConnections.Any() || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
             _usersOnlineMessage = usersOnlineMessage;
         }

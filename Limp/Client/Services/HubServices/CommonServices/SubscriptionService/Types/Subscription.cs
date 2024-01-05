@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types
+﻿namespace Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Types
 {
     public class Subscription
     {

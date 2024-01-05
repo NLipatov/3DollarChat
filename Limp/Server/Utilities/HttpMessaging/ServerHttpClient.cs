@@ -1,151 +1,178 @@
-﻿using LimpShared.Models.Authentication.Models;
-using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
-using LimpShared.Models.Authentication.Models.UserAuthentication;
-using LimpShared.Models.AuthenticationModels.ResultTypeEnum;
-using LimpShared.Models.Users;
-using LimpShared.Models.WebPushNotification;
-using System.Net;
+﻿using System.Net;
 using System.Text;
 using System.Text.Json;
+using EthachatShared.Models.Authentication.Enums;
+using EthachatShared.Models.Authentication.Models;
+using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
+using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
+using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
+using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Users;
+using EthachatShared.Models.WebPushNotification;
 
-namespace Limp.Server.Utilities.HttpMessaging
+namespace Ethachat.Server.Utilities.HttpMessaging
 {
     public class ServerHttpClient : IServerHttpClient
     {
         private static IConfiguration _configuration;
+
         public ServerHttpClient(IConfiguration configuration)
         {
             _configuration = configuration;
         }
 
+        public async Task<AuthResult> ValidateCredentials(CredentialsDTO credentials)
+        {
+            using (var client = new HttpClient())
+            {
+                var requestUrl =
+                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateCredentials"]}";
+
+                var request = await client.PostAsJsonAsync(requestUrl, credentials);
+
+                var response = await request.Content.ReadAsStringAsync();
+
+                var result = JsonSerializer.Deserialize<AuthResult>(response, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return result ?? new AuthResult {Result = AuthResultType.Fail};
+            }
+        }
+
+        public async Task<AuthResult> RefreshCredentials(CredentialsDTO credentials)
+        {
+            using (var client = new HttpClient())
+            {
+                var content = new StringContent(JsonSerializer.Serialize(credentials), Encoding.UTF8, "application/json");
+
+                var requestUrl =
+                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RefreshCredentials"]}";
+
+                var response = await client.PostAsync(requestUrl, content);
+                
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                var responseAuthResult = JsonSerializer.Deserialize<AuthResult>(responseContent, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+
+                return responseAuthResult ?? new AuthResult()
+                {
+                    Result = AuthResultType.Fail,
+                };
+            }
+        }
+
         public async Task<AuthResult> Register(UserAuthentication userDTO)
         {
-            var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
-
-            HttpClient client = new();
-
-            string url = _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"];
-
-            var response = await client.PostAsync(url, content);
-
-            var serializedResponse = await response.Content.ReadAsStringAsync();
-            UserAuthenticationOperationResult? deserializedResponse = JsonSerializer.Deserialize<UserAuthenticationOperationResult>(serializedResponse);
-
-            if (deserializedResponse == null)
+            using (var client = new HttpClient())
             {
-                throw new ApplicationException("Could not get response from AuthAPI");
+                var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
+
+                string url = _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Register"];
+
+                HttpResponseMessage response;
+                try
+                {
+                    response = await client.PostAsync(url, content);
+                }
+                catch (Exception e)
+                {
+                    return new()
+                    {
+                        Message = "Could not get response from authentication instance.",
+                        Result = AuthResultType.Fail
+                    };
+                }
+
+                var serializedResponse = await response.Content.ReadAsStringAsync();
+                UserAuthenticationOperationResult? deserializedResponse =
+                    JsonSerializer.Deserialize<UserAuthenticationOperationResult>(serializedResponse);
+
+                if (deserializedResponse == null)
+                {
+                    throw new ApplicationException("Could not deserialize the response from AuthAPI");
+                }
+
+                return new AuthResult
+                {
+                    Message = deserializedResponse.SystemMessage,
+                    Result = deserializedResponse.ResultType == OperationResultType.Success
+                        ? AuthResultType.Success
+                        : AuthResultType.Fail,
+                };
             }
-
-            return new AuthResult
-            {
-                Message = deserializedResponse.SystemMessage,
-                Result = deserializedResponse.ResultType == OperationResultType.Success ? AuthResultType.Success : AuthResultType.Fail,
-            };
         }
 
         public async Task<AuthResult> GetJWTPairAsync(UserAuthentication userDTO)
         {
-            var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
-
-            HttpClient client = new();
-            var response = await client.PostAsync(_configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"], content);
-
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            using (var client = new HttpClient())
             {
+                var content = new StringContent(JsonSerializer.Serialize(userDTO), Encoding.UTF8, "application/json");
+
+                var response =
+                    await client.PostAsync(
+                        _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
+                        content);
+
+                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                {
+                    return new AuthResult
+                    {
+                        Message = await response.Content.ReadAsStringAsync(),
+                        Result = AuthResultType.Fail,
+                    };
+                }
+
+                var responseContent = await response.Content.ReadAsStringAsync();
+
+                var jwtPair = JsonSerializer.Deserialize<JwtPair>(responseContent);
+
                 return new AuthResult
                 {
-                    Message = await response.Content.ReadAsStringAsync(),
-                    Result = AuthResultType.Fail,
+                    Result = AuthResultType.Success,
+                    JwtPair = jwtPair,
                 };
             }
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
-
-            return new AuthResult
-            {
-                Result = AuthResultType.Success,
-                JWTPair = jwtPair,
-            };
         }
 
         public async Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
-
-            HttpClient client = new();
-
-            var response = await client.GetAsync(requestUrl);
-
-            TokenRelatedOperationResult result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
-
-            return result;
-        }
-
-        public async Task<AuthResult> ExplicitJWTPairRefresh(RefreshToken refreshToken)
-        {
-            var content = new StringContent(JsonSerializer.Serialize(refreshToken), Encoding.UTF8, "application/json");
-
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ExplicitRefreshTokens"]}";
-
-            HttpClient client = new();
-
-            var response = await client.PostAsync(requestUrl, content);
-
-            if (response.StatusCode != System.Net.HttpStatusCode.OK)
+            using (var client = new HttpClient())
             {
-                return new AuthResult
-                {
-                    Message = await response.Content.ReadAsStringAsync(),
-                    Result = AuthResultType.Fail,
-                };
+                var requestUrl =
+                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
+
+                var response = await client.GetAsync(requestUrl);
+
+                TokenRelatedOperationResult result =
+                    JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
+
+                return result;
             }
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            JWTPair jwtPair = JsonSerializer.Deserialize<JWTPair>(responseContent);
-
-            return new AuthResult()
-            {
-                Result = AuthResultType.Success,
-                JWTPair = jwtPair,
-            };
         }
 
-        public async Task<bool> IsAccessTokenValid(string accessToken)
+        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
         {
-            HttpClient client = new();
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
 
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:ValidateAccessToken"]}?accesstoken={accessToken}";
-
-            var response = await client.GetAsync(requestUrl);
-
-            var responseContent = await response.Content.ReadAsStringAsync();
-
-            TokenRelatedOperationResult? result = JsonSerializer.Deserialize<TokenRelatedOperationResult>(responseContent);
-
-            if (result == null)
-                return false;
-
-            return result.ResultType == OperationResultType.Success;
-        }
-
-        public async Task PostAnRSAPublic(PublicKeyDTO publicKeyDTO)
-        {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
-
-            using(HttpClient client = new())
+            using (HttpClient client = new())
             {
-                await client.PostAsJsonAsync(requestUrl, new PublicKeyDTO { Username = publicKeyDTO.Username, Key = publicKeyDTO.Key});
+                await client.PostAsJsonAsync(requestUrl,
+                    publicKeyDTO);
             }
         }
 
         public async Task<string?> GetAnRSAPublicKey(string username)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
 
-        using(HttpClient client = new())
+            using (HttpClient client = new())
             {
                 var response = await client.GetAsync(requestUrl);
                 var pemEncodedKey = await response.Content.ReadAsStringAsync();
@@ -153,9 +180,10 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDTO subscriptionDTO)
+        public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:SubscribeToWebPush"]}";
 
             using (HttpClient client = new())
             {
@@ -163,42 +191,91 @@ namespace Limp.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<NotificationSubscriptionDTO[]> GetUserWebPushSubscriptionsByAccessToken(string username)
+        public async Task<NotificationSubscriptionDto[]> GetUserWebPushSubscriptionsByAccessToken(string username)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetNotificationsByUserId"]}/{username}";
 
             using (HttpClient client = new())
             {
                 var response = await client.GetAsync(requestUrl);
                 var serializedSubscriptions = await response.Content.ReadAsStringAsync();
-                return JsonSerializer.Deserialize<NotificationSubscriptionDTO[]>(serializedSubscriptions, options: new JsonSerializerOptions
-                {
-                    PropertyNameCaseInsensitive = true
-                }) ?? new NotificationSubscriptionDTO[0];
+                return JsonSerializer.Deserialize<NotificationSubscriptionDto[]>(serializedSubscriptions,
+                    options: new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }) ?? new NotificationSubscriptionDto[0];
             }
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDTO[] subscriptionsToRemove)
+        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
         {
-            var requestUrl = $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
+            var requestUrl =
+                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RemoveWebPushSubscriptions"]}";
 
             using (HttpClient client = new())
             {
-                var response = await client.PatchAsJsonAsync(requestUrl,  subscriptionsToRemove);
-                if(response.StatusCode is not HttpStatusCode.OK)
+                var response = await client.PatchAsJsonAsync(requestUrl, subscriptionsToRemove);
+                if (response.StatusCode is not HttpStatusCode.OK)
                     throw new HttpRequestException($"Server did not respond with {HttpStatusCode.OK} status code.");
             }
         }
 
-        public async Task<IsUserExistDTO> CheckIfUserExists(string username)
+        public async Task<List<AccessRefreshEventLog>> GetTokenRefreshHistory(string accessToken)
         {
-            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]?.Replace("{username}", username);
-            
+            var endpointUrl = _configuration["AuthAutority:Endpoints:GetTokenRefreshHistory"];
+
+            var requestUrl = $"{_configuration[$"AuthAutority:Address"]}{endpointUrl}?accessToken={accessToken}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.GetFromJsonAsync<List<AccessRefreshEventLog>>(requestUrl);
+
+                if (response is null)
+                    throw new HttpRequestException($"Server respond with unexpected JSON value.");
+
+                return response;
+            }
+        }
+
+        public Task<string> GetServerAddress()
+        {
+            string authorityAddressKey = "AuthAutority:Address";
+            return Task.FromResult(_configuration[authorityAddressKey]
+                                   ??
+                                   throw new ArgumentException
+                                       ($"Could not get a value by key {authorityAddressKey} from server configuration."));
+        }
+
+        public async Task<AuthResult> GetUsernameByCredentials(CredentialsDTO credentials)
+        {
+            var endpointUrl = _configuration["AuthAutority:Endpoints:UsernameByCredentials"];
+
             var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
 
             using (HttpClient client = new())
             {
-                var response = await client.GetFromJsonAsync<IsUserExistDTO>(requestUrl);
+                var response = await client.PostAsJsonAsync(requestUrl, credentials);
+                var responseContent = await response.Content.ReadAsStringAsync();
+                var result = JsonSerializer.Deserialize<AuthResult>(responseContent, options: new JsonSerializerOptions()
+                {
+                    PropertyNameCaseInsensitive = true
+                });
+                
+                return result ?? new AuthResult {Message = "Could not get response from AuthAPI", Result = AuthResultType.Fail};
+            }
+        }
+
+        public async Task<IsUserExistDto> CheckIfUserExists(string username)
+        {
+            var endpointUrl = _configuration["AuthAutority:Endpoints:CheckIfUserExist"]
+                ?.Replace("{username}", username);
+
+            var requestUrl = $"{_configuration["AuthAutority:Address"]}{endpointUrl}";
+
+            using (HttpClient client = new())
+            {
+                var response = await client.GetFromJsonAsync<IsUserExistDto>(requestUrl);
 
                 if (response is null)
                     throw new HttpRequestException($"Server respond with unexpected JSON value.");

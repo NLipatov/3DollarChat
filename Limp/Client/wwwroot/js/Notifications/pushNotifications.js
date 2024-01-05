@@ -1,25 +1,29 @@
 (function () {
-    // Note: Replace with your own key pair before deploying
-    const applicationServerPublicKey = 'BLC8GOevpcpjQiLkO7JmVClQjycvTCYWm6Cq_a7wJZlstGTVZvwGFFHMYfXt6Njyvgx_GlXJeo5cSiZ1y4JOx1o';
-
+    const applicationServerPublicKey = 'BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00';
+    const baseUrl = window.location.origin;
+    console.log('Base URL:', baseUrl);
     window.blazorPushNotifications = {
         requestSubscription: async () => {
             const worker = await navigator.serviceWorker.getRegistration();
-            const existingSubscription = await worker.pushManager.getSubscription();
-            if (!existingSubscription) {
-                const newSubscription = await subscribe(worker);
-                if (newSubscription) {
-                    return {
-                        url: newSubscription.endpoint,
-                        p256dh: arrayBufferToBase64(newSubscription.getKey('p256dh')),
-                        auth: arrayBufferToBase64(newSubscription.getKey('auth'))
-                    };
+            if (worker) {
+                const existingSubscription = await worker.pushManager.getSubscription();
+                if (!existingSubscription) {
+                    const newSubscription = await subscribe(worker);
+                    if (newSubscription) {
+                        return {
+                            url: newSubscription.endpoint,
+                            p256dh: arrayBufferToBase64(newSubscription.getKey('p256dh')),
+                            auth: arrayBufferToBase64(newSubscription.getKey('auth'))
+                        };
+                    }
                 }
             }
         }
     };
 
+
     async function subscribe(worker) {
+        console.log("sever key in subscribe: " + applicationServerPublicKey);
         try {
             return await worker.pushManager.subscribe({
                 userVisibleOnly: true,

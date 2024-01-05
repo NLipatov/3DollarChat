@@ -1,8 +1,7 @@
-﻿using Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
-using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Types;
 
-namespace Limp.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation
+namespace Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation
 {
     public class HubServiceSubscriptionManager : IHubServiceSubscriptionManager
     {

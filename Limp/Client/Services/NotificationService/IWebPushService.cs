@@ -1,8 +1,10 @@
-﻿namespace Limp.Client.Services.NotificationService
+﻿using EthachatShared.Models.Authentication.Models.Credentials;
+
+namespace Ethachat.Client.Services.NotificationService
 {
     public interface IWebPushService
     {
-        Task RequestWebPushPermission();
+        Task RequestWebPushPermission(ICredentials credentials);
         Task ResetWebPushPermission();
     }
 }

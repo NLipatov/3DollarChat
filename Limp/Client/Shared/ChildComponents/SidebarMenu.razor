@@ -4,7 +4,7 @@
 
     <Sidebar @ref="sidebar"
              CustomIconName="bi bi-file-lock2-fill"
-             Title="Three Dollar Chat"
+             Title="ηChat"
              DataProvider="SidebarDataProvider" />
 
 </div>
@@ -29,10 +29,7 @@
                 new NavItem { Id = "2", Href="/contacts", ParentId = "1", Text = "Contacts", IconName = IconName.PeopleFill },
                 new NavItem { Id = "3", Href="/users", ParentId = "1", Text = "Users Online", IconName = IconName.PeopleFill },
             new NavItem { Id = "4", Href="/settings", Text="Settings", IconName = IconName.GearWideConnected },
-                new NavItem { Id = "5", ParentId="4", Href="/settings/notifications", Text = "Notifications", IconName = IconName.BellFill},
-                new NavItem { Id = "6", ParentId="4", Href="/settings/ui", Text="Appearance", IconName = IconName.PaletteFill },
-                new NavItem { Id = "7", ParentId="4", Href="settings/core", Text="Core", IconName = IconName.Box2Fill },
-            new NavItem { Id = "8", Href="/", IconName = IconName.InfoCircleFill, Text = "About 3$Chat"},
+            new NavItem { Id = "5", Href="/", IconName = IconName.InfoCircleFill, Text = "About 3$Chat"},
         };
 
         return navItems;

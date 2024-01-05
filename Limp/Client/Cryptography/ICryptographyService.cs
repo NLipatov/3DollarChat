@@ -1,15 +1,13 @@
-﻿using Limp.Client.Cryptography.CryptoHandlers;
-using LimpShared.Encryption;
-using LimpShared.Models.Message;
+﻿using Ethachat.Client.Cryptography.CryptoHandlers;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.Cryptography
+namespace Ethachat.Client.Cryptography
 {
     public interface ICryptographyService
     {
-        Task<string> DecryptAsync<T>(Cryptogramm cryptogramm, string? contact = null) where T : ICryptoHandler;
-        Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null) where T : ICryptoHandler;
-        Task GenerateAESKeyAsync(string contactName, Action<string> callback);
-        Task GenerateRSAKeyPairAsync();
-        void SetAESKey(string contactName, Key key);
+        Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null) where T : ICryptoHandler;
+        Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogram, string? contact = null, string? publicKeyToEncryptWith = null) where T : ICryptoHandler;
+        Task GenerateAesKeyAsync(string contactName, Action<string> callback);
+        Task GenerateRsaKeyPairAsync();
     }
 }

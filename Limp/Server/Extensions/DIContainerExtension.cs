@@ -1,7 +1,7 @@
-﻿using Limp.Server.Utilities.HttpMessaging;
-using Limp.Server.Utilities.Kafka;
+﻿using Ethachat.Server.Utilities.HttpMessaging;
+using Ethachat.Server.Utilities.Kafka;
 
-namespace Limp.Server.Extensions
+namespace Ethachat.Server.Extensions
 {
     public static class DIContainerExtension
     {

@@ -1,7 +1,8 @@
-﻿namespace Limp.Client.Shared.ReuseableComponents.EditableList.Models
+﻿namespace Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
 {
     public class ItemModel
     {
+        public Guid Id { get; set; }
         public string ItemName { get; set; } = "N/A";
         public bool IsActive { get; set; } = false;
         public bool IsEncryptionSettedUp { get; set; } = false;

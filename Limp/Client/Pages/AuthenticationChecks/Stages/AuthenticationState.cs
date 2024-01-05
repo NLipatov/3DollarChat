@@ -1,4 +1,4 @@
-﻿namespace Limp.Client.Pages.AuthenticationChecks.Stages
+﻿namespace Ethachat.Client.Pages.AuthenticationChecks.Stages
 {
     public enum AuthenticationState
     {

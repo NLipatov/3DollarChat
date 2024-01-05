@@ -1,7 +1,9 @@
-﻿@using Limp.Client.Cryptography.KeyStorage;
-@using Limp.Client.Services.HubServices.MessageService;
-@using LimpShared.Encryption;
-@using Limp.Client.Pages.Chat.UI.Childs.ChatHeader.Child;
+﻿@using Ethachat.Client.Cryptography.KeyStorage;
+@using EthachatShared.Encryption;
+@using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader.Child;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.InboxService
+@inject IMessageBox _messageBox;
 @inject IMessageService _messageService
 
 <div class="header">
@@ -13,6 +15,9 @@
         <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
     </div>
     <div class="key-info">
+        <button title="Clear conversation" @onclick="DeleteConversation" style="border: none;">
+            <i class="bi bi-trash-fill key-icon"></i>
+        </button>
         <button title="Renew AES Key" style="border: none;" @onclick=ShowModalAsync>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
@@ -48,5 +53,11 @@
     {
         if (aesRenewalModal != null)
             await aesRenewalModal.ShowModalAsync();
+    }
+
+    private void DeleteConversation()
+    {
+        _messageService.RequestPartnerToDeleteConvertation(PartnerName);
+        _messageBox.Delete(PartnerName);
     }
 }

@@ -1,0 +1,67 @@
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@implements IDisposable
+
+<Modal @ref="modal"
+       Title="Uploading"
+       OnShown=@(() => IsModalShown = true)>
+
+    <BodyTemplate>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <span>
+                Progress: <strong>@Progress</strong>%
+            </span>
+            <span>You can close this dialog, upload will continue in a background.</span>
+        </div>
+    </BodyTemplate>
+</Modal>
+
+@code {
+    private Modal? modal = default!;
+    private decimal Progress { get; set; } = 0;
+    private Guid ComponentId { get; set; }
+    private bool IsModalShown { get; set; }
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        HubServiceSubscriptionManager
+            .AddCallback<bool>(FileIsBeingEncrypted, "OnIsFileBeingEncrypted", ComponentId);
+
+        HubServiceSubscriptionManager
+            .AddCallback<decimal>(ChangeProgressPercentage, "OnFileEncryptionProgressChanged", ComponentId);
+    }
+
+    private async Task ChangeProgressPercentage(decimal progress)
+    {
+        Progress = progress;
+        StateHasChanged();
+    }
+
+    private async Task FileIsBeingEncrypted(bool isProcessIsActive)
+    {
+        if (isProcessIsActive)
+        {
+            Console.WriteLine("showing");
+            await modal?.ShowAsync();
+        }
+        else
+        {
+            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
+            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
+            while (!IsModalShown)
+            {
+                //500 is not a magic value here, any positive number will do the trick 
+                await Task.Delay(500);
+            }
+
+            await modal?.HideAsync();
+            IsModalShown = false;
+        }
+    }
+
+}

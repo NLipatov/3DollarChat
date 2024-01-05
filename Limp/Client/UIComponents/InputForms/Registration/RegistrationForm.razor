@@ -1,23 +1,19 @@
-﻿@using Limp.Client.Pages.AccountManagement.LogicHandlers;
-@using Limp.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
-@using Limp.Client.UIComponents.InputForms.InputBoxes
-@using Limp.Client.UIComponents.InputForms.Registration.Models;
-@using Limp.Client.UIComponents.SuccessOrErrorMessage
-@using LimpShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
-@using LimpShared.Models.Authentication.Models.UserAuthentication;
-@using LimpShared.Models.Authentication.Models;
+﻿@using Ethachat.Client.Pages.AccountManagement.LogicHandlers;
+@using Ethachat.Client.UIComponents.InputForms.InputBoxes.Forms.RegistrationForm
+@using Ethachat.Client.UIComponents.InputForms.InputBoxes
+@using Ethachat.Client.UIComponents.InputForms.Registration.Models;
+@using Ethachat.Client.UIComponents.SuccessOrErrorMessage
+@using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.Claims;
+@using EthachatShared.Models.Authentication.Models.UserAuthentication;
+@using EthachatShared.Models.Authentication.Models;
 @using System.Text.RegularExpressions;
 @inject ILoginHandler _loginHandler
 
 <div class="registration-page-content">
-    <section class="vh-100">
-        <div class="container py-5 h-100">
-            <div class="row d-flex align-items-center justify-content-center h-100">
-                <div class="col-md-8 col-lg-7 col-xl-6">
-                    <img src="https://svgur.com/i/sLL.svg"
-                         class="img-fluid" alt="man inputting his account password">
-                </div>
-                <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+    <section>
+        <div>
+            <div>
+                <div>
                     <EditForm Model="@Credentials" OnSubmit="OnRegister">
                         <RegisterFormInputBox 
                             CheckedInput="Credentials.Username"
@@ -26,30 +22,33 @@
                             IsRequired="true"
                             OnInput="((value) => Credentials.Username.Value = value)" />
 
-                        <RegisterFormInputBox 
-                            CheckedInput="Credentials.Password"
-                            Placeholder="Password"
-                            BindEvent="oninput"
-                            IsRequired="true"
-                            Type="password"
-                            OnInput="((value) => Credentials.Password.Value = value)" />
+                        @if (IsAuthenticationMethodRequiresPassword)
+                        {
+                            <RegisterFormInputBox 
+                                CheckedInput="Credentials.Password"
+                                Placeholder="Password"
+                                BindEvent="oninput"
+                                IsRequired="true"
+                                Type="password"
+                                OnInput="((value) => Credentials.Password.Value = value)" />
 
-                        <RegisterFormInputBox 
-                            CheckedInput="Credentials.PasswordConfirmation"
-                            Placeholder="Password confirmation"
-                            BindEvent="oninput"
-                            IsRequired="true"
-                            Type="password"
-                            OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+                            <RegisterFormInputBox 
+                                CheckedInput="Credentials.PasswordConfirmation"
+                                Placeholder="Password confirmation"
+                                BindEvent="oninput"
+                                IsRequired="true"
+                                Type="password"
+                                OnInput="((value) => {Credentials.PasswordConfirmation.Value = value; Credentials.PasswordConfirmation.ValidateAgainst(Credentials.Password);})" />
+                        }
 
                         @if (ValidateForm())
                         {
-                            <button class="btn btn-primary btn-lg btn-block">Submit</button>
+                            <button class="btn btn-primary btn-lg btn-block">Register</button>
                         }
                         else
                         {
                             <Tooltip Placement="TooltipPlacement.Right" Title="Fill in the form first">
-                                <button class="btn btn-secondary btn-lg btn-block" disabled>Submit</button>
+                                <button class="btn btn-secondary btn-lg btn-block" disabled>Register</button>
                             </Tooltip>
                         }
 
@@ -57,7 +56,7 @@
                             Result="RegistrationAttemptResult"
                             SuccesLink="signin"
                             SuccessLinkDescription="To Sing In page" />
-
+                        
                     </EditForm>
                 </div>
             </div>
@@ -73,6 +72,9 @@
     [Parameter]
     public AuthResult RegistrationAttemptResult { get; set; } = new();
 
+    [Parameter]
+    public bool IsAuthenticationMethodRequiresPassword { get; set; } = true;
+
     private RegisterFormModel Credentials = new();
 
     private void OnRegister()
@@ -81,9 +83,9 @@
         {
             Username = Credentials.Username.Value,
             Password = Credentials.PasswordConfirmation.Value,
-            Claims = new List<UserClaimsDTO>
+            Claims = new List<UserClaimsDto>
             {
-                new UserClaimsDTO
+                new UserClaimsDto
                 {
                     Name = "Name",
                     Value = Credentials.Username.Value,
@@ -94,8 +96,15 @@
         OnRegisterEvent(authenticationData);
     }
 
-    private bool ValidateForm() 
-    => Credentials.Username.IsValid 
-    && Credentials.Password.IsValid 
-    && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
+    private bool ValidateForm()
+    {
+        switch (IsAuthenticationMethodRequiresPassword)
+        {
+            case false:
+                return Credentials.Username.IsTouched;
+            default: return Credentials.Username.IsValid 
+                   && Credentials.Password.IsValid 
+                   && Credentials.PasswordConfirmation.Value == Credentials.Password.Value;
+        }
+    }
 }

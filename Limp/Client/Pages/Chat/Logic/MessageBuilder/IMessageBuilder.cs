@@ -1,9 +1,9 @@
-﻿using LimpShared.Models.Message;
+﻿using EthachatShared.Models.Message;
 
-namespace Limp.Client.Pages.Chat.Logic.MessageBuilder
+namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 {
     public interface IMessageBuilder
     {
-        Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id);
+        Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id, MessageType type);
     }
 }

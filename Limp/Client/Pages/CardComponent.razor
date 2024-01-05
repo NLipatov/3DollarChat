@@ -1,0 +1,21 @@
+﻿<Card Color="CardColor.Light" Class="mb-4" Style=@(Style)>
+    <CardHeader>@Title</CardHeader>
+    <CardBody>
+        <CardTitle>@BodyTitle</CardTitle>
+        <CardText>@BodyText</CardText>
+    </CardBody>
+</Card>
+
+@code {
+    [Parameter]
+    public string? Style { get; set; }
+    
+    [Parameter]
+    public string? BodyText { get; set; }
+    
+    [Parameter]
+    public string? BodyTitle { get; set; }
+    
+    [Parameter]
+    public string? Title { get; set; }
+}

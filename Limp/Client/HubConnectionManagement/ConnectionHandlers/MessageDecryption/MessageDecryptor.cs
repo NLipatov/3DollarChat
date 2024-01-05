@@ -1,8 +1,8 @@
-﻿using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using LimpShared.Models.Message;
+﻿using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.HubInteraction.Handlers.MessageDecryption;
+namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 
 public class MessageDecryptor : IMessageDecryptor
 {
@@ -12,7 +12,7 @@ public class MessageDecryptor : IMessageDecryptor
     {
         _cryptographyService = cryptographyService;
     }
-    public async Task<string> DecryptAsync(Message encryptedMessage)
+    public async Task<Cryptogramm> DecryptAsync(Message encryptedMessage)
     {
         if (encryptedMessage.Cryptogramm == null)
             throw new ArgumentException($"Given message {nameof(Message.Cryptogramm)} property was null.");

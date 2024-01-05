@@ -1,3 +1,3 @@
-[submodule "LimpShared"]
-	path = LimpShared
-	url = https://github.com/NLipatov/LimpShared.git
+[submodule "EthachatShared"]
+	path = EthachatShared
+	url = https://github.com/NLipatov/EthachatShared.git

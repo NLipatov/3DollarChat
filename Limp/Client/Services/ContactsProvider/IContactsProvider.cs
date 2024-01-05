@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 
-namespace Limp.Client.Services.ContactsProvider
+namespace Ethachat.Client.Services.ContactsProvider
 {
     public interface IContactsProvider
     {

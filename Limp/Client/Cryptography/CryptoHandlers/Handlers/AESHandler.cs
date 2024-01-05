@@ -1,10 +1,9 @@
-﻿using Limp.Client.ClientOnlyModels;
-using Limp.Client.Cryptography.KeyStorage;
-using LimpShared.Encryption;
-using LimpShared.Models.Message;
+﻿using Ethachat.Client.Cryptography.KeyStorage;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 
-namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
+namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 {
     public class AESHandler : ICryptoHandler
     {
@@ -14,23 +13,31 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<string> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            if (string.IsNullOrWhiteSpace(cryptogramm.IV))
+            if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
                 throw new ArgumentException("Please provide an IV");
 
-            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.IV);
+            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv);
 
             Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
             if (key == null)
                 throw new ApplicationException("RSA Public key was null");
 
             await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
+            
+            string decryptedMessage = string.Empty;
+            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+            {
+                decryptedMessage = await _jSRuntime
+                    .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
+            }
 
-            string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESDecryptMessage", cryptogramm.Cyphertext, key.Value.ToString());
-
-            return decryptedMessage;
+            return new Cryptogramm()
+            {
+                Cyphertext = decryptedMessage,
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV")
+            };
         }
 
         public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
@@ -45,15 +52,17 @@ namespace Limp.Client.Cryptography.CryptoHandlers.Handlers
             if (string.IsNullOrWhiteSpace(aesKey))
                 throw new ApplicationException("Could not resolve a AES key for encryption.");
 
-            string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("AESEncryptMessage", cryptogramm.Cyphertext, aesKey);
-
-            string iv = await _jSRuntime.InvokeAsync<string>("ExportIV");
+            string encryptedText = string.Empty;
+            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+            {
+                encryptedText = await _jSRuntime
+                .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
+            }
 
             return new Cryptogramm
             {
-                Cyphertext = encryptedMessage,
-                IV = iv,
+                Cyphertext = encryptedText,
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
             };
         }
     }

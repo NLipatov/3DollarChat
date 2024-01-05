@@ -1,7 +1,7 @@
 ﻿using Microsoft.JSInterop;
 using System.Text.Json;
 
-namespace Limp.Client.Services.ContactsProvider.Implementations;
+namespace Ethachat.Client.Services.ContactsProvider.Implementations;
 
 public class ContactsProvider : IContactsProvider
 {

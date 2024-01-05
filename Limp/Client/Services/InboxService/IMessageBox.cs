@@ -1,10 +1,15 @@
-﻿using Limp.Client.ClientOnlyModels;
+﻿using Ethachat.Client.ClientOnlyModels;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.Services.InboxService
+namespace Ethachat.Client.Services.InboxService
 {
     public interface IMessageBox
     {
         public List<ClientMessage> Messages { get; }
+
+        void Delete(string targetGroup);
+        
+        void Delete(Message message);
 
         /// <summary>
         /// Adds message to message box
@@ -25,6 +30,11 @@ namespace Limp.Client.Services.InboxService
         /// Marks message as delivered
         /// </summary>
         Task OnDelivered(Guid messageId);
+        
+        /// <summary>
+        /// Marks message as registered by server
+        /// </summary>
+        Task OnRegistered(Guid messageId);
 
         /// <summary>
         /// Marks message toast as shown

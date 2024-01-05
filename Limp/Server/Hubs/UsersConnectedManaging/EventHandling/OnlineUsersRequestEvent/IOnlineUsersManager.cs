@@ -1,7 +1,6 @@
-﻿using ClientServerCommon.Models;
-using LimpShared.Models.ConnectedUsersManaging;
+﻿using EthachatShared.Models.ConnectedUsersManaging;
 
-namespace Limp.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
+namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent
 {
     public interface IOnlineUsersManager
     {

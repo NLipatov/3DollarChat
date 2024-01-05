@@ -1,9 +1,8 @@
-﻿using Limp.Client.Cryptography;
-using Limp.Client.Cryptography.CryptoHandlers.Handlers;
-using LimpShared.Models.Message;
-using System;
+﻿using Ethachat.Client.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using EthachatShared.Models.Message;
 
-namespace Limp.Client.Pages.Chat.Logic.MessageBuilder
+namespace Ethachat.Client.Pages.Chat.Logic.MessageBuilder
 {
     public class MessageBuilder : IMessageBuilder
     {
@@ -13,13 +12,17 @@ namespace Limp.Client.Pages.Chat.Logic.MessageBuilder
         {
             _cryptographyService = cryptographyService;
         }
-        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id)
+        public async Task<Message> BuildMessageToBeSend(string plainMessageText, string topicName, string myName, Guid id, MessageType type)
         {
             Cryptogramm cryptogramm = await _cryptographyService
-                .EncryptAsync<AESHandler>(new Cryptogramm() { Cyphertext = plainMessageText }, contact: topicName);
+                .EncryptAsync<AESHandler>(new Cryptogramm
+                {
+                    Cyphertext = plainMessageText,
+                }, contact: topicName);
 
             Message messageToSend = new Message
             {
+                Type = type,
                 Id = id,
                 Cryptogramm = cryptogramm,
                 DateSent = DateTime.UtcNow,

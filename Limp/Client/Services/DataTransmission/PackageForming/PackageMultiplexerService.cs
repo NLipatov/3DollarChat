@@ -1,5 +1,4 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Services.DataTransmission.PackageForming.Models;
 using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels;
 using Microsoft.AspNetCore.Components.Forms;
 
@@ -15,13 +14,6 @@ class PackageMultiplexerService : IPackageMultiplexerService
             .ToArray();
 
         return Convert.ToBase64String(combinedBytes);
-    }
-
-    public async Task<List<string>> SplitAsync(IBrowserFile file)
-    {
-        var bytes = await FileToBytesAsync(file);
-        var base64String = Convert.ToBase64String(bytes);
-        return SplitStringToChunks(base64String, 20 * 1024 /*KiB*/);
     }
 
     public async Task<ChunkableBinary> Split(IBrowserFile file)

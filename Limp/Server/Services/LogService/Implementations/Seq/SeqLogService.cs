@@ -1,8 +1,9 @@
 using Serilog;
+using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Server.Services.LogService.Implementations.Seq;
 
-public class SeqLogService : LogService
+public class SeqLogService : ILogService
 {
     public SeqLogService(IConfiguration configuration)
     {

@@ -1,6 +1,8 @@
+using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
+
 namespace Ethachat.Server.Services.LogService;
 
-public interface LogService
+public interface ILogService
 {
     Task LogAsync(LogLevel level, string message);
     Task LogAsync<T>(LogLevel level, string message, T eventModel);

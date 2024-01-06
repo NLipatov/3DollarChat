@@ -47,7 +47,6 @@
 
   <ItemGroup>
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
-    <Folder Include="Services\HubServices\HubServices\Implementations\" />
   </ItemGroup>
 
 </Project>

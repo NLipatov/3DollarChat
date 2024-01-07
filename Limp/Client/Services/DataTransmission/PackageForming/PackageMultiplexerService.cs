@@ -6,22 +6,29 @@ namespace Ethachat.Client.Services.DataTransmission.PackageForming;
 
 class PackageMultiplexerService : IPackageMultiplexerService
 {
-    public string Combine(List<ClientPackage> packages, string partnerUsername)
-    {
-        byte[] combinedBytes = packages
-            .OrderBy(p => p.Index)
-            .SelectMany(p => Convert.FromBase64String(p.PlainB64Data))
-            .ToArray();
-
-        return Convert.ToBase64String(combinedBytes);
-    }
-
     public async Task<ChunkableBinary> Split(IBrowserFile file)
     {
         var bytes = await FileToBytesAsync(file);
         return new ChunkableBinary(bytes);
     }
-    
+
+    public async Task CombineAsync(MemoryStream memoryStream, IEnumerable<ClientPackage> packages)
+    {
+        List<Task<byte[]>> tasks = packages
+            .OrderBy(p => p.Index)
+            .Select(p => Task.Run(() => Convert.FromBase64String(p.PlainB64Data)))
+            .ToList();
+
+        await Task.WhenAll(tasks);
+
+        byte[] combinedBytes = tasks
+            .Select(t => t.Result)
+            .SelectMany(b => b)
+            .ToArray();
+
+        await memoryStream.WriteAsync(combinedBytes, 0, combinedBytes.Length);
+    }
+
     private async Task<byte[]> FileToBytesAsync(IBrowserFile file)
     {
         await using (var fileStream = file.OpenReadStream(long.MaxValue))

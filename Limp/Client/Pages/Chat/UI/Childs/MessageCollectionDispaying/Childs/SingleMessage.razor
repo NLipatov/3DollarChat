@@ -20,21 +20,21 @@
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
-            @if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("image"))
+            @if (!string.IsNullOrWhiteSpace(BlobUrl) && Metadata is not null && Metadata.ContentType.Contains("image"))
             {
-                <img style="max-width: 100%;" src="@DataUrl"/>
+                <img style="max-width: 100%;" src="@BlobUrl"/>
             }
-            else if (!string.IsNullOrWhiteSpace(DataUrl) && Metadata is not null && Metadata.ContentType.Contains("video"))
+            else if (!string.IsNullOrWhiteSpace(BlobUrl) && Metadata is not null && Metadata.ContentType.Contains("video"))
             {
                 <video controls="controls" style="max-width: 100%;">
-                    <source src="@DataUrl" type="video/mp4">
+                    <source src="@BlobUrl" type="video/mp4">
                 </video>
             }
-            else if (!string.IsNullOrWhiteSpace(DataUrl))
+            else if (!string.IsNullOrWhiteSpace(BlobUrl))
             {
                 <div>
                     <a 
-                        href="@DataUrl" 
+                        href="@BlobUrl" 
                         download="@Metadata?.Filename"
                        style="text-decoration: none;">
                     <i class="bi bi-cloud-download-fill"></i>
@@ -123,7 +123,7 @@
     private bool isOutcoming;
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
-    private string DataUrl { get; set; } = string.Empty;
+    private string BlobUrl { get; set; } = string.Empty;
     private int chunksLoaded { get; set; } = 0;
     private Metadata? Metadata { get; set; }
 
@@ -142,16 +142,17 @@
                 .Where(x => x.Type is MessageType.Metadata)
                 .FirstOrDefault(x => x.Metadata?.DataFileId == message.Packages.FirstOrDefault()?.FileDataid)
                 ?.Metadata;
-            
-            string mimeType =  Metadata!.ContentType;
-            string base64Data = PackageMultiplexerService.Combine(message.Packages.OrderBy(x=>x.Index).ToList(), message.Sender);
-            var sb = new StringBuilder();
-            sb.Append("data:");
-            sb.Append(mimeType);
-            sb.Append(";base64,");
-            sb.Append(base64Data);
-            DataUrl = sb.ToString();
-            StateHasChanged();
+
+            if (Metadata is null)
+                throw new ArgumentException($"Exception:{nameof(SingleMessage)}.{nameof(OnInitializedAsync)}:Missing metadata.");
+
+            using (var memoryStream = new MemoryStream())
+            {
+                await PackageMultiplexerService.CombineAsync(memoryStream, message.Packages);
+
+                byte[] data = memoryStream.ToArray();
+                BlobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", data, Metadata!.ContentType);
+            }
         }
 
         SubscribeToHubEvents();

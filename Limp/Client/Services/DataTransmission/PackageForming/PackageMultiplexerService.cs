@@ -6,10 +6,17 @@ namespace Ethachat.Client.Services.DataTransmission.PackageForming;
 
 class PackageMultiplexerService : IPackageMultiplexerService
 {
-    public async Task<ChunkableBinary> Split(IBrowserFile file)
+    public async Task<ChunkableBinary> SplitAsync(IBrowserFile file)
     {
-        var bytes = await FileToBytesAsync(file);
-        return new ChunkableBinary(bytes);
+        var memoryStream = new MemoryStream();
+
+        await file
+            .OpenReadStream(long.MaxValue)
+            .CopyToAsync(memoryStream);
+        
+        memoryStream.Seek(0, SeekOrigin.Begin);
+
+        return new ChunkableBinary(memoryStream);
     }
 
     public async Task CombineAsync(MemoryStream memoryStream, IEnumerable<ClientPackage> packages)
@@ -27,18 +34,6 @@ class PackageMultiplexerService : IPackageMultiplexerService
             .ToArray();
 
         await memoryStream.WriteAsync(combinedBytes, 0, combinedBytes.Length);
-    }
-
-    private async Task<byte[]> FileToBytesAsync(IBrowserFile file)
-    {
-        await using (var fileStream = file.OpenReadStream(long.MaxValue))
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                await fileStream.CopyToAsync(memoryStream);
-                return memoryStream.ToArray();
-            }
-        }
     }
     
     private List<string> SplitStringToChunks(string input, int maxChunkLength)

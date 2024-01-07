@@ -6,6 +6,6 @@ namespace Ethachat.Client.Services.DataTransmission.PackageForming;
 
 public interface IPackageMultiplexerService
 {
-    Task<ChunkableBinary> Split(IBrowserFile file);
+    Task<ChunkableBinary> SplitAsync(IBrowserFile file);
     Task CombineAsync(MemoryStream memoryStream, IEnumerable<ClientPackage> packages);
 }

@@ -20,25 +20,25 @@
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
-            @if (!string.IsNullOrWhiteSpace(BlobUrl) && Metadata is not null && Metadata.ContentType.Contains("image"))
+            @if (message.Type is MessageType.BlobLink && message.Metadata!.ContentType.Contains("image"))
             {
-                <img style="max-width: 100%;" src="@BlobUrl"/>
+                <img style="max-width: 100%;" src="@message.BlobLink"/>
             }
-            else if (!string.IsNullOrWhiteSpace(BlobUrl) && Metadata is not null && Metadata.ContentType.Contains("video"))
+            else if (message.Type is MessageType.BlobLink && message.Metadata!.ContentType.Contains("video"))
             {
                 <video controls="controls" style="max-width: 100%;">
-                    <source src="@BlobUrl" type="video/mp4">
+                    <source src="@message.BlobLink" type="video/mp4">
                 </video>
             }
-            else if (!string.IsNullOrWhiteSpace(BlobUrl))
+            else if (!string.IsNullOrWhiteSpace(message.BlobLink))
             {
                 <div>
                     <a 
-                        href="@BlobUrl" 
-                        download="@Metadata?.Filename"
+                        href="@message.BlobLink" 
+                        download="@message.Metadata!.Filename"
                        style="text-decoration: none;">
                     <i class="bi bi-cloud-download-fill"></i>
-                    <span>@Metadata?.Filename</span>
+                    <span>@message.Metadata?.Filename</span>
                 </a>
                 </div>
             }
@@ -64,10 +64,10 @@
                     }
                     else if(!message.IsRegisteredByHub)
                     {
-                        @if (message.Type is MessageType.DataPackage)
+                        @if (message.Type is MessageType.BlobLink)
                         {
                             <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <span>@($"{chunksLoaded}/{Metadata!.ChunksCount}")</span>
+                                <span>@($"{chunksLoaded}/{message.Metadata!.ChunksCount}")</span>
                                 <i class="bi bi-arrow-clockwise">Resend</i>
                             </span>
                         }
@@ -123,9 +123,7 @@
     private bool isOutcoming;
     private string messageClass = string.Empty;
     private Guid componentId { get; set; }
-    private string BlobUrl { get; set; } = string.Empty;
     private int chunksLoaded { get; set; } = 0;
-    private Metadata? Metadata { get; set; }
 
     public void Dispose()
     {
@@ -135,25 +133,6 @@
     protected override async Task OnInitializedAsync()
     {
         componentId = Guid.NewGuid();
-
-        if (message is not null && message.Packages.Any())
-        {
-            Metadata = _messageBox.Messages
-                .Where(x => x.Type is MessageType.Metadata)
-                .FirstOrDefault(x => x.Metadata?.DataFileId == message.Packages.FirstOrDefault()?.FileDataid)
-                ?.Metadata;
-
-            if (Metadata is null)
-                throw new ArgumentException($"Exception:{nameof(SingleMessage)}.{nameof(OnInitializedAsync)}:Missing metadata.");
-
-            using (var memoryStream = new MemoryStream())
-            {
-                await PackageMultiplexerService.CombineAsync(memoryStream, message.Packages);
-
-                byte[] data = memoryStream.ToArray();
-                BlobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", data, Metadata!.ContentType);
-            }
-        }
 
         SubscribeToHubEvents();
     }
@@ -172,12 +151,12 @@
             StateHasChanged();
         }), "OnReceiverMarkedMessageAsRead", componentId);
 
-        _hubServiceSubscriptionManager.AddCallback<Guid>((messageId) =>
+        _hubServiceSubscriptionManager.AddCallback<Guid>((fileId) =>
         {
-            if (message?.Id != messageId)
+            if (message.Metadata.DataFileId != fileId)
                 return;
             
-            if (chunksLoaded + 1 > message.Packages.Count)
+            if (chunksLoaded + 1 > message.Metadata.ChunksCount)
                 return;
             
             chunksLoaded += 1;

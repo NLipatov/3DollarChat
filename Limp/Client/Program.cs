@@ -16,6 +16,7 @@ using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.ContactsProvider.Implementations;
 using Ethachat.Client.Services.DataTransmission.PackageForming;
+using Ethachat.Client.Services.DataTransmission.PackageForming.BinaryDataBoxService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -68,6 +69,7 @@ builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
 builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
+builder.Services.AddSingleton<IBinaryDataBox, BinaryDataBox>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

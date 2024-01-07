@@ -1,19 +1,20 @@
 namespace Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels;
 
-public record ChunkableBinary(byte[] Bytes, int MaxChunkSizeInKb = 15) : IChunkableBinary
+public record ChunkableBinary(MemoryStream DataStream, int MaxChunkSizeInKb = 15) : IChunkableBinary
 {
-    public string Base64 => Convert.ToBase64String(Bytes);
-    public int Count => (int)Math.Ceiling((double)Bytes.Length / (MaxChunkSizeInKb * 1024));
-    public IEnumerator<string> GetEnumerator()
+    public int Count => (int)Math.Ceiling((double)DataStream.Length / (MaxChunkSizeInKb * 1024));
+    public async IAsyncEnumerable<string> GenerateChunksAsync()
     {
         int maxChunkSizeInBytes = MaxChunkSizeInKb * 1024;
+        byte[] buffer = new byte[maxChunkSizeInBytes];
 
-        for (int i = 0; i < Bytes.Length; i += maxChunkSizeInBytes)
+        int bytesRead;
+        long totalBytesRead = 0;
+
+        while ((bytesRead = await DataStream.ReadAsync(buffer, 0, maxChunkSizeInBytes)) > 0)
         {
-            int chunkSize = Math.Min(maxChunkSizeInBytes, Bytes.Length - i);
-            byte[] chunk = new byte[chunkSize];
-            Array.Copy(Bytes, i, chunk, 0, chunkSize);
-            yield return Convert.ToBase64String(chunk);
+            totalBytesRead += bytesRead;
+            yield return Convert.ToBase64String(buffer, 0, bytesRead);
         }
     }
 }

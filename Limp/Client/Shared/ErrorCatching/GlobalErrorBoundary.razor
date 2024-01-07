@@ -1,0 +1,47 @@
+﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService
+@using Ethachat.Client.Pages
+@inherits ErrorBoundary
+@inject IExceptionLoggingService ExceptionLoggingService
+
+@if (CurrentException is null)
+{
+    @ChildContent
+}
+else if (ErrorContent is not null)
+{
+    @ErrorContent(CurrentException)
+}
+else
+{
+    <div class="p-2">
+        <h1>Something went wrong:</h1>
+            @foreach (var exception in receivedExceptions)
+            {
+                <Callout Type="CalloutType.Danger" Heading="Error">
+                    <span>@exception.Message</span>
+                </Callout>
+            }
+        <Button Color="ButtonColor.Primary" @onclick="Recover">
+            Close
+        </Button>
+    </div>
+}
+
+@code {
+    List<Exception> receivedExceptions = new();
+
+    protected override async Task OnErrorAsync(Exception exception)
+    {
+        await ExceptionLoggingService.LogException(exception);
+        receivedExceptions.Add(exception);
+        StateHasChanged();
+        await base.OnErrorAsync(exception);
+    }
+
+    public new void Recover()
+    {
+        receivedExceptions.Clear();
+        base.Recover();
+    }
+
+}

@@ -12,6 +12,7 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
+using Ethachat.Client.Services.DataTransmission.PackageForming.BinaryDataBoxService;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -20,6 +21,7 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
+using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -37,6 +39,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
         private readonly IFileTransmissionManager _fileTransmissionManager;
+        private readonly IBinaryDataBox _binaryDataBox;
+        private readonly IJSRuntime _jsRuntime;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
@@ -56,7 +60,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IMessageDecryptor messageDecryptor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
-            IFileTransmissionManager fileTransmissionManager)
+            IFileTransmissionManager fileTransmissionManager,
+            IBinaryDataBox binaryDataBox,
+            IJSRuntime jsRuntime)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -70,6 +76,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
             _fileTransmissionManager = fileTransmissionManager;
+            _binaryDataBox = binaryDataBox;
+            _jsRuntime = jsRuntime;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -206,13 +214,44 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.Metadata)
                     {
-                        _fileTransmissionManager.StoreMetadata(message);
+                        _binaryDataBox.StoreMetadata(message.Metadata);
                     }
                     else if (message.Type == MessageType.DataPackage)
                     {
-                        Console.WriteLine(message.Package?.Index);
-                        if(await _fileTransmissionManager.StoreDataPackage(message))
+                        var decryptedB64 = await _cryptographyService.DecryptAsync<AESHandler>(new()
+                        {
+                            Cyphertext = message.Package.B64Data,
+                            Iv = message.Package.IV
+                        }, message.Sender);
+
+                        var isAllPackagesAreLoaded = _binaryDataBox.StoreData(message.Package.FileDataid, new()
+                        {
+                            Index = message.Package.Index,
+                            PlainB64Data = decryptedB64.Cyphertext,
+                            FileDataid = message.Package.FileDataid
+                        });
+
+                        if (isAllPackagesAreLoaded)
+                        {
+                            var metadata = _binaryDataBox.GetMetadata(message.Package.FileDataid);
+                            var packages = _binaryDataBox.GetData(message.Package.FileDataid);
+                            var data = packages
+                                .SelectMany(x => Convert.FromBase64String(x.PlainB64Data))
+                                .ToArray();
+                            
+                            var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
+        
+                            await _messageBox.AddMessageAsync(new ClientMessage()
+                            {
+                                BlobLink = blobUrl,
+                                Id = metadata.DataFileId,
+                                Type = MessageType.BlobLink,
+                                TargetGroup = message.TargetGroup,
+                                Sender = message.Sender,
+                                Metadata = metadata
+                            }, isEncrypted: false);
                             await NotifyAboutSuccessfullDataTransfer(message);
+                        }
                     }
                     else if (message.Type == MessageType.AesAccept)
                     {

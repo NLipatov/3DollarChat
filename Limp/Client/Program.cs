@@ -16,12 +16,15 @@ using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.ContactsProvider.Implementations;
 using Ethachat.Client.Services.DataTransmission.PackageForming;
+using Ethachat.Client.Services.DataTransmission.PackageForming.BinaryDataBoxService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
@@ -65,6 +68,8 @@ builder.Services.AddTransient<IPackageMultiplexerService, PackageMultiplexerServ
 builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
+builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
+builder.Services.AddSingleton<IBinaryDataBox, BinaryDataBox>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

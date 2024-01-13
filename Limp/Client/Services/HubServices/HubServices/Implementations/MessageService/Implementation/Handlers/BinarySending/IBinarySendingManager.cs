@@ -2,9 +2,9 @@ using Ethachat.Client.ClientOnlyModels;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
 
-public interface IFileTransmissionManager
+public interface IBinarySendingManager
 {
     Task SendMetadata(Message message, Func<Task<HubConnection>> getHubConnection);
     Task SendFile(ClientMessage message, Func<Task<HubConnection>> getHubConnection);

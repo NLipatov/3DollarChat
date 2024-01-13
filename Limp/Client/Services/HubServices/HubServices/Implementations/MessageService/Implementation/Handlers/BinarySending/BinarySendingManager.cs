@@ -12,9 +12,9 @@ using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    BinaryFileTransmission;
+    BinarySending;
 
-public class FileTransmissionManager : IFileTransmissionManager
+public class BinarySendingManager : IBinarySendingManager
 {
     private ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> FileIdUploadProgress = new();
     private readonly IJSRuntime _jsRuntime;
@@ -23,7 +23,7 @@ public class FileTransmissionManager : IFileTransmissionManager
     private readonly IPackageMultiplexerService _packageMultiplexerService;
     private readonly ICryptographyService _cryptographyService;
 
-    public FileTransmissionManager
+    public BinarySendingManager
     (IJSRuntime jsRuntime,
         IMessageBox messageBox,
         ICallbackExecutor callbackExecutor,
@@ -41,7 +41,7 @@ public class FileTransmissionManager : IFileTransmissionManager
     {
         if (metadataMessage.Metadata is null)
             throw new ArgumentException(
-                $"Exception:{nameof(FileTransmissionManager)}.{nameof(StoreMetadata)}: Invalid metadata message.");
+                $"Exception:{nameof(BinarySendingManager)}.{nameof(StoreMetadata)}: Invalid metadata message.");
 
         _messageBox.Messages.Add(new ClientMessage
         {
@@ -60,7 +60,7 @@ public class FileTransmissionManager : IFileTransmissionManager
     {
         if (message.Metadata is null)
             throw new ArgumentException(
-                $"Exception:{nameof(FileTransmissionManager)}.{nameof(SendMetadata)}: Invalid metadata.");
+                $"Exception:{nameof(BinarySendingManager)}.{nameof(SendMetadata)}: Invalid metadata.");
 
         var connection = await getHubConnection();
 

@@ -6,14 +6,14 @@ using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatch
 using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryFileTransmission;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
-using Ethachat.Client.Services.DataTransmission.PackageForming.BinaryDataBoxService;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
@@ -38,8 +38,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
-        private readonly IFileTransmissionManager _fileTransmissionManager;
-        private readonly IBinaryDataBox _binaryDataBox;
+        private readonly IBinarySendingManager _binarySendingManager;
+        private readonly IBinaryReceivingManager _binaryReceivingManager;
         private readonly IJSRuntime _jsRuntime;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
@@ -60,8 +60,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IMessageDecryptor messageDecryptor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
-            IFileTransmissionManager fileTransmissionManager,
-            IBinaryDataBox binaryDataBox,
+            IBinarySendingManager binarySendingManager,
+            IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime)
         {
             _messageBox = messageBox;
@@ -75,8 +75,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _messageDecryptor = messageDecryptor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            _fileTransmissionManager = fileTransmissionManager;
-            _binaryDataBox = binaryDataBox;
+            _binarySendingManager = binarySendingManager;
+            _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
             InitializeHubConnection();
             RegisterHubEventHandlers();
@@ -161,7 +161,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 messageId => _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"));
 
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
-                _fileTransmissionManager.HandlePackageRegisteredByHub(fileId, packageIndex));
+                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
             hubConnection.On<AuthResult>("OnAccessTokenInvalid", (authResult) =>
             {
@@ -214,7 +214,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.Metadata)
                     {
-                        _binaryDataBox.StoreMetadata(message.Metadata);
+                        _binaryReceivingManager.StoreMetadata(message.Metadata);
                     }
                     else if (message.Type == MessageType.DataPackage)
                     {
@@ -224,7 +224,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Iv = message.Package.IV
                         }, message.Sender);
 
-                        var isAllPackagesAreLoaded = _binaryDataBox.StoreData(message.Package.FileDataid, new()
+                        var isAllPackagesAreLoaded = _binaryReceivingManager.StoreFile(message.Package.FileDataid, new()
                         {
                             Index = message.Package.Index,
                             PlainB64Data = decryptedB64.Cyphertext,
@@ -233,8 +233,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                         if (isAllPackagesAreLoaded)
                         {
-                            var metadata = _binaryDataBox.GetMetadata(message.Package.FileDataid);
-                            var packages = _binaryDataBox.GetData(message.Package.FileDataid);
+                            var metadata = _binaryReceivingManager.GetMetadata(message.Package.FileDataid);
+                            var packages = _binaryReceivingManager.GetData(message.Package.FileDataid);
                             var data = packages
                                 .SelectMany(x => Convert.FromBase64String(x.PlainB64Data))
                                 .ToArray();
@@ -465,10 +465,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await SendText(message);
                     break;
                 case MessageType.Metadata:
-                    await _fileTransmissionManager.SendMetadata(message, GetHubConnectionAsync);
+                    await _binarySendingManager.SendMetadata(message, GetHubConnectionAsync);
                     break;
                 case MessageType.BrowserFileMessage:
-                    await _fileTransmissionManager.SendFile(message, GetHubConnectionAsync);
+                    await _binarySendingManager.SendFile(message, GetHubConnectionAsync);
                     break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");

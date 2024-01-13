@@ -483,16 +483,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await _messageBuilder.BuildMessageToBeSend(message.PlainText, message.TargetGroup, myUsername, messageId, MessageType.TextMessage);
 
             await AddToMessageBox(message.PlainText, message.TargetGroup, myUsername, messageId);
-
+            
             if (hubConnection?.State is not HubConnectionState.Connected)
-            {
-                if (hubConnection is not null)
-                    await hubConnection.StopAsync();
-
-                await GetHubConnectionAsync();
-                await SendText(message);
-                return;
-            }
+                hubConnection = await GetHubConnectionAsync();
 
             await hubConnection.SendAsync("Dispatch", messageToSend);
         }

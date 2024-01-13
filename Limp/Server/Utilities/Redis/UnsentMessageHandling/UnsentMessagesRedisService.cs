@@ -7,20 +7,18 @@ namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 
 public class UnsentMessagesRedisService : IUnsentMessagesRedisService
 {
-    private string ServiceAddress { get; init; }
-    private string ServicePassword { get; init; }
+    private readonly IRedisConnectionConfigurer _redisConnectionConfigurer;
 
-    public UnsentMessagesRedisService(IConfiguration configuration)
+    public UnsentMessagesRedisService(IRedisConnectionConfigurer redisConnectionConfigurer)
     {
-        ServiceAddress = configuration.GetValue<string>("Redis:Address") 
-                         ?? throw new ArgumentException("Could not read an Redis address from application configuration");
+        _redisConnectionConfigurer = redisConnectionConfigurer;
     }
     
     public async Task Save(Message message)
     {
         try
         {
-            using (var redis = await GetRedisConnection())
+            using (var redis = await _redisConnectionConfigurer.GetRedisConnection())
             {
                 IDatabase db = redis.GetDatabase();
 
@@ -40,7 +38,7 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
     {
         try
         {
-            using (var redis = await GetRedisConnection())
+            using (var redis = await _redisConnectionConfigurer.GetRedisConnection())
             {
                 IDatabase db = redis.GetDatabase();
 
@@ -63,16 +61,5 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         {
             throw new ApplicationException($"Could read messages from redis: {e.Message}");
         }
-    }
-
-    private async Task<ConnectionMultiplexer> GetRedisConnection()
-    {
-        ConfigurationOptions options = new ConfigurationOptions
-        {
-            EndPoints = new EndPointCollection { ServiceAddress },
-            Password = ServicePassword
-        };
-        
-        return await ConnectionMultiplexer.ConnectAsync(options);
     }
 }

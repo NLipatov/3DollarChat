@@ -5,6 +5,7 @@ using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.Kafka;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+using Ethachat.Server.Utilities.Redis.UnsentSystemEventsHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Models.Authentication.Models;
@@ -12,6 +13,7 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
+using EthachatShared.Models.SystemEvents;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher
@@ -26,6 +28,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IWebPushSender _webPushSender;
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
+        private readonly IUnsentSystemEventsService _unsentSystemEventsService;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -35,7 +38,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         IMessageSendHandler messageSender,
         IWebPushSender webPushSender,
         IUnsentMessagesRedisService unsentMessagesRedisService,
-        IUsernameResolverService usernameResolverService)
+        IUsernameResolverService usernameResolverService,
+        IUnsentSystemEventsService unsentSystemEventsService)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -45,6 +49,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _webPushSender = webPushSender;
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _usernameResolverService = usernameResolverService;
+            _unsentSystemEventsService = unsentSystemEventsService;
         }
 
         public override async Task OnConnectedAsync()
@@ -122,6 +127,19 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 {
                     await Dispatch(m);
                 }
+            }
+
+            var storedGuidEvents = await _unsentSystemEventsService.GetSaved<Guid>(usernameFromToken);
+            foreach (var systemEvent in storedGuidEvents)
+            {
+                switch (systemEvent.Type)
+                {
+                    case SystemEventType.MessageRegisteredByHub:
+                        await Clients.Caller.SendAsync("MessageRegisteredByHub", systemEvent.EventValue);
+                        break;
+                    default:
+                        throw new ArgumentException("No handler registered for event type");
+                };
             }
         }
         

@@ -10,5 +10,6 @@ namespace Ethachat.Client.ClientOnlyModels
         public List<ClientPackage> Packages { get; set; } = new();
         public List<ClientDataFile> ClientFiles { get; set; }
         public List<DataFile> Files { get; set; } = new();
+        public new required MessageType Type { get; set; }
     }
 }

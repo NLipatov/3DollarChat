@@ -1,5 +1,6 @@
 ﻿using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Ethachat.Client.ClientOnlyModels
 {
@@ -11,5 +12,6 @@ namespace Ethachat.Client.ClientOnlyModels
         public List<ClientDataFile> ClientFiles { get; set; }
         public List<DataFile> Files { get; set; } = new();
         public new required MessageType Type { get; set; }
+        public IBrowserFile BrowserFile { get; set; }
     }
 }

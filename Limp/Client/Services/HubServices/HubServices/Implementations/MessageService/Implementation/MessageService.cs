@@ -470,6 +470,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.Metadata:
                     await _fileTransmissionManager.SendMetadata(message, GetHubConnectionAsync);
                     break;
+                case MessageType.BrowserFileMessage:
+                    await _fileTransmissionManager.SendFile(message, GetHubConnectionAsync);
+                    break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }

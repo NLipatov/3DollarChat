@@ -77,7 +77,13 @@
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await Split(e.File);
+        await _messageService.SendMessage(new ()
+        {
+            BrowserFile = e.File,
+            Type = MessageType.BrowserFileMessage,
+            TargetGroup = TopicName,
+            Sender = MyUsername
+        });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
@@ -100,95 +106,5 @@
         }
 
         MessageInput = string.Empty;
-    }
-
-    private async Task Split(IBrowserFile file)
-    {
-        var fileDataId = Guid.NewGuid();
-        var chunkableBinary = await PackageMultiplexerService.SplitAsync(file);
-        int totalChunks = chunkableBinary.Count;
-        var metadataMessage = GenerateMetadataMessage(fileDataId, file.ContentType, file.Name, totalChunks);
-        
-        await _messageBox.AddMessageAsync(metadataMessage, false);
-        await _messageService.SendMessage(metadataMessage);
-
-        await AddBinaryAsBlob(metadataMessage.Metadata, file);
-        
-        int chunksCounter = 0;
-        await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
-        {
-            var cryptogram = await CryptographyService.EncryptAsync<AESHandler>(new()
-            {
-                Cyphertext = chunk
-            }, TopicName);
-
-            var package = new ClientPackage()
-            {
-                Index = chunksCounter,
-                B64Data = cryptogram.Cyphertext,
-                IV = cryptogram.Iv,
-                FileDataid = fileDataId,
-                PlainB64Data = chunk
-            };
-
-            await _messageService.SendMessage(new()
-            {
-                ClientFiles = new List<ClientDataFile>
-                {
-                    new()
-                    {
-                        Id = fileDataId
-                    }
-                },
-                Package = package,
-                Type = MessageType.DataPackage,
-                TargetGroup = TopicName,
-                Sender = MyUsername
-            });
-
-
-            chunksCounter++;
-            decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
-            CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
-        }
-    }
-
-    private ClientMessage GenerateMetadataMessage(Guid fileDataId, string contentType, string fileName, int totalChunks)
-    {
-        var metadataMessage = new ClientMessage
-        {
-            Type = MessageType.Metadata,
-            Metadata = new()
-            {
-                DataFileId = fileDataId,
-                ContentType = contentType,
-                Filename = fileName,
-                ChunksCount = totalChunks
-            },
-            Sender = MyUsername,
-            TargetGroup = TopicName
-        };
-
-        return metadataMessage;
-    }
-
-    private async Task AddBinaryAsBlob(Metadata metadata, IBrowserFile file)
-    {
-        await using (var fileStream = file.OpenReadStream(long.MaxValue))
-        {
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            var blobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", memoryStream.ToArray(), metadata.ContentType);
-                
-            await _messageBox.AddMessageAsync(new ClientMessage()
-            {
-                BlobLink = blobUrl,
-                Id = metadata.DataFileId,
-                Type = MessageType.BlobLink,
-                TargetGroup = TopicName,
-                Sender = MyUsername,
-                Metadata = metadata
-            }, isEncrypted: false);
-        }
     }
 }

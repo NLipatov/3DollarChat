@@ -93,7 +93,8 @@ public class FileTransmissionManager : IFileTransmissionManager
             await _messageBox.AddMessageAsync(new ()
                 {
                     Packages = _downloadedFileIdToPackages[fileDataKey],
-                    Sender = message.Sender
+                    Sender = message.Sender,
+                    Type = MessageType.DataPackage
                 },
                 isEncrypted: false);
             _downloadedFileIdToPackages.TryRemove(fileDataKey, out _);

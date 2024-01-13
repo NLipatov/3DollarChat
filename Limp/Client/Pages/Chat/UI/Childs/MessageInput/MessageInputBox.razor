@@ -91,7 +91,12 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await _messageService.SendText(MessageInput, TopicName, MyUsername);
+            await _messageService.SendMessage(new()
+            {
+                PlainText = MessageInput,
+                TargetGroup = TopicName,
+                Type = MessageType.TextMessage
+            });
         }
 
         MessageInput = string.Empty;
@@ -169,24 +174,21 @@
 
     private async Task AddBinaryAsBlob(Metadata metadata, IBrowserFile file)
     {
-        string blobUrl = "";
         await using (var fileStream = file.OpenReadStream(long.MaxValue))
         {
-            using (var memoryStream = new MemoryStream())
+            var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            var blobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", memoryStream.ToArray(), metadata.ContentType);
+                
+            await _messageBox.AddMessageAsync(new ClientMessage()
             {
-                await fileStream.CopyToAsync(memoryStream);
-                blobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", memoryStream.ToArray(), metadata.ContentType);
-            }
+                BlobLink = blobUrl,
+                Id = metadata.DataFileId,
+                Type = MessageType.BlobLink,
+                TargetGroup = TopicName,
+                Sender = MyUsername,
+                Metadata = metadata
+            }, isEncrypted: false);
         }
-        
-        await _messageBox.AddMessageAsync(new ClientMessage()
-        {
-            BlobLink = blobUrl,
-            Id = metadata.DataFileId,
-            Type = MessageType.BlobLink,
-            TargetGroup = TopicName,
-            Sender = MyUsername,
-            Metadata = metadata
-        }, isEncrypted: false);
     }
 }

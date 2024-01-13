@@ -462,7 +462,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             switch (message.Type)
             {
                 case MessageType.TextMessage:
-                    await SendText(message.PlainText, message.TargetGroup, myName);
+                    await SendText(message);
                     break;
                 case MessageType.DataPackage:
                     await _fileTransmissionManager.SendDataPackage(message.ClientFiles.First().Id, message.Package, message, GetHubConnectionAsync);
@@ -475,13 +475,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
         }
 
-        public async Task SendText(string text, string targetGroup, string myUsername)
+        private async Task SendText(ClientMessage message)
         {
+            var myUsername = await _authenticationHandler.GetUsernameAsync();
             Guid messageId = Guid.NewGuid();
             Message messageToSend =
-                await _messageBuilder.BuildMessageToBeSend(text, targetGroup, myUsername, messageId, MessageType.TextMessage);
+                await _messageBuilder.BuildMessageToBeSend(message.PlainText, message.TargetGroup, myUsername, messageId, MessageType.TextMessage);
 
-            await AddToMessageBox(text, targetGroup, myUsername, messageId);
+            await AddToMessageBox(message.PlainText, message.TargetGroup, myUsername, messageId);
 
             if (hubConnection?.State is not HubConnectionState.Connected)
             {
@@ -489,7 +490,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await hubConnection.StopAsync();
 
                 await GetHubConnectionAsync();
-                await SendText(text, targetGroup, myUsername);
+                await SendText(message);
                 return;
             }
 
@@ -510,7 +511,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     Sender = myUsername,
                     TargetGroup = targetGroup,
                     PlainText = text,
-                    DateSent = DateTime.UtcNow
+                    DateSent = DateTime.UtcNow,
+                    Type = MessageType.TextMessage
                 },
                 isEncrypted: false);
         }

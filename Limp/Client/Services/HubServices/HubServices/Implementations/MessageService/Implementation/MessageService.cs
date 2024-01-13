@@ -464,9 +464,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.TextMessage:
                     await SendText(message);
                     break;
-                case MessageType.DataPackage:
-                    await _fileTransmissionManager.SendDataPackage(message.ClientFiles.First().Id, message.Package, message, GetHubConnectionAsync);
-                    break;
                 case MessageType.Metadata:
                     await _fileTransmissionManager.SendMetadata(message, GetHubConnectionAsync);
                     break;

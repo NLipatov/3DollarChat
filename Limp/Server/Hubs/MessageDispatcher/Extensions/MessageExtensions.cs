@@ -1,6 +1,6 @@
 ﻿using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Helpers
+namespace Ethachat.Server.Hubs.MessageDispatcher.Extensions
 {
     internal static class MessageExtensions
     {

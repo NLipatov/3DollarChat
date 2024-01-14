@@ -19,6 +19,7 @@ using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.SystemEvents;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -157,15 +158,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
                 });
 
-            hubConnection.On<Guid>("MessageRegisteredByHub",
+            hubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
                 messageId => _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"));
 
-            hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
+            hubConnection.On<Guid, int>(SystemEventType.PackageRegisteredByHub.ToString(), (fileId, packageIndex) =>
                 _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
             hubConnection.On<AuthResult>("OnAccessTokenInvalid", (authResult) =>
             {
-                Console.WriteLine(authResult.Message);
+                NavigationManager.NavigateTo("signin");
+            });
+
+            hubConnection.On<Guid>(SystemEventType.MetadataRegisteredByHub.ToString(), metadataId =>
+            {
+                
             });
 
             hubConnection.On<Message>("ReceiveMessage", async message =>

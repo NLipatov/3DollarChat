@@ -1,4 +1,5 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Helpers.SystemEventNotification;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -29,6 +30,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
         private readonly IUnsentSystemEventsService _unsentSystemEventsService;
+        private readonly ISystemEventNotificationMediator _systemEventNotificationMediator;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -39,7 +41,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         IWebPushSender webPushSender,
         IUnsentMessagesRedisService unsentMessagesRedisService,
         IUsernameResolverService usernameResolverService,
-        IUnsentSystemEventsService unsentSystemEventsService)
+        IUnsentSystemEventsService unsentSystemEventsService,
+        ISystemEventNotificationMediator systemEventNotificationMediator)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -50,6 +53,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _usernameResolverService = usernameResolverService;
             _unsentSystemEventsService = unsentSystemEventsService;
+            _systemEventNotificationMediator = systemEventNotificationMediator;
         }
 
         public override async Task OnConnectedAsync()
@@ -162,23 +166,25 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 Console.WriteLine(message.Package.Index);
             try
             {
-                if (string.IsNullOrWhiteSpace(message.Sender))
-                    throw new ArgumentException("Invalid message sender.");
-
-                if (string.IsNullOrWhiteSpace(message.TargetGroup))
-                    throw new ArgumentException("Invalid target group of a message.");
-
                 if (message.Type is MessageType.TextMessage)
                 {
-                    await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+                    await _systemEventNotificationMediator.Notify(new SystemEvent<Guid>
+                    {
+                        Type = SystemEventType.MessageRegisteredByHub,
+                        EventValue = message.Id
+                    }, Clients.Caller, message.Sender!);
                 }
                 else if (message.Type is MessageType.DataPackage)
                 {
-                    await Clients.Group(message.Sender).SendAsync("PackageRegisteredByHub", message.Package.FileDataid, message.Package.Index);
+                    await Clients.Group(message.Sender!).SendAsync("PackageRegisteredByHub", message.Package!.FileDataid, message.Package.Index);
                 }
                 else if (message.Type is MessageType.Metadata)
                 {
-                    await Clients.Group(message.Sender).SendAsync("MetadataRegisteredByHub", message.Metadata!.DataFileId);
+                    await _systemEventNotificationMediator.Notify(new SystemEvent<Guid>
+                    {
+                        Type = SystemEventType.MetadataRegisteredByHub,
+                        EventValue = message.Metadata!.DataFileId
+                    }, Clients.Group(message.Sender!), message.Sender!); 
                 }
 
                 //Save message in redis to send it later, or send it now if user is online

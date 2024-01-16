@@ -1,5 +1,4 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Ethachat.Server.Hubs.MessageDispatcher.Helpers.SystemEventNotification;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -30,19 +29,17 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
         private readonly IUnsentSystemEventsService _unsentSystemEventsService;
-        private readonly ISystemEventNotificationMediator _systemEventNotificationMediator;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
-        IMessageBrokerService messageBrokerService,
-        IUserConnectedHandler<MessageHub> userConnectedHandler,
-        IOnlineUsersManager onlineUsersManager,
-        IMessageSendHandler messageSender,
-        IWebPushSender webPushSender,
-        IUnsentMessagesRedisService unsentMessagesRedisService,
-        IUsernameResolverService usernameResolverService,
-        IUnsentSystemEventsService unsentSystemEventsService,
-        ISystemEventNotificationMediator systemEventNotificationMediator)
+            IMessageBrokerService messageBrokerService,
+            IUserConnectedHandler<MessageHub> userConnectedHandler,
+            IOnlineUsersManager onlineUsersManager,
+            IMessageSendHandler messageSender,
+            IWebPushSender webPushSender,
+            IUnsentMessagesRedisService unsentMessagesRedisService,
+            IUsernameResolverService usernameResolverService,
+            IUnsentSystemEventsService unsentSystemEventsService)
         {
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
@@ -53,26 +50,28 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _usernameResolverService = usernameResolverService;
             _unsentSystemEventsService = unsentSystemEventsService;
-            _systemEventNotificationMediator = systemEventNotificationMediator;
         }
 
         public override async Task OnConnectedAsync()
         {
-            InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(Context.ConnectionId, new List<string> { Context.ConnectionId });
+            InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryAdd(Context.ConnectionId,
+                new List<string> { Context.ConnectionId });
 
             await base.OnConnectedAsync();
         }
 
         public override async Task OnDisconnectedAsync(Exception? exception)
         {
-            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 
             foreach (var key in keys)
             {
                 var oldConnections = InMemoryHubConnectionStorage.MessageDispatcherHubConnections[key];
                 var newConnections = oldConnections.Where(x => x != Context.ConnectionId).ToList();
                 if (newConnections.Any())
-                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryUpdate(key, newConnections, oldConnections);
+                    InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryUpdate(key, newConnections,
+                        oldConnections);
                 else
                     InMemoryHubConnectionStorage.MessageDispatcherHubConnections.TryRemove(key, out _);
 
@@ -92,7 +91,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            AuthResult usernameRequestResult =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            AuthResult usernameRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
             if (usernameRequestResult.Result is not AuthResultType.Success)
             {
                 await Clients.Caller.SendAsync("OnAccessTokenInvalid", usernameRequestResult);
@@ -101,15 +100,16 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var usernameFromToken = usernameRequestResult.Message ?? string.Empty;
 
             await _userConnectedHandler.OnUsernameResolved
-            (Context.ConnectionId, 
-            usernameFromToken,
-            Groups.AddToGroupAsync,
-            Clients.Caller.SendAsync,
-            Clients.Caller.SendAsync,
-            webAuthnPair: credentialsDto.WebAuthnPair,
-            jwtPair: credentialsDto.JwtPair);
+            (Context.ConnectionId,
+                usernameFromToken,
+                Groups.AddToGroupAsync,
+                Clients.Caller.SendAsync,
+                Clients.Caller.SendAsync,
+                webAuthnPair: credentialsDto.WebAuthnPair,
+                jwtPair: credentialsDto.JwtPair);
 
-            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
+            var keys = InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => x.Value.Contains(Context.ConnectionId)).Select(x => x.Key);
 
             foreach (var key in keys)
             {
@@ -121,7 +121,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
 
             var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
-            foreach (var m in storedMessages.OrderBy(x=>x.DateSent))
+            foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
                 if (m.Package is not null)
                 {
@@ -143,10 +143,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                         break;
                     default:
                         throw new ArgumentException("No handler registered for event type");
-                };
+                }
+
+                ;
             }
         }
-        
+
         public async Task PushOnlineUsersToClients()
         {
             UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
@@ -162,44 +164,40 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
-            if(message.Type == MessageType.DataPackage)
-                Console.WriteLine(message.Package.Index);
-            try
+            if (message.Type is MessageType.Metadata)
             {
-                if (message.Type is MessageType.TextMessage)
-                {
-                    await _systemEventNotificationMediator.Notify(new SystemEvent<Guid>
-                    {
-                        Type = SystemEventType.MessageRegisteredByHub,
-                        EventValue = message.Id
-                    }, Clients.Caller, message.Sender!);
-                }
-                else if (message.Type is MessageType.DataPackage)
-                {
-                    await Clients.Group(message.Sender!).SendAsync("PackageRegisteredByHub", message.Package!.FileDataid, message.Package.Index);
-                }
-                else if (message.Type is MessageType.Metadata)
-                {
-                    await _systemEventNotificationMediator.Notify(new SystemEvent<Guid>
-                    {
-                        Type = SystemEventType.MetadataRegisteredByHub,
-                        EventValue = message.Metadata!.DataFileId
-                    }, Clients.Group(message.Sender!), message.Sender!); 
-                }
-
-                //Save message in redis to send it later, or send it now if user is online
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == message.TargetGroup))
-                    await _messageSendHandler.SendAsync(message, Clients);
-                else
-                {
-                    await _unsentMessagesRedisService.Save(message);
-                    if (message.Type == MessageType.TextMessage)
-                        await _webPushSender.SendPush($"You've got a new message from {message.Sender}", $"/user/{message.Sender}", message.TargetGroup);
-                }
+                await Clients.Group(message.Sender)
+                    .SendAsync("MetadataRegisteredByHub", message.Metadata.DataFileId);
             }
-            catch (Exception e)
+            else if (message.Type is MessageType.Metadata)
             {
-                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(Dispatch)}: could not dispatch a text message: {e.Message}");
+                await Clients.Group(message.Sender)
+                    .SendAsync("MetadataRegisteredByHub", message.Metadata.DataFileId);
+                await _webPushSender.SendPush($"You've got a new file from {message.Sender}",
+                    $"/user/{message.Sender}", message.TargetGroup);
+            }
+            else if (message.Type is MessageType.DataPackage)
+            {
+                await Clients.Group(message.Sender!)
+                    .SendAsync("PackageRegisteredByHub", message.Package!.FileDataid,
+                        message.Package.Index);
+            }
+            else if (message.Type is MessageType.TextMessage)
+            {
+                await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
+            }
+
+            if(IsClientConnectedToHub(message.TargetGroup!))
+                await _messageSendHandler.SendAsync(message, Clients);
+            else
+            {
+                await _unsentMessagesRedisService.Save(message);
+                if (message.Type is MessageType.Metadata)
+                    await _webPushSender.SendPush($"You've got a new file from {message.Sender}",
+                        $"/user/{message.Sender}", message.TargetGroup);
+                if (message.Type is MessageType.TextMessage)
+                    await _webPushSender.SendPush($"You've got a new text message from {message.Sender}",
+                        $"/user/{message.Sender}", message.TargetGroup);
             }
         }
 
@@ -221,15 +219,18 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 else
                 {
                     await _unsentMessagesRedisService.Save(packageMessage);
-                    
-                    if(package.Index == 0)
-                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}", receiver);
+
+                    if (package.Index == 0)
+                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}",
+                            receiver);
                 }
+
                 await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);
             }
             catch (Exception e)
             {
-                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
+                throw new ApplicationException(
+                    $"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
             }
         }
 
@@ -249,10 +250,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
             catch (Exception e)
             {
-                throw new ApplicationException($"{nameof(MessageHub)}.{nameof(OnDataTranferSuccess)}: could not dispatch a data: {e.Message}");
+                throw new ApplicationException(
+                    $"{nameof(MessageHub)}.{nameof(OnDataTranferSuccess)}: could not dispatch a data: {e.Message}");
             }
         }
-        
+
         public async Task MessageReceived(Guid messageId, string topicName)
             => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
 

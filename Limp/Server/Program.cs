@@ -2,8 +2,6 @@ using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
 using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
-using Ethachat.Server.Hubs.MessageDispatcher.Helpers.SystemEventNotification;
-using Ethachat.Server.Hubs.MessageDispatcher.Helpers.SystemEventNotification.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -47,7 +45,6 @@ builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>
 builder.Services.AddTransient<ILogService, SeqLogService>();
 builder.Services.AddTransient<IRedisConnectionConfigurer, RedisConnectionConfigurer>();
 builder.Services.AddTransient<IUnsentSystemEventsService, UnsentSystemEventsService>();
-builder.Services.AddSingleton<ISystemEventNotificationMediator, SystemEventNotificationMediator>();
 
 var app = builder.Build();
 

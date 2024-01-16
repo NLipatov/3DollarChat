@@ -159,9 +159,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 });
 
             hubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
-                messageId => _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"));
+                messageId =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
+                });
 
-            hubConnection.On<Guid, int>(SystemEventType.PackageRegisteredByHub.ToString(), (fileId, packageIndex) =>
+            hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
                 _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
             hubConnection.On<AuthResult>("OnAccessTokenInvalid", (authResult) =>
@@ -169,7 +172,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 NavigationManager.NavigateTo("signin");
             });
 
-            hubConnection.On<Guid>(SystemEventType.MetadataRegisteredByHub.ToString(), metadataId =>
+            hubConnection.On<Guid>("MetadataRegisteredByHub", metadataId =>
             {
                 
             });

@@ -9,7 +9,6 @@ using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Services.LogService.Implementations.Seq;
 using Ethachat.Server.Utilities.Redis;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
-using Ethachat.Server.Utilities.Redis.UnsentSystemEventsHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
@@ -44,7 +43,6 @@ builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisSe
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
 builder.Services.AddTransient<IRedisConnectionConfigurer, RedisConnectionConfigurer>();
-builder.Services.AddTransient<IUnsentSystemEventsService, UnsentSystemEventsService>();
 
 var app = builder.Build();
 

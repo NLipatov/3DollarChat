@@ -131,7 +131,10 @@
 
     private async Task HandleContactAddition(string username)
     {
-        await _contactsProvider.AddContact(username, _jSRuntime);
+        await _contactsProvider.AddContact(new Services.ContactsProvider.Models.StoredContact
+        {
+            Username = username,
+        }, _jSRuntime);
         await _usersService.ActualizeConnectedUsersAsync();
         await contactAdditionModal!.HideModalAsync();
     }
@@ -161,12 +164,12 @@
     {
         TryUpdateLastReceivedContacts(updatedUserConnections);
 
-        List<string> contacts = await _contactsProvider.GetContacts(_jSRuntime);
-        ContactsList = contacts.Select(contact =>
+        List<Services.ContactsProvider.Models.StoredContact> contacts = await _contactsProvider.GetContacts(_jSRuntime);
+        ContactsList = contacts.Select(x =>
         new Contact
             {
-                Username = contact,
-                IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == contact),
+                Username = x.Username,
+                IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username),
                 LastMessage = DateTime.UtcNow
             }
         ).ToList();

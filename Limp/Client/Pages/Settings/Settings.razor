@@ -16,7 +16,21 @@
                 </CardHeader>
                 <CardBody>
                     <CardTitle>Manage your push notifications</CardTitle>
-                    <CardText>See active subscriptions, add new one, delete old ones and so on.</CardText>
+                    <CardText>See active subscriptions, add new one, delete old ones and so on</CardText>
+                </CardBody>
+            </Card>
+            <Card
+                Color="CardColor.Primary"
+                Class="mb-4"
+                Style="width:100%; cursor: pointer;"
+                @onclick=@(() => _navigationManager.NavigateTo("settings/trustedContacts"))>
+                <CardHeader>
+                    <Icon Name="IconName.PatchCheckFill" Color="IconColor.Success"/>
+                    Trusted StoredContacts
+                </CardHeader>
+                <CardBody>
+                    <CardTitle>Manage your trusted contacts</CardTitle>
+                    <CardText>Set up a trusted password for a contacts</CardText>
                 </CardBody>
             </Card>
         </div>

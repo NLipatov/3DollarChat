@@ -1,4 +1,5 @@
-﻿using System.Text.Json;
+﻿using System.Collections.Concurrent;
+using System.Text.Json;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.BrowserKeyStorageService.Models;
 using EthachatShared.Encryption;
@@ -19,7 +20,7 @@ namespace Ethachat.Client.Services.BrowserKeyStorageService.Implementation
 
         public async Task SaveInMemoryKeysInLocalStorage()
         {
-            Dictionary<string, Key> inMemoryStoredKeys = InMemoryKeyStorage.AESKeyStorage;
+            ConcurrentDictionary<string, Key> inMemoryStoredKeys = InMemoryKeyStorage.AESKeyStorage;
             LocalKeyChain localKeyChain = new()
             {
                 Name = localStorageKeyChainObjectName,
@@ -62,7 +63,7 @@ namespace Ethachat.Client.Services.BrowserKeyStorageService.Implementation
 
             if (inMemoryKey == null && browserkey != null)
             {
-                InMemoryKeyStorage.AESKeyStorage.Add(contactName, browserkey);
+                InMemoryKeyStorage.AESKeyStorage.TryAdd(contactName, browserkey);
                 inMemoryKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == contactName).Value;
             }
             else if(inMemoryKey?.Value != null && inMemoryKey.Value.ToString() != browserkey?.Value?.ToString())

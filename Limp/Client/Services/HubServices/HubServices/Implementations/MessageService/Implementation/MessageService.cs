@@ -3,7 +3,6 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
-using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDispatcher.AESOfferHandling;
 using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
@@ -14,6 +13,8 @@ using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecrypti
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.ReceiveOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
 using EthachatShared.Constants;
@@ -34,7 +35,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public NavigationManager NavigationManager { get; set; }
         private readonly IMessageBox _messageBox;
         private readonly ICryptographyService _cryptographyService;
-        private readonly IAESOfferHandler _aESOfferHandler;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IMessageBuilder _messageBuilder;
@@ -45,7 +45,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IBinaryReceivingManager _binaryReceivingManager;
         private readonly IJSRuntime _jsRuntime;
-        private readonly IContactsProvider _contactsProvider;
+        private readonly IAesTransmissionManager _aesTransmissionManager;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
@@ -57,7 +57,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         (IMessageBox messageBox,
             NavigationManager navigationManager,
             ICryptographyService cryptographyService,
-            IAESOfferHandler aESOfferHandler,
             IUsersService usersService,
             ICallbackExecutor callbackExecutor,
             IMessageBuilder messageBuilder,
@@ -68,12 +67,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IBinarySendingManager binarySendingManager,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
-            IContactsProvider contactsProvider)
+            IAesTransmissionManager aesTransmissionManager)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
-            _aESOfferHandler = aESOfferHandler;
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
             _messageBuilder = messageBuilder;
@@ -84,7 +82,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binarySendingManager = binarySendingManager;
             _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
-            _contactsProvider = contactsProvider;
+            _aesTransmissionManager = aesTransmissionManager;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -279,7 +277,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         if (hubConnection != null)
                         {
-                            var offerResponse = await _aESOfferHandler.GetAESOfferResponse(message);
+                            var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
                             await hubConnection.SendAsync("Dispatch", offerResponse);
                             
                             if (offerResponse.Type is MessageType.AesOfferAccept)
@@ -396,58 +394,60 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             await cryptographyService.GenerateAesKeyAsync(partnersUsername, async (aesKeyForConversation) =>
             {
-                if (hubConnection?.State is not HubConnectionState.Connected)
-                {
-                    await GetHubConnectionAsync();
-                    while (hubConnection?.State is not HubConnectionState.Connected)
-                    {
-                        await GetHubConnectionAsync();
-                    }
-                }
-
-                InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate =
-                    DateTime.UtcNow;
-                InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value =
-                    aesKeyForConversation;
-                await _browserKeyStorage.SaveInMemoryKeysInLocalStorage();
-                string? offeredAESKeyForConversation =
-                    InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
-
-                if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
-                    throw new ApplicationException("Could not properly generated an AES Key for conversation");
-
-                var contact = await _contactsProvider.GetContact(partnersUsername, _jsRuntime);
-
-                AesOffer offer = new()
-                {
-                    AesKey = offeredAESKeyForConversation,
-                    PassPhrase = contact?.TrustedPassphrase ?? string.Empty
-                };
-                
-                string? encryptedOffer = (await cryptographyService
-                    .EncryptAsync<RSAHandler>
-                    (new Cryptogramm { Cyphertext = JsonSerializer.Serialize(offer) },
-                        //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                        publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
-
-                Message messageWithAesOffer = new()
-                {
-                    Type = MessageType.AesOffer,
-                    DateSent = DateTime.UtcNow,
-                    Sender = await _authenticationHandler.GetUsernameAsync(),
-                    TargetGroup = partnersUsername,
-                    Cryptogramm = new()
-                    {
-                        Cyphertext = encryptedOffer,
-                    }
-                };
-
-                if (hubConnection.State is not HubConnectionState.Connected)
-                {
-                    await GetHubConnectionAsync();
-                }
-
-                await hubConnection!.SendAsync("Dispatch", messageWithAesOffer);
+                var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKeyForConversation);
+                await hubConnection!.SendAsync("Dispatch", offer);
+                // if (hubConnection?.State is not HubConnectionState.Connected)
+                // {
+                //     await GetHubConnectionAsync();
+                //     while (hubConnection?.State is not HubConnectionState.Connected)
+                //     {
+                //         await GetHubConnectionAsync();
+                //     }
+                // }
+                //
+                // InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate =
+                //     DateTime.UtcNow;
+                // InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value =
+                //     aesKeyForConversation;
+                // await _browserKeyStorage.SaveInMemoryKeysInLocalStorage();
+                // string? offeredAESKeyForConversation =
+                //     InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
+                //
+                // if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
+                //     throw new ApplicationException("Could not properly generated an AES Key for conversation");
+                //
+                // var contact = await _contactsProvider.GetContact(partnersUsername, _jsRuntime);
+                //
+                // AesOffer offer = new()
+                // {
+                //     AesKey = offeredAESKeyForConversation,
+                //     PassPhrase = contact?.TrustedPassphrase ?? string.Empty
+                // };
+                //
+                // string? encryptedOffer = (await cryptographyService
+                //     .EncryptAsync<RSAHandler>
+                //     (new Cryptogramm { Cyphertext = JsonSerializer.Serialize(offer) },
+                //         //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
+                //         publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
+                //
+                // Message messageWithAesOffer = new()
+                // {
+                //     Type = MessageType.AesOffer,
+                //     DateSent = DateTime.UtcNow,
+                //     Sender = await _authenticationHandler.GetUsernameAsync(),
+                //     TargetGroup = partnersUsername,
+                //     Cryptogramm = new()
+                //     {
+                //         Cyphertext = encryptedOffer,
+                //     }
+                // };
+                //
+                // if (hubConnection.State is not HubConnectionState.Connected)
+                // {
+                //     await GetHubConnectionAsync();
+                // }
+                //
+                // await hubConnection!.SendAsync("Dispatch", messageWithAesOffer);
             });
         }
 

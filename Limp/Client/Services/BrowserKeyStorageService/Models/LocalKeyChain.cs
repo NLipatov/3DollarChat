@@ -1,4 +1,5 @@
 ﻿#nullable disable
+using System.Collections.Concurrent;
 using EthachatShared.Encryption;
 
 namespace Ethachat.Client.Services.BrowserKeyStorageService.Models
@@ -7,6 +8,6 @@ namespace Ethachat.Client.Services.BrowserKeyStorageService.Models
     {
         public string Name { get; set; }
         public string Password { get; set; }
-        public Dictionary<string, Key> AESKeyStorage { get; set; } = new();
+        public ConcurrentDictionary<string, Key> AESKeyStorage { get; set; } = new();
     }
 }

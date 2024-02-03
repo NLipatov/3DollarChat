@@ -9,7 +9,8 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.ReceiveOffer
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    AESTransmitting.Interface.Implementation.ReceiveOffer
 {
     public class AesOfferReceiver : IAesOfferReceiver
     {

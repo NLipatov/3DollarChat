@@ -10,6 +10,7 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
+using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
@@ -42,6 +43,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IBinaryReceivingManager _binaryReceivingManager;
         private readonly IJSRuntime _jsRuntime;
         private readonly IAesTransmissionManager _aesTransmissionManager;
+        private readonly IContactsProvider _contactsProvider;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
@@ -63,7 +65,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IBinarySendingManager binarySendingManager,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
-            IAesTransmissionManager aesTransmissionManager)
+            IAesTransmissionManager aesTransmissionManager,
+            IContactsProvider contactsProvider)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -79,6 +82,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
             _aesTransmissionManager = aesTransmissionManager;
+            _contactsProvider = contactsProvider;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -266,6 +270,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
+                        await MarkContactAsTrusted(message.Sender!);
                         InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
@@ -274,6 +279,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         if (hubConnection != null)
                         {
                             var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
+                            await MarkContactAsTrusted(message.TargetGroup!);
                             await hubConnection.SendAsync("Dispatch", offerResponse);
                             
                             if (offerResponse.Type is MessageType.AesOfferAccept)
@@ -551,6 +557,18 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
 
             throw new ArgumentException("Notification was not sent because hub connection is lost.");
+        }
+        
+        
+
+        private async Task MarkContactAsTrusted(string contactUsername)
+        {
+            var contact = await _contactsProvider.GetContact(contactUsername, _jsRuntime);
+            if (contact is not null && !string.IsNullOrWhiteSpace(contact.TrustedPassphrase))
+            {
+                contact.IsTrusted = true;
+                await _contactsProvider.UpdateContact(contact, _jsRuntime);
+            }
         }
     }
 }

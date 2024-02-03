@@ -1,6 +1,7 @@
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    AESTransmitting.Interface;
 
 public interface IAesTransmissionManager
 {

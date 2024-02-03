@@ -1,14 +1,22 @@
-@page "/settings/trustedcontacts"
+@page "/settings/aes-exchange-settings"
 @using Ethachat.Client.Pages.Contacts.Models
 @using Ethachat.Client.Services.ContactsProvider
 @inject IContactsProvider _contactsProvider;
 @inject IJSRuntime _JSRuntime
 
 <div class="p-2">
-    <h3>Contacts Trust Status:</h3>
+    <h3>AES key exchange settings</h3>
 
     <div class="trusted-contacts-group">
-        @foreach (var contact in _contacts.OrderBy(x=>x.Username))
+        @if (!_contacts.Any())
+        {
+            <Callout Type="CalloutType.Info">
+                <span>
+                    No contacts. <a href="/contacts">Add someone</a> to assign a passphrase
+                </span>
+            </Callout>
+        }
+        @foreach (var contact in _contacts.OrderBy(x => x.Username))
         {
             <Card Class="trusted-contacts">
                 <CardHeader>
@@ -28,13 +36,9 @@
                 @if (usernameToPassphrase[contact.Username] != contact.TrustedPassphrase)
                 {
                     <CardFooter>
-                        <Button 
+                        <Button
                             Color="ButtonColor.Success"
-                            @onclick="async () => 
-                                {
-                                    await _contactsProvider.UpdateContact(contact, _JSRuntime);
-                                    usernameToPassphrase[contact.Username] = contact.TrustedPassphrase;
-                                }">
+                            @onclick="async () => { await _contactsProvider.UpdateContact(contact, _JSRuntime); usernameToPassphrase[contact.Username] = contact.TrustedPassphrase; }">
                             Apply
                         </Button>
                     </CardFooter>

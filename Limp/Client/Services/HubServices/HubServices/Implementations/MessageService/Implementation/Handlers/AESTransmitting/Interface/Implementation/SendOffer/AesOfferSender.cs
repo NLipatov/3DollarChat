@@ -10,7 +10,7 @@ using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    AESTransmitting.SendOffer;
+    AESTransmitting.Interface.Implementation.SendOffer;
 
 public class AesOfferSender : IAesOfferSender
 {

@@ -5,6 +5,7 @@ namespace Ethachat.Client.Services.ContactsProvider
 {
     public interface IContactsProvider
     {
+        Task<Contact?> GetContact(string username, IJSRuntime jSRuntime);
         Task<List<Contact>> GetContacts(IJSRuntime jSRuntime);
         Task AddContact(Contact storedContact, IJSRuntime jSRuntime);
         Task UpdateContact(Contact storedContact, IJSRuntime jsRuntime);

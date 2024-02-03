@@ -46,6 +46,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="HubConnectionManagement\ConnectionHandlers\MessageDispatcher\AESOfferHandling\Models\" />
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
   </ItemGroup>
 

@@ -1,4 +1,5 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using System.Text.Json;
+using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
@@ -11,6 +12,7 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
+using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
@@ -20,6 +22,7 @@ using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -42,6 +45,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IBinaryReceivingManager _binaryReceivingManager;
         private readonly IJSRuntime _jsRuntime;
+        private readonly IContactsProvider _contactsProvider;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
@@ -63,7 +67,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IConfiguration configuration,
             IBinarySendingManager binarySendingManager,
             IBinaryReceivingManager binaryReceivingManager,
-            IJSRuntime jsRuntime)
+            IJSRuntime jsRuntime,
+            IContactsProvider contactsProvider)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -79,6 +84,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binarySendingManager = binarySendingManager;
             _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
+            _contactsProvider = contactsProvider;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -262,7 +268,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             await NotifyAboutSuccessfullDataTransfer(message);
                         }
                     }
-                    else if (message.Type == MessageType.AesAccept)
+                    else if (message.Type == MessageType.AesOfferAccept)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
@@ -273,9 +279,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         if (hubConnection != null)
                         {
-                            await hubConnection.SendAsync("Dispatch",
-                                await _aESOfferHandler.GetAESOfferResponse(message));
-                            _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
+                            var offerResponse = await _aESOfferHandler.GetAESOfferResponse(message);
+                            await hubConnection.SendAsync("Dispatch", offerResponse);
+                            
+                            if (offerResponse.Type is MessageType.AesOfferAccept)
+                                _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         }
                     }
                 }
@@ -408,18 +416,21 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
                     throw new ApplicationException("Could not properly generated an AES Key for conversation");
 
-                //When this callback is called, AES key for conversation is already generated
-                //We now need to encrypt this AES key and send it to partner
-                string? encryptedAESKey = (await cryptographyService
+                var contact = await _contactsProvider.GetContact(partnersUsername, _jsRuntime);
+
+                AesOffer offer = new()
+                {
+                    AesKey = offeredAESKeyForConversation,
+                    PassPhrase = contact?.TrustedPassphrase ?? string.Empty
+                };
+                
+                string? encryptedOffer = (await cryptographyService
                     .EncryptAsync<RSAHandler>
-                    (new Cryptogramm { Cyphertext = offeredAESKeyForConversation },
+                    (new Cryptogramm { Cyphertext = JsonSerializer.Serialize(offer) },
                         //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
                         publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
 
-                if (string.IsNullOrWhiteSpace(encryptedAESKey))
-                    throw new ApplicationException("Could not encrypt a AES Key, got empty string.");
-
-                Message offerOnAES = new()
+                Message messageWithAesOffer = new()
                 {
                     Type = MessageType.AesOffer,
                     DateSent = DateTime.UtcNow,
@@ -427,7 +438,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     TargetGroup = partnersUsername,
                     Cryptogramm = new()
                     {
-                        Cyphertext = encryptedAESKey,
+                        Cyphertext = encryptedOffer,
                     }
                 };
 
@@ -436,7 +447,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await GetHubConnectionAsync();
                 }
 
-                await hubConnection!.SendAsync("Dispatch", offerOnAES);
+                await hubConnection!.SendAsync("Dispatch", messageWithAesOffer);
             });
         }
 

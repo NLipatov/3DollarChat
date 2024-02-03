@@ -1,5 +1,4 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using EthachatShared.Models.Message.DataTransfer;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 {

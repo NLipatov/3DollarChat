@@ -1,23 +1,11 @@
-﻿@using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions
-@using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
+﻿@using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
-@using System.Text
-@using Ethachat.Client.ClientOnlyModels
 @using Ethachat.Client.Cryptography
-@using Ethachat.Client.Cryptography.CryptoHandlers
-@using Ethachat.Client.Cryptography.CryptoHandlers.Handlers
-@using Ethachat.Client.Cryptography.KeyStorage
 @using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
 @using Ethachat.Client.Services.DataTransmission.PackageForming
-@using Ethachat.Client.Services.DataTransmission.PackageForming.Models
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
-@using EthachatShared.Encryption
 @using EthachatShared.Models.Message
-@using EthachatShared.Models.Message.DataTransfer
-@using System.Collections
-@using System.Data.Common
-@using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService

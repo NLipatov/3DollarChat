@@ -18,6 +18,12 @@ public class ContactsProvider : IContactsProvider
         await SaveContacts(contacts, jSRuntime);
     }
 
+    public async Task<Contact?> GetContact(string username, IJSRuntime jSRuntime)
+    {
+        var contacts = await GetContacts(jSRuntime);
+        return contacts.FirstOrDefault(x => x.Username == username);
+    }
+
     public async Task<List<Contact>> GetContacts(IJSRuntime jSRuntime)
     {
         await EnsureContactsItemExistsAsync(jSRuntime);

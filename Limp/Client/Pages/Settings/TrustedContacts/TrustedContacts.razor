@@ -1,6 +1,6 @@
 @page "/settings/trustedcontacts"
+@using Ethachat.Client.Pages.Contacts.Models
 @using Ethachat.Client.Services.ContactsProvider
-@using Ethachat.Client.Services.ContactsProvider.Models
 @inject IContactsProvider _contactsProvider;
 @inject IJSRuntime _JSRuntime
 
@@ -46,7 +46,7 @@
 
 @code {
     private Dictionary<string, string> usernameToPassphrase = new();
-    private List<StoredContact> _contacts { get; set; } = new();
+    private List<Contact> _contacts { get; set; } = new();
 
     protected override async Task OnInitializedAsync()
     {

@@ -1,14 +1,14 @@
 ﻿using Microsoft.JSInterop;
 using System.Text.Json;
-using Ethachat.Client.Services.ContactsProvider.Models;
+using Ethachat.Client.Pages.Contacts.Models;
 
 namespace Ethachat.Client.Services.ContactsProvider.Implementations;
 
 public class ContactsProvider : IContactsProvider
 {
-    public async Task AddContact(StoredContact storedContact, IJSRuntime jSRuntime)
+    public async Task AddContact(Contact storedContact, IJSRuntime jSRuntime)
     {
-        List<StoredContact> contacts = await GetContacts(jSRuntime);
+        List<Contact> contacts = await GetContacts(jSRuntime);
         var target = contacts.FirstOrDefault(x => x.Username == storedContact.Username);
         if (target is not null)
         {
@@ -18,21 +18,21 @@ public class ContactsProvider : IContactsProvider
         await SaveContacts(contacts, jSRuntime);
     }
 
-    public async Task<List<StoredContact>> GetContacts(IJSRuntime jSRuntime)
+    public async Task<List<Contact>> GetContacts(IJSRuntime jSRuntime)
     {
         await EnsureContactsItemExistsAsync(jSRuntime);
         string contactsSerialized = await jSRuntime.InvokeAsync<string>("localStorage.getItem", "contacts");
         if (string.IsNullOrWhiteSpace(contactsSerialized))
             return new();
 
-        List<StoredContact> contactsDeserialized = JsonSerializer.Deserialize<List<StoredContact>?>(contactsSerialized) ?? new();
+        List<Contact> contactsDeserialized = JsonSerializer.Deserialize<List<Contact>?>(contactsSerialized) ?? new();
 
         return contactsDeserialized;
     }
 
-    public async Task UpdateContact(StoredContact storedContact, IJSRuntime jsRuntime)
+    public async Task UpdateContact(Contact storedContact, IJSRuntime jsRuntime)
     {
-        List<StoredContact> contacts = await GetContacts(jsRuntime);
+        List<Contact> contacts = await GetContacts(jsRuntime);
         var target = contacts.FirstOrDefault(x => x.Username == storedContact.Username);
         if (target is not null)
         {
@@ -42,9 +42,9 @@ public class ContactsProvider : IContactsProvider
         }
     }
 
-    public async Task RemoveContact(StoredContact storedContact, IJSRuntime jSRuntime)
+    public async Task RemoveContact(Contact storedContact, IJSRuntime jSRuntime)
     {
-        List<StoredContact> contacts = await GetContacts(jSRuntime);
+        List<Contact> contacts = await GetContacts(jSRuntime);
         var target = contacts.FirstOrDefault(x => x.Username == storedContact.Username);
         if (target is not null)
         {
@@ -55,7 +55,7 @@ public class ContactsProvider : IContactsProvider
 
     public async Task RemoveContact(string username, IJSRuntime jsRuntime)
     {
-        List<StoredContact> contacts = await GetContacts(jsRuntime);
+        List<Contact> contacts = await GetContacts(jsRuntime);
         var target = contacts.FirstOrDefault(x => x.Username == username);
         if (target is not null)
         {
@@ -72,7 +72,7 @@ public class ContactsProvider : IContactsProvider
             await SaveContacts(new(), jSRuntime);
     }
 
-    public async Task SaveContacts(List<StoredContact> contacts, IJSRuntime jSRuntime)
+    public async Task SaveContacts(List<Contact> contacts, IJSRuntime jSRuntime)
     {
         string contactsSerialized = JsonSerializer.Serialize(contacts);
         await jSRuntime.InvokeVoidAsync("localStorage.setItem", "contacts", contactsSerialized);

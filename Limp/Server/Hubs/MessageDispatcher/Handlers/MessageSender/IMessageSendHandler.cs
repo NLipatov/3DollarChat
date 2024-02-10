@@ -1,7 +1,7 @@
 ﻿using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.SignalR;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender
 {
     public interface IMessageSendHandler
     {

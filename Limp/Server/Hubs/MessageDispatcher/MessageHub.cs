@@ -1,4 +1,4 @@
-﻿using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;

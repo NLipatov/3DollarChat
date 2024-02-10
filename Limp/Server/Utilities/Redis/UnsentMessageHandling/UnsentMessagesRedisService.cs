@@ -1,4 +1,5 @@
 ﻿using System.Text.Json;
+using Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
 using EthachatShared.Models.Message;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;

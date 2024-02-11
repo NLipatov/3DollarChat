@@ -10,11 +10,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
     public class ReliableMessageSender : IReliableMessageSender
     {
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
-        public readonly IMessageGateway _gateway;
-        private readonly ConcurrentDictionary<Guid, UnsentItem> unsentItems = new();
+        private readonly IMessageGateway _gateway;
+        private readonly ConcurrentDictionary<Guid, UnsentItem> _unsentItems = new();
         private readonly ConcurrentDictionary<Guid, bool> _acked = new();
-        private readonly object _lock = new();
-        private bool _isSending;
+        private volatile bool _isSending;
 
         public ReliableMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
         {
@@ -25,52 +24,46 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
         public void Enqueue(Message message)
         {
             var unsentMessage = message.ToUnsentMessage();
+            _unsentItems.TryAdd(message.Id, unsentMessage);
 
-            unsentItems.TryAdd(message.Id, unsentMessage);
-
-            _acked.TryAdd(message.Id, false);
-
-            lock (_lock)
+            if (!_isSending)
             {
-                if (!_isSending)
+                lock (_unsentItems)
                 {
-                    _isSending = true;
-                    Task.Run(() => StartSendingLoop());
+                    if (!_isSending)
+                    {
+                        _isSending = true;
+                        Task.Run(() => StartSendingLoop());
+                    }
                 }
             }
         }
 
         public void OnAckReceived(Guid messageId, string targetGroup)
         {
-            _acked.TryUpdate(messageId, true, false);
+            _acked.TryAdd(messageId, true);
         }
 
         private async Task StartSendingLoop()
         {
-            while (!unsentItems.IsEmpty)
+            while (!_unsentItems.IsEmpty)
             {
-                foreach (var key in unsentItems.Keys)
+                foreach (var kvp in _unsentItems)
                 {
-                    unsentItems.TryGetValue(key, out var unsentItem);
+                    var messageId = kvp.Key;
+                    var unsentItem = kvp.Value;
 
-                    if (unsentItem is null)
+                    if (_acked.TryGetValue(messageId, out var isAcked) && isAcked)
                     {
-                        unsentItems.Remove(key, out _);
-                        continue;
-                    }
-
-                    if (_acked.TryGetValue(unsentItem.Message.Id, out var isAcked) && isAcked)
-                    {
-                        unsentItems.Remove(key, out _);
-                        _acked.TryRemove(unsentItem.Message.Id, out _);
+                        _unsentItems.TryRemove(messageId, out _);
                         continue;
                     }
 
                     if (unsentItem.Backoff > TimeSpan.FromMinutes(10))
                     {
                         await _unsentMessagesRedisService.Save(unsentItem.Message);
-                        unsentItems.Remove(key, out _);
-                        _acked.TryRemove(unsentItem.Message.Id, out _);
+                        _unsentItems.TryRemove(messageId, out _);
+                        _acked.TryRemove(messageId, out _);
                         continue;
                     }
 
@@ -80,12 +73,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
                     }
 
                     await _gateway.SendAsync(unsentItem.Message);
-
                     IncreaseBackoff(unsentItem);
                 }
             }
 
-            lock (_lock)
+            lock (_unsentItems)
             {
                 _isSending = false;
             }

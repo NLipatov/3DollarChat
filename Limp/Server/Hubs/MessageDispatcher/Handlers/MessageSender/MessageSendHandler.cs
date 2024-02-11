@@ -1,19 +1,9 @@
-﻿using EthachatShared.Models.Message;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender
 {
     public class MessageSendHandler : IMessageSendHandler
     {
-        public async Task SendAsync(Message message, IHubCallerClients clients)
-        {
-            if (string.IsNullOrWhiteSpace(message.TargetGroup))
-                return;
-
-            //For personal chat we have Group with only one person in it
-            //Send to members of this single-membered Group a message
-            await clients.Group(message.TargetGroup).SendAsync("ReceiveMessage", message);
-        }
 
         public async Task MarkAsReaded(Guid messageId, string messageSender, IHubCallerClients clients)
         {

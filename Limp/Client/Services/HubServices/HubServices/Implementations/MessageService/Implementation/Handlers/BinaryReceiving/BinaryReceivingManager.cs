@@ -22,7 +22,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         {
             FileIdToBytes.TryAdd(fileId, new ClientPackage[metadata!.ChunksCount]);
         }
-
+        
         FileIdToBytes.AddOrUpdate(fileId,
             _ => [clientPackage],
             (_, existingData) =>
@@ -30,21 +30,21 @@ public class BinaryReceivingManager : IBinaryReceivingManager
                 existingData[clientPackage.Index] = clientPackage;
                 return existingData;
             });
-
+        
         FileIdToBytes.TryGetValue(fileId, out var packages);
-
+        
         return metadata?.ChunksCount == packages?.Where(x=>x is not null).Count();
     }
 
-    public ClientPackage[]? GetData(Guid fileId)
+    public ClientPackage[] PopData(Guid fileId)
     {
         FileIdToBytes.TryGetValue(fileId, out var data);
         FileIdToBytes.TryRemove(fileId, out var _);
         
-        return data;
+        return data ?? Array.Empty<ClientPackage>();
     }
 
-    public Metadata GetMetadata(Guid fileId)
+    public Metadata PopMetadata(Guid fileId)
     {
         FileIdToMetadata.TryGetValue(fileId, out var metadata);
         FileIdToMetadata.TryRemove(fileId, out var _);

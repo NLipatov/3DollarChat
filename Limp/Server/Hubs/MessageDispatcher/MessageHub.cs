@@ -1,4 +1,6 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -26,6 +28,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IWebPushSender _webPushSender;
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
+        private static IReliableMessageSender _reliableMessageSender { get; set; }
+        private static IHubContext<MessageHub> _context;
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
@@ -35,8 +39,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             IMessageSendHandler messageSender,
             IWebPushSender webPushSender,
             IUnsentMessagesRedisService unsentMessagesRedisService,
-            IUsernameResolverService usernameResolverService)
+            IUsernameResolverService usernameResolverService,
+            IHubContext<MessageHub> context)
         {
+            _context = context;
             _serverHttpClient = serverHttpClient;
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
@@ -45,6 +51,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _webPushSender = webPushSender;
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _usernameResolverService = usernameResolverService;
+
+            if (_reliableMessageSender is null)
+            {
+                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _unsentMessagesRedisService);
+            }
         }
 
         public override async Task OnConnectedAsync()
@@ -165,8 +176,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
             }
 
-            if(IsClientConnectedToHub(message.TargetGroup!))
-                await _messageSendHandler.SendAsync(message, Clients);
+            if (IsClientConnectedToHub(message.TargetGroup!))
+            {
+                _reliableMessageSender.Enqueue(message);
+            }
             else
                 await _unsentMessagesRedisService.Save(message);
 
@@ -202,7 +215,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             {
                 if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == receiver))
                 {
-                    await _messageSendHandler.SendAsync(packageMessage, Clients);
+                    _reliableMessageSender.Enqueue(packageMessage);
                 }
                 else
                 {
@@ -243,8 +256,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task MessageReceived(Guid messageId, string topicName)
-            => await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
+        public async Task MessageReceived(Guid messageId, string topicName, string targetGroup)
+        {
+            _reliableMessageSender.OnAckReceived(messageId, targetGroup);
+            await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
+        }
 
         /// <summary>
         /// Sends message to a message broker system

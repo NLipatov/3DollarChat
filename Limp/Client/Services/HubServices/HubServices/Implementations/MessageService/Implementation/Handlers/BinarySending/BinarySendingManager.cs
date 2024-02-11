@@ -2,8 +2,8 @@ using System.Collections.Concurrent;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using Ethachat.Client.Services.DataTransmission.PackageForming;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
@@ -100,7 +100,6 @@ public class BinarySendingManager : IBinarySendingManager
 
             var packageMessage = new Message
             {
-                Id = fileDataId,
                 Package = await EncryptPackage(package, message.TargetGroup),
                 Sender = message.Sender,
                 TargetGroup = message.TargetGroup,

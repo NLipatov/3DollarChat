@@ -7,6 +7,6 @@ public interface IBinaryReceivingManager
 {
     void StoreMetadata(Metadata metadata);
     bool StoreFile(Guid fileId, ClientPackage clientPackage);
-    ClientPackage[]? GetData(Guid fileId);
-    Metadata GetMetadata(Guid fileId);
+    ClientPackage[] PopData(Guid fileId);
+    Metadata PopMetadata(Guid fileId);
 }

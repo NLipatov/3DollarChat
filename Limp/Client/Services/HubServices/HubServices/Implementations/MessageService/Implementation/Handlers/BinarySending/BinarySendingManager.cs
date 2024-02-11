@@ -94,6 +94,7 @@ public class BinarySendingManager : IBinarySendingManager
             var package = new ClientPackage()
             {
                 Index = chunksCounter,
+                Total = totalChunks,
                 PlainB64Data = chunk,
                 FileDataid = fileDataId
             };
@@ -177,7 +178,8 @@ public class BinarySendingManager : IBinarySendingManager
             B64Data = cryptogram.Cyphertext,
             IV = cryptogram.Iv,
             FileDataid = package.FileDataid,
-            Index = package.Index
+            Index = package.Index,
+            Total = package.Total
         };
     }
 

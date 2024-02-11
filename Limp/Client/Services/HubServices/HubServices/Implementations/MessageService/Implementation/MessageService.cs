@@ -225,46 +225,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 await NegotiateOnAESAsync(message.Sender);
                         }
                     }
-                    else if (message.Type == MessageType.Metadata)
+                    else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
-                        _binaryReceivingManager.StoreMetadata(message.Metadata);
-                    }
-                    else if (message.Type == MessageType.DataPackage)
-                    {
-                        var decryptedB64 = await _cryptographyService.DecryptAsync<AESHandler>(new()
-                        {
-                            Cyphertext = message.Package.B64Data,
-                            Iv = message.Package.IV
-                        }, message.Sender);
-
-                        var isAllPackagesAreLoaded = _binaryReceivingManager.StoreFile(message.Package.FileDataid, new()
-                        {
-                            Index = message.Package.Index,
-                            PlainB64Data = decryptedB64.Cyphertext ?? throw new ApplicationException("Plain Base64 data cannot be an empty string."),
-                            FileDataid = message.Package.FileDataid
-                        });
-
-                        if (isAllPackagesAreLoaded)
-                        {
-                            var metadata = _binaryReceivingManager.PopMetadata(message.Package.FileDataid);
-                            var packages = _binaryReceivingManager.PopData(message.Package.FileDataid);
-                            var data = packages
-                                .SelectMany(x => Convert.FromBase64String(x.PlainB64Data))
-                                .ToArray();
-                            
-                            var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
-        
-                            await _messageBox.AddMessageAsync(new ClientMessage()
-                            {
-                                BlobLink = blobUrl,
-                                Id = metadata.DataFileId,
-                                Type = MessageType.BlobLink,
-                                TargetGroup = message.TargetGroup,
-                                Sender = message.Sender,
-                                Metadata = metadata
-                            }, isEncrypted: false);
-                            await NotifyAboutSuccessfullDataTransfer(metadata.DataFileId, message.Sender);
-                        }
+                        (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
+                        
+                        if (progressStatus.isTransmissionCompleted)
+                            await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId, message.Sender ?? throw new ArgumentException($"Invalid {message.Sender}"));
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {

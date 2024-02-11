@@ -1,16 +1,11 @@
 ﻿@using Ethachat.Client.Pages.AuthenticationChecks.Stages;
-@using Ethachat.Client.Services;
 @using Ethachat.Client.Services.AuthenticationService.Handlers
-@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
-@using Ethachat.Client.Services.HubServices.HubServices
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
-@using Ethachat.Client.Services.JWTReader;
 @using Ethachat.Client.Services.LocalStorageService
 @using EthachatShared.Models.Authentication.Models
-@using System.Collections.Concurrent
 @inject NavigationManager NavigationManager
 @inject IAuthService AuthService
 @inject IMessageService MessageService

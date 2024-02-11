@@ -15,6 +15,21 @@
                     <i class="bi bi-key-fill key-icon" data-bs-toggle="tooltip" title="AES key for secure communication"></i>
                 </div>
             }
+            @if (ItemModel.Icons.Any())
+            {
+                @foreach (var icon in ItemModel.Icons)
+                {
+                    <Icon 
+                        Name=@icon.Name
+                        Class=@icon.Class
+                        Attributes=@icon.Attributes
+                        Color=@icon.Color
+                        Size=@icon.Size
+                        Style=@icon.Style
+                        ElementId=@icon.ElementId
+                        CustomIconName=@icon.CustomIconName/>
+                }
+            }
             @if (ItemModel.ShowBadge)
             {
                 <Badge Style=@ItemModel.BadgeModel.InlineStyles>@ItemModel.BadgeModel.Text</Badge>

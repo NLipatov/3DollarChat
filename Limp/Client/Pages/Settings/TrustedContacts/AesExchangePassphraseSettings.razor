@@ -1,0 +1,65 @@
+@page "/settings/aes-exchange-settings"
+@using Ethachat.Client.Pages.Contacts.Models
+@using Ethachat.Client.Services.ContactsProvider
+@inject IContactsProvider _contactsProvider;
+@inject IJSRuntime _JSRuntime
+
+<div class="p-2">
+    <h3>AES key exchange settings</h3>
+
+    <div class="trusted-contacts-group">
+        @if (!_contacts.Any())
+        {
+            <Callout Type="CalloutType.Info">
+                <span>
+                    No contacts. <a href="/contacts">Add someone</a> to assign a passphrase
+                </span>
+            </Callout>
+        }
+        @foreach (var contact in _contacts.OrderBy(x => x.Username))
+        {
+            <Card Class="trusted-contacts">
+                <CardHeader>
+                    @contact.Username
+                    @if (contact.IsTrusted)
+                    {
+                        <Icon Name="IconName.PersonCheckFill" Color="IconColor.Success"/>
+                    }
+                    else
+                    {
+                        <Icon Name="IconName.PersonFillExclamation" Color="IconColor.Danger"/>
+                    }
+                </CardHeader>
+                <CardBody>
+                    Passphrase: <input placeholder="Set a trust passphrase" @bind="@contact.TrustedPassphrase" @bind:event="oninput"/>
+                </CardBody>
+                @if (usernameToPassphrase[contact.Username] != contact.TrustedPassphrase)
+                {
+                    <CardFooter>
+                        <Button
+                            Color="ButtonColor.Success"
+                            @onclick="async () => { await _contactsProvider.UpdateContact(contact, _JSRuntime); usernameToPassphrase[contact.Username] = contact.TrustedPassphrase; }">
+                            Apply
+                        </Button>
+                    </CardFooter>
+                }
+            </Card>
+        }
+    </div>
+</div>
+
+@code {
+    private Dictionary<string, string> usernameToPassphrase = new();
+    private List<Contact> _contacts { get; set; } = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _contacts = await _contactsProvider.GetContacts(_JSRuntime);
+        
+        foreach (var contact in _contacts)
+            usernameToPassphrase.Add(contact.Username, contact.TrustedPassphrase);
+
+        await base.OnInitializedAsync();
+    }
+
+}

@@ -1,12 +1,15 @@
 using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
-using Ethachat.Server.Hubs.MessageDispatcher.Helpers.MessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Services.LogService.Implementations.Seq;
+using Ethachat.Server.Utilities.Redis;
+using Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
@@ -41,6 +44,7 @@ builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisService>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
+builder.Services.AddTransient<IRedisConnectionConfigurer, RedisConnectionConfigurer>();
 
 var app = builder.Build();
 

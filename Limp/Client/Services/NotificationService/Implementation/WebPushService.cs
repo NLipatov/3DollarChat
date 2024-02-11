@@ -5,7 +5,6 @@ using Ethachat.Client.Services.NotificationService.Implementation.Types;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.WebPushNotification;
-using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 

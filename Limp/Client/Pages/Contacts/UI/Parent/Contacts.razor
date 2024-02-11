@@ -41,6 +41,7 @@
                                 IsActive = x.IsOnline, 
                                 IsEncryptionSettedUp = x.IsKeyReady, 
                                 ItemName = x.Username,
+                                Icons = [x.IsTrusted ? new Icon{Name=IconName.ShieldFillCheck, Color=IconColor.Success} : new Icon{Name=IconName.ShieldFill, Color=IconColor.Danger}],
                                 BadgeModel = GetContactBadge(x),
                                 ShowBadge = x.UnreadedMessagesCount > 0
                             })
@@ -131,7 +132,10 @@
 
     private async Task HandleContactAddition(string username)
     {
-        await _contactsProvider.AddContact(username, _jSRuntime);
+        await _contactsProvider.AddContact(new Contact
+        {
+            Username = username,
+        }, _jSRuntime);
         await _usersService.ActualizeConnectedUsersAsync();
         await contactAdditionModal!.HideModalAsync();
     }
@@ -161,20 +165,17 @@
     {
         TryUpdateLastReceivedContacts(updatedUserConnections);
 
-        List<string> contacts = await _contactsProvider.GetContacts(_jSRuntime);
-        ContactsList = contacts.Select(contact =>
-        new Contact
-            {
-                Username = contact,
-                IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == contact),
-                LastMessage = DateTime.UtcNow
-            }
-        ).ToList();
-
-        foreach (Contact contact in ContactsList)
+        ContactsList = await _contactsProvider.GetContacts(_jSRuntime);
+        foreach (var contact in ContactsList)
         {
-            await UpdateContact(contact.Username);
+            contact.IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username);
+            contact.LastMessage = _messageBox.Messages.MaxBy(x=>x.DateSent)?.DateSent ?? DateTime.UtcNow;
+            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+            contact.UnreadedMessagesCount = _messageBox.Messages.Count(x => x.Sender == contact.Username && !x.IsSeen);
         }
+
+        foreach (var contact in ContactsList)
+            await UpdateContact(contact.Username);
     }
 
     private async Task UpdateContact(string contactUsername)

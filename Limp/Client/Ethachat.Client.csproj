@@ -30,11 +30,11 @@
   <ItemGroup>
     <PackageReference Include="Blazor.Bootstrap" Version="1.10.0" />
     <PackageReference Include="Blazored.Toast" Version="4.1.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.0" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.0" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.0" />
-    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.0.3" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.1" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.1" />
+    <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.3.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -46,7 +46,9 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="HubConnectionManagement\ConnectionHandlers\MessageDispatcher\" />
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
+    <Folder Include="Services\DataTransmission\" />
   </ItemGroup>
 
 </Project>

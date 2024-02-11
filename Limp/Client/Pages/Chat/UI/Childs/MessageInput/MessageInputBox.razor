@@ -1,24 +1,12 @@
-﻿@using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions
-@using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
+﻿@using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
-@using System.Text
-@using Ethachat.Client.ClientOnlyModels
 @using Ethachat.Client.Cryptography
-@using Ethachat.Client.Cryptography.CryptoHandlers
-@using Ethachat.Client.Cryptography.CryptoHandlers.Handlers
-@using Ethachat.Client.Cryptography.KeyStorage
 @using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
-@using Ethachat.Client.Services.DataTransmission.PackageForming
-@using Ethachat.Client.Services.DataTransmission.PackageForming.Models
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
-@using EthachatShared.Encryption
 @using EthachatShared.Models.Message
-@using EthachatShared.Models.Message.DataTransfer
-@using System.Collections
-@using System.Data.Common
-@using Ethachat.Client.Services.DataTransmission.PackageForming.BinaryDataBoxService
-@using Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
@@ -27,7 +15,7 @@
 @inject IPackageMultiplexerService PackageMultiplexerService
 @inject ICallbackExecutor CallbackExecutor
 @inject ICryptographyService CryptographyService
-@inject IBinaryDataBox BinaryDataBox
+@inject IBinaryReceivingManager BinaryReceivingManager
 
 <div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput"/>
@@ -77,7 +65,13 @@
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await Split(e.File);
+        await _messageService.SendMessage(new ()
+        {
+            BrowserFile = e.File,
+            Type = MessageType.BrowserFileMessage,
+            TargetGroup = TopicName,
+            Sender = MyUsername
+        });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
@@ -91,102 +85,14 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await _messageService.SendText(MessageInput, TopicName, MyUsername);
+            await _messageService.SendMessage(new()
+            {
+                PlainText = MessageInput,
+                TargetGroup = TopicName,
+                Type = MessageType.TextMessage
+            });
         }
 
         MessageInput = string.Empty;
-    }
-
-    private async Task Split(IBrowserFile file)
-    {
-        var fileDataId = Guid.NewGuid();
-        var chunkableBinary = await PackageMultiplexerService.SplitAsync(file);
-        int totalChunks = chunkableBinary.Count;
-        var metadataMessage = GenerateMetadataMessage(fileDataId, file.ContentType, file.Name, totalChunks);
-        
-        await _messageBox.AddMessageAsync(metadataMessage, false);
-        await _messageService.SendMessage(metadataMessage);
-
-        await AddBinaryAsBlob(metadataMessage.Metadata, file);
-        
-        int chunksCounter = 0;
-        await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
-        {
-            var cryptogram = await CryptographyService.EncryptAsync<AESHandler>(new()
-            {
-                Cyphertext = chunk
-            }, TopicName);
-
-            var package = new ClientPackage()
-            {
-                Index = chunksCounter,
-                B64Data = cryptogram.Cyphertext,
-                IV = cryptogram.Iv,
-                FileDataid = fileDataId,
-                PlainB64Data = chunk
-            };
-
-            await _messageService.SendMessage(new()
-            {
-                ClientFiles = new List<ClientDataFile>
-                {
-                    new()
-                    {
-                        Id = fileDataId
-                    }
-                },
-                Package = package,
-                Type = MessageType.DataPackage,
-                TargetGroup = TopicName,
-                Sender = MyUsername
-            });
-
-
-            chunksCounter++;
-            decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
-            CallbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
-        }
-    }
-
-    private ClientMessage GenerateMetadataMessage(Guid fileDataId, string contentType, string fileName, int totalChunks)
-    {
-        var metadataMessage = new ClientMessage
-        {
-            Type = MessageType.Metadata,
-            Metadata = new()
-            {
-                DataFileId = fileDataId,
-                ContentType = contentType,
-                Filename = fileName,
-                ChunksCount = totalChunks
-            },
-            Sender = MyUsername,
-            TargetGroup = TopicName
-        };
-
-        return metadataMessage;
-    }
-
-    private async Task AddBinaryAsBlob(Metadata metadata, IBrowserFile file)
-    {
-        string blobUrl = "";
-        await using (var fileStream = file.OpenReadStream(long.MaxValue))
-        {
-            using (var memoryStream = new MemoryStream())
-            {
-                await fileStream.CopyToAsync(memoryStream);
-                blobUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", memoryStream.ToArray(), metadata.ContentType);
-            }
-        }
-        
-        await _messageBox.AddMessageAsync(new ClientMessage()
-        {
-            BlobLink = blobUrl,
-            Id = metadata.DataFileId,
-            Type = MessageType.BlobLink,
-            TargetGroup = TopicName,
-            Sender = MyUsername,
-            Metadata = metadata
-        }, isEncrypted: false);
     }
 }

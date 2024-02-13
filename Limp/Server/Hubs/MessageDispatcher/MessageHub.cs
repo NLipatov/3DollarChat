@@ -1,6 +1,6 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -13,7 +13,6 @@ using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher
@@ -28,7 +27,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IWebPushSender _webPushSender;
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
-        private static IReliableMessageSender _reliableMessageSender { get; set; }
+        private static ReliableMessageSender _reliableMessageSender;
         private static IHubContext<MessageHub> _context;
 
         public MessageHub
@@ -129,14 +128,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
-                if (m.Package is not null)
-                {
-                    await DispatchData(m.Package, m.TargetGroup, m.Sender);
-                }
-                else
-                {
-                    await Dispatch(m);
-                }
+                await Dispatch(m);
             }
         }
 
@@ -199,39 +191,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 
                 await _webPushSender.SendPush($"You've got a new {contentDescription} from {message.Sender}",
                     $"/user/{message.Sender}", message.TargetGroup);
-            }
-        }
-
-        public async Task DispatchData(Package package, string receiver, string sender)
-        {
-            var packageMessage = new Message
-            {
-                Sender = sender,
-                TargetGroup = receiver,
-                Package = package,
-                Type = MessageType.DataPackage
-            };
-            try
-            {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == receiver))
-                {
-                    _reliableMessageSender.Enqueue(packageMessage);
-                }
-                else
-                {
-                    await _unsentMessagesRedisService.Save(packageMessage);
-
-                    if (package.Index == 0)
-                        await _webPushSender.SendPush($"You've got a new file from {sender}", $"/user/{sender}",
-                            receiver);
-                }
-
-                await Clients.Caller.SendAsync("PackageRegisteredByHub", package.FileDataid, package.Index);
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException(
-                    $"{nameof(MessageHub)}.{nameof(DispatchData)}: could not dispatch a data: {e.Message}");
             }
         }
 

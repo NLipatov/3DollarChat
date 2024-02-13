@@ -39,6 +39,7 @@ async function AESEncryptText(message, key) {
     const encoded = new TextEncoder().encode(message);
     // The iv must never be reused with a given key.
     iv = window.crypto.getRandomValues(new Uint8Array(12));
+    ivDictionary[message] = iv;
     const ciphertext = await window.crypto.subtle.encrypt(
         {
             name: "AES-GCM",
@@ -55,7 +56,7 @@ async function AESDecryptText(message, key) {
     return new TextDecoder().decode(await window.crypto.subtle.decrypt(
         {
             name: "AES-GCM",
-            iv: iv
+            iv: ivDictionary[message]
         },
         await importSecretKey(key),
         str2ab(message))
@@ -99,10 +100,15 @@ async function AESDecryptData(encryptedBase64String, key) {
     return decryptedBase64String;
 }
 
-function ExportIV() {
-    return ab2str(iv);
+let ivDictionary = {};
+function ImportIV(ivArrayBufferAsString, key) {
+    ivDictionary[key] = str2ab(ivArrayBufferAsString);
 }
 
-function ImportIV(ivArrayBufferAsString) {
-    iv = str2ab(ivArrayBufferAsString);
+function ExportIV(key) {
+    return ab2str(ivDictionary[key]);
+}
+
+function DeleteIv(key) {
+    delete ivDictionary[key];
 }

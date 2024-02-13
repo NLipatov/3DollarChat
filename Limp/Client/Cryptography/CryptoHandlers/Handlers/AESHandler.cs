@@ -8,6 +8,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
     public class AESHandler : ICryptoHandler
     {
         private readonly IJSRuntime _jSRuntime;
+        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public AESHandler(IJSRuntime jSRuntime)
         {
@@ -15,55 +16,87 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
         }
         public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
-                throw new ArgumentException("Please provide an IV");
-
-            await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv);
-
-            Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
-            if (key == null)
-                throw new ApplicationException("RSA Public key was null");
-
-            await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
-            
-            string decryptedMessage = string.Empty;
-            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+            await _semaphore.WaitAsync();
+            try
             {
-                decryptedMessage = await _jSRuntime
-                    .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
+                if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
+                    throw new ArgumentException("Please provide an IV");
+
+                await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv, cryptogramm.Cyphertext);
+
+                Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
+                if (key == null)
+                    throw new ApplicationException("RSA Public key was null");
+
+                await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
+
+                string decryptedMessage = string.Empty;
+                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                {
+                    decryptedMessage = await _jSRuntime
+                        .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
+                }
+
+                var result = new Cryptogramm()
+                {
+                    Cyphertext = decryptedMessage,
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext)
+                };
+
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+
+                return result;
             }
-
-            return new Cryptogramm()
+            catch (Exception ex)
             {
-                Cyphertext = decryptedMessage,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV")
-            };
+                throw new ApplicationException(ex.Message, ex);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
 
         public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
-            string? aesKey = string.Empty;
-
-            if (!string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
-                aesKey = PublicKeyToEncryptWith;
-            else if (!string.IsNullOrWhiteSpace(contact))
-                aesKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact)?.Value?.ToString();
-
-            if (string.IsNullOrWhiteSpace(aesKey))
-                throw new ApplicationException("Could not resolve a AES key for encryption.");
-
-            string encryptedText = string.Empty;
-            if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+            await _semaphore.WaitAsync();
+            try
             {
-                encryptedText = await _jSRuntime
-                .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
+                string? aesKey = string.Empty;
+
+                if (!string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
+                    aesKey = PublicKeyToEncryptWith;
+                else if (!string.IsNullOrWhiteSpace(contact))
+                    aesKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact)?.Value?.ToString();
+
+                if (string.IsNullOrWhiteSpace(aesKey))
+                    throw new ApplicationException("Could not resolve a AES key for encryption.");
+
+                string encryptedText = string.Empty;
+                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                {
+                    encryptedText = await _jSRuntime
+                        .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
+                }
+
+                var result = new Cryptogramm
+                {
+                    Cyphertext = encryptedText,
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
+                };
+                
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+
+                return result;
             }
-
-            return new Cryptogramm
+            catch (Exception ex)
             {
-                Cyphertext = encryptedText,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
-            };
+                throw new ApplicationException(ex.Message, ex);
+            }
+            finally
+            {
+                _semaphore.Release();
+            }
         }
     }
 }

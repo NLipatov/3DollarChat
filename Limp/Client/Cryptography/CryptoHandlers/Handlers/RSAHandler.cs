@@ -23,11 +23,15 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ApplicationException("Could not encrypt text.");
 
-            return new Cryptogramm
+            var result = new Cryptogramm
             {
                 Cyphertext = encryptedMessage,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
             };
+            
+            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+
+            return result;
         }
 
         public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
@@ -38,11 +42,15 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             string decryptedMessage = await _jSRuntime
                 .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
 
-            return new Cryptogramm()
+            var result = new Cryptogramm()
             {
                 Cyphertext = decryptedMessage,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV"),
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
             };
+            
+            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+
+            return result;
         }
     }
 }

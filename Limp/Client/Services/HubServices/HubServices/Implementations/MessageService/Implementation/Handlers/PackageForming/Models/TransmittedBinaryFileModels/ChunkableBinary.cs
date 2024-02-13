@@ -1,4 +1,4 @@
-namespace Ethachat.Client.Services.DataTransmission.PackageForming.Models.TransmittedBinaryFileModels;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming.Models.TransmittedBinaryFileModels;
 
 public record ChunkableBinary(MemoryStream DataStream, int MaxChunkSizeInKb = 15) : IChunkableBinary
 {

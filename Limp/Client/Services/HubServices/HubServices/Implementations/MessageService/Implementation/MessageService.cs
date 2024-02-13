@@ -1,6 +1,5 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService.Handlers;

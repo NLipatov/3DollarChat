@@ -8,7 +8,6 @@ public static class UnsentMessageExtensions
     {
         return new()
         {
-            ACK = false,
             Message = message
         };
     }

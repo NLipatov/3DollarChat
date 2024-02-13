@@ -5,17 +5,17 @@ using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Mode
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Text.Implementation
 {
-    public class ReliableMessageSender : IReliableMessageSender
+    public class ReliableTextMessageSender : IReliableTextMessageSender
     {
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IMessageGateway _gateway;
-        private readonly ConcurrentDictionary<Guid, UnsentItem> _unsentItems = new();
-        private readonly ConcurrentDictionary<Guid, bool> _acked = new();
+        private ConcurrentDictionary<Guid, UnsentItem> _unsentItems = new();
+        private ConcurrentDictionary<Guid, bool> _acked = new();
         private volatile bool _isSending;
 
-        public ReliableMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
+        public ReliableTextMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
         {
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _gateway = gateway;
@@ -28,13 +28,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
 
             if (!_isSending)
             {
-                lock (_unsentItems)
+                if (!_isSending)
                 {
-                    if (!_isSending)
-                    {
-                        _isSending = true;
-                        Task.Run(() => StartSendingLoop());
-                    }
+                    _isSending = true;
+                    Task.Run(() => StartSendingLoop());
                 }
             }
         }
@@ -77,10 +74,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender
                 }
             }
 
-            lock (_unsentItems)
-            {
-                _isSending = false;
-            }
+            _isSending = false;
         }
 
         private void IncreaseBackoff(UnsentItem item)

@@ -154,7 +154,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private void RegisterHubEventHandlers()
         {
             if (hubConnection is null)
-                throw new NullReferenceException($"Could not register event handlers - hub was null.");
+                throw new NullReferenceException("Could not register event handlers - hub was null.");
 
             hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers",
                 updatedTrackedUserConnections =>
@@ -171,7 +171,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
                 _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
-            hubConnection.On<AuthResult>("OnAccessTokenInvalid", (authResult) =>
+            hubConnection.On<AuthResult>("OnAccessTokenInvalid", authResult =>
             {
                 NavigationManager.NavigateTo("signin");
             });

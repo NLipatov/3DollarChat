@@ -8,7 +8,6 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
     public class AESHandler : ICryptoHandler
     {
         private readonly IJSRuntime _jSRuntime;
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1);
 
         public AESHandler(IJSRuntime jSRuntime)
         {
@@ -16,7 +15,6 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
         }
         public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            await _semaphore.WaitAsync();
             try
             {
                 if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
@@ -51,15 +49,10 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             {
                 throw new ApplicationException(ex.Message, ex);
             }
-            finally
-            {
-                _semaphore.Release();
-            }
         }
 
         public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
-            await _semaphore.WaitAsync();
             try
             {
                 string? aesKey = string.Empty;
@@ -92,10 +85,6 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             catch (Exception ex)
             {
                 throw new ApplicationException(ex.Message, ex);
-            }
-            finally
-            {
-                _semaphore.Release();
             }
         }
     }

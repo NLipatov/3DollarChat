@@ -175,12 +175,13 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             else
                 await _unsentMessagesRedisService.Save(message);
 
-            await SendNotificationAsync(message);
+            if (message.Type is not MessageType.DataPackage)
+                await SendNotificationAsync(message);
         }
 
         private async Task SendNotificationAsync(Message message)
         {
-            var isReceiverOnline = IsClientConnectedToHub(message.TargetGroup);
+            var isReceiverOnline = IsClientConnectedToHub(message.TargetGroup!);
             if (!isReceiverOnline)
             {
                 string contentDescription = message.Type switch
@@ -215,10 +216,15 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task MessageReceived(Guid messageId, string topicName, string targetGroup)
+        public async Task OnAck(Message syncMessage)
         {
-            _reliableMessageSender.OnAckReceived(messageId, targetGroup);
-            await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
+            _reliableMessageSender.OnAckReceived(syncMessage);
+        }
+        
+        public async Task MessageReceived(Message syncMessage)
+        {
+            _reliableMessageSender.OnAckReceived(syncMessage);
+            await _messageSendHandler.MarkAsReceived(syncMessage.SyncItem.MessageId, syncMessage.Sender!, Clients);
         }
 
         /// <summary>

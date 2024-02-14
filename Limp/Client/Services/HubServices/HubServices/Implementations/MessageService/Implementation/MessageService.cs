@@ -20,6 +20,7 @@ using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.TransferStatus;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -184,8 +185,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (message.Sender != "You")
                 {
-                    await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender, message.TargetGroup);
-                    
                     if (hubConnection.State != HubConnectionState.Connected)
                     {
                         await hubConnection.StopAsync();
@@ -217,6 +216,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
                                 clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
                             await _messageBox.AddMessageAsync(clientMessage, false);
+                            
+                            await (await GetHubConnectionAsync()).SendAsync("MessageReceived", new Message()
+                            {
+                                SyncItem = new SyncItem()
+                                {
+                                    MessageId = message.Id,
+                                },
+                                Type = MessageType.SyncItem,
+                                Sender = message.Sender,
+                                TargetGroup = message.TargetGroup
+                            });
                         }
                         else
                         {
@@ -226,6 +236,31 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
+                        if (message.Type is MessageType.Metadata)
+                        {
+                            await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
+                            {
+                                Type = message.Type,
+                                SyncItem = new SyncItem
+                                {
+                                    Index = -1,
+                                    FileId = message.Metadata!.DataFileId
+                                }
+                            });
+                        }
+                        else
+                        {
+                            await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
+                            {
+                                Type = message.Type,
+                                SyncItem = new SyncItem
+                                {
+                                    Index = message.Package!.Index,
+                                    FileId = message.Package.FileDataid
+                                }
+                            });
+                        }
+                        
                         (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
                         
                         if (progressStatus.isTransmissionCompleted)

@@ -4,7 +4,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 {
     public interface IMessageService : IHubService
     {
-        bool IsConnected();
         Task NegotiateOnAESAsync(string partnerUsername);
         Task SendMessage(ClientMessage message);
         Task RequestPartnerToDeleteConvertation(string targetGroup);

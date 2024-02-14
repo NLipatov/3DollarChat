@@ -46,7 +46,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IContactsProvider _contactsProvider;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
-        public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
         private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
 
         private HubConnection? hubConnection { get; set; }

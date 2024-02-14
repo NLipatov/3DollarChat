@@ -15,7 +15,6 @@ public class ExceptionLoggingService : IExceptionLoggingService
     private readonly NavigationManager _navigationManager;
     private HubConnection hubConnection;
     private bool _isConnectionClosedCallbackSet = false;
-    public bool IsConnected() => hubConnection.State is HubConnectionState.Connected;
     public async Task LogException(Exception exception)
     {
         var exceptionLog = new ExceptionLog

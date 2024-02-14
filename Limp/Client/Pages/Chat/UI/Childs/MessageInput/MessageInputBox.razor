@@ -25,7 +25,7 @@
         <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
     </label>
 
-    <button disabled="@(!_messageService.IsConnected())" @onclick="async () => await SendMessage()">Send</button>
+    <button @onclick="async () => await SendMessage()">Send</button>
 </div>
 
 <Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">

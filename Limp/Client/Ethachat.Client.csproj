@@ -48,7 +48,6 @@
   <ItemGroup>
     <Folder Include="HubConnectionManagement\ConnectionHandlers\MessageDispatcher\" />
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
-    <Folder Include="Services\DataTransmission\" />
   </ItemGroup>
 
 </Project>

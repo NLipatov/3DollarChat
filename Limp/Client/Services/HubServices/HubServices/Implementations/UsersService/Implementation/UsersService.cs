@@ -41,8 +41,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
-        
-        public bool IsConnected() => HubConnectionInstance?.State == HubConnectionState.Connected;
 
         private void InitializeHubConnection()
         {

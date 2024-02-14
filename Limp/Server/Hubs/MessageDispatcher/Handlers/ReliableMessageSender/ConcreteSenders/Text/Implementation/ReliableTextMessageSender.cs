@@ -21,7 +21,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _gateway = gateway;
         }
 
-        public void Enqueue(Message message)
+        public async Task Enqueue(Message message)
         {
             var unsentMessage = message.ToUnsentMessage();
             _unsentItems.TryAdd(message.Id, unsentMessage);
@@ -39,6 +39,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         public void OnAckReceived(Guid messageId, string targetGroup)
         {
             _acked.TryAdd(messageId, true);
+        }
+
+        public void OnAckReceived(Message syncMessage)
+        {
+            _acked.TryAdd(syncMessage.SyncItem!.MessageId, true);
         }
 
         private async Task StartSendingLoop()

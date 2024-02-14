@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models.Extentions;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;
 
@@ -11,9 +12,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
     {
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IMessageGateway _gateway;
-        private ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> FileIdToUnsentItems = new();
-        private ConcurrentDictionary<Guid, Guid> messageIdToFileId = new();
-        private volatile bool _isSending;
+        private readonly ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> FileIdToUnsentItems = new();
+        private readonly ConcurrentDictionary<Guid, HashSet<int>> _ackedChunks = new();
+        private readonly ConcurrentDictionary<Guid, DateTime> _lastAck = new();
+        private const int METADATA_FILES_COUNT = 1;
 
         public ReliableBinaryMessageSender(IMessageGateway gateway,
             IUnsentMessagesRedisService unsentMessagesRedisService)
@@ -22,28 +24,54 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _gateway = gateway;
         }
 
-        public void Enqueue(Message message)
+        public async Task Enqueue(Message message)
         {
             var fileId = GetFileId(message);
             var unsentMessage = message.ToUnsentMessage();
 
-            messageIdToFileId.TryAdd(message.Id, fileId);
-
             FileIdToUnsentItems.AddOrUpdate(fileId,
-                _ => [unsentMessage],
+                _ => new ConcurrentBag<UnsentItem> { unsentMessage },
                 (_, existingData) =>
                 {
                     existingData.Add(unsentMessage);
                     return existingData;
                 });
 
-            if (!_isSending)
+            await Deliver(message);
+        }
+
+        private async Task Deliver(Message message, TimeSpan? backoff = null)
+        {
+            var fileId = GetFileId(message);
+            
+            if(!FileIdToUnsentItems.TryGetValue(fileId, out var unsentItems))
+                return;
+
+            if (!HasActiveConnections(message.TargetGroup!) ||
+                backoff.HasValue && backoff.Value > TimeSpan.FromMinutes(5))
             {
-                if (!_isSending)
-                {
-                    _isSending = true;
-                    Task.Run(() => StartSendingLoop());
-                }
+                await PassToLongTermSender(fileId);
+                return;
+            }
+
+            _ackedChunks.TryGetValue(fileId, out var acked);
+
+            unsentItems ??= new();
+
+            if (unsentItems.Any() && acked?.Count == GetChunksCount(unsentItems.First().Message) + METADATA_FILES_COUNT)
+            {
+                Remove(fileId);
+                return;
+            }
+
+            if (!(acked ?? new()).Contains(GetKey(message)))
+            {
+                await _gateway.SendAsync(message);
+
+                backoff = IncreaseBackoff(GetKey(message) + 1, backoff);
+            
+                await Task.Delay(backoff ?? TimeSpan.Zero);
+                await Deliver(message, backoff);
             }
         }
 
@@ -57,67 +85,82 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             };
         }
 
-        public void OnAckReceived(Guid messageId, string targetGroup)
+        public void OnAckReceived(Message syncMessage)
         {
-            messageIdToFileId.TryGetValue(messageId, out var fileId);
-            FileIdToUnsentItems.TryGetValue(fileId, out var unsentItems);
+            var fileId = syncMessage.SyncItem?.FileId ?? Guid.Empty;
+            if (fileId == Guid.Empty) return;
 
-            unsentItems!.First(x => x.Message.Id == messageId).Ack = true;
+            _ackedChunks.AddOrUpdate(fileId,
+                _ => new HashSet<int>(syncMessage.SyncItem!.Index),
+                (_, existingData) =>
+                {
+                    existingData.Add(syncMessage.SyncItem!.Index);
+
+                    return existingData;
+                });
+
+            _ackedChunks.TryGetValue(fileId, out var acked);
+            
+            _lastAck.AddOrUpdate(fileId,
+                _ => DateTime.UtcNow,
+                (_, exisitingData) =>
+                {
+                    return DateTime.UtcNow;
+                });
         }
 
-        private async Task StartSendingLoop()
+        private int GetChunksCount(Message message)
         {
-            while (!FileIdToUnsentItems.IsEmpty)
+            return message.Type switch
             {
-                foreach (var kvp in FileIdToUnsentItems)
-                {
-                    var fileId = kvp.Key;
-                    var unsentItems = kvp.Value;
+                MessageType.DataPackage => message.Package!.Total,
+                MessageType.Metadata => message.Metadata!.ChunksCount,
+                _ => throw new ArgumentException($"Unhandled type passed in")
+            };
+        }
 
-                    if (unsentItems.Any(x => x.Backoff > TimeSpan.FromMinutes(10)))
-                    {
-                        FileIdToUnsentItems.TryGetValue(fileId, out var items);
-                        foreach (var item in items)
-                        {
-                            await _unsentMessagesRedisService.Save(item.Message);
-                            messageIdToFileId.TryRemove(item.Message.Id, out _);
-                        }
+        private int GetKey(Message message)
+        {
+            return message.Type switch
+            {
+                MessageType.DataPackage => message.Package!.Index,
+                MessageType.Metadata => -1,
+                _ => throw new ArgumentException($"Unhandled type passed in")
+            };
+        }
 
-                        FileIdToUnsentItems.TryRemove(fileId, out var _);
-                        continue;
-                    }
-
-                    if (unsentItems.All(x => x.Ack))
-                    {
-                        FileIdToUnsentItems.TryRemove(fileId, out var _);
-                        foreach (var item in unsentItems)
-                        {
-                            messageIdToFileId.TryRemove(item.Message.Id, out var _);
-                        }
-
-                        continue;
-                    }
-
-                    foreach (var item in unsentItems.Where(x => !x.Ack))
-                    {
-                        if (item.ResendAfter > DateTime.UtcNow)
-                        {
-                            continue;
-                        }
-
-                        await _gateway.SendAsync(item.Message);
-                        IncreaseBackoff(item);
-                    }
-                }
+        private TimeSpan IncreaseBackoff(int index = 1, TimeSpan? backoff = null)
+        {
+            if (backoff.HasValue)
+            {
+                if (backoff.Value < TimeSpan.FromSeconds(Math.Max(index, 1) * 5))
+                    backoff.Value.Multiply(1.5);
             }
 
-            _isSending = false;
+            return TimeSpan.FromSeconds(Math.Max(index, 1) * 1);
         }
 
-        private void IncreaseBackoff(UnsentItem item)
+        private async Task PassToLongTermSender(Guid fileId)
         {
-            item.Backoff = item.Backoff.Multiply(1.5);
-            item.ResendAfter = DateTime.UtcNow.Add(item.Backoff);
+            FileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
+            foreach (var unsentItem in unsentItems ?? new())
+            {
+                await _unsentMessagesRedisService.Save(unsentItem.Message);
+            }
+
+            Remove(fileId);
         }
+
+        private void Remove(Guid fileId)
+        {
+            FileIdToUnsentItems.TryRemove(fileId, out _);
+            _ackedChunks.Remove(fileId, out _);
+            _lastAck.TryRemove(fileId, out var _);
+        }
+
+        private bool HasActiveConnections(string username)
+            => InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => x.Key == username)
+                .SelectMany(x => x.Value).Any();
     }
 }

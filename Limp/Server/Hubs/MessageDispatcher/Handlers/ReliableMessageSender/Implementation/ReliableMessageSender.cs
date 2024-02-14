@@ -28,12 +28,12 @@ public class ReliableMessageSender : IReliableMessageSender
         }
     }
 
-    public void Enqueue(Message message)
+    public async Task Enqueue(Message message)
     {
         try
         {
             var targetSender = GetTargetSender(message.Type);
-            targetSender.Enqueue(message);
+            await targetSender.Enqueue(message);
             _messageIdToType.TryAdd(message.Id, message.Type);
         }
         catch (Exception e)
@@ -43,12 +43,11 @@ public class ReliableMessageSender : IReliableMessageSender
         }
     }
 
-    public void OnAckReceived(Guid messageId, string targetGroup)
+    public void OnAckReceived(Message syncMessage)
     {
-        _messageIdToType.TryGetValue(messageId, out var type);
-        GetTargetSender(type).OnAckReceived(messageId, targetGroup);
+        GetTargetSender(syncMessage.Type).OnAckReceived(syncMessage);
     }
-    
+
     private IReliableMessageSender GetTargetSender(MessageType type)
     {
         return type switch

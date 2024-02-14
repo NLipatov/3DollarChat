@@ -1,7 +1,7 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models.Extentions;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models.Extentions;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;

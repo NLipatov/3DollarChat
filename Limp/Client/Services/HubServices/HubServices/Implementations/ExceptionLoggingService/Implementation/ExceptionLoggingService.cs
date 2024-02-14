@@ -1,5 +1,5 @@
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using EthachatShared.Constants;
 using EthachatShared.Models.Logging.ExceptionLogging;
 using Microsoft.AspNetCore.Components;

@@ -1,6 +1,6 @@
 ﻿using Microsoft.AspNetCore.SignalR.Client;
 
-namespace Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+namespace Ethachat.Client.Services.HubServices.HubServices.Builders;
 
 public static class HubServiceConnectionBuilder
 {

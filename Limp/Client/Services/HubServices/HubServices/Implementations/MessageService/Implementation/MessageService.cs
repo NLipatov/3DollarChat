@@ -10,7 +10,7 @@ using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
-using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;

@@ -1,6 +1,6 @@
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models;
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models;
 
 public class UnsentItem
 {

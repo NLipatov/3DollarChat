@@ -1,6 +1,6 @@
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Models.Extentions;
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models.Extentions;
 
 public static class UnsentMessageExtensions
 {

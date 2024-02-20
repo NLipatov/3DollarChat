@@ -5,6 +5,11 @@ namespace Ethachat.Client.Services.InboxService
 {
     public interface IMessageBox
     {
+        /// <summary>
+        /// Is message with such Id already added to MessageBox
+        /// </summary>
+        bool Contains(Guid messageId);
+        
         public List<ClientMessage> Messages { get; }
 
         void Delete(string targetGroup);

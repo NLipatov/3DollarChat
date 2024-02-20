@@ -13,7 +13,6 @@ public class ReliableMessageSender : IReliableMessageSender
 {
     private static IReliableTextMessageSender _reliableTextMessageSender;
     private static IReliableBinaryMessageSender _reliableBinaryMessageSender;
-    private static ConcurrentDictionary<Guid, MessageType> _messageIdToType = new();
 
     public ReliableMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
     {
@@ -28,13 +27,12 @@ public class ReliableMessageSender : IReliableMessageSender
         }
     }
 
-    public async Task Enqueue(Message message)
+    public async Task EnqueueAsync(Message message)
     {
         try
         {
             var targetSender = GetTargetSender(message.Type);
-            await targetSender.Enqueue(message);
-            _messageIdToType.TryAdd(message.Id, message.Type);
+            await targetSender.EnqueueAsync(message);
         }
         catch (Exception e)
         {
@@ -43,9 +41,9 @@ public class ReliableMessageSender : IReliableMessageSender
         }
     }
 
-    public void OnAckReceived(Message syncMessage)
+    public void OnAck(Message syncMessage)
     {
-        GetTargetSender(syncMessage.Type).OnAckReceived(syncMessage);
+        GetTargetSender(syncMessage.Type).OnAck(syncMessage);
     }
 
     private IReliableMessageSender GetTargetSender(MessageType type)

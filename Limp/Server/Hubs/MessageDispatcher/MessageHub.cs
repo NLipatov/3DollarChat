@@ -23,7 +23,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IMessageSendHandler _messageSendHandler;
+        private readonly IMessageMarker _messageMarker;
         private readonly IWebPushSender _webPushSender;
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IUsernameResolverService _usernameResolverService;
@@ -35,7 +35,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             IMessageBrokerService messageBrokerService,
             IUserConnectedHandler<MessageHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
-            IMessageSendHandler messageSender,
+            IMessageMarker messageSender,
             IWebPushSender webPushSender,
             IUnsentMessagesRedisService unsentMessagesRedisService,
             IUsernameResolverService usernameResolverService,
@@ -46,7 +46,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _messageSendHandler = messageSender;
+            _messageMarker = messageSender;
             _webPushSender = webPushSender;
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _usernameResolverService = usernameResolverService;
@@ -147,6 +147,20 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
         {
+            SendRegistrationConfirmationAsync(message);
+
+            if (IsClientConnectedToHub(message.TargetGroup!))
+                _reliableMessageSender.EnqueueAsync(message);
+            else
+            {
+                _unsentMessagesRedisService.SaveAsync(message);
+                if (message.Type is not MessageType.DataPackage)
+                    SendNotificationAsync(message);
+            }
+        }
+
+        private async Task SendRegistrationConfirmationAsync(Message message)
+        {
             if (message.Type is MessageType.Metadata)
             {
                 await Clients.Group(message.Sender)
@@ -167,16 +181,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             {
                 await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
             }
-
-            if (IsClientConnectedToHub(message.TargetGroup!))
-            {
-                _reliableMessageSender.Enqueue(message);
-            }
-            else
-                await _unsentMessagesRedisService.Save(message);
-
-            if (message.Type is not MessageType.DataPackage)
-                await SendNotificationAsync(message);
         }
 
         private async Task SendNotificationAsync(Message message)
@@ -218,13 +222,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public async Task OnAck(Message syncMessage)
         {
-            _reliableMessageSender.OnAckReceived(syncMessage);
-        }
-        
-        public async Task MessageReceived(Message syncMessage)
-        {
-            _reliableMessageSender.OnAckReceived(syncMessage);
-            await _messageSendHandler.MarkAsReceived(syncMessage.SyncItem.MessageId, syncMessage.Sender!, Clients);
+            _reliableMessageSender.OnAck(syncMessage);
+            
+            await _messageMarker.MarkAsReceived(syncMessage.SyncItem.MessageId, syncMessage.Sender!, Clients);
         }
 
         /// <summary>
@@ -246,7 +246,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         {
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == messageSender))
             {
-                await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
+                await _messageMarker.MarkAsReaded(messageId, messageSender, Clients);
             }
         }
     }

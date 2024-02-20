@@ -1,6 +1,7 @@
 using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
@@ -39,7 +40,7 @@ builder.Services.UseKafkaService();
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
-builder.Services.AddTransient<IMessageSendHandler, MessageSendHandler>();
+builder.Services.AddTransient<IMessageMarker, MessageMarker>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisService>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();

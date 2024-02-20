@@ -4,6 +4,6 @@ namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 
 public interface IUnsentMessagesRedisService
 {
-    Task Save(Message message);
+    Task SaveAsync(Message message);
     Task<Message[]> GetSaved(string username);
 }

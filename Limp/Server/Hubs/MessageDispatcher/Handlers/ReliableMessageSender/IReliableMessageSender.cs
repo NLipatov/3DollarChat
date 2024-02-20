@@ -4,6 +4,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 
 public interface IReliableMessageSender
 {
-    Task Enqueue(Message message);
-    void OnAckReceived(Message syncMessage);
+    Task EnqueueAsync(Message message);
+    void OnAck(Message syncMessage);
 }

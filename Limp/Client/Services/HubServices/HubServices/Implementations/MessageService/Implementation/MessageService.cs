@@ -192,6 +192,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (message.Type is MessageType.TextMessage)
                     {
+                        await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
+                        {
+                            SyncItem = new SyncItem()
+                            {
+                                MessageId = message.Id,
+                            },
+                            Type = MessageType.SyncItem,
+                            Sender = message.Sender,
+                            TargetGroup = message.TargetGroup
+                        });
+                        
+                        if (_messageBox.Contains(message.Id))
+                            return;
+                        
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
                                 $"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
@@ -215,17 +229,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
                                 clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
                             await _messageBox.AddMessageAsync(clientMessage, false);
-                            
-                            await (await GetHubConnectionAsync()).SendAsync("MessageReceived", new Message()
-                            {
-                                SyncItem = new SyncItem()
-                                {
-                                    MessageId = message.Id,
-                                },
-                                Type = MessageType.SyncItem,
-                                Sender = message.Sender,
-                                TargetGroup = message.TargetGroup
-                            });
                         }
                         else
                         {
@@ -239,6 +242,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         {
                             await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
                             {
+                                Id = message.Id,
+                                Sender = message.Sender,
                                 Type = message.Type,
                                 SyncItem = new SyncItem
                                 {
@@ -251,6 +256,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         {
                             await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
                             {
+                                Id = message.Id,
+                                Sender = message.Sender,
                                 Type = message.Type,
                                 SyncItem = new SyncItem
                                 {
@@ -259,6 +266,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 }
                             });
                         }
+                        
+                        if (_messageBox.Contains(message.Id))
+                            return;
                         
                         (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
                         

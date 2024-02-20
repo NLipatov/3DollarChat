@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models.Extentions;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;
 
@@ -15,77 +16,78 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         private ConcurrentDictionary<Guid, bool> _acked = new();
         private volatile bool _isSending;
 
-        public ReliableTextMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
+        public ReliableTextMessageSender(IMessageGateway gateway,
+            IUnsentMessagesRedisService unsentMessagesRedisService)
         {
             _unsentMessagesRedisService = unsentMessagesRedisService;
             _gateway = gateway;
         }
 
-        public async Task Enqueue(Message message)
+        public async Task EnqueueAsync(Message message)
         {
             var unsentMessage = message.ToUnsentMessage();
             _unsentItems.TryAdd(message.Id, unsentMessage);
 
-            if (!_isSending)
-            {
-                if (!_isSending)
-                {
-                    _isSending = true;
-                    Task.Run(() => StartSendingLoop());
-                }
-            }
+            await Deliver(message);
         }
 
-        public void OnAckReceived(Guid messageId, string targetGroup)
+        private async Task Deliver(Message message, TimeSpan? backoff = null)
         {
-            _acked.TryAdd(messageId, true);
+            while (_unsentItems.ContainsKey(message.Id))
+            {
+                if (!HasActiveConnections(message.TargetGroup!))
+                {
+                    await PassToLongTermSender(message.Id);
+                    return;
+                }
+                _acked.TryGetValue(message.Id, out var isAcked);
+                if (isAcked)
+                    break;
+
+                await _gateway.SendAsync(message);
+                backoff = IncreaseBackoff(backoff);
+                await Task.Delay(backoff.Value);
+            }
+
+            Remove(message.Id);
         }
 
-        public void OnAckReceived(Message syncMessage)
+
+        private async Task PassToLongTermSender(Guid messageId)
+        {
+            _unsentItems.TryRemove(messageId, out var unsentItems);
+
+            if (unsentItems is not null)
+                await _unsentMessagesRedisService.SaveAsync(unsentItems.Message);
+
+            Remove(messageId);
+        }
+
+        private bool HasActiveConnections(string username)
+            => InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => x.Key == username)
+                .SelectMany(x => x.Value).Any();
+
+        public void OnAck(Message syncMessage)
         {
             _acked.TryAdd(syncMessage.SyncItem!.MessageId, true);
         }
 
-        private async Task StartSendingLoop()
+        private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)
         {
-            while (!_unsentItems.IsEmpty)
+            if (backoff.HasValue)
             {
-                foreach (var kvp in _unsentItems)
-                {
-                    var messageId = kvp.Key;
-                    var unsentItem = kvp.Value;
-
-                    if (_acked.TryGetValue(messageId, out var isAcked) && isAcked)
-                    {
-                        _unsentItems.TryRemove(messageId, out _);
-                        continue;
-                    }
-
-                    if (unsentItem.Backoff > TimeSpan.FromMinutes(10))
-                    {
-                        await _unsentMessagesRedisService.Save(unsentItem.Message);
-                        _unsentItems.TryRemove(messageId, out _);
-                        _acked.TryRemove(messageId, out _);
-                        continue;
-                    }
-
-                    if (unsentItem.ResendAfter > DateTime.UtcNow)
-                    {
-                        continue;
-                    }
-
-                    await _gateway.SendAsync(unsentItem.Message);
-                    IncreaseBackoff(unsentItem);
-                }
+                if (backoff.Value < TimeSpan.FromSeconds(5))
+                    backoff.Value.Multiply(1.5);
             }
 
-            _isSending = false;
+            return TimeSpan.FromSeconds(3);
         }
 
-        private void IncreaseBackoff(UnsentItem item)
+        private void Remove(Guid messageId)
         {
-            item.Backoff = item.Backoff.Multiply(1.5);
-            item.ResendAfter = DateTime.UtcNow.Add(item.Backoff);
+            _unsentItems.TryRemove(messageId, out var _);
+            _acked.TryRemove(messageId, out var _);
         }
     }
 }

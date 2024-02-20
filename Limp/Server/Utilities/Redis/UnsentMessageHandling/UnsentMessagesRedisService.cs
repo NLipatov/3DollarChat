@@ -15,7 +15,7 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         _redisConnectionConfigurer = redisConnectionConfigurer;
     }
     
-    public async Task Save(Message message)
+    public async Task SaveAsync(Message message)
     {
         try
         {
@@ -30,7 +30,7 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         }
         catch (Exception e)
         {
-            throw new ApplicationException($"Exception point - {nameof(UnsentMessagesRedisService)}.{nameof(Save)}:" +
+            throw new ApplicationException($"Exception point - {nameof(UnsentMessagesRedisService)}.{nameof(SaveAsync)}:" +
                                            $"Could not save message in redis: {e.Message}");
         }
     }

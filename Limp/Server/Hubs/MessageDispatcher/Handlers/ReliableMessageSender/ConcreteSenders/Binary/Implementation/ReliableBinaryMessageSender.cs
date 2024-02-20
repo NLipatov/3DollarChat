@@ -24,7 +24,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _gateway = gateway;
         }
 
-        public async Task Enqueue(Message message)
+        public async Task EnqueueAsync(Message message)
         {
             var fileId = GetFileId(message);
             var unsentMessage = message.ToUnsentMessage();
@@ -85,13 +85,13 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             };
         }
 
-        public void OnAckReceived(Message syncMessage)
+        public void OnAck(Message syncMessage)
         {
             var fileId = syncMessage.SyncItem?.FileId ?? Guid.Empty;
             if (fileId == Guid.Empty) return;
 
             _ackedChunks.AddOrUpdate(fileId,
-                _ => new HashSet<int>(syncMessage.SyncItem!.Index),
+                _ => new HashSet<int>{syncMessage.SyncItem.Index},
                 (_, existingData) =>
                 {
                     existingData.Add(syncMessage.SyncItem!.Index);
@@ -145,7 +145,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             FileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
             foreach (var unsentItem in unsentItems ?? new())
             {
-                await _unsentMessagesRedisService.Save(unsentItem.Message);
+                await _unsentMessagesRedisService.SaveAsync(unsentItem.Message);
             }
 
             Remove(fileId);

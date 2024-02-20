@@ -1,8 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
+using Microsoft.AspNetCore.SignalR;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker
 {
-    public class MessageSendHandler : IMessageSendHandler
+    public class MessageMarker : IMessageMarker
     {
 
         public async Task MarkAsReaded(Guid messageId, string messageSender, IHubCallerClients clients)

@@ -128,7 +128,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
-                await Dispatch(m);
+                await Dispatch(m).ConfigureAwait(false);
             }
         }
 

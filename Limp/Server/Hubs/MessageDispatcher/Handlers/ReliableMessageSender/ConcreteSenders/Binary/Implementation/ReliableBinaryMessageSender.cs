@@ -12,10 +12,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
     {
         private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
         private readonly IMessageGateway _gateway;
-        private readonly ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> FileIdToUnsentItems = new();
+        private readonly ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> _fileIdToUnsentItems = new();
         private readonly ConcurrentDictionary<Guid, HashSet<int>> _ackedChunks = new();
-        private readonly ConcurrentDictionary<Guid, DateTime> _lastAck = new();
-        private const int METADATA_FILES_COUNT = 1;
+        private const int MetadataFilesCount = 1;
 
         public ReliableBinaryMessageSender(IMessageGateway gateway,
             IUnsentMessagesRedisService unsentMessagesRedisService)
@@ -29,7 +28,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             var fileId = GetFileId(message);
             var unsentMessage = message.ToUnsentMessage();
 
-            FileIdToUnsentItems.AddOrUpdate(fileId,
+            _fileIdToUnsentItems.AddOrUpdate(fileId,
                 _ => new ConcurrentBag<UnsentItem> { unsentMessage },
                 (_, existingData) =>
                 {
@@ -43,36 +42,45 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         private async Task Deliver(Message message, TimeSpan? backoff = null)
         {
             var fileId = GetFileId(message);
-            
-            if(!FileIdToUnsentItems.TryGetValue(fileId, out var unsentItems))
-                return;
-
-            if (!HasActiveConnections(message.TargetGroup!) ||
-                backoff.HasValue && backoff.Value > TimeSpan.FromMinutes(5))
+            while (_fileIdToUnsentItems.TryGetValue(fileId, out var unsentItems)
+                   && !IsFileAcked(fileId))
             {
-                await PassToLongTermSender(fileId);
-                return;
+                if (!HasActiveConnections(message.TargetGroup!))
+                {
+                    await PassToLongTermSender(fileId);
+                    break;
+                }
+                
+                if (!IsMessageAcked(fileId, GetKey(message)))
+                {
+                    await _gateway.SendAsync(message);
+                    backoff = IncreaseBackoff(GetKey(message) + 1, backoff);
+                    await Task.Delay(backoff ?? TimeSpan.Zero);
+                }
             }
+            Remove(fileId);
+        }
 
+        private bool IsMessageAcked(Guid fileId, int index)
+        {
+            _ackedChunks.TryGetValue(fileId, out var acked);
+            return (acked ?? new()).Contains(index);
+        }
+
+        private bool IsFileAcked(Guid fileId)
+        {
+            _fileIdToUnsentItems.TryGetValue(fileId, out var unsentItems);
+            
             _ackedChunks.TryGetValue(fileId, out var acked);
 
             unsentItems ??= new();
 
-            if (unsentItems.Any() && acked?.Count == GetChunksCount(unsentItems.First().Message) + METADATA_FILES_COUNT)
+            if (unsentItems.Any() && acked?.Count == GetChunksCount(unsentItems.First().Message) + MetadataFilesCount)
             {
-                Remove(fileId);
-                return;
+                return true;
             }
 
-            if (!(acked ?? new()).Contains(GetKey(message)))
-            {
-                await _gateway.SendAsync(message);
-
-                backoff = IncreaseBackoff(GetKey(message) + 1, backoff);
-            
-                await Task.Delay(backoff ?? TimeSpan.Zero);
-                await Deliver(message, backoff);
-            }
+            return false;
         }
 
         private Guid GetFileId(Message message)
@@ -88,7 +96,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         public void OnAck(Message syncMessage)
         {
             var fileId = syncMessage.SyncItem?.FileId ?? Guid.Empty;
-            if (fileId == Guid.Empty) return;
+            
+            if (fileId == Guid.Empty) return; //Invalid ack
+            if (syncMessage.SyncItem is null) return; //Invalid ack
 
             _ackedChunks.AddOrUpdate(fileId,
                 _ => new HashSet<int>{syncMessage.SyncItem.Index},
@@ -100,13 +110,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 });
 
             _ackedChunks.TryGetValue(fileId, out var acked);
-            
-            _lastAck.AddOrUpdate(fileId,
-                _ => DateTime.UtcNow,
-                (_, exisitingData) =>
-                {
-                    return DateTime.UtcNow;
-                });
         }
 
         private int GetChunksCount(Message message)
@@ -142,20 +145,17 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
         private async Task PassToLongTermSender(Guid fileId)
         {
-            FileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
+            _fileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
             foreach (var unsentItem in unsentItems ?? new())
             {
                 await _unsentMessagesRedisService.SaveAsync(unsentItem.Message);
             }
-
-            Remove(fileId);
         }
 
         private void Remove(Guid fileId)
         {
-            FileIdToUnsentItems.TryRemove(fileId, out _);
+            _fileIdToUnsentItems.TryRemove(fileId, out _);
             _ackedChunks.Remove(fileId, out _);
-            _lastAck.TryRemove(fileId, out var _);
         }
 
         private bool HasActiveConnections(string username)

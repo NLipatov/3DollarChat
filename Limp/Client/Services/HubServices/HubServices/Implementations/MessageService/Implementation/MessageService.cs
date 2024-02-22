@@ -244,14 +244,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         if (_messageBox.Contains(message.Id))
                             return;
                         
-                        _callbackExecutor.ExecuteSubscriptionsByName(message, "BinaryMessageChunkReceived");
+                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "BinaryMessageChunkReceived");
                         
                         (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
 
                         if (progressStatus.isTransmissionCompleted)
                         {
                             await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId, message.Sender ?? throw new ArgumentException($"Invalid {message.Sender}"));
-                            _callbackExecutor.ExecuteSubscriptionsByName(message, "OnBinaryFileReceived");
                         }
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
@@ -346,6 +345,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             hubConnection.On<string>("OnConvertationDeleteRequest",
                 partnerName => { _messageBox.Delete(partnerName); });
+
+            hubConnection.On<string>("OnTyping", (partnerName) =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping");
+            });
         }
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
@@ -403,6 +407,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
 
             await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
+        }
+
+        public async Task SendTypingEventToPartnerAsync(string sender, string receiver)
+        {
+            var connection = await GetHubConnectionAsync();
+            await connection.SendAsync("OnTyping", sender, receiver);
         }
 
         public async Task ReconnectAsync()

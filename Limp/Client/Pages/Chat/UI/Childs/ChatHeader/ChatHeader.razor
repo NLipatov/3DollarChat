@@ -1,5 +1,6 @@
 ﻿@using EthachatShared.Encryption;
 @using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader.Child;
+@using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader.IndicatorTypes
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService
@@ -15,9 +16,13 @@
     </div>
     <div class="contact-info">
         <h2 class="name">@PartnerName</h2>
-        @if (IsSendingBinary)
+        @if (IsTyping)
         {
-            <p class="status">Sending you a file...</p>
+            <p class="status">Typing...</p>
+        }
+        else if (IsSendingBinary)
+        {
+            <p class="status">Sending a file...</p>
         }
         else
         {
@@ -51,13 +56,16 @@
     [Parameter] public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
     [Parameter] public Key? AESKey { get; set; }
     [Parameter] public EventCallback OnAESRenewal { get; set; }
+    private AESKeyRenewalModal? aesRenewalModal { get; set; }
     private Guid ComponentId { get; set; }
+    private bool IsTyping { get; set; }
+    private CancellationTokenSource typingCancellation = new();
     private bool IsSendingBinary { get; set; }
-    private HashSet<Guid> ReceivedFiles { get; set; } = new();
+    private CancellationTokenSource fileDownloadingCancellation = new();
+    private const int EventIndicatorCooldown = 600;
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    private AESKeyRenewalModal? aesRenewalModal { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -68,30 +76,70 @@
 
     private void SubscribeToHubEvents()
     {
-        _hubServiceSubscriptionManager.AddCallback<Message>(OnBinaryMessageChunkReceived, "BinaryMessageChunkReceived", ComponentId);
-        _hubServiceSubscriptionManager.AddCallback<Message>(OnBinarFileReceived, "OnBinaryFileReceived", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<string>(async partnerName =>
+        {
+            await ChangeHeaderIndicator(partnerName, IndicatorType.TYPING);
+        }, "OnTyping", ComponentId);
+        
+        _hubServiceSubscriptionManager.AddCallback<string>(async partnerName =>
+        {
+            await ChangeHeaderIndicator(partnerName, IndicatorType.FILESENDING);
+        }, "BinaryMessageChunkReceived", ComponentId);
     }
 
-    private void OnBinaryMessageChunkReceived(Message message)
+    private void SwitchIndicator(IndicatorType indicatorType, bool value)
     {
-        if (message.Sender == PartnerName)
-        { 
-            if (!ReceivedFiles.Contains(GetFileId(message)))
-            {
-                IsSendingBinary = true;
-                StateHasChanged();
-            }
-        }
-    }
-
-    private void OnBinarFileReceived(Message message)
-    {
-        if (message.Sender == PartnerName)
-        { 
-            ReceivedFiles.Add(GetFileId(message));
-            
-            IsSendingBinary = false;
+        if (indicatorType == IndicatorType.TYPING)
+        {
+            IsTyping = value;
             StateHasChanged();
+            return;
+        }
+
+        if (indicatorType == IndicatorType.FILESENDING)
+        {
+            IsSendingBinary = value;
+            StateHasChanged();
+            return;
+        }
+
+        throw new ArgumentException($"Unsupported indicator type passed in: {nameof(indicatorType)}");
+    }
+
+    private async Task ChangeHeaderIndicator(string partnerName, IndicatorType indicatorType)
+    {
+        if (partnerName == PartnerName)
+        {
+            CancellationToken cancellationToken;
+            //Cancel previous token so typing indicator will not be removed (user's still typing)
+            if (indicatorType is IndicatorType.TYPING)
+            {
+                await typingCancellation.CancelAsync();
+                typingCancellation = new();
+                cancellationToken = typingCancellation.Token;
+            }
+            else
+            {
+                await fileDownloadingCancellation.CancelAsync();
+                fileDownloadingCancellation = new();
+                cancellationToken = fileDownloadingCancellation.Token;
+            }
+
+            //Show indicator
+            SwitchIndicator(indicatorType, true);
+
+            //Wait for some time and remove indicator
+            try
+            {
+                await Task.Delay(EventIndicatorCooldown, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                //Token's cancelled meaning that event is still happening
+                return;
+            }
+
+            SwitchIndicator(indicatorType, false);
         }
     }
 

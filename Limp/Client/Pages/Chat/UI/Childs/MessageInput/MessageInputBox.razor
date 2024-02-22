@@ -52,7 +52,13 @@
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
+        {
             await SendMessage();
+            return;
+        }
+        
+        await _messageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
+                .ConfigureAwait(false);
     }
 
     private async Task OnFileInput(InputFileChangeEventArgs e)

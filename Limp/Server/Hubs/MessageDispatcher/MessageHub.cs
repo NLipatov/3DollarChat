@@ -249,5 +249,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 await _messageMarker.MarkAsReaded(messageId, messageSender, Clients);
             }
         }
+
+        public async Task OnTyping(string sender, string receiver)
+        {
+            await Clients.Group(receiver).SendAsync("OnTyping", sender);
+        }
     }
 }

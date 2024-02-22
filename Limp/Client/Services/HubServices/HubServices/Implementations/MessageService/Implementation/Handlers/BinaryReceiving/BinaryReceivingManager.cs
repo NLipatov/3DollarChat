@@ -46,7 +46,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
     {
         var index = message.Type is MessageType.Metadata ? -1 : message.Package!.Index;
         var fileId = message.Type is MessageType.Metadata ? message.Metadata!.DataFileId : message.Package!.FileDataid;
-        
+
         return new Message
         {
             Id = message.Id,
@@ -109,10 +109,11 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         FileIdToMetadata.TryGetValue(fileId, out var metadata);
 
         FileIdToPackages.TryGetValue(fileId, out var packages);
+        
+        var packagesCount = packages?.Count(x => x is not null) ?? 0;
+        var totalCount = metadata?.ChunksCount ?? 0;
 
-        return metadata?.ChunksCount == packages?
-            .Where(x => x is not null)
-            .Count();
+        return packagesCount == totalCount && packagesCount > 0;
     }
 
     private async Task AddToMessageBoxAsync(Message message)

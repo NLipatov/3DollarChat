@@ -244,10 +244,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         if (_messageBox.Contains(message.Id))
                             return;
                         
-                        (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
+                        _callbackExecutor.ExecuteSubscriptionsByName(message, "BinaryMessageChunkReceived");
                         
+                        (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
+
                         if (progressStatus.isTransmissionCompleted)
+                        {
                             await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId, message.Sender ?? throw new ArgumentException($"Invalid {message.Sender}"));
+                            _callbackExecutor.ExecuteSubscriptionsByName(message, "OnBinaryFileReceived");
+                        }
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {

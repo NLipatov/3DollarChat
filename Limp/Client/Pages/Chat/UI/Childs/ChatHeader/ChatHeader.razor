@@ -1,9 +1,13 @@
 ﻿@using EthachatShared.Encryption;
 @using Ethachat.Client.Pages.Chat.UI.Childs.ChatHeader.Child;
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService
+@using EthachatShared.Models.Message
 @inject IMessageBox _messageBox;
 @inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@implements IDisposable
 
 <div class="header">
     <div class="profile-picture @(IsOnline ? "online" : "")">
@@ -11,7 +15,14 @@
     </div>
     <div class="contact-info">
         <h2 class="name">@PartnerName</h2>
-        <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
+        @if (IsSendingBinary)
+        {
+            <p class="status">Sending you a file...</p>
+        }
+        else
+        {
+            <p class="status">@(IsOnline ? "Active now" : "Seen recently")</p>
+        }
     </div>
     <div class="key-info">
         <button title="Clear conversation" @onclick="DeleteConversation" style="border: none;">
@@ -30,24 +41,70 @@
     </div>
 </div>
 
-<AESKeyRenewalModal 
-    @ref=aesRenewalModal 
+<AESKeyRenewalModal
+    @ref=aesRenewalModal
     OnAESRenewal="OnAESRenewal"/>
 
 @code {
-    [Parameter]
-    public string PartnerName { get; set; } = "Unnamed";
-    [Parameter]
-    public bool IsOnline { get; set; } = false;
-    [Parameter]
-    public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
-    [Parameter]
-    public Key? AESKey { get; set; }
-    [Parameter]
-    public EventCallback OnAESRenewal { get; set; }
+    [Parameter] public string PartnerName { get; set; } = "Unnamed";
+    [Parameter] public bool IsOnline { get; set; } = false;
+    [Parameter] public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
+    [Parameter] public Key? AESKey { get; set; }
+    [Parameter] public EventCallback OnAESRenewal { get; set; }
+    private Guid ComponentId { get; set; }
+    private bool IsSendingBinary { get; set; }
+    private HashSet<Guid> ReceivedFiles { get; set; } = new();
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     private AESKeyRenewalModal? aesRenewalModal { get; set; }
-    
+
+    protected override async Task OnInitializedAsync()
+    {
+        ComponentId = Guid.NewGuid();
+
+        SubscribeToHubEvents();
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<Message>(OnBinaryMessageChunkReceived, "BinaryMessageChunkReceived", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<Message>(OnBinarFileReceived, "OnBinaryFileReceived", ComponentId);
+    }
+
+    private void OnBinaryMessageChunkReceived(Message message)
+    {
+        if (message.Sender == PartnerName)
+        { 
+            if (!ReceivedFiles.Contains(GetFileId(message)))
+            {
+                IsSendingBinary = true;
+                StateHasChanged();
+            }
+        }
+    }
+
+    private void OnBinarFileReceived(Message message)
+    {
+        if (message.Sender == PartnerName)
+        { 
+            ReceivedFiles.Add(GetFileId(message));
+            
+            IsSendingBinary = false;
+            StateHasChanged();
+        }
+    }
+
+    private Guid GetFileId(Message message)
+    {
+        return message.Type switch
+        {
+            MessageType.Metadata => message.Metadata!.DataFileId,
+            MessageType.DataPackage => message.Package!.FileDataid,
+            _ => throw new ArgumentException("Unknown message type")
+        };
+    }
+
     private async Task ShowModalAsync()
     {
         if (aesRenewalModal != null)
@@ -59,4 +116,5 @@
         _messageService.RequestPartnerToDeleteConvertation(PartnerName);
         _messageBox.Delete(PartnerName);
     }
+
 }

@@ -84,7 +84,7 @@
         _hubServiceSubscriptionManager.AddCallback<string>(async partnerName =>
         {
             await ChangeHeaderIndicator(partnerName, IndicatorType.FILESENDING);
-        }, "BinaryMessageChunkReceived", ComponentId);
+        }, "OnBinaryTransmitting", ComponentId);
     }
 
     private void SwitchIndicator(IndicatorType indicatorType, bool value)

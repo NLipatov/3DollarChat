@@ -244,7 +244,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         if (_messageBox.Contains(message.Id))
                             return;
                         
-                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "BinaryMessageChunkReceived");
+                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnBinaryTransmitting");
                         
                         (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
 

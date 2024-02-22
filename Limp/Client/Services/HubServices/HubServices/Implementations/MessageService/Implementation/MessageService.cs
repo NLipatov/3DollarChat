@@ -238,34 +238,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
-                        if (message.Type is MessageType.Metadata)
-                        {
-                            await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
-                            {
-                                Id = message.Id,
-                                Sender = message.Sender,
-                                Type = message.Type,
-                                SyncItem = new SyncItem
-                                {
-                                    Index = -1,
-                                    FileId = message.Metadata!.DataFileId
-                                }
-                            });
-                        }
-                        else
-                        {
-                            await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
-                            {
-                                Id = message.Id,
-                                Sender = message.Sender,
-                                Type = message.Type,
-                                SyncItem = new SyncItem
-                                {
-                                    Index = message.Package!.Index,
-                                    FileId = message.Package.FileDataid
-                                }
-                            });
-                        }
+                        await (await GetHubConnectionAsync())
+                            .SendAsync("OnAck", _binaryReceivingManager.GenerateSyncMessage(message));
                         
                         if (_messageBox.Contains(message.Id))
                             return;

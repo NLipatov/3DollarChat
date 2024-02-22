@@ -5,6 +5,7 @@ using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
+using EthachatShared.Models.Message.TransferStatus;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -39,6 +40,24 @@ public class BinaryReceivingManager : IBinaryReceivingManager
             await AddToMessageBoxAsync(message);
 
         return progressStatus;
+    }
+
+    public Message GenerateSyncMessage(Message message)
+    {
+        var index = message.Type is MessageType.Metadata ? -1 : message.Package!.Index;
+        var fileId = message.Type is MessageType.Metadata ? message.Metadata!.DataFileId : message.Package!.FileDataid;
+        
+        return new Message
+        {
+            Id = message.Id,
+            Sender = message.Sender,
+            Type = message.Type,
+            SyncItem = new SyncItem
+            {
+                Index = index,
+                FileId = fileId
+            }
+        };
     }
 
     private async Task<ClientPackage> GetDecryptedPackage(Message message)

@@ -42,10 +42,7 @@
     [Parameter] public RenderFragment? AuthenticatedContent { get; set; }
 
     [Parameter] public RenderFragment? UnauthenticatedContent { get; set; }
-
-    // private bool IsUsersHubConnectionActive { get; set; }
-    // private bool IsMessageHubConnectionActive { get; set; }
-    // private bool IsAuthHubConnectionActive { get; set; }
+    
     private AuthenticationState _authenticationState { get; set; } = AuthenticationState.TokenActualisation;
     private Guid ComponentId { get; set; }
 
@@ -53,10 +50,6 @@
 
     protected override async Task OnInitializedAsync()
     {
-        // IsAuthHubConnectionActive = AuthService.IsConnected();
-        // IsUsersHubConnectionActive = UsersService.IsConnected();
-        // IsMessageHubConnectionActive = MessageService.IsConnected();
-        
         if (!await AuthenticationHandler.IsSetToUseAsync())
         {
             NavigationManager.NavigateTo("signin");
@@ -68,27 +61,6 @@
 
         HubServiceSubscriptionManager
             .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
-
-        // HubServiceSubscriptionManager
-        //     .AddCallback<bool>((state) =>
-        //     {
-        //         IsAuthHubConnectionActive = state;
-        //         StateHasChanged();
-        //     }, "OnAuthHubConnectionStatusChanged", ComponentId);
-        //
-        // HubServiceSubscriptionManager
-        //     .AddCallback<bool>((state) =>
-        //     {
-        //         IsMessageHubConnectionActive = state;
-        //         StateHasChanged();
-        //     }, "OnMessageHubConnectionStatusChanged", ComponentId);
-        //
-        // HubServiceSubscriptionManager
-        //     .AddCallback<bool>((state) =>
-        //     {
-        //         IsUsersHubConnectionActive = state;
-        //         StateHasChanged();
-        //     }, "OnUsersHubConnectionStatusChanged", ComponentId);
 
         await ValidateCredentials();
     }

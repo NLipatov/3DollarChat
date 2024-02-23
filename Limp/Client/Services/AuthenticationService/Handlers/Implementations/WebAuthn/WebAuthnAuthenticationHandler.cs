@@ -10,7 +10,6 @@ namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementation
 
 public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 {
-    private static DateTime CredentialsUpdatedOn { get; set; }
     private readonly ILocalStorageService _localStorageService;
 
     public async Task<CredentialsDTO> GetCredentialsDto()
@@ -81,11 +80,11 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
         uint updatedCounter = dto.WebAuthnPair.Counter + 1;
         await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
         await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
-        CredentialsUpdatedOn = DateTime.UtcNow;
+        await _localStorageService.WritePropertyAsync("CredentialUpdatedOn", DateTime.UtcNow.ToString("s"));
     }
     public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
     {
-        if ((DateTime.UtcNow - CredentialsUpdatedOn).TotalMinutes < 5)
+        if ((DateTime.UtcNow - await GetCredentialsUpdatedOn()).TotalMinutes < 5)
             return;
         
         var dto = await GetCredentialsDto();
@@ -98,6 +97,16 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
             Counter = dto.WebAuthnPair!.Counter,
             CredentialId = dto.WebAuthnPair.CredentialId
         });
+    }
+
+    private async Task<DateTime> GetCredentialsUpdatedOn()
+    {
+        var dateString = await _localStorageService.ReadPropertyAsync("CredentialUpdatedOn");
+        
+        if(DateTime.TryParse(dateString, out var updatedOn))
+            return updatedOn;
+        
+        return DateTime.MinValue;
     }
 
     private async Task<WebAuthnPair> GetWebAuthnPairAsync()

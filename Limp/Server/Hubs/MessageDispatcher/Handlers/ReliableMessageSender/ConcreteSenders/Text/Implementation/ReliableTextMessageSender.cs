@@ -33,23 +33,26 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
         private async Task Deliver(Message message, TimeSpan? backoff = null)
         {
-            while (_unsentItems.ContainsKey(message.Id))
+            if (_unsentItems.ContainsKey(message.Id))
             {
                 if (!HasActiveConnections(message.TargetGroup!))
                 {
                     await PassToLongTermSender(message.Id);
+                    Remove(message.Id);
                     return;
                 }
                 _acked.TryGetValue(message.Id, out var isAcked);
                 if (isAcked)
-                    break;
+                {
+                    Remove(message.Id);
+                    return;
+                }
 
                 await _gateway.SendAsync(message);
                 backoff = IncreaseBackoff(backoff);
                 await Task.Delay(backoff.Value);
+                await Deliver(message, backoff);
             }
-
-            Remove(message.Id);
         }
 
 
@@ -58,9 +61,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _unsentItems.TryRemove(messageId, out var unsentItems);
 
             if (unsentItems is not null)
+            {
                 await _unsentMessagesRedisService.SaveAsync(unsentItems.Message);
-
-            Remove(messageId);
+            }
         }
 
         private bool HasActiveConnections(string username)

@@ -1,6 +1,7 @@
 ﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Encryption;
@@ -13,6 +14,7 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
+using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Server.Hubs
 {
@@ -22,18 +24,22 @@ namespace Ethachat.Server.Hubs
         private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IUsernameResolverService _usernameResolverService;
+        private readonly ILogService _logService;
 
         public UsersHub
         (IServerHttpClient serverHttpClient,
-        IUserConnectedHandler<UsersHub> userConnectedHandler,
-        IOnlineUsersManager onlineUsersManager,
-        IUsernameResolverService usernameResolverService)
+            IUserConnectedHandler<UsersHub> userConnectedHandler,
+            IOnlineUsersManager onlineUsersManager,
+            IUsernameResolverService usernameResolverService,
+            ILogService logService)
         {
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
             _usernameResolverService = usernameResolverService;
+            _logService = logService;
         }
+
         public override async Task OnConnectedAsync()
         {
             InMemoryHubConnectionStorage
@@ -48,12 +54,12 @@ namespace Ethachat.Server.Hubs
             var keys = InMemoryHubConnectionStorage
                 .UsersHubConnections
                 .Where(x => x.Value.Contains(Context.ConnectionId))
-                .Select(x=>x.Key);
+                .Select(x => x.Key);
 
             foreach (var key in keys)
             {
                 var oldConnections = InMemoryHubConnectionStorage.UsersHubConnections[key];
-                var newConnections = oldConnections.Where(x=>x != Context.ConnectionId).ToList();
+                var newConnections = oldConnections.Where(x => x != Context.ConnectionId).ToList();
                 if (newConnections.Any())
                     InMemoryHubConnectionStorage.UsersHubConnections.TryUpdate(key, newConnections, oldConnections);
                 else
@@ -67,7 +73,7 @@ namespace Ethachat.Server.Hubs
 
         public async Task SetUsername(CredentialsDTO credentialsDto)
         {
-            AuthResult usernameRequestResult =  await _usernameResolverService.GetUsernameAsync(credentialsDto);
+            AuthResult usernameRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
             if (usernameRequestResult.Result is not AuthResultType.Success)
             {
                 await Clients.Caller.SendAsync("OnAccessTokenInvalid", usernameRequestResult);
@@ -91,49 +97,61 @@ namespace Ethachat.Server.Hubs
 
         public async Task SetRSAPublicKey(Key RSAPublicKey, WebAuthnPair? webAuthnPair = null, JwtPair? jwtPair = null)
         {
-            bool isTokenValid = false;
-            string username = string.Empty;
-            AuthenticationType authenticationType = AuthenticationType.JwtToken; 
-            
-            if (jwtPair is not null)
+            try
             {
-                authenticationType = AuthenticationType.JwtToken;
-                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO(){JwtPair = jwtPair});
-                isTokenValid = validationResult.Result is AuthResultType.Success;
-                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
-                
-                if (userRequestResult.Result is not AuthResultType.Success)
-                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
-                
-                username = userRequestResult.Message ?? string.Empty;
-            }
-            else if (webAuthnPair is not null)
-            {
-                authenticationType = AuthenticationType.WebAuthn;
-                var validationResult = await _serverHttpClient.ValidateCredentials(new CredentialsDTO {WebAuthnPair =  webAuthnPair});
-                isTokenValid = validationResult.Result is AuthResultType.Success;
-                var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO{JwtPair = jwtPair, WebAuthnPair = webAuthnPair});
-                
-                if (userRequestResult.Result is not AuthResultType.Success)
-                    throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
-                
-                username = userRequestResult.Message ?? string.Empty;
-            }
-            
-            await Clients.Caller.SendAsync("OnNameResolve", username);
+                bool isTokenValid = false;
+                string username = string.Empty;
+                AuthenticationType authenticationType = AuthenticationType.JwtToken;
 
-            if (isTokenValid && !string.IsNullOrWhiteSpace(username))
-            {
-                await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
+                if (jwtPair is not null)
                 {
-                    Key = RSAPublicKey.Value!.ToString(),
-                    Username = username,
-                    AuthenticationType = authenticationType,
-                });
+                    authenticationType = AuthenticationType.JwtToken;
+                    var validationResult =
+                        await _serverHttpClient.ValidateCredentials(new CredentialsDTO() { JwtPair = jwtPair });
+                    isTokenValid = validationResult.Result is AuthResultType.Success;
+                    var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO
+                        { JwtPair = jwtPair, WebAuthnPair = webAuthnPair });
+
+                    if (userRequestResult.Result is not AuthResultType.Success)
+                        throw new ArgumentException("Invalid JWT credentials");
+
+                    username = userRequestResult.Message ?? string.Empty;
+                }
+                else if (webAuthnPair is not null)
+                {
+                    authenticationType = AuthenticationType.WebAuthn;
+                    var validationResult =
+                        await _serverHttpClient.ValidateCredentials(new CredentialsDTO { WebAuthnPair = webAuthnPair });
+                    isTokenValid = validationResult.Result is AuthResultType.Success;
+                    var userRequestResult = await _usernameResolverService.GetUsernameAsync(new CredentialsDTO
+                        { JwtPair = jwtPair, WebAuthnPair = webAuthnPair });
+
+                    if (userRequestResult.Result is not AuthResultType.Success)
+                        throw new ArgumentException("Invalid WebAuthn credentials");
+
+                    username = userRequestResult.Message ?? string.Empty;
+                }
+
+                await Clients.Caller.SendAsync("OnNameResolve", username);
+
+                if (isTokenValid && !string.IsNullOrWhiteSpace(username))
+                {
+                    await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
+                    {
+                        Key = RSAPublicKey.Value!.ToString(),
+                        Username = username,
+                        AuthenticationType = authenticationType,
+                    });
+                }
+                else
+                {
+                    throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
+                }
             }
-            else
+            catch (Exception e)
             {
-                throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
+                await _logService.LogAsync(e);
+                throw;
             }
 
             await PushOnlineUsersToClients();
@@ -172,10 +190,12 @@ namespace Ethachat.Server.Hubs
         public async Task IsUserOnline(string username)
         {
             string[] userHubConnections =
-                InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
+                InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value)
+                    .ToArray();
 
             string[] messageHubConnections =
-                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value).ToArray();
+                InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Where(x => x.Key == username)
+                    .SelectMany(x => x.Value).ToArray();
 
             bool isOnline = userHubConnections.Length > 0 && messageHubConnections.Length > 0;
 
@@ -195,12 +215,13 @@ namespace Ethachat.Server.Hubs
         public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
             var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
-                
+
             if (userRequestResult.Result is not AuthResultType.Success)
-                throw new ArgumentException($"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
-                
+                throw new ArgumentException(
+                    $"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+
             var username = userRequestResult.Message ?? string.Empty;
-            
+
             var userSubscriptions = await _serverHttpClient.GetUserWebPushSubscriptionsByAccessToken(username);
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }

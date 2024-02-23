@@ -1,18 +1,22 @@
 ﻿using System.Text.Json;
+using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
 using EthachatShared.Models.Message;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
+using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 
 public class UnsentMessagesRedisService : IUnsentMessagesRedisService
 {
     private readonly IRedisConnectionConfigurer _redisConnectionConfigurer;
+    private readonly ILogService _logService;
 
-    public UnsentMessagesRedisService(IRedisConnectionConfigurer redisConnectionConfigurer)
+    public UnsentMessagesRedisService(IRedisConnectionConfigurer redisConnectionConfigurer, ILogService logService)
     {
         _redisConnectionConfigurer = redisConnectionConfigurer;
+        _logService = logService;
     }
     
     public async Task SaveAsync(Message message)
@@ -30,8 +34,8 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         }
         catch (Exception e)
         {
-            throw new ApplicationException($"Exception point - {nameof(UnsentMessagesRedisService)}.{nameof(SaveAsync)}:" +
-                                           $"Could not save message in redis: {e.Message}");
+            await _logService.LogAsync(e);
+            throw;
         }
     }
 
@@ -60,7 +64,10 @@ public class UnsentMessagesRedisService : IUnsentMessagesRedisService
         }
         catch (Exception e)
         {
-            throw new ApplicationException($"Could read messages from redis: {e.Message}");
+            await _logService.LogAsync(e);
+            throw;
         }
+
+        return Array.Empty<Message>();
     }
 }

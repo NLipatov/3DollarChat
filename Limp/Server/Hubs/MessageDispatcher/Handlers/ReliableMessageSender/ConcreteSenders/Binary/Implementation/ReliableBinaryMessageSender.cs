@@ -42,13 +42,15 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         private async Task Deliver(Message message, TimeSpan? backoff = null)
         {
             var fileId = GetFileId(message);
-            while (_fileIdToUnsentItems.TryGetValue(fileId, out var unsentItems)
-                   && !IsFileAcked(fileId))
+
+            if (_fileIdToUnsentItems.TryGetValue(fileId, out var unsentItems)
+                && !IsFileAcked(fileId))
             {
                 if (!HasActiveConnections(message.TargetGroup!))
                 {
                     await PassToLongTermSender(fileId);
-                    break;
+                    Remove(fileId);
+                    return;
                 }
                 
                 if (!IsMessageAcked(fileId, GetKey(message)))
@@ -56,9 +58,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                     await _gateway.SendAsync(message);
                     backoff = IncreaseBackoff(GetKey(message) + 1, backoff);
                     await Task.Delay(backoff ?? TimeSpan.Zero);
+                    await Deliver(message, backoff);
                 }
             }
-            Remove(fileId);
+            
+            if (IsFileAcked(fileId))
+                Remove(fileId);
         }
 
         private bool IsMessageAcked(Guid fileId, int index)

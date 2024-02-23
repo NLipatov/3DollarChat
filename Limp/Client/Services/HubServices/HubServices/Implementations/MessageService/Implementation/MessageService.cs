@@ -190,7 +190,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         await hubConnection.StartAsync();
                     }
 
-                    if (message.Type is MessageType.TextMessage)
+                    if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
+                    {
+                        await (await GetHubConnectionAsync())
+                            .SendAsync("OnAck", _binaryReceivingManager.GenerateSyncMessage(message));
+                    }
+                    else
                     {
                         await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
                         {
@@ -202,7 +207,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Sender = message.Sender,
                             TargetGroup = message.TargetGroup
                         });
-                        
+                    }
+
+                    if (message.Type is MessageType.TextMessage)
+                    {
                         if (_messageBox.Contains(message.Id))
                             return;
                         
@@ -238,9 +246,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
-                        await (await GetHubConnectionAsync())
-                            .SendAsync("OnAck", _binaryReceivingManager.GenerateSyncMessage(message));
-                        
                         if (_messageBox.Contains(message.Id))
                             return;
                         

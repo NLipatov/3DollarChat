@@ -1,7 +1,6 @@
-﻿using EthachatShared.Models.Message;
-using Microsoft.AspNetCore.SignalR;
+﻿using Microsoft.AspNetCore.SignalR;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker
 {
     public interface IMessageMarker
     {

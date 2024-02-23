@@ -2,16 +2,14 @@ using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.InMemoryStorage;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis.RedisConnectionConfigurer;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Services.LogService.Implementations.Seq;
-using Ethachat.Server.Utilities.Redis;
-using Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
@@ -42,10 +40,10 @@ builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandle
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IMessageMarker, MessageMarker>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
-builder.Services.AddTransient<IUnsentMessagesRedisService, UnsentMessagesRedisService>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
 builder.Services.AddTransient<IRedisConnectionConfigurer, RedisConnectionConfigurer>();
+builder.Services.AddSingleton<ILongTermMessageStorageService, InMemoryLongTermStorage>();
 
 var app = builder.Build();
 

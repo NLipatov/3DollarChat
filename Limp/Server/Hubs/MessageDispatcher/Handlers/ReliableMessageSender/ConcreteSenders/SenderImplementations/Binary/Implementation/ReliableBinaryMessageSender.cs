@@ -1,25 +1,25 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models.Extentions;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Binary.Implementation
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Binary.Implementation
 {
     public class ReliableBinaryMessageSender : IReliableBinaryMessageSender
     {
-        private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
+        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
         private readonly IMessageGateway _gateway;
         private readonly ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> _fileIdToUnsentItems = new();
         private readonly ConcurrentDictionary<Guid, HashSet<int>> _ackedChunks = new();
         private const int MetadataFilesCount = 1;
 
         public ReliableBinaryMessageSender(IMessageGateway gateway,
-            IUnsentMessagesRedisService unsentMessagesRedisService)
+            ILongTermMessageStorageService longTermMessageStorageService)
         {
-            _unsentMessagesRedisService = unsentMessagesRedisService;
+            _longTermMessageStorageService = longTermMessageStorageService;
             _gateway = gateway;
         }
 
@@ -153,7 +153,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _fileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
             foreach (var unsentItem in unsentItems ?? new())
             {
-                await _unsentMessagesRedisService.SaveAsync(unsentItem.Message);
+                await _longTermMessageStorageService.SaveAsync(unsentItem.Message);
             }
         }
 

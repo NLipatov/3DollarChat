@@ -1,19 +1,18 @@
 ﻿using System.Text.Json;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis.RedisConnectionConfigurer;
 using Ethachat.Server.Services.LogService;
-using Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
 using EthachatShared.Models.Message;
 using Microsoft.IdentityModel.Tokens;
 using StackExchange.Redis;
-using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
-namespace Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis.UnsentMessageHandling;
 
-public class UnsentMessagesRedisService : IUnsentMessagesRedisService
+public class RedisMessageStorageService : ILongTermMessageStorageService
 {
     private readonly IRedisConnectionConfigurer _redisConnectionConfigurer;
     private readonly ILogService _logService;
 
-    public UnsentMessagesRedisService(IRedisConnectionConfigurer redisConnectionConfigurer, ILogService logService)
+    public RedisMessageStorageService(IRedisConnectionConfigurer redisConnectionConfigurer, ILogService logService)
     {
         _redisConnectionConfigurer = redisConnectionConfigurer;
         _logService = logService;

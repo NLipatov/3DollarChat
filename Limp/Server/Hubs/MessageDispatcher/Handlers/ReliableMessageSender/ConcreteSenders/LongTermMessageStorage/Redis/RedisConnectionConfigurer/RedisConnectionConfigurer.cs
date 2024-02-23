@@ -1,6 +1,6 @@
 using StackExchange.Redis;
 
-namespace Ethachat.Server.Utilities.Redis.RedisConnectionConfigurer;
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis.RedisConnectionConfigurer;
 
 public class RedisConnectionConfigurer : IRedisConnectionConfigurer
 {

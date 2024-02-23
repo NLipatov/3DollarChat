@@ -1,0 +1,4 @@
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Binary;
+
+public interface IReliableBinaryMessageSender : IReliableMessageSender
+{}

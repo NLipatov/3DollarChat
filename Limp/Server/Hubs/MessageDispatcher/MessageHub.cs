@@ -1,12 +1,12 @@
-﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.Kafka;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Models.Authentication.Models;
@@ -25,7 +25,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IMessageMarker _messageMarker;
         private readonly IWebPushSender _webPushSender;
-        private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
+        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
         private readonly IUsernameResolverService _usernameResolverService;
         private static ReliableMessageSender _reliableMessageSender;
         private static IHubContext<MessageHub> _context;
@@ -37,7 +37,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             IOnlineUsersManager onlineUsersManager,
             IMessageMarker messageSender,
             IWebPushSender webPushSender,
-            IUnsentMessagesRedisService unsentMessagesRedisService,
+            ILongTermMessageStorageService longTermMessageStorageService,
             IUsernameResolverService usernameResolverService,
             IHubContext<MessageHub> context)
         {
@@ -48,12 +48,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _onlineUsersManager = onlineUsersManager;
             _messageMarker = messageSender;
             _webPushSender = webPushSender;
-            _unsentMessagesRedisService = unsentMessagesRedisService;
+            _longTermMessageStorageService = longTermMessageStorageService;
             _usernameResolverService = usernameResolverService;
 
             if (_reliableMessageSender is null)
             {
-                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _unsentMessagesRedisService);
+                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _longTermMessageStorageService);
             }
         }
 
@@ -125,7 +125,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 await PushOnlineUsersToClients();
             }
 
-            var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
+            var storedMessages = await _longTermMessageStorageService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
                 await Dispatch(m).ConfigureAwait(false);
@@ -153,7 +153,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 _reliableMessageSender.EnqueueAsync(message);
             else
             {
-                _unsentMessagesRedisService.SaveAsync(message);
+                _longTermMessageStorageService.SaveAsync(message);
                 if (message.Type is not MessageType.DataPackage)
                     SendNotificationAsync(message);
             }
@@ -201,7 +201,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public async Task DeleteConversation(string requester, string acceptor)
         {
-            await Clients.Group(acceptor).SendAsync("OnConvertationDeleteRequest", requester);
+            _ = _longTermMessageStorageService.GetSaved(acceptor);
+            await Clients.Group(acceptor).SendAsync("OnConversationDeleteRequest", requester);
         }
 
         public async Task OnDataTranferSuccess(Guid fileId, string fileSender)

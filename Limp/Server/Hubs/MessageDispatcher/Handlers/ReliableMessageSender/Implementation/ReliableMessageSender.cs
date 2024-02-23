@@ -1,10 +1,10 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Binary;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Binary.Implementation;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Text;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Text.Implementation;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Binary;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Binary.Implementation;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text.Implementation;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
@@ -14,16 +14,16 @@ public class ReliableMessageSender : IReliableMessageSender
     private static IReliableTextMessageSender _reliableTextMessageSender;
     private static IReliableBinaryMessageSender _reliableBinaryMessageSender;
 
-    public ReliableMessageSender(IMessageGateway gateway, IUnsentMessagesRedisService unsentMessagesRedisService)
+    public ReliableMessageSender(IMessageGateway gateway, ILongTermMessageStorageService longTermMessageStorageService)
     {
         if (_reliableTextMessageSender is null)
         {
-            _reliableTextMessageSender = new ReliableTextMessageSender(gateway, unsentMessagesRedisService);
+            _reliableTextMessageSender = new ReliableTextMessageSender(gateway, longTermMessageStorageService);
         }
 
         if (_reliableBinaryMessageSender is null)
         {
-            _reliableBinaryMessageSender = new ReliableBinaryMessageSender(gateway, unsentMessagesRedisService);
+            _reliableBinaryMessageSender = new ReliableBinaryMessageSender(gateway, longTermMessageStorageService);
         }
     }
 

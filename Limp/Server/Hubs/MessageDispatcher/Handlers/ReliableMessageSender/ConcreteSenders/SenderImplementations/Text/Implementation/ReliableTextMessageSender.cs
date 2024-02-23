@@ -1,25 +1,25 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Models.Extentions;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.Text.Implementation
+namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text.Implementation
 {
     public class ReliableTextMessageSender : IReliableTextMessageSender
     {
-        private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
+        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
         private readonly IMessageGateway _gateway;
         private ConcurrentDictionary<Guid, UnsentItem> _unsentItems = new();
         private ConcurrentDictionary<Guid, bool> _acked = new();
         private volatile bool _isSending;
 
         public ReliableTextMessageSender(IMessageGateway gateway,
-            IUnsentMessagesRedisService unsentMessagesRedisService)
+            ILongTermMessageStorageService longTermMessageStorageService)
         {
-            _unsentMessagesRedisService = unsentMessagesRedisService;
+            _longTermMessageStorageService = longTermMessageStorageService;
             _gateway = gateway;
         }
 
@@ -62,7 +62,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
             if (unsentItems is not null)
             {
-                await _unsentMessagesRedisService.SaveAsync(unsentItems.Message);
+                await _longTermMessageStorageService.SaveAsync(unsentItems.Message);
             }
         }
 

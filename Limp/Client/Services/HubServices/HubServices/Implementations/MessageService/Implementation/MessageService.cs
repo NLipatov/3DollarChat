@@ -343,7 +343,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived");
             });
 
-            hubConnection.On<string>("OnConvertationDeleteRequest",
+            hubConnection.On<string>("OnConversationDeleteRequest",
                 partnerName => { _messageBox.Delete(partnerName); });
 
             hubConnection.On<string>("OnTyping", (partnerName) =>

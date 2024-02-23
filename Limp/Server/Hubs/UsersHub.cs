@@ -134,19 +134,12 @@ namespace Ethachat.Server.Hubs
 
                 await Clients.Caller.SendAsync("OnNameResolve", username);
 
-                if (isTokenValid && !string.IsNullOrWhiteSpace(username))
+                await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
                 {
-                    await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
-                    {
-                        Key = RSAPublicKey.Value!.ToString(),
-                        Username = username,
-                        AuthenticationType = authenticationType,
-                    });
-                }
-                else
-                {
-                    throw new ApplicationException("Cannot set an RSA Public key - given access token is not valid.");
-                }
+                    Key = RSAPublicKey.Value!.ToString(),
+                    Username = username,
+                    AuthenticationType = authenticationType,
+                });
             }
             catch (Exception e)
             {

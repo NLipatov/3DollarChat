@@ -5,6 +5,8 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message;
+@using System.Text.RegularExpressions
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
@@ -13,7 +15,7 @@
 @inject IPackageMultiplexerService PackageMultiplexerService
 @implements IDisposable
 
-@if(message != null)
+@if (message != null)
 {
     <div class="message @messageClass" @ref="MessageElement">
         <div class="message-text">
@@ -30,19 +32,21 @@
             else if (!string.IsNullOrWhiteSpace(message.BlobLink))
             {
                 <div>
-                    <a 
-                        href="@message.BlobLink" 
+                    <a
+                        href="@message.BlobLink"
                         download="@message.Metadata!.Filename"
-                       style="text-decoration: none;">
-                    <i class="bi bi-cloud-download-fill"></i>
-                    <span>@message.Metadata?.Filename</span>
-                </a>
+                        style="text-decoration: none;">
+                        <i class="bi bi-cloud-download-fill"></i>
+                        <span>@message.Metadata?.Filename</span>
+                    </a>
                 </div>
             }
-            
+
             @if (!string.IsNullOrWhiteSpace(message.PlainText))
             {
-                <span>@(message.PlainText)</span>
+                @(message.PlainText
+                    .AsMarkupString()
+                    .FormatLinks())
             }
         </div>
         <div class="message-footer">
@@ -59,7 +63,7 @@
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
                     }
-                    else if(!message.IsRegisteredByHub)
+                    else if (!message.IsRegisteredByHub)
                     {
                         @if (message.Type is MessageType.BlobLink)
                         {
@@ -108,14 +112,11 @@
     public ElementReference MessageElement { get; set; }
     public bool IsIntersecting { get; set; }
 
-    [Parameter]
-    public EventCallback<ClientMessage> OnResend { get; set; }
+    [Parameter] public EventCallback<ClientMessage> OnResend { get; set; }
 
-    [Parameter]
-    public ClientMessage? message { get; set; }
+    [Parameter] public ClientMessage? message { get; set; }
 
-    [Parameter]
-    public string? myUsername { get; set; }
+    [Parameter] public string? myUsername { get; set; }
 
     private bool isOutcoming;
     private string messageClass = string.Empty;
@@ -141,7 +142,7 @@
             _messageBox.OnDelivered(id);
             StateHasChanged();
         }, "OnFileReceived", componentId);
-        
+
         _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
             _messageBox.OnSeen(id);
@@ -152,10 +153,10 @@
         {
             if (message.Metadata.DataFileId != fileId)
                 return;
-            
+
             if (chunksLoaded + 1 > message.Metadata.ChunksCount)
                 return;
-            
+
             chunksLoaded += 1;
             StateHasChanged();
         }, "OnChunkLoaded", componentId);
@@ -179,6 +180,7 @@
 
     public async Task SetupObserver()
     {
-        #warning Todo: intersection observer
+#warning Todo: intersection observer
     }
+
 }

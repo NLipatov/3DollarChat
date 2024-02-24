@@ -5,5 +5,4 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public interface IBinaryReceivingManager
 {
     Task<(bool, Guid)> StoreAsync(Message message);
-    Message GenerateSyncMessage(Message message);
 }

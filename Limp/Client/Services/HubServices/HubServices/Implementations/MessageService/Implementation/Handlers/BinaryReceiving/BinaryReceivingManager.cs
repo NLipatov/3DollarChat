@@ -42,24 +42,6 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         return progressStatus;
     }
 
-    public Message GenerateSyncMessage(Message message)
-    {
-        var index = message.Type is MessageType.Metadata ? -1 : message.Package!.Index;
-        var fileId = message.Type is MessageType.Metadata ? message.Metadata!.DataFileId : message.Package!.FileDataid;
-
-        return new Message
-        {
-            Id = message.Id,
-            Sender = message.Sender,
-            Type = message.Type,
-            SyncItem = new SyncItem
-            {
-                Index = index,
-                FileId = fileId
-            }
-        };
-    }
-
     private async Task<ClientPackage> GetDecryptedPackage(Message message)
     {
         var decryptedB64 = await _cryptographyService.DecryptAsync<AESHandler>(new()

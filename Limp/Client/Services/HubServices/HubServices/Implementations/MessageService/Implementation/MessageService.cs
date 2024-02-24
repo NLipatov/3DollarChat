@@ -10,6 +10,7 @@ using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecrypti
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
@@ -20,7 +21,6 @@ using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.TransferStatus;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -47,7 +47,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
         private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
-
+        private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? hubConnection { get; set; }
 
         public MessageService
@@ -184,30 +184,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (message.Sender != "You")
                 {
-                    if (hubConnection.State != HubConnectionState.Connected)
-                    {
-                        await hubConnection.StopAsync();
-                        await hubConnection.StartAsync();
-                    }
-
-                    if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
-                    {
-                        await (await GetHubConnectionAsync())
-                            .SendAsync("OnAck", _binaryReceivingManager.GenerateSyncMessage(message));
-                    }
-                    else
-                    {
-                        await (await GetHubConnectionAsync()).SendAsync("OnAck", new Message
-                        {
-                            SyncItem = new SyncItem()
-                            {
-                                MessageId = message.Id,
-                            },
-                            Type = MessageType.SyncItem,
-                            Sender = message.Sender,
-                            TargetGroup = message.TargetGroup
-                        });
-                    }
+                    await (await GetHubConnectionAsync())
+                        .SendAsync("OnAck", AckMessageBuilder.CreateMessageAck(message));
 
                     if (message.Type is MessageType.TextMessage)
                     {

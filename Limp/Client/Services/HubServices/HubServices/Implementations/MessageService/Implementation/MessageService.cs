@@ -1,7 +1,6 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.KeyStorage;
-using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
@@ -14,6 +13,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
+using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;

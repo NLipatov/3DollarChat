@@ -1,0 +1,13 @@
+.avatar-indicator img {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+}
+
+.avatar-indicator.online img {
+    border: 1.5px solid dimgrey;
+}
+
+.online img{
+    border: 1.5px solid lawngreen !important;
+}

@@ -1,0 +1,179 @@
+﻿@page "/user/{topicName?}"
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput
+@using Ethachat.Client.Cryptography.KeyStorage;
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using EthachatShared.Models.ConnectedUsersManaging;
+@using EthachatShared.Encryption;
+@using Ethachat.Client.UI;
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying;
+@using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.BrowserKeyStorageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying
+@inject NavigationManager _navigationManager
+@inject IJSRuntime _jS
+@inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IBrowserKeyStorage _localKeyManager
+@inject IUsersService _usersService
+@inject IAuthenticationHandler AuthenticationHandler
+@implements IDisposable
+
+@if (string.IsNullOrWhiteSpace(topicName))
+{
+    <div class="p-2">
+        <Callout Type="CalloutType.Warning">
+            <span>
+                Specify a username in a url like so: "user/<strong>Pavel</strong>"
+            </span>
+        </Callout>
+    </div>
+}
+else
+{
+    <PageTitle>Chat with @topicName</PageTitle>
+
+    <AuthenticatedView>
+        <AuthenticatedContent>
+
+            <ChatHeader IsOnline=@(_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
+                        PartnerName=@topicName
+                        OnAESRenewal=@(async () => await _messageService.NegotiateOnAESAsync(topicName))
+                        AESKey=@AESKey />
+
+
+            @if (AESKey is null || AESKey.IsAccepted is false)
+            {
+                @if (_usersOnlineMessage.UserConnections.Select(x=>x.Username).Contains(topicName))
+                {
+                    <div class="card-holder">
+                        <CardComponent
+                            Style="margin: 3rem;"
+                            Title="AES exchange."
+                            BodyTitle="AES exchange in progress."
+                            BodyText="Now we are exchanging the key for encrypting messages."/>
+                    </div>
+                }
+                else
+                {
+                    <div class="card-holder">
+                        <CardComponent
+                            Style="margin: 3rem;"
+                            Title="AES exchange."
+                            BodyTitle="AES exchange is not possible."
+                            BodyText="Your partner is offline."/>
+                    </div>
+                }
+            }
+            else
+            {
+                <MessageList @ref=MessageListComponent
+                             targetGroup=@topicName
+                             myUsername=@myUsername />
+            }
+
+            <MessageInputBox MyUsername=@myUsername
+                             TopicName=@topicName />
+
+        </AuthenticatedContent>
+        <UnauthenticatedContent>
+            <UnAuthorized />
+        </UnauthenticatedContent>
+    </AuthenticatedView>
+}
+
+@code {
+    [Parameter]
+    public string topicName { get; set; } = string.Empty;
+    [Parameter]
+    public string myUsername { get; set; } = string.Empty;
+    private Key? AESKey { get; set; }
+    private Guid ComponentId { get; set; }
+    private MessageList? MessageListComponent { get; set; } = new();
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        myUsername = await AuthenticationHandler.GetUsernameAsync();
+        
+        //If username was not read, ask user to relogin
+        if (string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/signIn");
+            return;
+        }
+
+        SubscribeToHubEvents();
+
+        await GetAESKeyAsync();
+
+        await _usersService.CheckIfUserOnline(topicName);
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<string>(OnAESKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnection>(OnIsUserOnlineResponse, "IsUserOnlineResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
+    }
+
+    private void OnAESUpdated(bool keyRenewed)
+    {
+        AESKey = InMemoryKeyStorage.AESKeyStorage.FirstOrDefault(x => x.Key == topicName).Value;
+        StateHasChanged();
+    }
+
+    private async Task OnIsUserOnlineResponse(UserConnection userConnection)
+    {
+        if(userConnection.Username == topicName)
+        {
+            if (userConnection.ConnectionIds.Count > 0)
+            {
+                _usersOnlineMessage.UserConnections = new[] { userConnection };
+            }
+                
+            StateHasChanged();
+        }
+    }
+
+    private async Task GetAESKeyAsync()
+    {
+        AESKey = await _localKeyManager.GetAESKeyForChat(topicName);
+        if (AESKey != null)
+        {
+            StateHasChanged();
+            return;
+        }
+
+        await _messageService.NegotiateOnAESAsync(topicName);
+    }
+
+    public async Task OnAESKeyReady(string partnerName)
+    {
+        AESKey = await _localKeyManager.GetAESKeyForChat(partnerName);
+        if (AESKey == null)
+            throw new ApplicationException("Could not get an AES key.");
+
+        await _localKeyManager.SaveInMemoryKeysInLocalStorage();
+        StateHasChanged();
+    }
+
+    private void OnUsersOnlineUpdate(UserConnectionsReport usersOnlineMessage)
+    {
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        {
+            _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
+        }
+    }
+}

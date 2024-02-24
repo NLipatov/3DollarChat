@@ -1,0 +1,51 @@
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+@if (IsTyping)
+{
+    <i title="typing" class="bi bi-pencil-fill"></i>
+}
+
+@code {
+    [Parameter] public string PartnerUsername { get; set; } = string.Empty;
+    [Parameter] public int CooldownMs { get; set; } = 600;
+    private bool IsTyping { get; set; }
+    private CancellationTokenSource typingCancellation = new();
+    
+    protected override void SubscribeToHubEvents()
+    {
+        base.SubscribeToHubEvents();
+        HubServiceSubscriptionManager.AddCallback<string>(async partnerName =>
+        {
+            await OnTyping(partnerName);
+        }, "OnTyping", ComponentId);
+    }
+    
+    private async Task OnTyping(string partnerName)
+    {
+        if (partnerName == PartnerUsername)
+        {
+            CancellationToken cancellationToken;
+            await typingCancellation.CancelAsync();
+            typingCancellation = new();
+            cancellationToken = typingCancellation.Token;
+
+            //Show indicator
+            IsTyping = true;
+            StateHasChanged();
+
+            //Wait for some time and remove indicator
+            try
+            {
+                await Task.Delay(CooldownMs, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                //Token's cancelled meaning that event is still happening
+                return;
+            }
+
+            IsTyping = false;
+            StateHasChanged();
+        }
+    }
+}

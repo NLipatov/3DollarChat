@@ -1,0 +1,94 @@
+﻿@page "/signin/webauthn"
+@page "/signup/webauthn"
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.LocalStorageService
+@using Ethachat.Client.UI.CommonComponents.InputForms.Registration;
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login;
+@using EthachatShared.Models.Authentication.Models.UserAuthentication
+@inject IJSRuntime Js;
+@inject IAuthService AuthService
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@inject ILocalStorageService LocalStorageService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+@if (string.IsNullOrWhiteSpace(AuthorisationServerAddress))
+{
+    <span>Loading</span>
+}
+else
+{
+    @if (IsRegisterFormVisible)
+    {
+        <RegistrationForm 
+            OnRegisterEvent="async (dto) => await OnRegister(dto)"
+            IsAuthenticationMethodRequiresPassword="false"/>
+    }
+    
+    @if (IsLoginFormVisible)
+    {
+        <LoginForm
+            OnLoginEvent="async (dto) => await OnLogin(dto)"
+            IsWebAuthnUsed="true"/> 
+        
+        @if (!string.IsNullOrWhiteSpace(LoginResultMessage))
+        {
+            <p>
+                @LoginResultMessage
+            </p>
+        }
+    }
+}
+
+@code {
+    [Parameter]
+    public bool IsRegisterFormVisible { get; set; }
+    
+    [Parameter]
+    public bool IsLoginFormVisible { get; set; }
+    
+    private IJSObjectReference? module;
+    private Guid ComponentId { get; set; }
+    private string AuthorisationServerAddress { get; set; } = string.Empty;
+    private string LoginResultMessage { get; set; } = string.Empty;
+
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        ComponentId = Guid.NewGuid();
+        SubscribeToHubEvents();
+        await AuthService.GetAuthorisationServerAddress();
+
+        await base.OnInitializedAsync();
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        HubServiceSubscriptionManager.AddCallback<string>(OnAuthorisationServerAddressIsResolved, "OnAuthorisationServerAddressResponse", ComponentId);
+    }
+
+    private async Task OnAuthorisationServerAddressIsResolved(string address)
+    {
+        await Js.InvokeVoidAsync("setServiceAddress", address);
+        AuthorisationServerAddress = address;
+        StateHasChanged();
+    }
+
+    private async Task OnRegister(UserAuthentication newUserDTO)
+    {
+        await Js.InvokeVoidAsync("handleRegisterSubmit", newUserDTO.Username, newUserDTO.Username);
+    }
+
+    private async Task OnLogin(UserAuthentication userDTO)
+    {
+        await Js.InvokeVoidAsync("handleSignInSubmit", userDTO.Username);
+        var credentialId = await LocalStorageService.ReadPropertyAsync("credentialId");
+        await LocalStorageService.WritePropertyAsync("credentialIdCounter", "1");
+        if (string.IsNullOrWhiteSpace(credentialId))
+            LoginResultMessage = "Login attempt failed";
+        else
+            NavigationManager.NavigateTo("/contacts");
+    }
+}

@@ -1,0 +1,41 @@
+﻿@inject NavigationManager _navigationManager
+@using Ethachat.Client.UI.AuthenticationChecks
+@page "/settings"
+
+<AuthenticatedView>
+    <AuthenticatedContent>
+        <div class="p-2">
+            <Card
+                Color="CardColor.Primary"
+                Class="mb-4"
+                Style="width:100%; cursor: pointer;"
+                @onclick=@(() => _navigationManager.NavigateTo("settings/notifications"))>
+                <CardHeader>
+                    <Icon Name="IconName.BellFill"/>
+                    Web Push
+                </CardHeader>
+                <CardBody>
+                    <CardTitle>Manage your push notifications</CardTitle>
+                    <CardText>See active subscriptions, add new one, delete old ones and so on</CardText>
+                </CardBody>
+            </Card>
+            <Card
+                Color="CardColor.Primary"
+                Class="mb-4"
+                Style="width:100%; cursor: pointer;"
+                @onclick=@(() => _navigationManager.NavigateTo("settings/aes-exchange-settings"))>
+                <CardHeader>
+                    <Icon Name="IconName.PatchCheckFill" Color="IconColor.Success"/>
+                    Trusted StoredContacts
+                </CardHeader>
+                <CardBody>
+                    <CardTitle>Manage your trusted contacts</CardTitle>
+                    <CardText>Set up a trusted password for a contacts</CardText>
+                </CardBody>
+            </Card>
+        </div>
+    </AuthenticatedContent>
+    <UnauthenticatedContent>
+        <UnAuthorized/>
+    </UnauthenticatedContent>
+</AuthenticatedView>

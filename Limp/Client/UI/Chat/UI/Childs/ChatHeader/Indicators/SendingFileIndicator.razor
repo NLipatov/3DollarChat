@@ -1,0 +1,51 @@
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService.Implementation
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+@if (IsSendingBinary)
+{
+    <i title="sending a binary file" class="bi bi-file-earmark-binary-fill"></i>
+}
+
+@code {
+    [Parameter] public int CooldownMs { get; set; } = 600;
+    [Parameter] public string PartnerUsername { get; set; } = string.Empty;
+    [Parameter] public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
+    private bool IsSendingBinary { get; set; }
+    private CancellationTokenSource typingCancellation = new();
+
+    protected override void SubscribeToHubEvents()
+    {
+        base.SubscribeToHubEvents();
+        HubServiceSubscriptionManager.AddCallback<string>(OnSendingFile, "OnBinaryTransmitting", ComponentId);
+    }
+
+    private async Task OnSendingFile(string partnerName)
+    {
+        if (partnerName == PartnerUsername)
+        {
+            CancellationToken cancellationToken;
+            await typingCancellation.CancelAsync();
+            typingCancellation = new();
+            cancellationToken = typingCancellation.Token;
+
+            //Show indicator
+            IsSendingBinary = true;
+            StateHasChanged();
+
+            //Wait for some time and remove indicator
+            try
+            {
+                await Task.Delay(CooldownMs, cancellationToken);
+            }
+            catch (TaskCanceledException)
+            {
+                //Token's cancelled meaning that event is still happening
+                return;
+            }
+
+            IsSendingBinary = false;
+            StateHasChanged();
+        }
+    }
+
+}

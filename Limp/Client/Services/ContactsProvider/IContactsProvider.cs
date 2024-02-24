@@ -1,4 +1,4 @@
-﻿using Ethachat.Client.Pages.Contacts.Models;
+﻿using Ethachat.Client.UI.Contacts.Models;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.ContactsProvider

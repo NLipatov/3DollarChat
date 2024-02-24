@@ -1,0 +1,24 @@
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@implements IDisposable
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+
+@code {
+    protected Guid ComponentId { get; set; }
+    public void Dispose()
+    {
+        HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        ComponentId = Guid.NewGuid();
+        SubscribeToHubEvents();
+    }
+
+    protected IHubServiceSubscriptionManager HubServiceSubscriptionManager => _hubServiceSubscriptionManager;
+
+    protected virtual void SubscribeToHubEvents()
+    {
+    }
+
+}

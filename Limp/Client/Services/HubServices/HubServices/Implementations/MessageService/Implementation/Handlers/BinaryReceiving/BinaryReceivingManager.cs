@@ -115,7 +115,8 @@ public class BinaryReceivingManager : IBinaryReceivingManager
             Type = MessageType.BlobLink,
             TargetGroup = message.TargetGroup,
             Sender = message.Sender,
-            Metadata = metadata
+            Metadata = metadata,
+            DateSent = message.DateSent
         });
     }
 

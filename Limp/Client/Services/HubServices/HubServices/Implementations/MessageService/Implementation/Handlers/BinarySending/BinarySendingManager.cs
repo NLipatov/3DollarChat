@@ -83,6 +83,7 @@ public class BinarySendingManager : IBinarySendingManager
             Sender = metadataMessage.Sender,
             TargetGroup = metadataMessage.TargetGroup,
             Metadata = metadataMessage.Metadata,
+            DateSent = DateTime.UtcNow
         }, getHubConnection);
 
         await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.BrowserFile, message.Sender,
@@ -105,6 +106,7 @@ public class BinarySendingManager : IBinarySendingManager
                 Sender = message.Sender,
                 TargetGroup = message.TargetGroup,
                 Type = MessageType.DataPackage,
+                DateSent = DateTime.UtcNow
             };
 
             await SendViaHubConnectionAsync(packageMessage, getHubConnection);
@@ -149,7 +151,8 @@ public class BinarySendingManager : IBinarySendingManager
                 Type = MessageType.BlobLink,
                 TargetGroup = receiver,
                 Sender = sender,
-                Metadata = metadata
+                Metadata = metadata,
+                DateSent = DateTime.UtcNow
             });
         }
     }

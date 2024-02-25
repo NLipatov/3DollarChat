@@ -69,13 +69,13 @@
                         {
                             <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
                                 <span>@($"{chunksLoaded}/{message.Metadata!.ChunksCount}")</span>
-                                <i class="bi bi-arrow-clockwise">Resend</i>
+                                <i class="bi bi-arrow-clockwise"></i>
                             </span>
                         }
                         else
                         {
                             <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <i class="bi bi-arrow-clockwise">Resend</i>
+                                <i class="bi bi-arrow-clockwise"></i>
                             </span>
                         }
                     }

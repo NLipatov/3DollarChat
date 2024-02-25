@@ -214,7 +214,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                             if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
                                 clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
-                            await _messageBox.AddMessageAsync(clientMessage, false);
+                            _messageBox.AddMessage(clientMessage);
                         }
                         else
                         {
@@ -450,7 +450,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
         {
-            await _messageBox.AddMessageAsync(new ClientMessage
+            _messageBox.AddMessage(new ClientMessage
                 {
                     Id = messageId,
                     Sender = myUsername,
@@ -458,8 +458,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     PlainText = text,
                     DateSent = DateTime.UtcNow,
                     Type = MessageType.TextMessage
-                },
-                isEncrypted: false);
+                });
         }
 
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)

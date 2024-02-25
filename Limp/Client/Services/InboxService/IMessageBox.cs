@@ -8,7 +8,7 @@ namespace Ethachat.Client.Services.InboxService
         /// <summary>
         /// Is message with such Id already added to MessageBox
         /// </summary>
-        bool Contains(Guid messageId);
+        bool Contains(Message message);
         
         public List<ClientMessage> Messages { get; }
 
@@ -19,12 +19,7 @@ namespace Ethachat.Client.Services.InboxService
         /// <summary>
         /// Adds message to message box
         /// </summary>
-        Task AddMessageAsync(ClientMessage message, bool isEncrypted = true);
-
-        /// <summary>
-        /// Adds messages to message box
-        /// </summary>
-        Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true);
+        void AddMessage(ClientMessage message);
 
         /// <summary>
         /// Marks message as seen

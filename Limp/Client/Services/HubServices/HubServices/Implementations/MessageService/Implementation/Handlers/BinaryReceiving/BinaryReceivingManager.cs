@@ -108,7 +108,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
 
         var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
 
-        await _messageBox.AddMessageAsync(new ClientMessage()
+        _messageBox.AddMessage(new ClientMessage()
         {
             BlobLink = blobUrl,
             Id = metadata.DataFileId,
@@ -116,7 +116,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
             TargetGroup = message.TargetGroup,
             Sender = message.Sender,
             Metadata = metadata
-        }, isEncrypted: false);
+        });
     }
 
     public ClientPackage[] PopData(Guid fileId)

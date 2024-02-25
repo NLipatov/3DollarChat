@@ -1,5 +1,4 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message;
 
@@ -7,60 +6,58 @@ namespace Ethachat.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {
-        private readonly IMessageDecryptor _messageDecryptor;
-        private readonly ICallbackExecutor _callbackExecutor;
+        public MessageBox
+            (ICallbackExecutor callbackExecutor)
+        {
+            _callbackExecutor = callbackExecutor;
+        }
 
-        public bool Contains(Guid messageId) => Messages
-            .Select(x=>x.Id)
-            .Contains(messageId);
+        private readonly ICallbackExecutor _callbackExecutor;
+        private HashSet<Guid> _storedSet = new();
 
         public List<ClientMessage> Messages { get; private set; } = new();
 
-        public MessageBox
-        (IMessageDecryptor messageDecryptor,
-            ICallbackExecutor callbackExecutor)
+        public bool Contains(Message message) => _storedSet.Contains(GetMessageKey(message));
+
+        private Guid GetMessageKey(Message message)
         {
-            _messageDecryptor = messageDecryptor;
-            _callbackExecutor = callbackExecutor;
+            return message.Type switch
+            {
+                MessageType.Metadata => (message.Metadata ?? throw new ArgumentException("Invalid metadata"))
+                    .DataFileId,
+                MessageType.DataPackage => (message.Package ?? throw new ArgumentException("Invalid package"))
+                    .FileDataid,
+                _ => message.Id
+            };
         }
 
         public void Delete(string targetGroup)
         {
-            Messages.RemoveAll(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
+            var messagesToRemove = Messages
+                .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
+
+            Messages.RemoveAll(x => messagesToRemove.Contains(x));
+            _storedSet.RemoveWhere(x => messagesToRemove.Any(m => GetMessageKey(m) == x));
+
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
         public void Delete(Message message)
         {
             Messages.RemoveAll(x => x.Id == message.Id);
+            _storedSet.Remove(GetMessageKey(message));
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
-        public async Task AddMessageAsync(ClientMessage message, bool isEncrypted = true)
+        public void AddMessage(ClientMessage message)
         {
-            if (isEncrypted)
-                message.PlainText = (await _messageDecryptor.DecryptAsync(message)).Cyphertext;
-
             Messages.Add(message);
+
+            _storedSet.Add(GetMessageKey(message));
 
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
 
             _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "NewUnreadedMessage");
-        }
-
-        public async Task AddMessagesAsync(ClientMessage[] messages, bool isEncrypted = true)
-        {
-            if (isEncrypted)
-            {
-                foreach (var encryptedMessage in messages)
-                {
-                    encryptedMessage.PlainText = (await _messageDecryptor.DecryptAsync(encryptedMessage)).Cyphertext;
-                }
-            }
-
-            Messages.AddRange(messages);
-
-            _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
         public async Task OnDelivered(Guid messageId)

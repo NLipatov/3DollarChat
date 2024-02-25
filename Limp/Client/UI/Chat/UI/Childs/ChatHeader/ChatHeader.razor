@@ -12,18 +12,20 @@
 <div class="header">
     <AvatarOnlineIndicator
         PartnerUsername="@PartnerName"/>
-    
+
     <div style="display: flex;
                 flex-direction: column;
                 margin-left: 10px;">
-        
+
         <span class="name">@PartnerName</span>
 
-        <TypingIndicator
-            PartnerUsername="@PartnerName"/>
+        <div style="display: flex; flex-direction: row; gap: 10px;">
+            <TypingIndicator
+                PartnerUsername="@PartnerName"/>
 
-        <SendingFileIndicator
-            PartnerUsername="@PartnerName"/>
+            <SendingFileIndicator
+                PartnerUsername="@PartnerName"/>
+        </div>
 
     </div>
     <div class="key-info">

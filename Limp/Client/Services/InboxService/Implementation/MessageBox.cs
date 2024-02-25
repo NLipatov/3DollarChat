@@ -9,9 +9,10 @@ namespace Ethachat.Client.Services.InboxService.Implementation
     {
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly ICallbackExecutor _callbackExecutor;
-        private readonly HashSet<Guid> messageIdSet = new();
 
-        public bool Contains(Guid messageId) => messageIdSet.Contains(messageId);
+        public bool Contains(Guid messageId) => Messages
+            .Select(x=>x.Id)
+            .Contains(messageId);
 
         public List<ClientMessage> Messages { get; private set; } = new();
 

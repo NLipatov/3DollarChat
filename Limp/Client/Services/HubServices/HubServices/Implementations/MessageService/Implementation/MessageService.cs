@@ -186,12 +186,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 {
                     await (await GetHubConnectionAsync())
                         .SendAsync("OnAck", AckMessageBuilder.CreateMessageAck(message));
+                    
+                    if (_messageBox.Contains(message))
+                        return;
 
                     if (message.Type is MessageType.TextMessage)
                     {
-                        if (_messageBox.Contains(message.Id))
-                            return;
-                        
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
                                 $"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
@@ -224,9 +224,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
-                        if (_messageBox.Contains(message.Id))
-                            return;
-                        
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnBinaryTransmitting");
                         
                         (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);

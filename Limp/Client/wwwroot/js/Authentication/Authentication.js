@@ -89,7 +89,7 @@ function coerceToBase64Url(thing) {
 // HELPERS
 
 function showErrorAlert(message, error) {
-    passErrorToDotNet("Authentication.js", message + ((error === null || error === undefined) ? "" : error.toString()));
+    passErrorToDotNet("Authentication.js", message + ((error === null || error === undefined) ? "" : " " + error.toString()));
 }
 
 function detectFIDOSupport() {

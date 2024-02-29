@@ -17,6 +17,7 @@
     <EmbeddedResource Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
     <None Remove="Pages\Chat\Logic\ComponentBackingServices\**" />
     <None Remove="Services\HubConnectionProvider\Implementation\HubConnectionAndInteraction\**" />
+    <None Include="wwwroot\js\Authentication\Authentication.js" />
   </ItemGroup>
 
   <ItemGroup>

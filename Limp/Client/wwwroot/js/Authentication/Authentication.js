@@ -89,18 +89,7 @@ function coerceToBase64Url(thing) {
 // HELPERS
 
 function showErrorAlert(message, error) {
-    let footermsg = '';
-    if (error) {
-        footermsg = 'exception:' + error.toString();
-    }
-    console.log(`error: ${footermsg}`);
-    //Swal.fire({
-    //    type: 'error',
-    //    title: 'Error',
-    //    text: message,
-    //    footer: footermsg
-    //    //footer: '<a href>Why do I have this issue?</a>'
-    //})
+    passErrorToDotNet("Authentication.js", message + ((error === null || error === undefined) ? "" : error.toString()));
 }
 
 function detectFIDOSupport() {
@@ -273,9 +262,6 @@ async function verifyAssertionWithServer(assertedCredential) {
 //End of section: Login
 
 async function handleRegisterSubmit(username, displayName) {
-    console.log("got username - " + username)
-    console.log("got displayName - " + displayName)
-    
     // possible values: none, direct, indirect
     let attestation_type = "none";
     // possible values: <empty>, platform, cross-platform
@@ -303,7 +289,7 @@ async function handleRegisterSubmit(username, displayName) {
 
     } catch (e) {
         console.error(e);
-        let msg = "Something wen't really wrong";
+        let msg = "Something went really wrong";
         showErrorAlert(msg);
     }
 

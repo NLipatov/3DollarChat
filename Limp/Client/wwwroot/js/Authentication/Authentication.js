@@ -3,21 +3,18 @@
 let username = "";
 let serviceAddress = "";
 
-function setServiceAddress(address){
+function setServiceAddress(address) {
     serviceAddress = address;
-    console.log("address set: " + serviceAddress);
 }
 
-function setUsername(value){
+function setUsername(value) {
     username = value;
 }
 
-function SetEventListeners(){
+function SetEventListeners() {
     document.getElementById('signin').addEventListener('submit', handleSignInSubmit);
     document.getElementById('register').addEventListener('submit', handleRegisterSubmit);
 }
-
-//Start of section: helper-functions
 
 function coerceToArrayBuffer(thing, name) {
     if (typeof thing === "string") {
@@ -82,15 +79,8 @@ function coerceToBase64Url(thing) {
     thing = thing.replace(/\+/g, "-").replace(/\//g, "_").replace(/=*$/g, "");
 
     return thing;
-};
-
-
-
-// HELPERS
-
-function showErrorAlert(message, error) {
-    passErrorToDotNet("Authentication.js", message + ((error === null || error === undefined) ? "" : " " + error.toString()));
 }
+
 
 function detectFIDOSupport() {
     if (window.PublicKeyCredential === undefined ||
@@ -105,11 +95,6 @@ function detectFIDOSupport() {
     }
 }
 
-/**
- * 
- * Get a form value
- * @param {any} selector
- */
 function value(selector) {
     var el = document.querySelector(selector);
     if (el.type === "checkbox") {
@@ -117,11 +102,6 @@ function value(selector) {
     }
     return el.value;
 }
-
-//End of section: helper-functions
-
-
-//Start of section: Login
 
 async function handleSignInSubmit(username) {
     setUsername(username);
@@ -146,13 +126,9 @@ async function handleSignInSubmit(username) {
         showErrorAlert("Request to server failed", e);
     }
 
-    console.log("Assertion Options Object", makeAssertionOptions);
-
     // show options error to user
     if (makeAssertionOptions.status !== "ok") {
-        console.log("Error creating assertion options");
-        console.log(makeAssertionOptions.errorMessage);
-        showErrorAlert(makeAssertionOptions.errorMessage);
+        showErrorAlert("Error creating assertion options: " + makeAssertionOptions.errorMessage);
         return;
     }
 
@@ -166,25 +142,12 @@ async function handleSignInSubmit(username) {
         listItem.id = Uint8Array.from(atob(fixedId), c => c.charCodeAt(0));
     });
 
-    console.log("Assertion options", makeAssertionOptions);
-
-    console.log("logging in...Tap your security key to login");
-    //Swal.fire({
-    //    title: 'Logging In...',
-    //    text: 'Tap your security key to login.',
-    //    imageUrl: "/images/securitykey.min.svg",
-    //    showCancelButton: true,
-    //    showConfirmButton: false,
-    //    focusConfirm: false,
-    //    focusCancel: false
-    //});
-
     // ask browser for credentials (browser will ask connected authenticators)
     let credential;
     try {
-        credential = await navigator.credentials.get({ publicKey: makeAssertionOptions })
-    } catch (err) {
-        showErrorAlert(err.message ? err.message : err);
+        credential = await navigator.credentials.get({publicKey: makeAssertionOptions})
+    } catch (e) {
+        showErrorAlert("Error getting credentials from navigator.credentials.get: " + e);
     }
 
     try {
@@ -194,10 +157,6 @@ async function handleSignInSubmit(username) {
     }
 }
 
-/**
- * Sends the credential to the the FIDO2 server for assertion
- * @param {any} assertedCredential
- */
 async function verifyAssertionWithServer(assertedCredential) {
 
     // Move data into Arrays incase it is super long
@@ -234,32 +193,15 @@ async function verifyAssertionWithServer(assertedCredential) {
         throw e;
     }
 
-    console.log("Assertion Object", response);
-
-    // show error
     if (response.status !== "ok") {
-        console.log("Error doing assertion");
-        console.log(response.errorMessage);
-        showErrorAlert(response.errorMessage);
+        showErrorAlert("Assertion failed: " + response.errorMessage);
         return;
     }
 
-    // show success message
     localStorage.setItem("credentialUsername", username);
     localStorage.setItem("credentialId", response.credentialId);
     localStorage.setItem("credentialIdCounter", response.counter);
-    //await Swal.fire({
-    //    title: 'Logged In!',
-    //    text: 'You\'re logged in successfully.',
-    //    type: 'success',
-    //    timer: 2000
-    //});
-
-    // redirect to dashboard to show keys
-    window.location.href = "/dashboard/" + value("#login-username");
 }
-
-//End of section: Login
 
 async function handleRegisterSubmit(username, displayName) {
     // possible values: none, direct, indirect
@@ -272,7 +214,7 @@ async function handleRegisterSubmit(username, displayName) {
 
     // possible values: discouraged, preferred, required
     let residentKey = "discouraged";
-    
+
     // prepare form post data
     var data = new FormData();
     data.append('username', username);
@@ -288,18 +230,11 @@ async function handleRegisterSubmit(username, displayName) {
         makeCredentialOptions = await fetchMakeCredentialOptions(data);
 
     } catch (e) {
-        console.error(e);
-        let msg = "Something went really wrong";
-        showErrorAlert(msg);
+        showErrorAlert("Something went really wrong", e);
     }
 
-
-    console.log("Credential Options Object", makeCredentialOptions);
-
     if (makeCredentialOptions.status !== "ok") {
-        console.log("Error creating credential options");
-        console.log(makeCredentialOptions.errorMessage);
-        showErrorAlert(makeCredentialOptions.errorMessage);
+        showErrorAlert("Error creating credential options: " + makeCredentialOptions.errorMessage);
         return;
     }
 
@@ -315,22 +250,6 @@ async function handleRegisterSubmit(username, displayName) {
 
     if (makeCredentialOptions.authenticatorSelection.authenticatorAttachment === null) makeCredentialOptions.authenticatorSelection.authenticatorAttachment = undefined;
 
-    console.log("Credential Options Formatted", makeCredentialOptions);
-
-    console.log("Registering...Tap your security key to finish registration.");
-    //Swal.fire({
-    //    title: 'Registering...',
-    //    text: 'Tap your security key to finish registration.',
-    //    imageUrl: "/images/securitykey.min.svg",
-    //    showCancelButton: true,
-    //    showConfirmButton: false,
-    //    focusConfirm: false,
-    //    focusCancel: false
-    //});
-
-
-    console.log("Creating PublicKeyCredential...");
-
     let newCredential;
     try {
         newCredential = await navigator.credentials.create({
@@ -338,24 +257,20 @@ async function handleRegisterSubmit(username, displayName) {
         });
     } catch (e) {
         var msg = "Could not create credentials in browser. Probably because the username is already registered with your authenticator. Please change username or authenticator."
-        console.error(msg, e);
         showErrorAlert(msg, e);
     }
-
-
-    console.log("PublicKeyCredential Created", newCredential);
 
     try {
         registerNewCredential(newCredential);
 
     } catch (e) {
-        showErrorAlert(err.message ? err.message : err);
+        showErrorAlert("Error registering new credential", err);
     }
 }
 
 async function fetchMakeCredentialOptions(formData) {
     let address = serviceAddress + 'api/WebAuthn/makeCredentialOptions';
-    
+
     let response = await fetch(address, {
         method: 'POST', // or 'PUT'
         body: formData, // data can be `string` or {object}!
@@ -364,13 +279,10 @@ async function fetchMakeCredentialOptions(formData) {
         }
     });
 
-    let data = await response.json();
-
-    return data;
+    return await response.json();
 }
 
 
-// This should be used to verify the auth data with the server
 async function registerNewCredential(newCredential) {
     // Move data into Arrays incase it is super long
     let attestationObject = new Uint8Array(newCredential.response.attestationObject);
@@ -392,32 +304,16 @@ async function registerNewCredential(newCredential) {
     try {
         response = await registerCredentialWithServer(data);
     } catch (e) {
-        showErrorAlert(e);
+        showErrorAlert("Error creating credential: ", e);
     }
 
-    console.log("Credential Object", response);
-
-    // show error
     if (response.status !== "ok") {
-        console.log("Error creating credential");
-        console.log(response.errorMessage);
-        showErrorAlert(response.errorMessage);
+        showErrorAlert("Error creating credential due to server error: " + response.errorMessage);
         return;
     }
 
-    // show success 
-    console.log("Registration Successful! You\'ve registered successfully");
     document.querySelector('.card-body').style.display = 'none';
     document.querySelector('.on-registration-success').style.display = 'block';
-    //Swal.fire({
-    //    title: 'Registration Successful!',
-    //    text: 'You\'ve registered successfully.',
-    //    type: 'success',
-    //    timer: 2000
-    //});
-
-    // redirect to dashboard?
-    //window.location.href = "/dashboard/" + state.user.displayName;
 }
 
 async function registerCredentialWithServer(formData) {
@@ -430,8 +326,9 @@ async function registerCredentialWithServer(formData) {
         }
     });
 
-    let data = await response.json();
-
-    return data;
+    return await response.json();
 }
-//End of section: Register
+
+function showErrorAlert(message, error) {
+    passErrorToDotNet("Authentication.js", message + ((error === null || error === undefined) ? "" : " " + error.toString()));
+}

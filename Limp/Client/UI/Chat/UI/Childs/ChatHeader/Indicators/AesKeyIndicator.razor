@@ -1,0 +1,56 @@
+@using EthachatShared.Encryption
+@using Ethachat.Client.Cryptography.KeyStorage
+@using Ethachat.Client.Services.BrowserKeyStorageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@inject IBrowserKeyStorage _localKeyManager
+@inject IMessageService _messageService
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+@if (AesKey is not null)
+{
+    <div class="key-details">
+        <span>AES-secured</span>
+        <span>Key creation date: @AesKey.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")</span>
+    </div>
+}
+
+@code {
+    [Parameter] public string PartnerUsername { get; set; } = string.Empty;
+    private Key? AesKey { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await UpdateAesKey();
+        await base.OnInitializedAsync();
+    }
+
+    private async Task UpdateAesKey()
+    {
+        AesKey = await _localKeyManager.GetAESKeyForChat(PartnerUsername);
+        if (AesKey is null)
+            await _messageService.NegotiateOnAESAsync(PartnerUsername);
+    }
+
+    protected override void SubscribeToHubEvents()
+    {
+        HubServiceSubscriptionManager.AddCallback<string>(OnAesKeyReady, "OnPartnerAESKeyReady", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<bool>(OnAesUpdated, "AESUpdated", ComponentId);
+    }
+
+    private async Task OnAesKeyReady(string partnerName)
+    {
+        AesKey = await _localKeyManager.GetAESKeyForChat(partnerName);
+        if (AesKey is null)
+            throw new ApplicationException("Could not get an AES key.");
+
+        await _localKeyManager.SaveInMemoryKeysInLocalStorage();
+        StateHasChanged();
+    }
+
+    private async Task OnAesUpdated(bool keyRenewed)
+    {
+        AesKey = await _localKeyManager.GetAESKeyForChat(PartnerUsername);
+        StateHasChanged();
+    }
+
+}

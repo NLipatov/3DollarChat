@@ -35,13 +35,9 @@
         <button title="Renew AES Key" style="border: none;" @onclick=ShowModalAsync>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
-        @if (AESKey != null)
-        {
-            <div class="key-details">
-                <p class="key-label">AES-secured</p>
-                <p class="key-value">Key creation date: @AESKey.CreationDate.ToLocalTime().ToString("dd/MM HH:mm")</p>
-            </div>
-        }
+        
+        <AesKeyIndicator
+            PartnerUsername=@PartnerName/>
     </div>
 </div>
 
@@ -53,7 +49,6 @@
     [Parameter] public string PartnerName { get; set; } = "Unnamed";
     [Parameter] public bool IsOnline { get; set; } = false;
     [Parameter] public string AvatarLink { get; set; } = "https://shorturl.at/gxAE7";
-    [Parameter] public Key? AESKey { get; set; }
     [Parameter] public EventCallback OnAESRenewal { get; set; }
     private AESKeyRenewalModal? aesRenewalModal { get; set; }
 

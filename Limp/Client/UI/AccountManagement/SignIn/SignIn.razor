@@ -1,9 +1,9 @@
-﻿@using Ethachat.Client.UI.WebAuthn
-@using Ethachat.Client.UI.CommonComponents.InputForms.Login
-@using EthachatShared.Models.Authentication.Models;
+﻿@using EthachatShared.Models.Authentication.Models;
 @using EthachatShared.Models.Authentication.Models.UserAuthentication;
 @using Microsoft.AspNetCore.SignalR.Client;
 @using Ethachat.Client.UI.AccountManagement.LogicHandlers
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.WebAuthn
 @inject NavigationManager _navigationManager
 @inject ILoginHandler _loginHandler
 @page "/signIn"
@@ -31,12 +31,12 @@
 
                         @if (IsUsingWebAuthn)
                         {
-                            <Authentication
-                                IsLoginFormVisible="true"/>
+                            <WebAuthnLoginForm
+                                IsLoginFormVisible=@true/>
                         }
                         else
                         {
-                            <LoginForm
+                            <BaseLoginForm
                                 OnLoginEvent="async (dto) => await OnLogIn(dto)"
                                 LoginAttemptResult="lasttokenFetchResult"/>
                         }

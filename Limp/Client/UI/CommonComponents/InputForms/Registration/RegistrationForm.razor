@@ -5,6 +5,7 @@
 @using EthachatShared.Models.Authentication.Models.UserAuthentication;
 @using EthachatShared.Models.Authentication.Models;
 @using Ethachat.Client.UI.AccountManagement.LogicHandlers
+@inject IJSRuntime Js
 @inject ILoginHandler _loginHandler
 
 <div class="registration-page-content">
@@ -12,7 +13,7 @@
         <div>
             <div>
                 <div>
-                    <EditForm Model="@Credentials" OnSubmit="OnRegister">
+                    <EditForm Model="@Credentials" OnSubmit=OnRegister>
                         <RegisterFormInputBox 
                             CheckedInput="Credentials.Username"
                             Placeholder="Username"
@@ -74,8 +75,21 @@
     public bool IsAuthenticationMethodRequiresPassword { get; set; } = true;
 
     private RegisterFormModel Credentials = new();
+    
+    private async Task OnRegister()
+    {
+        switch (IsAuthenticationMethodRequiresPassword)
+        {
+            case true:
+                await OnPasswordfulRegister();
+                break;
+            case false:
+                await OnPasswordlessRegister();
+                break;
+        }
+    }
 
-    private void OnRegister()
+    private async Task OnPasswordfulRegister()
     {
         UserAuthentication authenticationData = new()
         {
@@ -92,6 +106,11 @@
         };
 
         OnRegisterEvent(authenticationData);
+    }
+    
+    private async Task OnPasswordlessRegister()
+    {
+        await Js.InvokeVoidAsync("handleRegisterSubmit", Credentials.Username.Value, Credentials.Username.Value);
     }
 
     private bool ValidateForm()

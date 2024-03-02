@@ -22,7 +22,7 @@
                               IsRequired="true"
                               OnInput="((value) => LoginFormModel.Username = value)" />
 
-                        @if (!IsWebAuthnUsed)
+                        @if (!ViaWebAuthn)
                         {
                             <InputBox InputText="@LoginFormModel.Password"
                                       BindEvent="oninput"
@@ -31,32 +31,8 @@
                                       OnInput="((value) => LoginFormModel.Password = value)" />
                         }
 
-                        <div class="d-flex justify-content-around align-items-center mb-4">
-                            
-                            <Tooltip Class="d-inline-block" Title="Not yet available" role="button">
-                                <button class="btn btn-secondary btn-lg btn-block" disabled href="#!">Forgot password?</button>
-                            </Tooltip>
-                        </div>
-
                         <!-- Submit button -->
                         <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in</button>
-
-                        @if (!IsWebAuthnUsed)
-                        {
-                            <div class="divider d-flex align-items-center my-4">
-                                <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
-                            </div>
-
-                            <button class="btn btn-primary btn-lg btn-block" role="button" @onclick=@(() => _navigationManager.NavigateTo("signin/webauthn"))>
-                                <i class="bi bi-fingerprint"></i>Continue with WebAuthn
-                            </button>
-
-                            <div class="divider d-flex align-items-center my-4">
-                                <p class="text-center fw-bold mx-3 mb-0 text-muted">Not yet registered?</p>
-                            </div>
-
-                            <a class="btn btn-primary btn-lg btn-block" onclick=@(() => _navigationManager.NavigateTo("/signUp"))>Sign Up</a>
-                        }
 
                         <div class="validation-results">
                             <DataAnnotationsValidator />
@@ -90,7 +66,7 @@ else
     public AuthResult LoginAttemptResult { get; set; } = new();
 
     [Parameter]
-    public bool IsWebAuthnUsed { get; set; } = false;
+    public bool ViaWebAuthn { get; set; } = false;
 
     private LoginFormModel LoginFormModel = new();
 

@@ -10,12 +10,10 @@
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize 
+    <video height="600" id="video" controls></video>
+    <Virtualize
         Context="message"
-        Items="_messageBox.Messages
-            .Where(x=>x.Type is not MessageType.Metadata)
-            .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup)
-            .ToList()" >
+        Items="_messageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()">
         <SingleMessage message="message" myUsername=@myUsername/>
     </Virtualize>
 </div>
@@ -31,6 +29,18 @@
     private Guid ComponentId { get; set; }
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    private async Task StartStream()
+    {
+        Console.WriteLine("Starting");
+        await _jSRuntime.InvokeVoidAsync("startStream");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await _jSRuntime.InvokeVoidAsync("startStream");
+        base.OnAfterRender(firstRender);
+    }
 
     protected override async Task OnInitializedAsync()
     {

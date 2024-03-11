@@ -5,7 +5,8 @@ function createBlobUrl(byteArray, mimeType) {
     return URL.createObjectURL(blob);
 }
 
-function startStream(){
+function startStream(m3u8Url){
+    console.log("m3u8Url" + m3u8Url);
     var video = document.getElementById('video');
     console.log("video" + video)
     console.log("supported" + Hls.isSupported())
@@ -13,7 +14,7 @@ function startStream(){
         var hls = new Hls({
             debug: true,
         });
-        hls.loadSource('https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8');
+        hls.loadSource(m3u8Url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MEDIA_ATTACHED, function () {
             video.muted = true;

@@ -3,10 +3,14 @@
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using EthachatShared.Models.Message;
+@using System.Text.Unicode
+@using System.Text
+@using Ethachat.Client.Services.VideoStreamingService
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
 @inject IMessageService _messageService
+@inject Im3u8Service _m3u8Service
 @implements IDisposable
 
 <div class="messages-box">
@@ -30,15 +34,22 @@
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    private async Task StartStream()
-    {
-        Console.WriteLine("Starting");
-        await _jSRuntime.InvokeVoidAsync("startStream");
-    }
-
+    //ToDo: video content should come from message 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        await _jSRuntime.InvokeVoidAsync("startStream");
+        if (firstRender)
+        {
+            //ToDo: ts.content should be loaded from message, not from hardcoded disk file
+            List<byte[]> tsContent = new(0);
+            using (var client = new HttpClient())
+            {
+                var request = await client.GetAsync("https://localhost:44398/ts.txt");
+                var response = await request.Content.ReadAsByteArrayAsync();
+                tsContent.Add(response);
+            }
+            var m3u8link = await _m3u8Service.GenerateM3U8Url(tsContent);
+            await _jSRuntime.InvokeVoidAsync("startStream", m3u8link);
+        }
         base.OnAfterRender(firstRender);
     }
 

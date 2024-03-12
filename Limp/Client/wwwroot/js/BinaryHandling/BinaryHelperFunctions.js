@@ -7,7 +7,10 @@ function createBlobUrl(byteArray, mimeType) {
 
 function startStream(m3u8Url){
     console.log("m3u8Url" + m3u8Url);
-    var video = document.getElementById('video');
+    var video = document.querySelector('video');
+    if (video === null){
+        console.log("FATAL: video element not found");
+    }
     console.log("video" + video)
     console.log("supported" + Hls.isSupported())
     if (Hls.isSupported()) {

@@ -1,38 +1,31 @@
-using System.Text;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.VideoStreamingService.Converters;
+using Ethachat.Client.Services.VideoStreamingService.FileTypes;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.VideoStreamingService;
 
-public class m3u8Service : Im3u8Service
+public class M3U8Service : Im3u8Service
 {
     private readonly IJSRuntime _jsRuntime;
+    private readonly ICallbackExecutor _callbackExecutor;
 
-    public m3u8Service(IJSRuntime jsRuntime)
+    public M3U8Service(IJSRuntime jsRuntime, ICallbackExecutor callbackExecutor)
     {
         _jsRuntime = jsRuntime;
-    }
-    public async Task<string> GenerateM3U8Url(List<byte[]> sortedTransportStreamBytes)
-    {
-        StringBuilder m3u8Content = new StringBuilder();
-        
-        m3u8Content.AppendLine("#EXTM3U");
-        m3u8Content.AppendLine("#EXT-X-VERSION:3");
-        m3u8Content.AppendLine("#EXT-X-TARGETDURATION:5");
-        m3u8Content.AppendLine("#EXT-X-MEDIA-SEQUENCE:0");
-        m3u8Content.AppendLine("#EXTINF:5.280000,");
-        foreach (var ts in sortedTransportStreamBytes)
-        {
-            var tsLink = await GenerateTsUrl(ts);
-            m3u8Content.AppendLine(tsLink);
-        }
-        m3u8Content.AppendLine("#EXT-X-ENDLIST");
-        
-        var m3U8Link = await _jsRuntime.InvokeAsync<string>("createBlobUrl", Encoding.UTF8.GetBytes(m3u8Content.ToString()));
-        return m3U8Link;
+        _callbackExecutor = callbackExecutor;
     }
 
-    private async Task<string> GenerateTsUrl(byte[] tsContent)
+    public async Task ToM3U8Async(byte[] mp4, ExtentionType type)
     {
-        return await _jsRuntime.InvokeAsync<string>("createBlobUrl", tsContent, "video/mp2t");
+        var ffmpeg = new FfmpegConverter(_jsRuntime, _callbackExecutor);
+        switch (type)
+        {
+            case ExtentionType.MP4:
+                await ffmpeg.ConvertMp4ToM3U8(mp4);
+                break;
+            default:
+                throw new ArgumentException($"{type} is not supported.");
+        }
     }
 }

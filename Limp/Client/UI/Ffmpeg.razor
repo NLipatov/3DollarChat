@@ -1,0 +1,75 @@
+@page "/ffmpeg"
+@using FFmpegBlazor
+@using System.Text
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
+@using Ethachat.Client.Services.VideoStreamingService
+@using Ethachat.Client.Services.VideoStreamingService.FileTypes
+@inject IJSRuntime Runtime
+@inject Im3u8Service _m3u8Service
+@inject ICallbackExecutor _callbackExecutor
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+<InputFile OnChange="fileLoad"/><br/> <br/>
+<video width="300" height="200" autoplay controls src="@url"/><br/><br/>
+<button class="btn btn-primary" @onclick="Convert">Convert</button><br/><br/>
+
+<div style="display: flex; flex-direction: column;">
+    @if (!string.IsNullOrWhiteSpace(m3U8Url))
+    {
+        <a href="@m3U8Url" download="v.m3u8">m3u8</a>
+        @foreach (var ts in tsUrls)
+        {
+            <a href="@ts">.ts</a>
+        }
+    }
+</div>
+
+@code
+{
+    string url;
+    string m3U8Url;
+    List<string> tsUrls = new();
+    FFMPEG ff;
+    byte[] buffer;
+    string videoId = Guid.NewGuid().ToString();
+    
+    private async Task OnM3U8UrlReady(string url)
+    {
+        m3U8Url = url;
+        StateHasChanged();
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await FFmpegFactory.Init(Runtime);
+    }
+
+    async void fileLoad(InputFileChangeEventArgs v)
+    {
+        //get fist file from input selection
+        var file = v.GetMultipleFiles()[0];
+
+        //read all bytes
+        using var stream = file.OpenReadStream(100000000); //Max size for file that can be read
+        buffer = new byte[file.Size];
+
+        //read all bytes
+        await stream.ReadAsync(buffer);
+
+        //create a video link from buffer so that video can be played
+        url = FFmpegFactory.CreateURLFromBuffer(buffer, $"{videoId}.mp4", file.ContentType);
+
+        //reRender DOM
+        StateHasChanged();
+    }
+
+    async void Convert()
+    {
+        await _m3u8Service.ToM3U8Async(buffer, ExtentionType.MP4);
+    }
+
+    void WriteLogs(Logs m)
+    {
+        Console.WriteLine(m.Type + " " + m.Message);
+    }
+}

@@ -50,7 +50,7 @@ public class FfmpegConverter
         if (m.Ratio >= 1) //ratio >= 1 means that convert job is done
         {
             var m3U8Url = await GetM3U8Url();
-            Console.WriteLine("M3U8 URL: " + m3U8Url);
+            await _jsRuntime.InvokeVoidAsync("startStream", m3U8Url);
         }
     }
 

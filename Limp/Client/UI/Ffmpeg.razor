@@ -10,19 +10,8 @@
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 <InputFile OnChange="fileLoad"/><br/> <br/>
-<video width="300" height="200" autoplay controls src="@url"/><br/><br/>
+<video width="300" height="200" autoplay controls/><br/><br/>
 <button class="btn btn-primary" @onclick="Convert">Convert</button><br/><br/>
-
-<div style="display: flex; flex-direction: column;">
-    @if (!string.IsNullOrWhiteSpace(m3U8Url))
-    {
-        <a href="@m3U8Url" download="v.m3u8">m3u8</a>
-        @foreach (var ts in tsUrls)
-        {
-            <a href="@ts">.ts</a>
-        }
-    }
-</div>
 
 @code
 {

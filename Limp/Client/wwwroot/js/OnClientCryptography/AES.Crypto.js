@@ -14,6 +14,38 @@ function GenerateAESKey(contactName) {
         });
 }
 
+function GenerateAESKeyForHLS(videoId) {
+    (async () => {
+        try {
+            const key = await window.crypto.subtle.generateKey(
+                {
+                    name: "AES-CBC",
+                    length: 128
+                },
+                true,
+                ["encrypt", "decrypt"]
+            );
+
+            const exportedKey = await window.crypto.subtle.exportKey("raw", key);
+
+            const exportedKeyBuffer = new Uint8Array(exportedKey);
+            const hexKey = ab2hexstr(exportedKeyBuffer);
+
+            console.log(hexKey);
+
+            DotNet.invokeMethodAsync("Ethachat.Client", "OnHlsKeyReady", hexKey, videoId);
+        } catch (error) {
+            console.error('Could not generate a key:', error);
+        }
+    })();
+}
+
+function GenerateIVForHLS(videoId) {
+    const ivLength = 16;
+    const iv = window.crypto.getRandomValues(new Uint8Array(ivLength));
+    return ab2hexstr(iv);
+}
+
 const exportAESKeyToDotnet = async (key, contactName) => {
     const exported = await window.crypto.subtle.exportKey(
         "raw",

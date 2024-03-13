@@ -5,6 +5,10 @@ function createBlobUrl(byteArray, mimeType) {
     return URL.createObjectURL(blob);
 }
 
+function revokeBlobUrl(blobUrl) {
+    return URL.revokeObjectURL(blobUrl);
+}
+
 function startStream(m3u8Url){
     console.log("m3u8Url" + m3u8Url);
     var video = document.querySelector('video');

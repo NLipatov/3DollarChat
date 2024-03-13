@@ -12,3 +12,9 @@ function str2ab(str) {
     }
     return buf;
 }
+
+function ab2hexstr(buf) {
+    return Array.from(new Uint8Array(buf))
+        .map(byte => byte.toString(16).padStart(2, '0'))
+        .join('');
+}

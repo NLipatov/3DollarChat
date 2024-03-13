@@ -39,10 +39,24 @@ public class FfmpegConverter
         ff = await InitializeFfAsync();
         FFmpegFactory.Progress += (e) => ProgressUpdate(e);
 
+        var keyFile = "{\n    \"method\": \"AES-128\",\n    \"key\": \"56307ae25300fdba6013597b128c84e2\"\n}\n";
+        var keyFileBytes = Encoding.UTF8.GetBytes(keyFile);
+        var keyFileURI = await _jsRuntime.InvokeAsync<string>("createBlobUrl", keyFileBytes, "application/octet-stream");
+        ff.WriteFile("enc.key", keyFileBytes);
+
+        var keyInfoFile = $"{keyFileURI}\nenc.key";
+        var keyInfoFileBytes = Encoding.UTF8.GetBytes(keyInfoFile);
+        var keyInfoFileURI = await _jsRuntime.InvokeAsync<string>("createBlobUrl", keyInfoFileBytes, "application/octet-stream");
+        ff.WriteFile("enc.keyinfo", keyInfoFileBytes);
+
         //write to in-memory emscripten files
         ff.WriteFile($"{videoId}.mp4", mp4);
-        await ff.Run("-i", $"{videoId}.mp4", "-codec", "copy", "-start_number", "0", "-hls_time", "10",
-            "-hls_list_size", "0", "-f", "hls", $"{videoId}.m3u8");
+        await ff.Run(
+            "-i", $"{videoId}.mp4",
+            "-codec", "copy",
+            "-hls_time", "10",
+            "-hls_key_info_file", "enc.keyinfo",
+             $"{videoId}.m3u8");
     }
 
     private async Task ProgressUpdate(Progress m)
@@ -50,6 +64,7 @@ public class FfmpegConverter
         if (m.Ratio >= 1) //ratio >= 1 means that convert job is done
         {
             var m3U8Url = await GetM3U8Url();
+            Console.WriteLine($"m3u8 url: {m3U8Url}");
             await _jsRuntime.InvokeVoidAsync("startStream", m3U8Url);
         }
     }

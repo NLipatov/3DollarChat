@@ -1,17 +1,17 @@
 @page "/ffmpeg"
 @using FFmpegBlazor
-@using System.Text
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.Services.VideoStreamingService.FileTypes
+@using EthachatShared.Models.Message.VideoStreaming
 @inject IJSRuntime Runtime
-@inject Im3u8Service _m3u8Service
+@inject IHlsStreamingService HlsStreamingService
 @inject ICallbackExecutor _callbackExecutor
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 <InputFile OnChange="fileLoad"/><br/> <br/>
 <video width="300" height="200" autoplay controls/><br/><br/>
-<button class="btn btn-primary" @onclick="Convert">Convert</button><br/><br/>
+<button class="btn btn-primary" @onclick="ToStreamingDetails">Convert</button><br/><br/>
 
 @code
 {
@@ -52,9 +52,11 @@
         StateHasChanged();
     }
 
-    async void Convert()
+    private async Task ToStreamingDetails()
     {
-        await _m3u8Service.ToM3U8Async(buffer, ExtentionType.MP4);
+        var details = await HlsStreamingService.ToM3U8Async(buffer, ExtentionType.MP4);
+        
+        await Runtime.InvokeVoidAsync("startStream", details.PlaylistUrl);
     }
 
     void WriteLogs(Logs m)

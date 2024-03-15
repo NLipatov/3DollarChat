@@ -1,16 +1,17 @@
 using System.Collections.Concurrent;
+using System.Text;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.KeyFileGenerator;
+namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption;
 
-public class KeyGenerator
+public class HlsEncryptionManager
 {
     private string Id { get; init; }
     private readonly IJSRuntime _jsRuntime;
     private static ConcurrentDictionary<string, Action<string>> Callbacks { get; set; } = new();
     private string _hexKeyString = string.Empty;
 
-    public KeyGenerator(IJSRuntime jsRuntime, string videoId)
+    public HlsEncryptionManager(IJSRuntime jsRuntime, string videoId)
     {
         Id = videoId;
         _jsRuntime = jsRuntime;
@@ -25,14 +26,17 @@ public class KeyGenerator
         }
     }
 
-    public async Task<string> GenerateKeyFileContentAsync()
-    {
-        var key = await GenerateAes128HexKey();
+    public byte[] GetKeyFile(string hexKey) =>
+        Encoding.UTF8.GetBytes("{\n    \"method\": \"AES-128\",\n    \"key\": \"" + hexKey + "\"\n}");
 
-        return "{\n    \"method\": \"AES-128\",\n    \"key\": \"" + key + "\"\n}";
-    }
+    public async Task<string> GetIv() => await _jsRuntime.InvokeAsync<string>("GenerateIVForHLS");
 
-    public async Task<string> GenerateAes128HexKey()
+    /// <summary>
+    /// Get AES-CBC 128 key to encrypt media fragments
+    /// </summary>
+    /// <returns></returns>
+    /// <exception cref="ApplicationException"></exception>
+    public async Task<string> GetKey()
     {
         Callbacks.TryAdd(Id, ((key) => _hexKeyString = key));
 

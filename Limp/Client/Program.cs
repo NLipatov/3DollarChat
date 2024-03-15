@@ -76,7 +76,7 @@ builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>()
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
 builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
 builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>();
-builder.Services.AddTransient<Im3u8Service, M3U8Service>();
+builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

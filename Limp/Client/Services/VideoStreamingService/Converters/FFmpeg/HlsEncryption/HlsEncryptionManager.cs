@@ -26,7 +26,7 @@ public class HlsEncryptionManager
         }
     }
 
-    public byte[] GetKeyFile(string hexKey) =>
+    public byte[] GenerateKeyFile(string hexKey) =>
         Encoding.UTF8.GetBytes("{\n    \"method\": \"AES-128\",\n    \"key\": \"" + hexKey + "\"\n}");
 
     public async Task<string> GetIv() => await _jsRuntime.InvokeAsync<string>("GenerateIVForHLS");

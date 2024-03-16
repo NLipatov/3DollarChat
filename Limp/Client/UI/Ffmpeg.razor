@@ -3,9 +3,11 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.Services.VideoStreamingService.FileTypes
-@using EthachatShared.Models.Message.VideoStreaming
+@using System.Text
+@using System.Net.Mime
 @inject IJSRuntime Runtime
 @inject IHlsStreamingService HlsStreamingService
+@inject NavigationManager NavigationManager
 @inject ICallbackExecutor _callbackExecutor
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
@@ -54,9 +56,28 @@
 
     private async Task ToStreamingDetails()
     {
-        var details = await HlsStreamingService.ToM3U8Async(buffer, ExtentionType.MP4);
+        var playlist = await HlsStreamingService.ToM3U8Async(buffer, ExtentionType.MP4);
+
+        var contentLines = playlist.M3U8Content.Split("\n");
+        var sb = new StringBuilder();
+        foreach (var line in contentLines)
+        {
+            string modifiedLine = null;
+            if (line.EndsWith(".ts"))
+            {
+                var getRedirectionServerEndpoint = NavigationManager.ToAbsoluteUri("hlsapi/get");
+                modifiedLine = $"{getRedirectionServerEndpoint}?filename=" + line;
+            }
+
+            sb.AppendLine(modifiedLine ?? line);
+        }
         
-        await Runtime.InvokeVoidAsync("startStream", details.PlaylistUrl);
+        var playlistContent = sb.ToString();
+        var playlistBytes = Encoding.UTF8.GetBytes(playlistContent);
+        var playlistUrl =
+            FFmpegFactory.CreateURLFromBuffer(playlistBytes, $"{playlist.VideoId}Playlist.m3u8", "application/vnd.apple.mpegurl");
+        
+        await Runtime.InvokeVoidAsync("startStream", playlistUrl);
     }
 
     void WriteLogs(Logs m)

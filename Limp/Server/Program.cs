@@ -3,8 +3,10 @@ using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.InMemoryStorage;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis.RedisConnectionConfigurer;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.
+    InMemoryStorage;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis
+    .RedisConnectionConfigurer;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -76,5 +78,56 @@ app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
 app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
+app.MapGet("/hlsapi/get", async context =>
+{
+    var query = context.Request.QueryString.ToString();
+
+    using (var httpClient = new HttpClient())
+    {
+        var targetUrl = "http://localhost:9001/get" + query;
+
+        var response = await httpClient.GetAsync(targetUrl);
+
+        if (response.IsSuccessStatusCode)
+        {
+            await response.Content.CopyToAsync(context.Response.Body);
+        }
+        else
+        {
+            context.Response.StatusCode = (int)response.StatusCode;
+            await context.Response.WriteAsync(response.ReasonPhrase);
+        }
+    }
+});
+app.MapPost("/hlsapi/store", async context =>
+{
+    var formData = new MultipartFormDataContent();
+
+    var form = await context.Request.ReadFormAsync();
+
+    foreach (var file in form.Files)
+    {
+        var fileContent = new StreamContent(file.OpenReadStream());
+        formData.Add(fileContent, "payload", file.FileName);
+    }
+
+    using (var httpClient = new HttpClient())
+    {
+        var hlsApiAddress = builder.Configuration.GetSection("HlsApi:Address").Value;
+        var targetUrl = hlsApiAddress + "/store";
+
+        var response = await httpClient.PostAsync(targetUrl, formData);
+
+        if (response.IsSuccessStatusCode)
+        {
+            Console.WriteLine("Files uploaded successfully.");
+        }
+        else
+        {
+            Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+        }
+    }
+});
+
 
 app.Run();

@@ -23,7 +23,7 @@ public class HlsStreamingService : IHlsStreamingService
         
         return type switch
         {
-            ExtentionType.MP4 => await ffmpeg.ConvertMp4ToM3U8(mp4),
+            ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(mp4),
             _ => throw new ArgumentException($"{type} is not supported.")
         };
     }

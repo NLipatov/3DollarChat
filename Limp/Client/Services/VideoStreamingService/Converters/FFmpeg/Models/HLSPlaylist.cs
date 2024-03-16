@@ -7,5 +7,4 @@ public record HlsPlaylist
     public required string M3U8Content { get; set; }
     public string HexKey { get; set; } = string.Empty;
     public string HexIv { get; set; } = string.Empty;
-    public required List<TsFile> TsFiles { get; set; } = new();
 }

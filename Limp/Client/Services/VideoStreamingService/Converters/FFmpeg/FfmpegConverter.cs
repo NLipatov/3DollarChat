@@ -11,7 +11,7 @@ namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
 public class FfmpegConverter : IAsyncDisposable
 {
     private FfmpegInitializationManager FfmpegInitializationManager { get; } = new();
-    private List<string> _linkedFiles = new();
+    private List<string> _emscryptenFilesystemFiles = new();
     private List<string> _blobUrls = new();
     private string VideoId { get; set; }
     private FFMPEG? _ff;
@@ -27,26 +27,22 @@ public class FfmpegConverter : IAsyncDisposable
         _navigationManager = navigationManager;
     }
 
+    //Gets FFmpeg instance (existing one or creates a new one)
     private async Task<FFMPEG> GetFf()
     {
-        return _ff ??= await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, () => Console.WriteLine("FINISH!"));
+        return _ff ??= await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, null);
     }
 
-    public async Task<HlsPlaylist> ConvertMp4ToM3U8(byte[] mp4)
+    public async Task<HlsPlaylist> Mp4ToM3U8(byte[] mp4)
     {
         var convertationDone = false;
-        _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, () =>
-        {
-            convertationDone = true;
-        });
-        
+        _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false,
+            () => { convertationDone = true; });
+
         VideoId = Guid.NewGuid().ToString();
-        //Loading original mp4 to a in-memory emscripten filesystem
-        var filename = $"{VideoId}.mp4";
-        (await GetFf()).WriteFile(filename, mp4);
-        
+
         //Generating a KEY and IV
-        var key  = await KeyFileGenerator.GetKey();
+        var key = await KeyFileGenerator.GetKey();
         var iv = await KeyFileGenerator.GetIv();
 
         //Create a key file with given key and load it to emscripten filesystem
@@ -54,46 +50,34 @@ public class FfmpegConverter : IAsyncDisposable
         //Creates a infofile with given IV and keyFileUri
         var keyInfoFilename = await GetInfoFilenameAsync(keyFileUri, iv);
 
+        //Loading original mp4 to a in-memory emscripten filesystem
+        var originalMp4Filename = $"{VideoId}.mp4";
+        (await GetFf()).WriteFile(originalMp4Filename, mp4);
+        
+        //It will create a single .m3u8 file and some .ts files from original mp4
         await Convert(keyInfoFilename);
         
+        //keyinfo and key files were used by ffmpeg, we can delete them now from emscripten memory
+        (await GetFf()).UnlinkFile($"{VideoId}enc.keyinfo");
+        (await GetFf()).UnlinkFile($"{VideoId}enc.key");
+
+        //wait till ffmpeg finishes it's job
         while (!convertationDone)
         {
-            Console.WriteLine("waiting for convertation to finish");
             await Task.Delay(20);
         }
-
-        await GetM3U8Url();
         
-        var M3U8Content = string.Empty;
-        using (var streamReader = new StreamReader(new MemoryStream(await (await GetFf()).ReadFile($"{VideoId}.m3u8"))))
-        {
-            M3U8Content = await streamReader.ReadToEndAsync();
-        }
-        var generatedTsFiles = await ReadTsFileFromMemory(M3U8Content);
+        //Since convertation is done, we can remove original mp4 file from emcripten filesystem
+        (await GetFf()).UnlinkFile(originalMp4Filename);
 
         var playlist = new HlsPlaylist
         {
             HexIv = iv,
             HexKey = key,
             Name = $"{VideoId}.m3u8",
-            TsFiles = generatedTsFiles,
-            M3U8Content = M3U8Content
+            M3U8Content = await GenerateM3U8()
         };
 
-        using (var httpClient = new HttpClient())
-        using (var formData = new MultipartFormDataContent())
-        {
-            foreach (var tsFile in generatedTsFiles)
-            {
-                var fileContent = new ByteArrayContent(tsFile.Content);
-                formData.Add(fileContent, "payload", tsFile.Name);
-            }
-
-            var test = _navigationManager.ToAbsoluteUri("hlsapi/store");
-            var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/store");
-            var response = await httpClient.PostAsync(endpointAddress, formData);
-        }
-        
         return playlist;
     }
 
@@ -109,7 +93,7 @@ public class FfmpegConverter : IAsyncDisposable
         (await GetFf()).WriteFile(keyfileName, keyFile);
 
         //For later dispose
-        _linkedFiles.Add(keyfileName);
+        _emscryptenFilesystemFiles.Add(keyfileName);
         _blobUrls.Add(keyFileUri);
 
         return keyFileUri;
@@ -123,7 +107,7 @@ public class FfmpegConverter : IAsyncDisposable
         (await GetFf()).WriteFile(keyInfoFilename, keyInfoFileBytes);
 
         //For later dispose
-        _linkedFiles.Add(keyInfoFilename);
+        _emscryptenFilesystemFiles.Add(keyInfoFilename);
 
         return keyInfoFilename;
     }
@@ -163,56 +147,53 @@ public class FfmpegConverter : IAsyncDisposable
             ffmpegArgs.ToArray());
     }
 
-    private async Task<List<TsFile>> ReadTsFileFromMemory(string m3U8Content)
-    {        
-        var tsFiles = new List<TsFile>();
-        
-        var lines = m3U8Content.Split("\n");
-        foreach (var line in lines)
-        {
-            if (line.StartsWith(VideoId))
-            {
-                var tsBytes = await (await GetFf()).ReadFile(line);
-                tsFiles.Add(new TsFile()
-                {
-                    Name = line,
-                    Content = tsBytes
-                });
-            }
-        }
-
-        return tsFiles;
-    }
-
-    private async Task GetM3U8Url()
+    private async Task<string> GenerateM3U8()
     {
         var playlistName = $"{VideoId}.m3u8";
+        
+        //Read generated by ffmpeg m3u8 playlist and remove it from emscripten filesystem
         var playlistContent =
             await (await GetFf()).ReadFile(playlistName);
+        (await GetFf()).UnlinkFile(playlistName);
+        
         StringBuilder sb = new();
-
         using (var streamReader = new StreamReader(new MemoryStream(playlistContent)))
         {
             var content = await streamReader.ReadToEndAsync();
             var lines = content.Split("\n");
-            foreach (var line in lines)
+
+            using (var httpClient = new HttpClient())
             {
-                if (line.StartsWith(VideoId))
+                foreach (var line in lines)
                 {
-                    var tsBytes = await (await GetFf()).ReadFile(line);
-                    var tsUrl = FFmpegFactory
-                        .CreateURLFromBuffer(tsBytes, Guid.NewGuid().ToString(), "video/mp2t");
-                    sb.AppendLine(tsUrl);
-                    _blobUrls.Add(tsUrl);
-                }
-                else
-                {
-                    sb.AppendLine(line);
+                    if (line.StartsWith(VideoId))
+                    {
+                        //Read media segment file generated by ffmpeg and remove it from emscripten filesystem
+                        var tsBytes = await (await GetFf()).ReadFile(line);
+                        (await GetFf()).UnlinkFile(line);
+                        
+                        using (var formData = new MultipartFormDataContent())
+                        {
+                            var fileContent = new ByteArrayContent(tsBytes);
+                            formData.Add(fileContent, "payload", line);
+                        
+                            var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/store");
+                            var request = await httpClient.PostAsync(endpointAddress, formData);
+                            if (!request.IsSuccessStatusCode)
+                                throw new ApplicationException("Failed to store ts file on server");
+                        }
+                    
+                        sb.AppendLine(_navigationManager.BaseUri + "hlsapi/get?filename=" + line);
+                    }
+                    else
+                    {
+                        sb.AppendLine(line);
+                    }
                 }
             }
 
             var modifiedPlaylist = sb.ToString();
-            playlistContent = Encoding.UTF8.GetBytes(modifiedPlaylist);
+            return modifiedPlaylist;
         }
     }
 
@@ -223,7 +204,7 @@ public class FfmpegConverter : IAsyncDisposable
             await _jsRuntime.InvokeVoidAsync("revokeBlobUrl", blobUrl);
         }
 
-        foreach (var linkedFile in _linkedFiles)
+        foreach (var linkedFile in _emscryptenFilesystemFiles)
         {
             (await GetFf()).UnlinkFile(linkedFile);
         }

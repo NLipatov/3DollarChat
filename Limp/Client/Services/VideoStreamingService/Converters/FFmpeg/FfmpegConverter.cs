@@ -53,22 +53,16 @@ public class FfmpegConverter : IAsyncDisposable
         //Loading original mp4 to a in-memory emscripten filesystem
         var originalMp4Filename = $"{VideoId}.mp4";
         (await GetFf()).WriteFile(originalMp4Filename, mp4);
+        _emscryptenFilesystemFiles.Add(originalMp4Filename);
         
         //It will create a single .m3u8 file and some .ts files from original mp4
         await Convert(keyInfoFilename);
-        
-        //keyinfo and key files were used by ffmpeg, we can delete them now from emscripten memory
-        (await GetFf()).UnlinkFile($"{VideoId}enc.keyinfo");
-        (await GetFf()).UnlinkFile($"{VideoId}enc.key");
 
         //wait till ffmpeg finishes it's job
         while (!convertationDone)
         {
             await Task.Delay(20);
         }
-        
-        //Since convertation is done, we can remove original mp4 file from emcripten filesystem
-        (await GetFf()).UnlinkFile(originalMp4Filename);
 
         var playlist = new HlsPlaylist
         {
@@ -77,6 +71,8 @@ public class FfmpegConverter : IAsyncDisposable
             Name = $"{VideoId}.m3u8",
             M3U8Content = await GenerateM3U8()
         };
+
+        await DisposeAsync();
 
         return playlist;
     }
@@ -127,10 +123,16 @@ public class FfmpegConverter : IAsyncDisposable
 
         var ffmpegArgs = new List<string>
         {
-            "-i", $"{VideoId}.mp4",
-            "-codec", "copy",
-            "-hls_time", "10",
-            "-hls_key_info_file", "enc.keyinfo"
+            "-i", 
+            $"{VideoId}.mp4", //original file
+            "-codec", "copy", //copies codec instead of re-encoding — no quality loss and faster
+            "-f", "segment", //original file will be splitted into media segments(.ts files)
+            "-copyts", //time marks will be copied out of original file with no changes
+            "-start_at_zero", //segmentation will start from starting 'zero' point
+            "-segment_time", "20", //segment duration is set to 20 seconds
+            "-segment_list", $"{VideoId}.m3u8", //specifies output playlist file, that will contain all the segments
+            "-reset_timestamps", "1", //each segment will have it's own time marks, segment time will start from 0 
+            $"{VideoId}%d.ts" //template for naming segment files
         };
 
         //specifies encryption file information
@@ -139,9 +141,6 @@ public class FfmpegConverter : IAsyncDisposable
             ffmpegArgs.Add("-hls_key_info_file");
             ffmpegArgs.Add(keyInfoFilename);
         }
-
-        //specifies output file name
-        ffmpegArgs.Add($"{VideoId}.m3u8");
 
         await (await GetFf()).Run(
             ffmpegArgs.ToArray());

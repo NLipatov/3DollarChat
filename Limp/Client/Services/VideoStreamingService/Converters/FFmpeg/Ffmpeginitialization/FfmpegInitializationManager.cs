@@ -5,7 +5,8 @@ namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpe
 
 public class FfmpegInitializationManager
 {
-    public async Task<FFMPEG> InitializeAsync(IJSRuntime _jsRuntime, bool withLog = false, Action OnRunToCompletionCallback = null)
+    public async Task<FFMPEG> InitializeAsync(IJSRuntime _jsRuntime, bool withLog = false,
+        Action OnRunToCompletionCallback = null)
     {
         FFMPEG ff;
         await FFmpegFactory.Init(_jsRuntime);

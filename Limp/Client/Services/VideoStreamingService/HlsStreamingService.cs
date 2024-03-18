@@ -19,12 +19,13 @@ public class HlsStreamingService : IHlsStreamingService
 
     public async Task<HlsPlaylist> ToM3U8Async(byte[] mp4, ExtentionType type)
     {
-        var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager);
-        
-        return type switch
+        await using (var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager))
         {
-            ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(mp4),
-            _ => throw new ArgumentException($"{type} is not supported.")
-        };
+            return type switch
+            {
+                ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(mp4),
+                _ => throw new ArgumentException($"{type} is not supported.")
+            };
+        }
     }
 }

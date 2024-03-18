@@ -1,14 +1,10 @@
 @page "/ffmpeg"
 @using FFmpegBlazor
-@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.Services.VideoStreamingService.FileTypes
 @using System.Text
-@using System.Net.Mime
-@inject IJSRuntime Runtime
+@inject IJSRuntime _JsRuntime
 @inject IHlsStreamingService HlsStreamingService
-@inject NavigationManager NavigationManager
-@inject ICallbackExecutor _callbackExecutor
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 <InputFile OnChange="fileLoad"/><br/> <br/>
@@ -18,21 +14,12 @@
 @code
 {
     string url;
-    string m3U8Url;
-    List<string> tsUrls = new();
     FFMPEG ff;
     byte[] buffer;
-    string videoId = Guid.NewGuid().ToString();
-    
-    private async Task OnM3U8UrlReady(string url)
-    {
-        m3U8Url = url;
-        StateHasChanged();
-    }
 
     protected override async Task OnInitializedAsync()
     {
-        await FFmpegFactory.Init(Runtime);
+        await FFmpegFactory.Init(_JsRuntime);
     }
 
     async void fileLoad(InputFileChangeEventArgs v)
@@ -40,15 +27,12 @@
         //get fist file from input selection
         var file = v.GetMultipleFiles()[0];
 
-        //read all bytes
-        using var stream = file.OpenReadStream(100000000); //Max size for file that can be read
+        using var stream = file.OpenReadStream(long.MaxValue);
+        
         buffer = new byte[file.Size];
 
         //read all bytes
         await stream.ReadAsync(buffer);
-
-        //create a video link from buffer so that video can be played
-        url = FFmpegFactory.CreateURLFromBuffer(buffer, $"{videoId}.mp4", file.ContentType);
 
         //reRender DOM
         StateHasChanged();
@@ -62,11 +46,10 @@
         var playlistUrl =
             FFmpegFactory.CreateURLFromBuffer(playlistBytes, $"{playlist.VideoId}Playlist.m3u8", "application/vnd.apple.mpegurl");
         
-        await Runtime.InvokeVoidAsync("startStream", playlistUrl);
-    }
+        await _JsRuntime.InvokeVoidAsync("startStream", playlistUrl);
 
-    void WriteLogs(Logs m)
-    {
-        Console.WriteLine(m.Type + " " + m.Message);
+        buffer = Array.Empty<byte>();
+        
+        await _JsRuntime.InvokeVoidAsync("revokeBlobUrl", playlistUrl);
     }
 }

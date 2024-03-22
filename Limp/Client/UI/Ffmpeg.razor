@@ -7,49 +7,30 @@
 @inject IHlsStreamingService HlsStreamingService
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
-<InputFile OnChange="fileLoad"/><br/> <br/>
+<InputFile OnChange="OnFileUpload"/><br/> <br/>
 <video width="300" height="200" autoplay controls/><br/><br/>
-<button class="btn btn-primary" @onclick="ToStreamingDetails">Convert</button><br/><br/>
 
 @code
 {
-    string url;
-    FFMPEG ff;
-    byte[] buffer;
-
-    protected override async Task OnInitializedAsync()
+    async void OnFileUpload(InputFileChangeEventArgs v)
     {
         await FFmpegFactory.Init(_JsRuntime);
-    }
-
-    async void fileLoad(InputFileChangeEventArgs v)
-    {
-        //get fist file from input selection
-        var file = v.GetMultipleFiles()[0];
-
-        using var stream = file.OpenReadStream(long.MaxValue);
+        using (var memoryStream = new MemoryStream())
+        {
+            var file = v.GetMultipleFiles()[0];
+            await file
+                .OpenReadStream(long.MaxValue)
+                .CopyToAsync(memoryStream);
+            
+            var playlist = await HlsStreamingService.ToM3U8Async(memoryStream.ToArray(), ExtentionType.MP4);
         
-        buffer = new byte[file.Size];
-
-        //read all bytes
-        await stream.ReadAsync(buffer);
-
-        //reRender DOM
-        StateHasChanged();
-    }
-
-    private async Task ToStreamingDetails()
-    {
-        var playlist = await HlsStreamingService.ToM3U8Async(buffer, ExtentionType.MP4);
+            var playlistBytes = Encoding.UTF8.GetBytes(playlist.M3U8Content);
+            var playlistUrl =
+                FFmpegFactory.CreateURLFromBuffer(playlistBytes, $"{playlist.VideoId}Playlist.m3u8", "application/vnd.apple.mpegurl");
         
-        var playlistBytes = Encoding.UTF8.GetBytes(playlist.M3U8Content);
-        var playlistUrl =
-            FFmpegFactory.CreateURLFromBuffer(playlistBytes, $"{playlist.VideoId}Playlist.m3u8", "application/vnd.apple.mpegurl");
+            await _JsRuntime.InvokeVoidAsync("startStream", playlistUrl);
         
-        await _JsRuntime.InvokeVoidAsync("startStream", playlistUrl);
-
-        buffer = Array.Empty<byte>();
-        
-        await _JsRuntime.InvokeVoidAsync("revokeBlobUrl", playlistUrl);
+            await _JsRuntime.InvokeVoidAsync("revokeBlobUrl", playlistUrl);
+        }
     }
 }

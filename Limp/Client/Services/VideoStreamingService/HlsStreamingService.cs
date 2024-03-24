@@ -1,6 +1,6 @@
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
-using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Models;
 using Ethachat.Client.Services.VideoStreamingService.FileTypes;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 

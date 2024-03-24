@@ -1,4 +1,6 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using System.Text.Json;
+using System.Text.Json.Serialization;
+using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
@@ -6,6 +8,7 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
@@ -190,7 +193,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     if (_messageBox.Contains(message))
                         return;
 
-                    if (message.Type is MessageType.TextMessage)
+                    if (message.Type is MessageType.TextMessage || message.Type is MessageType.HLSPlaylist)
                     {
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
@@ -213,7 +216,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             ClientMessage clientMessage = message.AsClientMessage();
 
                             if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
-                                clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
+                            {
+                                if (message.Type is MessageType.HLSPlaylist)
+                                {
+                                    clientMessage.HlsPlaylist = JsonSerializer
+                                        .Deserialize<HlsPlaylist>(decryptedMessageCryptogramm.Cyphertext);
+                                }
+                                else
+                                {
+                                    clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
+                                }
+                            }
                             _messageBox.AddMessage(clientMessage);
                         }
                         else
@@ -410,6 +423,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             switch (message.Type)
             {
+                case MessageType.HLSPlaylist:
+                    await SendHlsPlaylist(message);
+                    break;
                 case MessageType.TextMessage:
                     await SendText(message);
                     break;
@@ -422,6 +438,27 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }
+        }
+
+        private async Task SendHlsPlaylist(ClientMessage message)
+        {
+            var messageToSend = new Message()
+            {
+                Id = message.Id,
+                Cryptogramm = await _cryptographyService
+                    .EncryptAsync<AESHandler>(new Cryptogramm
+                    {
+                        Cyphertext = JsonSerializer.Serialize(message.HlsPlaylist),
+                    }, contact: message.TargetGroup),
+                TargetGroup = message.TargetGroup,
+                DateSent = DateTime.UtcNow,
+                Type = MessageType.HLSPlaylist,
+                Sender = myName
+            };
+
+            AddToMessageBox(message);
+            
+            await (await GetHubConnectionAsync()).SendAsync("Dispatch", messageToSend);
         }
 
         private async Task SendText(ClientMessage message)
@@ -443,6 +480,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             await GetHubConnectionAsync();
             await hubConnection!.SendAsync("DeleteConversation", myName, targetGroup);
+        }
+        
+        private void AddToMessageBox(ClientMessage message)
+        {
+            _messageBox.AddMessage(message);
         }
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)

@@ -7,6 +7,9 @@
 @using EthachatShared.Models.Message;
 @using System.Text.RegularExpressions
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
+@using FFmpegBlazor
+@using System.Text
+@using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
@@ -28,6 +31,10 @@
                 <video controls="controls" style="max-width: 100%;">
                     <source src="@message.BlobLink" type="video/mp4">
                 </video>
+            }
+            else if (message.Type is MessageType.HLSPlaylist)
+            {
+                <video id=@message.Id width="300" height="200" autoplay controls></video>
             }
             else if (!string.IsNullOrWhiteSpace(message.BlobLink))
             {
@@ -62,22 +69,6 @@
                         <span>
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
-                    }
-                    else if (!message.IsRegisteredByHub)
-                    {
-                        @if (message.Type is MessageType.BlobLink)
-                        {
-                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <span>@($"{chunksLoaded}/{message.Metadata!.ChunksCount}")</span>
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </span>
-                        }
-                        else
-                        {
-                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </span>
-                        }
                     }
                     else if (message.IsRegisteredByHub)
                     {
@@ -133,6 +124,53 @@
         componentId = Guid.NewGuid();
 
         SubscribeToHubEvents();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        
+        if (message?.Type is MessageType.HLSPlaylist)
+        {
+            Task.Run(async () => await PrepareHlsStreamingVideo());
+        }
+    }
+
+    private async Task PrepareHlsStreamingVideo()
+    {
+        if (message.Sender == myUsername)
+        {
+            Console.WriteLine(message.HlsPlaylist!.M3U8Content);
+            var m3u8Bytes = Encoding.UTF8.GetBytes(message.HlsPlaylist.M3U8Content);
+            var m3u8Url = await _jSRuntime.InvokeAsync<string>("createBlobUrl", m3u8Bytes, "application/vnd.apple.mpegurl");
+        
+            await _jSRuntime.InvokeVoidAsync("startStream", m3u8Url, message.Id);
+            return;
+        }
+        var KeyFileGenerator = new HlsEncryptionManager(_jSRuntime, message!.Id.ToString());
+        //Generate a key file
+        var keyFile = KeyFileGenerator.GenerateKeyFile(message.HlsPlaylist!.HexKey);
+        //Create a blob with key file
+        ////ToDo: key info file blob is not revoked
+        var keyFileUri = await _jSRuntime.InvokeAsync<string>("createBlobUrl", keyFile, "application/octet-stream");
+
+        var sb = new StringBuilder();
+        foreach (var line in message.HlsPlaylist.M3U8Content.Split("\n"))
+        {
+            var modifiedLine = line;
+            if (line.StartsWith("#EXT-X-KEY:METHOD=AES-128"))
+            {
+                modifiedLine = $"#EXT-X-KEY:METHOD=AES-128,URI=\"{keyFileUri}\",IV=0x{message.HlsPlaylist.HexIv}";
+            }
+            sb.AppendLine(modifiedLine);
+        }
+
+        var playlistContent = sb.ToString();
+
+        var playlistBytes = Encoding.UTF8.GetBytes(playlistContent);
+        var playlistUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", playlistBytes, "application/vnd.apple.mpegurl");
+        
+        await _jSRuntime.InvokeVoidAsync("startStream", playlistUrl, message.Id);
     }
 
     private void SubscribeToHubEvents()

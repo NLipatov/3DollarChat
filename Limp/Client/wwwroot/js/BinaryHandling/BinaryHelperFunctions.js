@@ -9,9 +9,10 @@ function revokeBlobUrl(blobUrl) {
     return URL.revokeObjectURL(blobUrl);
 }
 
-function startStream(m3u8Url){
-    console.log("m3u8Url" + m3u8Url);
-    var video = document.querySelector('video');
+function startStream(m3u8Url, videoId){
+    console.log("m3u8Url: " + m3u8Url);
+    console.log("videoId: " + m3u8Url);
+    var video = document.getElementById(videoId);
     if (video === null){
         console.log("FATAL: video element not found");
     }

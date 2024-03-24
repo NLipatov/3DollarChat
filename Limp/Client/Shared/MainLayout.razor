@@ -80,7 +80,7 @@ else
         foreach (var message in notToastedMessages)
         {
             //If chat with sender is opened - no need to show a toast
-            if (_navigationManager.Uri.Contains($"user/{message.Sender}"))
+            if (_navigationManager.Uri.Contains($"{message.Sender}"))
             {
                 _messageBox.OnToastWasShown(message.Id);
                 return;

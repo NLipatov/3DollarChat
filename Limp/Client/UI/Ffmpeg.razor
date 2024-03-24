@@ -14,7 +14,6 @@
 {
     async void OnFileUpload(InputFileChangeEventArgs v)
     {
-        await FFmpegFactory.Init(_JsRuntime);
         using (var memoryStream = new MemoryStream())
         {
             var file = v.GetMultipleFiles()[0];

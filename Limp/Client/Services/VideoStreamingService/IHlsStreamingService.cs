@@ -1,5 +1,5 @@
-using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Models;
 using Ethachat.Client.Services.VideoStreamingService.FileTypes;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.VideoStreamingService;
 

@@ -88,7 +88,7 @@
     private void ToggleEditContactsMode() => contactEditionMode = !contactEditionMode;
 
     public void NavigateToChatWithContact(ItemModel itemModel) 
-        => _navigationManager.NavigateTo($"user/{itemModel.ItemName}");
+        => _navigationManager.NavigateTo($"{itemModel.ItemName}");
 
     private BadgeModel GetContactBadge(Contact contact)
     {

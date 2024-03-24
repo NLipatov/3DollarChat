@@ -6,7 +6,13 @@
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
+@using Ethachat.Client.Services.VideoStreamingService
+@using Ethachat.Client.Services.VideoStreamingService.FileTypes
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
+@using FFmpegBlazor
+@using System.Text
+@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
@@ -16,6 +22,8 @@
 @inject ICallbackExecutor CallbackExecutor
 @inject ICryptographyService CryptographyService
 @inject IBinaryReceivingManager BinaryReceivingManager
+@inject IHlsStreamingService HlsStreamingService
+@inject NavigationManager NavigationManager
 
 <div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput"/>
@@ -67,6 +75,28 @@
         {
             await MaxFileSizeRestrictionModal.ShowAsync();
             FileInputId = Guid.NewGuid();
+            return;
+        }
+        
+        if (e.File.Name.EndsWith(".mp4"))
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                await e.File
+                    .OpenReadStream(long.MaxValue)
+                    .CopyToAsync(memoryStream);
+                
+                var playlist = await HlsStreamingService.ToM3U8Async(memoryStream.ToArray(), ExtentionType.MP4);
+
+                await _messageService.SendMessage(new ClientMessage()
+                {
+                    Id = Guid.NewGuid(),
+                    HlsPlaylist = playlist,
+                    Type = MessageType.HLSPlaylist,
+                    TargetGroup = TopicName,
+                    Sender = MyUsername
+                });
+            }
             return;
         }
 

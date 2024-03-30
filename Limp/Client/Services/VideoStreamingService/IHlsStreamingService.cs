@@ -1,9 +1,10 @@
-using Ethachat.Client.Services.VideoStreamingService.FileTypes;
 using EthachatShared.Models.Message;
+using Microsoft.AspNetCore.Components.Forms;
 
 namespace Ethachat.Client.Services.VideoStreamingService;
 
 public interface IHlsStreamingService
 {
-    Task<HlsPlaylist> ToM3U8Async(byte[] mp4, ExtentionType type);
+    Task<HlsPlaylist> ToM3U8Async(IBrowserFile browserFile);
+    bool IsExtensionSupportedByHLS(string filename);
 }

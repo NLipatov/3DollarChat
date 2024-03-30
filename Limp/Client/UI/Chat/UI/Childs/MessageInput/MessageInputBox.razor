@@ -79,26 +79,20 @@
             return;
         }
         
-        if (e.File.Name.EndsWith(".mp4"))
+        //stream it if it can be streamed
+        if (HlsStreamingService.IsExtensionSupportedByHLS(e.File.Name))
         {
-            using (var memoryStream = new MemoryStream())
-            {
-                await e.File
-                    .OpenReadStream(long.MaxValue)
-                    .CopyToAsync(memoryStream);
-                
-                var playlist = await HlsStreamingService.ToM3U8Async(memoryStream.ToArray(), ExtentionType.MP4);
+            var playlist = await HlsStreamingService.ToM3U8Async(e.File);
 
-                await _messageService.SendMessage(new ClientMessage()
-                {
-                    Id = Guid.NewGuid(),
-                    HlsPlaylist = playlist,
-                    Type = MessageType.HLSPlaylist,
-                    TargetGroup = TopicName,
-                    Sender = MyUsername,
-                    DateSent = DateTime.UtcNow
-                });
-            }
+            await _messageService.SendMessage(new ClientMessage()
+            {
+                Id = Guid.NewGuid(),
+                HlsPlaylist = playlist,
+                Type = MessageType.HLSPlaylist,
+                TargetGroup = TopicName,
+                Sender = MyUsername,
+                DateSent = DateTime.UtcNow
+            });
             return;
         }
 

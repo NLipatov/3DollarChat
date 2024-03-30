@@ -1,6 +1,7 @@
 using System.Text;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpeginitialization;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption;
+using Ethachat.Client.Services.VideoStreamingService.FileTypes;
 using EthachatShared.Models.Message;
 using FFmpegBlazor;
 using Microsoft.AspNetCore.Components;
@@ -33,7 +34,7 @@ public class FfmpegConverter : IAsyncDisposable
         return _ff ??= await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, null);
     }
 
-    public async Task<HlsPlaylist> Mp4ToM3U8(byte[] mp4)
+    public async Task<HlsPlaylist> Mp4ToM3U8(byte[] videoBytes)
     {
         var convertationDone = false;
         _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false,
@@ -52,10 +53,10 @@ public class FfmpegConverter : IAsyncDisposable
 
         //Loading original mp4 to a in-memory emscripten filesystem
         var originalMp4Filename = $"{VideoId}.mp4";
-        await WriteToEmscripten(originalMp4Filename, mp4);
+        await WriteToEmscripten(originalMp4Filename, videoBytes);
 
         //It will create a single .m3u8 file and some .ts files from original mp4
-        await Convert(keyInfoFilename);
+        await ConvertMp4ToM3U8(keyInfoFilename);
 
         //wait till ffmpeg finishes it's job
         // ReSharper disable once LoopVariableIsNeverChangedInsideLoop
@@ -99,7 +100,7 @@ public class FfmpegConverter : IAsyncDisposable
         return keyInfoFilename;
     }
 
-    private async Task Convert(string keyInfoFilename)
+    private async Task ConvertMp4ToM3U8(string keyInfoFilename)
     {
         if (string.IsNullOrWhiteSpace(keyInfoFilename))
             throw new ArgumentException($"Invalid {nameof(keyInfoFilename)} value");
@@ -199,5 +200,32 @@ public class FfmpegConverter : IAsyncDisposable
         }
 
         _ff = null;
+    }
+
+    public async Task<byte[]> ConvertToMp4(byte[] videoBytes, ExtentionType type)
+    {
+        var convertedFilename = $"{VideoId}.mp4";
+        var unconvertedFilename = $"{VideoId}.{type.ToString().ToLower()}";
+        await WriteToEmscripten(unconvertedFilename, videoBytes);
+        
+        var ffmpegArgs = new List<string>
+        {
+            "-i",
+            unconvertedFilename,
+            "-c:v", "libx264",
+            "-preset", "medium",
+            "-crf", "23",
+            "-c:a", "aac",
+            "-b:a", "128k",
+            convertedFilename
+        };
+
+        await (await GetFf()).Run(
+            ffmpegArgs.ToArray());
+
+        var bytes = await (await GetFf()).ReadFile(convertedFilename);
+        (await GetFf()).UnlinkFile(convertedFilename);
+        (await GetFf()).UnlinkFile(unconvertedFilename);
+        return bytes;
     }
 }

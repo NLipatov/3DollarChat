@@ -16,6 +16,7 @@
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
 @inject IPackageMultiplexerService PackageMultiplexerService
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @implements IDisposable
 
 @if (message != null)
@@ -34,7 +35,7 @@
             }
             else if (message.Type is MessageType.HLSPlaylist)
             {
-                <video id=@message.Id width="300" height="200" autoplay controls></video>
+                <HlsVideoStreamMessage Message=@message/>
             }
             else if (!string.IsNullOrWhiteSpace(message.BlobLink))
             {
@@ -124,53 +125,6 @@
         componentId = Guid.NewGuid();
 
         SubscribeToHubEvents();
-    }
-
-    protected override void OnAfterRender(bool firstRender)
-    {
-        base.OnAfterRender(firstRender);
-        
-        if (message?.Type is MessageType.HLSPlaylist)
-        {
-            Task.Run(async () => await PrepareHlsStreamingVideo());
-        }
-    }
-
-    private async Task PrepareHlsStreamingVideo()
-    {
-        if (message.Sender == myUsername)
-        {
-            Console.WriteLine(message.HlsPlaylist!.M3U8Content);
-            var m3u8Bytes = Encoding.UTF8.GetBytes(message.HlsPlaylist.M3U8Content);
-            var m3u8Url = await _jSRuntime.InvokeAsync<string>("createBlobUrl", m3u8Bytes, "application/vnd.apple.mpegurl");
-        
-            await _jSRuntime.InvokeVoidAsync("startStream", m3u8Url, message.Id);
-            return;
-        }
-        var KeyFileGenerator = new HlsEncryptionManager(_jSRuntime, message!.Id.ToString());
-        //Generate a key file
-        var keyFile = KeyFileGenerator.GenerateKeyFile(message.HlsPlaylist!.HexKey);
-        //Create a blob with key file
-        ////ToDo: key info file blob is not revoked
-        var keyFileUri = await _jSRuntime.InvokeAsync<string>("createBlobUrl", keyFile, "application/octet-stream");
-
-        var sb = new StringBuilder();
-        foreach (var line in message.HlsPlaylist.M3U8Content.Split("\n"))
-        {
-            var modifiedLine = line;
-            if (line.StartsWith("#EXT-X-KEY:METHOD=AES-128"))
-            {
-                modifiedLine = $"#EXT-X-KEY:METHOD=AES-128,URI=\"{keyFileUri}\",IV=0x{message.HlsPlaylist.HexIv}";
-            }
-            sb.AppendLine(modifiedLine);
-        }
-
-        var playlistContent = sb.ToString();
-
-        var playlistBytes = Encoding.UTF8.GetBytes(playlistContent);
-        var playlistUrl = await _jSRuntime.InvokeAsync<string>("createBlobUrl", playlistBytes, "application/vnd.apple.mpegurl");
-        
-        await _jSRuntime.InvokeVoidAsync("startStream", playlistUrl, message.Id);
     }
 
     private void SubscribeToHubEvents()

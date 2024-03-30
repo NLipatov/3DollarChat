@@ -71,7 +71,8 @@
 
     private async Task OnFileInput(InputFileChangeEventArgs e)
     {
-        if (e.File.Size > MaxFileSizeBytes)
+        //if file exceeds the max size limit
+        if (MaxFileSizeBytes - e.File.Size < 0)
         {
             await MaxFileSizeRestrictionModal.ShowAsync();
             FileInputId = Guid.NewGuid();

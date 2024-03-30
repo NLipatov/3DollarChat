@@ -94,7 +94,8 @@
                     HlsPlaylist = playlist,
                     Type = MessageType.HLSPlaylist,
                     TargetGroup = TopicName,
-                    Sender = MyUsername
+                    Sender = MyUsername,
+                    DateSent = DateTime.UtcNow
                 });
             }
             return;

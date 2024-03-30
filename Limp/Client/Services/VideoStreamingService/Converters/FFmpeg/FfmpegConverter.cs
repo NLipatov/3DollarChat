@@ -118,6 +118,7 @@ public class FfmpegConverter : IAsyncDisposable
             "-c:a", "copy",
             "-hls_key_info_file", keyInfoFilename,
             "-hls_playlist_type", "vod",
+            "-hls_time", "10",
             $"{VideoId}.m3u8"
         };
 

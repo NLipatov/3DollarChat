@@ -38,6 +38,7 @@ using Ethachat.Client.Services.NotificationService;
 using Ethachat.Client.Services.NotificationService.Implementation;
 using Ethachat.Client.Services.UserAgent;
 using Ethachat.Client.Services.UserAgent.Implementation;
+using Ethachat.Client.Services.VideoStreamingService;
 using Ethachat.Client.UI.AccountManagement.LogicHandlers;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using Microsoft.AspNetCore.Components.Web;
@@ -75,6 +76,7 @@ builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>()
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
 builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
 builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>();
+builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

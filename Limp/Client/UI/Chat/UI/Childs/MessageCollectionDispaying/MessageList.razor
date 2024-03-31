@@ -3,19 +3,20 @@
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using EthachatShared.Models.Message;
+@using System.Text.Unicode
+@using System.Text
+@using Ethachat.Client.Services.VideoStreamingService
 @inject IMessageBox _messageBox
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
 @inject IMessageService _messageService
+@inject IHlsStreamingService HlsStreamingService
 @implements IDisposable
 
 <div class="messages-box">
-    <Virtualize 
+    <Virtualize
         Context="message"
-        Items="_messageBox.Messages
-            .Where(x=>x.Type is not MessageType.Metadata)
-            .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup)
-            .ToList()" >
+        Items="_messageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()">
         <SingleMessage message="message" myUsername=@myUsername/>
     </Virtualize>
 </div>

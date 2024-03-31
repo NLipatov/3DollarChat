@@ -1,23 +1,24 @@
-﻿@page "/user/{topicName?}"
+﻿@page "/{topicName?}"
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput
-@using Ethachat.Client.Cryptography.KeyStorage;
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using EthachatShared.Models.ConnectedUsersManaging;
-@using EthachatShared.Encryption;
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying;
 @using Ethachat.Client.UI.AuthenticationChecks
 @using Ethachat.Client.Services.AuthenticationService.Handlers
 @using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.UI.Childs.AesKeyExchangeStatusModal
 @inject NavigationManager _navigationManager
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IBrowserKeyStorage _localKeyManager
 @inject IUsersService _usersService
+@inject IJSRuntime _jsRuntime
 @inject IAuthenticationHandler AuthenticationHandler
+@inject IHlsStreamingService HlsStreamingService
 @implements IDisposable
 
 @if (string.IsNullOrWhiteSpace(topicName))
@@ -25,7 +26,7 @@
     <div class="p-2">
         <Callout Type="CalloutType.Warning">
             <span>
-                Specify a username in a url like so: "user/<strong>Pavel</strong>"
+                Specify a username in a url like so: "<strong>/Pavel</strong>"
             </span>
         </Callout>
     </div>
@@ -51,7 +52,6 @@ else
 
             <MessageInputBox MyUsername=@myUsername
                              TopicName=@topicName/>
-
         </AuthenticatedContent>
         <UnauthenticatedContent>
             <UnAuthorized/>
@@ -115,5 +115,4 @@ else
             StateHasChanged();
         }
     }
-
 }

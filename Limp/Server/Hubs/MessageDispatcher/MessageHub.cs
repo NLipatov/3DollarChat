@@ -195,7 +195,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 };
                 
                 await _webPushSender.SendPush($"You've got a new {contentDescription} from {message.Sender}",
-                    $"/user/{message.Sender}", message.TargetGroup);
+                    $"/{message.Sender}", message.TargetGroup);
             }
         }
 

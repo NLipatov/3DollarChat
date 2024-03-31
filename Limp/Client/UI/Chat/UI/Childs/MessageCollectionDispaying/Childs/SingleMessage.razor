@@ -7,12 +7,16 @@
 @using EthachatShared.Models.Message;
 @using System.Text.RegularExpressions
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
+@using FFmpegBlazor
+@using System.Text
+@using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption
 @inject ICallbackExecutor _callbackExecutor
 @inject IMessageBox _messageBox
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime
 @inject IPackageMultiplexerService PackageMultiplexerService
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @implements IDisposable
 
 @if (message != null)
@@ -28,6 +32,10 @@
                 <video controls="controls" style="max-width: 100%;">
                     <source src="@message.BlobLink" type="video/mp4">
                 </video>
+            }
+            else if (message.Type is MessageType.HLSPlaylist)
+            {
+                <HlsVideoStreamMessage Message=@message/>
             }
             else if (!string.IsNullOrWhiteSpace(message.BlobLink))
             {
@@ -62,22 +70,6 @@
                         <span>
                             <i class="fas fa-check-double @messageClass"></i>
                         </span>
-                    }
-                    else if (!message.IsRegisteredByHub)
-                    {
-                        @if (message.Type is MessageType.BlobLink)
-                        {
-                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <span>@($"{chunksLoaded}/{message.Metadata!.ChunksCount}")</span>
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </span>
-                        }
-                        else
-                        {
-                            <span style="color: dodgerblue; cursor: pointer;" @onclick="(() => OnResend.InvokeAsync(message))">
-                                <i class="bi bi-arrow-clockwise"></i>
-                            </span>
-                        }
                     }
                     else if (message.IsRegisteredByHub)
                     {

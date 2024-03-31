@@ -148,6 +148,7 @@ public class FfmpegConverter : IAsyncDisposable
                 if (line.StartsWith(VideoId))
                 {
                     var tsFilename = $"{VideoId}_{tsCounter}.ts";
+                    Console.WriteLine($"Posting: {tsFilename}");
                     tsCounter++;
                     sb.AppendLine(_navigationManager.BaseUri + "hlsapi/get?filename=" + tsFilename);
 
@@ -161,8 +162,8 @@ public class FfmpegConverter : IAsyncDisposable
 
                     var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/store");
                     var request = await httpClient.PostAsync(endpointAddress, formData);
-                    if (!request.IsSuccessStatusCode)
-                        throw new ApplicationException("Failed to store ts file on server");
+                    // if (!request.IsSuccessStatusCode)
+                    //     throw new ApplicationException("Failed to store ts file on server");
                 }
                 else
                 {

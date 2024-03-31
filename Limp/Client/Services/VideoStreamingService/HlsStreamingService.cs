@@ -18,7 +18,16 @@ public class HlsStreamingService : IHlsStreamingService
         _navigationManager = navigationManager;
     }
 
-    public bool IsExtensionSupportedByHLS(string filename)
+    public async Task<bool> CanFileBeStreamedAsync(string filename)
+    {
+        var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
+        using var client = new HttpClient();
+        var request = await client.GetAsync(endpointAddress);
+            
+        return IsExtensionSupportedByHls(filename) && request.StatusCode is System.Net.HttpStatusCode.OK;
+    }
+
+    private bool IsExtensionSupportedByHls(string filename)
     {
         var extension = Path.GetExtension(filename).ToUpper().Replace('.', ' ');
         if (Enum.TryParse<ExtentionType>(extension, out _))
@@ -29,7 +38,7 @@ public class HlsStreamingService : IHlsStreamingService
 
     public async Task<HlsPlaylist> ToM3U8Async(IBrowserFile browserFile)
     {
-        if (!IsExtensionSupportedByHLS(browserFile.Name))
+        if (!IsExtensionSupportedByHls(browserFile.Name))
             throw new ArgumentException($"Extension is not supported: {browserFile.Name}.");
         
         var extension = Path.GetExtension(browserFile.Name).ToUpper().Replace('.', ' ').Trim();

@@ -6,5 +6,5 @@ namespace Ethachat.Client.Services.VideoStreamingService;
 public interface IHlsStreamingService
 {
     Task<HlsPlaylist> ToM3U8Async(IBrowserFile browserFile);
-    bool IsExtensionSupportedByHLS(string filename);
+    Task<bool> CanFileBeStreamedAsync(string filename);
 }

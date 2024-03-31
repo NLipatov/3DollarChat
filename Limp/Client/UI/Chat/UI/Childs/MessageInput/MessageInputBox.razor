@@ -80,7 +80,7 @@
         }
         
         //stream it if it can be streamed
-        if (HlsStreamingService.IsExtensionSupportedByHLS(e.File.Name))
+        if (await HlsStreamingService.CanFileBeStreamedAsync(e.File.Name))
         {
             var playlist = await HlsStreamingService.ToM3U8Async(e.File);
 

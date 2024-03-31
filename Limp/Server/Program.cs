@@ -84,7 +84,10 @@ app.MapGet("/hlsapi/get", async context =>
 
     using (var httpClient = new HttpClient())
     {
-        var targetUrl = "http://localhost:9001/get" + query;
+        var hlsApiUrl = builder.Configuration.GetSection("HlsApi:Address").Value;
+        Console.WriteLine("Using HLS API: " + hlsApiUrl);
+        var targetUrl = $"http://{hlsApiUrl}/get" + query;
+        Console.WriteLine("Targetting url GET: " + targetUrl);
 
         var response = await httpClient.GetAsync(targetUrl);
 
@@ -113,8 +116,10 @@ app.MapPost("/hlsapi/store", async context =>
 
     using (var httpClient = new HttpClient())
     {
-        var hlsApiAddress = builder.Configuration.GetSection("HlsApi:Address").Value;
-        var targetUrl = hlsApiAddress + "/store";
+        var hlsApiUrl = builder.Configuration.GetSection("HlsApi:Address").Value;
+        Console.WriteLine("Using HLS API: " + hlsApiUrl);
+        var targetUrl = $"http://{hlsApiUrl}/store";
+        Console.WriteLine("Targetting url POST: " + targetUrl);
 
         var response = await httpClient.PostAsync(targetUrl, formData);
 

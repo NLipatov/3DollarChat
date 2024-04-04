@@ -30,11 +30,26 @@ public class HlsStreamingService : IHlsStreamingService
 
     private bool IsExtensionSupportedByHls(string filename)
     {
-        var extension = Path.GetExtension(filename).ToUpper().Replace('.', ' ');
-        if (Enum.TryParse<ExtentionType>(extension, out _))
-            return true;
+        var extension = GetExtensionCodeName(filename);
         
+        if (Enum.TryParse<ExtentionType>(extension, out var parsedExtension))
+        {
+            if (parsedExtension is not ExtentionType.NONE)
+            {
+                return true;
+            }
+        }
+
         return false;
+    }
+
+    private string GetExtensionCodeName(string filename)
+    {
+        return Path.GetExtension(filename)
+            .Replace('.', ' ')
+            .Replace("3", "_3")
+            .ToUpper()
+            .Trim();
     }
 
     public async Task<HlsPlaylist> ToM3U8Async(IBrowserFile browserFile)
@@ -42,7 +57,7 @@ public class HlsStreamingService : IHlsStreamingService
         if (!IsExtensionSupportedByHls(browserFile.Name))
             throw new ArgumentException($"Extension is not supported: {browserFile.Name}.");
         
-        var extension = Path.GetExtension(browserFile.Name).ToUpper().Replace('.', ' ').Trim();
+        var extension = GetExtensionCodeName(browserFile.Name);;
         if (!Enum.TryParse<ExtentionType>(extension, out var type))
             throw new ArgumentException($"Extension is not supported: {extension}.");
         

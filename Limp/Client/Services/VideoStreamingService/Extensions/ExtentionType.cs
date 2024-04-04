@@ -5,5 +5,15 @@ public enum ExtentionType
     NONE,
     MP4,
     WEBM,
-    HEVC
+    HEVC,
+    H264,
+    MOV,
+    AVI,
+    WMV,
+    MKV,
+    FLV,
+    MPG,
+    _3GP,
+    AVCHD,
+    MTS
 }

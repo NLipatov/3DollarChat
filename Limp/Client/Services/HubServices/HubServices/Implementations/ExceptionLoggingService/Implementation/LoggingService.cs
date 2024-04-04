@@ -8,7 +8,7 @@ using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService.Implementation;
 
-public class ExceptionLoggingService : IExceptionLoggingService
+public class LoggingService : ILoggingService
 {
     private readonly ICallbackExecutor _callbackExecutor;
     private readonly IConfiguration _configuration;
@@ -28,7 +28,7 @@ public class ExceptionLoggingService : IExceptionLoggingService
         await connection.SendAsync("Log", exceptionLog);
     }
 
-    public ExceptionLoggingService(ICallbackExecutor callbackExecutor, IConfiguration configuration, NavigationManager navigationManager)
+    public LoggingService(ICallbackExecutor callbackExecutor, IConfiguration configuration, NavigationManager navigationManager)
     {
         _callbackExecutor = callbackExecutor;
         _configuration = configuration;

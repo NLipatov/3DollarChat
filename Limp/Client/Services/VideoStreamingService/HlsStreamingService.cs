@@ -1,5 +1,5 @@
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
-using Ethachat.Client.Services.VideoStreamingService.FileTypes;
+using Ethachat.Client.Services.VideoStreamingService.Extensions;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
@@ -23,8 +23,9 @@ public class HlsStreamingService : IHlsStreamingService
         var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
         using var client = new HttpClient();
         var request = await client.GetAsync(endpointAddress);
+        var hlsServiceHealth = await request.Content.ReadAsStringAsync();
             
-        return IsExtensionSupportedByHls(filename) && request.StatusCode is System.Net.HttpStatusCode.OK;
+        return IsExtensionSupportedByHls(filename) && hlsServiceHealth == "Ready";
     }
 
     private bool IsExtensionSupportedByHls(string filename)

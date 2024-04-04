@@ -1,3 +1,4 @@
+using Ethachat.Server.DevEnv.HLS;
 using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
@@ -78,5 +79,10 @@ app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
 app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
+
+
+#if DEBUG
+    app.UseHlsProxyService(builder.Configuration);
+#endif
 
 app.Run();

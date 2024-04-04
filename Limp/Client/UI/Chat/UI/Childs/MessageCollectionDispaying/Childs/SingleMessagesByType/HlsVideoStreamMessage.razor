@@ -6,7 +6,7 @@
 @namespace Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @implements IAsyncDisposable
 
-<video id=@Message.Id width="300" height="200" autoplay controls></video>
+<video class="hls-video" id=@Message.Id autoplay controls></video>
 
 @code {
     [Parameter] public required Message Message { get; set; }

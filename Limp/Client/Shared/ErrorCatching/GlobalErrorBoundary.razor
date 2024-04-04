@@ -1,7 +1,7 @@
 ﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService
 @using Ethachat.Client.Shared.ErrorCatching.CustomClientExceptions
 @inherits ErrorBoundary
-@inject IExceptionLoggingService _exceptionLoggingService
+@inject ILoggingService LoggingService
 @inject IToastService _toastService
 
 @if (CurrentException is null)
@@ -39,7 +39,7 @@ else
 
     protected override async Task OnErrorAsync(Exception exception)
     {
-        await _exceptionLoggingService.LogException(exception);
+        await LoggingService.LogException(exception);
         _toastService.ShowError(exception.Message);
         _receivedExceptions.Add(exception);
         StateHasChanged();

@@ -74,7 +74,7 @@ builder.Services.AddTransient<IPackageMultiplexerService, PackageMultiplexerServ
 builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
-builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
+builder.Services.AddTransient<ILoggingService, LoggingService>();
 builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>();
 builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddBlazoredToast();

@@ -1,7 +1,7 @@
 using System.Text;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpeginitialization;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption;
-using Ethachat.Client.Services.VideoStreamingService.FileTypes;
+using Ethachat.Client.Services.VideoStreamingService.Extensions;
 using EthachatShared.Models.Message;
 using FFmpegBlazor;
 using Microsoft.AspNetCore.Components;

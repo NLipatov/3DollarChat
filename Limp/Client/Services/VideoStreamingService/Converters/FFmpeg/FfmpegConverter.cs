@@ -1,4 +1,5 @@
 using System.Text;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpeginitialization;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption;
 using Ethachat.Client.Services.VideoStreamingService.Extensions;
@@ -11,21 +12,24 @@ namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
 
 public class FfmpegConverter : IAsyncDisposable
 {
-    private FfmpegInitializationManager FfmpegInitializationManager { get; } = new();
+    private FfmpegInitializationManager FfmpegInitializationManager { get; init; }
     private List<string> _emscriptenFiles = new();
     private List<string> _blobUrls = new();
     private string VideoId { get; set; }
     private FFMPEG? _ff;
     private readonly IJSRuntime _jsRuntime;
     private readonly NavigationManager _navigationManager;
+    private readonly ICallbackExecutor _callbackExecutor;
     private HlsEncryptionManager KeyFileGenerator { get; }
 
-    public FfmpegConverter(IJSRuntime jsRuntime, NavigationManager navigationManager)
+    public FfmpegConverter(IJSRuntime jsRuntime, NavigationManager navigationManager, ICallbackExecutor callbackExecutor)
     {
         VideoId = Guid.NewGuid().ToString();
         KeyFileGenerator = new HlsEncryptionManager(jsRuntime, VideoId);
         _jsRuntime = jsRuntime;
         _navigationManager = navigationManager;
+        _callbackExecutor = callbackExecutor;
+        FfmpegInitializationManager = new();
     }
 
     //Gets FFmpeg instance (existing one or creates a new one)
@@ -140,6 +144,7 @@ public class FfmpegConverter : IAsyncDisposable
         var content = await streamReader.ReadToEndAsync();
         var lines = content.Split("\n");
         var tsCounter = 0;
+        var tsTotal = lines.Count(x => x.StartsWith(VideoId));
 
         using (var client = new HttpClient())
         {
@@ -156,6 +161,7 @@ public class FfmpegConverter : IAsyncDisposable
                     (await GetFf()).UnlinkFile(line);
                 
                     await SendFormData(client, tsBytes, tsFilename);
+                    _callbackExecutor.ExecuteSubscriptionsByName((tsCounter, tsTotal),"OnHLSMediaSegmentUploaded");
                 }
                 else
                 {

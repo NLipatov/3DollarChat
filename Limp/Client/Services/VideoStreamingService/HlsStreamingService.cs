@@ -1,3 +1,4 @@
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
 using Ethachat.Client.Services.VideoStreamingService.Extensions;
 using EthachatShared.Models.Message;
@@ -11,11 +12,13 @@ public class HlsStreamingService : IHlsStreamingService
 {
     private readonly IJSRuntime _jsRuntime;
     private readonly NavigationManager _navigationManager;
+    private readonly ICallbackExecutor _callbackExecutor;
 
-    public HlsStreamingService(IJSRuntime jsRuntime, NavigationManager navigationManager)
+    public HlsStreamingService(IJSRuntime jsRuntime, NavigationManager navigationManager, ICallbackExecutor callbackExecutor)
     {
         _jsRuntime = jsRuntime;
         _navigationManager = navigationManager;
+        _callbackExecutor = callbackExecutor;
     }
 
     public async Task<bool> CanFileBeStreamedAsync(string filename)
@@ -66,7 +69,7 @@ public class HlsStreamingService : IHlsStreamingService
             .OpenReadStream(long.MaxValue)
             .CopyToAsync(memoryStream);
         
-        await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager);
+        await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager, _callbackExecutor);
         return type switch
         {
             ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(memoryStream.ToArray()),
@@ -76,7 +79,7 @@ public class HlsStreamingService : IHlsStreamingService
 
     private async Task<byte[]> ConvertToMp4(byte[] bytes, ExtentionType type)
     {
-        await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager);
+        await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager, _callbackExecutor);
         return await ffmpeg.ConvertToMp4(bytes, type);
     }
 }

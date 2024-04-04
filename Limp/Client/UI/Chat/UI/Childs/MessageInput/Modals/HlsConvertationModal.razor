@@ -1,0 +1,70 @@
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@implements IDisposable
+
+<Modal @ref="modal"
+       Title="Uploading"
+       OnShown=@(() => IsModalShown = true)>
+
+    <BodyTemplate>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <span>@Filename</span>
+            <span>Creating encrypted HLS stream from video file</span>
+            <span>Upload status: @tsUploaded / @(tsTotal > 0 ? tsTotal : "counting...")</span>
+            <span>You can close this dialog, process will continue in a background.</span>
+        </div>
+    </BodyTemplate>
+</Modal>
+
+@code {
+    private Modal? modal = default!;
+    private string Filename = string.Empty;
+    private int tsUploaded = 0;
+    private int tsTotal = -1;
+    private Guid ComponentId { get; set; }
+    private bool IsModalShown { get; set; }
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        HubServiceSubscriptionManager
+            .AddCallback<(bool, string)>(OnHLSStreamingPreparationInProgress, "OnHLSStreamingPreparationInProgress", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<(int, int)>(OnHLSMediaSegmentUploaded, "OnHLSMediaSegmentUploaded", ComponentId);
+    }
+
+    private async Task OnHLSMediaSegmentUploaded((int tsUploaded, int tsTotal) obj)
+    {
+        tsUploaded = obj.tsUploaded;
+        tsTotal = obj.tsTotal;
+        StateHasChanged();
+    }
+
+    private async Task OnHLSStreamingPreparationInProgress((bool isProcessActive, string fileName) processDetails)
+    {
+        Filename = processDetails.fileName;
+        if (processDetails.isProcessActive)
+        {
+            await modal?.ShowAsync();
+        }
+        else
+        {
+            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
+            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
+            while (!IsModalShown)
+            {
+                //500 is not a magic value here, any positive number will do the trick 
+                await Task.Delay(500);
+            }
+
+            await modal?.HideAsync();
+            IsModalShown = false;
+        }
+    }
+
+}

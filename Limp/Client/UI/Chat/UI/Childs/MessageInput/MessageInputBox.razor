@@ -12,6 +12,7 @@
 @using System.Text
 @using Ethachat.Client.ClientOnlyModels
 @using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @inject IMessageBuilder _messageBuilder
 @inject IMessageService _messageService
 @inject IMessageBox _messageBox
@@ -45,6 +46,7 @@
 </Modal>
 
 <FileEncryptionModal/>
+<HlsConvertationModal/>
 
 @code {
     [Parameter] public string TopicName { get; set; } = string.Empty;
@@ -81,6 +83,7 @@
         //stream it if it can be streamed
         if (await HlsStreamingService.CanFileBeStreamedAsync(e.File.Name))
         {
+            CallbackExecutor.ExecuteSubscriptionsByName((true, e.File.Name), "OnHLSStreamingPreparationInProgress");
             var playlist = await HlsStreamingService.ToM3U8Async(e.File);
 
             await _messageService.SendMessage(new ClientMessage()
@@ -92,6 +95,7 @@
                 Sender = MyUsername,
                 DateSent = DateTime.UtcNow
             });
+            CallbackExecutor.ExecuteSubscriptionsByName((false, e.File.Name), "OnHLSStreamingPreparationInProgress");
             return;
         }
 

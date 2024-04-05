@@ -16,11 +16,14 @@ public class FfmpegInitializationManager
             FFMPEG ff;
             await FFmpegFactory.Init(_jsRuntime);
             ff = FFmpegFactory.CreateFFmpeg(new FFmpegConfig() { Log = withLog });
+            
+            _callbackExecutor?.ExecuteSubscriptionsByName($"Loading ff","OnStatusUpdate");
             await ff.Load();
             if (!ff.IsLoaded)
             {
                 throw new ApplicationException($"Could not load {nameof(ff)}");
             }
+            _callbackExecutor?.ExecuteSubscriptionsByName($"ff is loaded: {ff.IsLoaded}","OnStatusUpdate");
 
             if (OnRunToCompletionCallback is not null)
             {

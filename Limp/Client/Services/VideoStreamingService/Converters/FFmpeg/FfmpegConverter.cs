@@ -41,6 +41,7 @@ public class FfmpegConverter : IAsyncDisposable
 
     public async Task<HlsPlaylist> Mp4ToM3U8(byte[] videoBytes)
     {
+        _callbackExecutor.ExecuteSubscriptionsByName($"Initializing ffmpeg","OnStatusUpdate");
         var convertationDone = false;
         _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false,
             () => { convertationDone = true; }, _callbackExecutor);

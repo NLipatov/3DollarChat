@@ -158,9 +158,8 @@ public class FfmpegConverter : IAsyncDisposable
                 await Task.Run(async () =>
                 {
                     await SendFormData(line, tsFilename);
-                    _callbackExecutor.ExecuteSubscriptionsByName(true, "OnHLSMediaSegmentUploaded");
-                });
-
+                }).ConfigureAwait(false);
+                _callbackExecutor.ExecuteSubscriptionsByName(true, "OnHLSMediaSegmentUploaded");
             }
             else
             {

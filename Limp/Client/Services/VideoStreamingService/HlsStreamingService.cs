@@ -1,5 +1,6 @@
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg;
+using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpeginitialization;
 using Ethachat.Client.Services.VideoStreamingService.Extensions;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
@@ -23,12 +24,27 @@ public class HlsStreamingService : IHlsStreamingService
 
     public async Task<bool> CanFileBeStreamedAsync(string filename)
     {
-        var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
-        using var client = new HttpClient();
-        var request = await client.GetAsync(endpointAddress);
-        var hlsServiceHealth = await request.Content.ReadAsStringAsync();
+        try
+        {
+            //Can ff be loaded? Is there enough memory on client device?
+            FfmpegInitializationManager ffmpegInitializationManager = new();
+            await ffmpegInitializationManager.InitializeAsync(_jsRuntime);
+        
+            //Is HLS service can be accessed?
+            var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
+            using var client = new HttpClient();
+            var request = await client.GetAsync(endpointAddress);
+            var hlsServiceHealth = await request.Content.ReadAsStringAsync();
+            var hlsIsHealthy = hlsServiceHealth == "Ready";
             
-        return IsExtensionSupportedByHls(filename) && hlsServiceHealth == "Ready";
+            //Is extension supported by HLS?
+            var extensionIsSupported = IsExtensionSupportedByHls(filename); 
+            return extensionIsSupported && hlsIsHealthy;
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
     }
 
     private bool IsExtensionSupportedByHls(string filename)

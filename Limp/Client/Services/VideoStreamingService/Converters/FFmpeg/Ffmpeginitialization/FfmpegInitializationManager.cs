@@ -1,3 +1,4 @@
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using FFmpegBlazor;
 using Microsoft.JSInterop;
 
@@ -5,11 +6,13 @@ namespace Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.Ffmpe
 
 public class FfmpegInitializationManager
 {
+    private ICallbackExecutor? _callbackExecutor { get; set; }
     public async Task<FFMPEG> InitializeAsync(IJSRuntime _jsRuntime, bool withLog = false,
-        Action OnRunToCompletionCallback = null)
+        Action OnRunToCompletionCallback = null, ICallbackExecutor? callbackExecutor = null)
     {
         try
         {
+            _callbackExecutor = callbackExecutor;
             FFMPEG ff;
             await FFmpegFactory.Init(_jsRuntime);
             ff = FFmpegFactory.CreateFFmpeg(new FFmpegConfig() { Log = withLog });
@@ -36,6 +39,7 @@ public class FfmpegInitializationManager
     {
         FFmpegFactory.Progress += async e =>
         {
+            _callbackExecutor?.ExecuteSubscriptionsByName($"Convertation progress: {Math.Round(e.Ratio * 100, 0)}%","OnStatusUpdate");
             if (e.Ratio >= 1) //ratio >= 1 means that convert job is done
             {
                 OnRunToCompletionCallback();

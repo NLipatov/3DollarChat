@@ -36,7 +36,7 @@ public class FfmpegConverter : IAsyncDisposable
     //Gets FFmpeg instance (existing one or creates a new one)
     private async Task<FFMPEG> GetFf()
     {
-        return _ff ??= await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, null);
+        return _ff ??= await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false, null, _callbackExecutor);
     }
 
     public async Task<HlsPlaylist> Mp4ToM3U8(byte[] videoBytes)
@@ -44,7 +44,7 @@ public class FfmpegConverter : IAsyncDisposable
         _callbackExecutor.ExecuteSubscriptionsByName($"Converting mp4 to m3u8","OnStatusUpdate");
         var convertationDone = false;
         _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false,
-            () => { convertationDone = true; });
+            () => { convertationDone = true; }, _callbackExecutor);
 
         VideoId = Guid.NewGuid().ToString();
 

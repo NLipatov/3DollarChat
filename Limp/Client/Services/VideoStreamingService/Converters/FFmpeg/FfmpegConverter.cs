@@ -223,10 +223,10 @@ public class FfmpegConverter : IAsyncDisposable
 
     public async Task<byte[]> ConvertToMp4(byte[] videoBytes, ExtentionType type)
     {
-        _callbackExecutor.ExecuteSubscriptionsByName($"Converting {type} to mp4","OnStatusUpdate");
         var convertedFilename = $"{VideoId}.mp4";
         var unconvertedFilename = $"{VideoId}.{type.ToString().ToLower()}";
         await WriteToEmscripten(unconvertedFilename, videoBytes);
+        _callbackExecutor.ExecuteSubscriptionsByName($"File was written to emscripten filesystem","OnStatusUpdate");
 
         var ffmpegArgs = new List<string>
         {
@@ -239,14 +239,16 @@ public class FfmpegConverter : IAsyncDisposable
             "-b:a", "128k",
             convertedFilename
         };
+        _callbackExecutor.ExecuteSubscriptionsByName($"Starting a convertation...","OnStatusUpdate");
 
         await (await GetFf()).Run(
             ffmpegArgs.ToArray());
 
+        _callbackExecutor.ExecuteSubscriptionsByName($"Reading the output file from emscripten filesystem","OnStatusUpdate");
         var bytes = await (await GetFf()).ReadFile(convertedFilename);
+        _callbackExecutor.ExecuteSubscriptionsByName($"Output file was read from emscripten filesystem","OnStatusUpdate");
         (await GetFf()).UnlinkFile(convertedFilename);
         (await GetFf()).UnlinkFile(unconvertedFilename);
-        _callbackExecutor.ExecuteSubscriptionsByName($"Converted {type} to mp4","OnStatusUpdate");
         return bytes;
     }
 }

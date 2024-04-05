@@ -41,12 +41,12 @@ public class FfmpegConverter : IAsyncDisposable
 
     public async Task<HlsPlaylist> Mp4ToM3U8(byte[] videoBytes)
     {
-        _callbackExecutor.ExecuteSubscriptionsByName($"Converting mp4 to m3u8","OnStatusUpdate");
         var convertationDone = false;
         _ff = await FfmpegInitializationManager.InitializeAsync(_jsRuntime, withLog: false,
             () => { convertationDone = true; }, _callbackExecutor);
 
         VideoId = Guid.NewGuid().ToString();
+        _callbackExecutor.ExecuteSubscriptionsByName($"Generating keys to encrypt hls files","OnStatusUpdate");
 
         //Generating a KEY and IV
         var key = await KeyFileGenerator.GetKey();
@@ -59,8 +59,10 @@ public class FfmpegConverter : IAsyncDisposable
 
         //Loading original mp4 to a in-memory emscripten filesystem
         var originalMp4Filename = $"{VideoId}.mp4";
+        _callbackExecutor.ExecuteSubscriptionsByName($"Writing original file content to emscripten filesystem","OnStatusUpdate");
         await WriteToEmscripten(originalMp4Filename, videoBytes);
 
+        _callbackExecutor.ExecuteSubscriptionsByName($"Converting mp4 to m3u8","OnStatusUpdate");
         //It will create a single .m3u8 file and some .ts files from original mp4
         await ConvertMp4ToM3U8(keyInfoFilename);
 

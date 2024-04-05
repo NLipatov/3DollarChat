@@ -8,6 +8,10 @@
 
     <BodyTemplate>
         <div style="display: flex; flex-direction: column; gap: 1rem;">
+            @if (!string.IsNullOrWhiteSpace(currentStatus))
+            {
+                <span>Status: <strong>@currentStatus</strong></span>
+            }
             <span>Uploaded: @_tsUploaded / @(_tsTotal > 0 ? _tsTotal : "counting...")</span>
             <span>You can close this dialog, process will continue in a background.</span>
         </div>
@@ -17,7 +21,8 @@
 @code {
     [Parameter]
     public string Title { get; set; } = "Uploading a file";
-    
+
+    private string currentStatus = string.Empty;
     private Modal? _modal = default!;
     private string _filename = string.Empty;
     private int _tsUploaded = 0;
@@ -40,6 +45,15 @@
         
         HubServiceSubscriptionManager
             .AddCallback<int>(OnTotalSegmentsCountResolved, "OnTotalSegmentsCountResolved", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<string>(OnStatusUpdate, "OnStatusUpdate", ComponentId);
+    }
+
+    private void OnStatusUpdate(string newStatus)
+    {
+        currentStatus = newStatus;
+        StateHasChanged();
     }
 
     private async Task OnTotalSegmentsCountResolved(int totalCount)

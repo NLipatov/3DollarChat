@@ -70,6 +70,7 @@ public class HlsStreamingService : IHlsStreamingService
             await browserFile
                 .OpenReadStream(long.MaxValue)
                 .CopyToAsync(memoryStream);
+            
             await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager, _callbackExecutor);
             return type switch
             {

@@ -36,13 +36,21 @@
             .AddCallback<(bool, string)>(OnHLSStreamingPreparationInProgress, "OnHLSStreamingPreparationInProgress", ComponentId);
         
         HubServiceSubscriptionManager
-            .AddCallback<(int, int)>(OnHLSMediaSegmentUploaded, "OnHLSMediaSegmentUploaded", ComponentId);
+            .AddCallback<bool>(OnHLSMediaSegmentUploaded, "OnHLSMediaSegmentUploaded", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<int>(OnTotalSegmentsCountResolved, "OnTotalSegmentsCountResolved", ComponentId);
     }
 
-    private async Task OnHLSMediaSegmentUploaded((int tsUploaded, int tsTotal) obj)
+    private async Task OnTotalSegmentsCountResolved(int totalCount)
     {
-        _tsUploaded = obj.tsUploaded;
-        _tsTotal = obj.tsTotal;
+        _tsTotal = totalCount;
+        StateHasChanged();
+    }
+
+    private async Task OnHLSMediaSegmentUploaded(bool _)
+    {
+        Interlocked.Increment(ref _tsUploaded);
         StateHasChanged();
     }
 

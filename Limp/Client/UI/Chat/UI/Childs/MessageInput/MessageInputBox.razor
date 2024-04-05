@@ -95,7 +95,6 @@
                 Sender = MyUsername,
                 DateSent = DateTime.UtcNow
             });
-            CallbackExecutor.ExecuteSubscriptionsByName((false, e.File.Name), "OnHLSStreamingPreparationInProgress");
             return;
         }
 

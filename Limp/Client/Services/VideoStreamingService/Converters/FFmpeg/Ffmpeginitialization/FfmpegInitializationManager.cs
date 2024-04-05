@@ -18,7 +18,16 @@ public class FfmpegInitializationManager
             ff = FFmpegFactory.CreateFFmpeg(new FFmpegConfig() { Log = withLog });
             
             _callbackExecutor?.ExecuteSubscriptionsByName($"Loading ff","OnStatusUpdate");
-            await ff.Load();
+            try
+            {
+                await ff.Load();
+            }
+            catch (Exception e)
+            {
+                _callbackExecutor?.ExecuteSubscriptionsByName($"Could not load ff: {e.Message}","OnStatusUpdate");
+                Console.WriteLine(e);
+                throw;
+            }
             if (!ff.IsLoaded)
             {
                 throw new ApplicationException($"Could not load {nameof(ff)}");

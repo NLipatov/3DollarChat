@@ -57,24 +57,31 @@ public class HlsStreamingService : IHlsStreamingService
 
     public async Task<HlsPlaylist> ToM3U8Async(IBrowserFile browserFile)
     {
-        if (!IsExtensionSupportedByHls(browserFile.Name))
-            throw new ArgumentException($"Extension is not supported: {browserFile.Name}.");
-        
-        var extension = GetExtensionCodeName(browserFile.Name);;
-        if (!Enum.TryParse<ExtentionType>(extension, out var type))
-            throw new ArgumentException($"Extension is not supported: {extension}.");
-        
-        using var memoryStream = new MemoryStream();
-        await browserFile
-            .OpenReadStream(long.MaxValue)
-            .CopyToAsync(memoryStream);
-        
-        await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager, _callbackExecutor);
-        return type switch
+        try
         {
-            ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(memoryStream.ToArray()),
-            _ => await ffmpeg.Mp4ToM3U8(await ConvertToMp4(memoryStream.ToArray(), type))
-        };
+            if (!IsExtensionSupportedByHls(browserFile.Name))
+                throw new ArgumentException($"Extension is not supported: {browserFile.Name}.");
+        
+            var extension = GetExtensionCodeName(browserFile.Name);;
+            if (!Enum.TryParse<ExtentionType>(extension, out var type))
+                throw new ArgumentException($"Extension is not supported: {extension}.");
+        
+            using var memoryStream = new MemoryStream();
+            await browserFile
+                .OpenReadStream(long.MaxValue)
+                .CopyToAsync(memoryStream);
+            await using var ffmpeg = new FfmpegConverter(_jsRuntime, _navigationManager, _callbackExecutor);
+            return type switch
+            {
+                ExtentionType.MP4 => await ffmpeg.Mp4ToM3U8(memoryStream.ToArray()),
+                _ => await ffmpeg.Mp4ToM3U8(await ConvertToMp4(memoryStream.ToArray(), type))
+            };
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            throw new ArgumentException($"Exception occured in {nameof(ToM3U8Async)} method: {e.Message}.");
+        }
     }
 
     private async Task<byte[]> ConvertToMp4(byte[] bytes, ExtentionType type)

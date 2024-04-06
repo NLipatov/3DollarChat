@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.KeyStorage;
@@ -9,6 +8,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersServ
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using Ethachat.Client.Cryptography.KeyModels;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
@@ -323,12 +323,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                var rsaKey = InMemoryKeyStorage.MyRSAKey;
+
+                var rsaToPost = new Key
+                {
+                    Type = KeyType.RsaPublic,
+                    Format = KeyFormat.PemSpki,
+                    Author = myName,
+                    Value = (rsaKey!.Value as CompositeRsa)!.PublicKey,
+                    CreationDate = rsaKey.CreationDate,
+                };
+
+                if (string.IsNullOrWhiteSpace(rsaToPost.Value.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
+                await UpdateRSAPublicKeyAsync(rsaToPost);
             });
 
             hubConnection.On<Guid>("OnFileTransfered", messageId =>
@@ -366,11 +377,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
         }
 
-        public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
+        public async Task UpdateRSAPublicKeyAsync(Key rsaPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
             {
-                await _usersService.SetRSAPublicKey(RSAPublicKey);
+                await _usersService.SetRSAPublicKey(rsaPublicKey);
             }
         }
 
@@ -380,7 +391,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             string partnersPublicKey)
         {
             var newAesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
-            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, newAesKey);
+            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, newAesKey.Value!.ToString()!);
             await hubConnection!.SendAsync("Dispatch", offer);
         }
 

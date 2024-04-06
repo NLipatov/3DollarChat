@@ -1,4 +1,6 @@
 ﻿using Ethachat.Client.Cryptography.CryptoHandlers;
+using Ethachat.Client.Cryptography.KeyModels;
+using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Cryptography
@@ -7,7 +9,7 @@ namespace Ethachat.Client.Cryptography
     {
         Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null) where T : ICryptoHandler;
         Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogram, string? contact = null, string? publicKeyToEncryptWith = null) where T : ICryptoHandler;
-        Task<string> GenerateAesKeyAsync(string contactName);
-        Task GenerateRsaKeyPairAsync();
+        Task<Key> GenerateAesKeyAsync(string contactName);
+        Task<CompositeRsa> GenerateRsaKeyPairAsync();
     }
 }

@@ -1,17 +1,21 @@
 ﻿let iv;
 
-function GenerateAESKey(contactName) {
-    window.crypto.subtle.generateKey
-        (
-            {
-                name: "AES-GCM",
-                length: 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-    ).then(async (Key) => {
-        await exportAESKeyToDotnet(Key, contactName);
-        });
+async function GenerateKey(length, name) {
+    const cryptoKey = await window.crypto.subtle.generateKey(
+        {
+            name: name,
+            length: length
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+
+    const exportedCryptoKey = await window.crypto.subtle.exportKey(
+        "raw",
+        cryptoKey
+    );
+    const exportedKeyBuffer = new Uint8Array(exportedCryptoKey);
+    return String.fromCharCode.apply(null, new Uint8Array(exportedKeyBuffer));
 }
 
 function GenerateAESKeyForHLS(videoId) {
@@ -44,17 +48,6 @@ function GenerateIVForHLS(videoId) {
     const ivLength = 16;
     const iv = window.crypto.getRandomValues(new Uint8Array(ivLength));
     return ab2hexstr(iv);
-}
-
-const exportAESKeyToDotnet = async (key, contactName) => {
-    const exported = await window.crypto.subtle.exportKey(
-        "raw",
-        key
-    );
-    const exportedKeyBuffer = new Uint8Array(exported);
-    const exportedKeyBufferString = ab2str(exportedKeyBuffer);
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
 }
 
 function importSecretKey(ArrayBufferKeyString) {

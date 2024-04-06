@@ -36,9 +36,8 @@
 
 
   <ItemGroup>
-    <Folder Include="Hubs\MessageDispatcher\Handlers\ReliableMessageSender\ConcreteSenders\" />
+    <Folder Include="Hubs\MessageDispatcher\Handlers\ReliableMessageSender\ConcreteSenders\SenderImplementations\" />
     <Folder Include="Services\LogService\Implementations\" />
-    <Folder Include="WebPushNotifications\Firebase\" />
   </ItemGroup>
 
 </Project>

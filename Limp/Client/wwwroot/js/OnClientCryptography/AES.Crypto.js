@@ -1,28 +1,53 @@
 ﻿let iv;
 
-function GenerateAESKey(contactName) {
-    window.crypto.subtle.generateKey
-        (
-            {
-                name: "AES-GCM",
-                length: 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-    ).then(async (Key) => {
-        await exportAESKeyToDotnet(Key, contactName);
-        });
+async function GenerateKey(length, name) {
+    const cryptoKey = await window.crypto.subtle.generateKey(
+        {
+            name: name,
+            length: length
+        },
+        true,
+        ["encrypt", "decrypt"]
+    );
+
+    const exportedCryptoKey = await window.crypto.subtle.exportKey(
+        "raw",
+        cryptoKey
+    );
+    const exportedKeyBuffer = new Uint8Array(exportedCryptoKey);
+    return String.fromCharCode.apply(null, new Uint8Array(exportedKeyBuffer));
 }
 
-const exportAESKeyToDotnet = async (key, contactName) => {
-    const exported = await window.crypto.subtle.exportKey(
-        "raw",
-        key
-    );
-    const exportedKeyBuffer = new Uint8Array(exported);
-    const exportedKeyBufferString = ab2str(exportedKeyBuffer);
+function GenerateAESKeyForHLS(videoId) {
+    (async () => {
+        try {
+            const key = await window.crypto.subtle.generateKey(
+                {
+                    name: "AES-CBC",
+                    length: 128
+                },
+                true,
+                ["encrypt", "decrypt"]
+            );
 
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
+            const exportedKey = await window.crypto.subtle.exportKey("raw", key);
+
+            const exportedKeyBuffer = new Uint8Array(exportedKey);
+            const hexKey = ab2hexstr(exportedKeyBuffer);
+
+            console.log(hexKey);
+
+            DotNet.invokeMethodAsync("Ethachat.Client", "OnHlsKeyReady", hexKey, videoId);
+        } catch (error) {
+            console.error('Could not generate a key:', error);
+        }
+    })();
+}
+
+function GenerateIVForHLS(videoId) {
+    const ivLength = 16;
+    const iv = window.crypto.getRandomValues(new Uint8Array(ivLength));
+    return ab2hexstr(iv);
 }
 
 function importSecretKey(ArrayBufferKeyString) {

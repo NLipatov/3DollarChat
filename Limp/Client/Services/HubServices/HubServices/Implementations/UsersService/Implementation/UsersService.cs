@@ -1,8 +1,9 @@
 ﻿using System.Collections.Concurrent;
+using Ethachat.Client.Cryptography.KeyModels;
 using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.UserIdentityService;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -41,8 +42,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
-        
-        public bool IsConnected() => HubConnectionInstance?.State == HubConnectionState.Connected;
 
         private void InitializeHubConnection()
         {
@@ -73,15 +72,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             HubConnectionInstance.On<string>("OnNameResolve", async username =>
             {
                 ActiveUserIdentity.SetUsername(username);
-                
+
                 _callbackExecutor.ExecuteSubscriptionsByName(username, "OnNameResolve");
-                
+
                 _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
 
                 await GetHubConnectionAsync();
 
                 await HubConnectionInstance.SendAsync("PostAnRSAPublic", username,
-                    InMemoryKeyStorage.MyRSAPublic.Value);
+                    (InMemoryKeyStorage.MyRSAKey.Value as CompositeRsa)?.PublicKey ??
+                    throw new ApplicationException($"Could not get a public key from stored {nameof(CompositeRsa)} key."));
             });
 
             HubConnectionInstance.On<UserConnection>("IsUserOnlineResponse",
@@ -140,9 +140,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                     return await GetHubConnectionAsync();
                 }
             }
-            
+
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnUsersHubConnectionStatusChanged");
-            
+
             await HubConnectionInstance.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
 
             if (_isConnectionClosedCallbackSet is false)
@@ -153,7 +153,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
 
             return HubConnectionInstance;
         }
-        
+
         private async Task OnConnectionLost(Exception? exception)
         {
             _callbackExecutor.ExecuteSubscriptionsByName(false, "OnUsersHubConnectionStatusChanged");
@@ -202,19 +202,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             }
         }
 
-        public async Task SetRSAPublicKey(Key RSAPublicKey)
+        public async Task SetRSAPublicKey(Key rsaPublicKey)
         {
             var credentials = await _authenticationHandler.GetCredentials();
             if (credentials is WebAuthnPair)
             {
                 var hubConnection = await GetHubConnectionAsync();
-                await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, credentials, null);
+                await hubConnection.SendAsync("SetRSAPublicKey", rsaPublicKey, credentials, null);
             }
             else if (credentials is JwtPair)
             {
                 var hubConnection = await GetHubConnectionAsync();
-                await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, null, credentials);
+                await hubConnection.SendAsync("SetRSAPublicKey", rsaPublicKey, null, credentials);
             }
+
             InMemoryKeyStorage.isPublicKeySet = true;
         }
 

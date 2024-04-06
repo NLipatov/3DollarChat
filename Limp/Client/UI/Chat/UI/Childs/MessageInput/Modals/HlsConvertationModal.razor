@@ -1,0 +1,94 @@
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@implements IDisposable
+
+<Modal @ref="_modal"
+       Title=@Title
+       OnShown=@(() => IsModalShown = true)>
+
+    <BodyTemplate>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            @if (!string.IsNullOrWhiteSpace(currentStatus))
+            {
+                <span>Status: <strong>@currentStatus</strong></span>
+            }
+            <span>Uploaded: @_tsUploaded / @(_tsTotal > 0 ? _tsTotal : "counting...")</span>
+            <span>You can close this dialog, process will continue in a background.</span>
+        </div>
+    </BodyTemplate>
+</Modal>
+
+@code {
+    [Parameter]
+    public string Title { get; set; } = "Uploading a file";
+
+    private string currentStatus = string.Empty;
+    private Modal? _modal = default!;
+    private string _filename = string.Empty;
+    private int _tsUploaded = 0;
+    private int _tsTotal = -1;
+    private Guid ComponentId { get; set; }
+    private bool IsModalShown { get; set; }
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        HubServiceSubscriptionManager
+            .AddCallback<(bool, string)>(OnHLSStreamingPreparationInProgress, "OnHLSStreamingPreparationInProgress", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<bool>(OnHLSMediaSegmentUploaded, "OnHLSMediaSegmentUploaded", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<int>(OnTotalSegmentsCountResolved, "OnTotalSegmentsCountResolved", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback<string>(OnStatusUpdate, "OnStatusUpdate", ComponentId);
+    }
+
+    private void OnStatusUpdate(string newStatus)
+    {
+        currentStatus = newStatus;
+        StateHasChanged();
+    }
+
+    private async Task OnTotalSegmentsCountResolved(int totalCount)
+    {
+        _tsTotal = totalCount;
+        StateHasChanged();
+    }
+
+    private async Task OnHLSMediaSegmentUploaded(bool _)
+    {
+        Interlocked.Increment(ref _tsUploaded);
+        StateHasChanged();
+    }
+
+    private async Task OnHLSStreamingPreparationInProgress((bool isProcessActive, string fileName) processDetails)
+    {
+        Title = $"Uploading: {processDetails.fileName}";
+        _filename = processDetails.fileName;
+        if (processDetails.isProcessActive)
+        {
+            await _modal?.ShowAsync();
+        }
+        else
+        {
+            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
+            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
+            while (!IsModalShown)
+            {
+                //500 is not a magic value here, any positive number will do the trick 
+                await Task.Delay(500);
+            }
+
+            await _modal?.HideAsync();
+            IsModalShown = false;
+        }
+    }
+
+}

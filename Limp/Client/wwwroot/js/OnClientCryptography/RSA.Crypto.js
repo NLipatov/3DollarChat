@@ -1,6 +1,7 @@
-﻿function GenerateRSAOAEPKeyPair()
-{
-    window.crypto.subtle.generateKey
+﻿"use strict";
+
+async function GenerateRSAOAEPKeyPair() {
+    const keyPair = await window.crypto.subtle.generateKey
     (
         {
             name: "RSA-OAEP",
@@ -10,40 +11,31 @@
         },
         true,
         ["encrypt", "decrypt"]
-    ).then(async(keyPair) =>
-    {
-        await exportPublicKeyToDotnet(keyPair.publicKey);
-        await exportPrivateKeyToDotnet(keyPair.privateKey);
-    });
+    );
+
+    const publicPem = await PublicToPemKey(keyPair.publicKey)
+    const privatePem = await PrivateToPemKey(keyPair.privateKey)
+    return [publicPem, privatePem];
 }
 
-const exportPublicKeyToDotnet = async (key) =>
-{
+async function PublicToPemKey(key){
     const exported = await window.crypto.subtle.exportKey(
         "spki",
         key
     );
-    const exportedAsString = ab2str(exported);
+    const exportedAsString = String.fromCharCode.apply(null, new Uint8Array(exported));
     const exportedAsBase64 = window.btoa(exportedAsString);
-    const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 2, 1, null);
+    return `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
 }
 
-/*
-Export the given key and write it into the "exported-key" space.
-*/
-const exportPrivateKeyToDotnet = async (key) =>
-{
+async function PrivateToPemKey(key) {
     const exported = await window.crypto.subtle.exportKey(
         "pkcs8",
         key
     );
-    const exportedAsString = ab2str(exported);
+    const exportedAsString = String.fromCharCode.apply(null, new Uint8Array(exported));
     const exportedAsBase64 = window.btoa(exportedAsString);
-    const pemExported = `-----BEGIN PRIVATE KEY-----\n${exportedAsBase64}\n-----END PRIVATE KEY-----`;
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 1, 2, null);
+    return `-----BEGIN PRIVATE KEY-----\n${exportedAsBase64}\n-----END PRIVATE KEY-----`;
 }
 
 /*
@@ -136,6 +128,6 @@ async function EncryptWithRSAPublicKey(message, RSApublicKey) {
 }
 
 async function DecryptWithRSAPrivateKey(ciphertext, privateKey) {
-    decryptionKey = await importPrivateKey(privateKey);
+    let decryptionKey = await importPrivateKey(privateKey);
     return await decryptMessage(ciphertext, decryptionKey);
 }

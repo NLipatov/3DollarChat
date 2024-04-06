@@ -1,12 +1,12 @@
-﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageSender;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.Kafka;
-using Ethachat.Server.Utilities.Redis.UnsentMessageHandling;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Models.Authentication.Models;
@@ -23,9 +23,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IMessageSendHandler _messageSendHandler;
+        private readonly IMessageMarker _messageMarker;
         private readonly IWebPushSender _webPushSender;
-        private readonly IUnsentMessagesRedisService _unsentMessagesRedisService;
+        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
         private readonly IUsernameResolverService _usernameResolverService;
         private static ReliableMessageSender _reliableMessageSender;
         private static IHubContext<MessageHub> _context;
@@ -35,9 +35,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             IMessageBrokerService messageBrokerService,
             IUserConnectedHandler<MessageHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
-            IMessageSendHandler messageSender,
+            IMessageMarker messageSender,
             IWebPushSender webPushSender,
-            IUnsentMessagesRedisService unsentMessagesRedisService,
+            ILongTermMessageStorageService longTermMessageStorageService,
             IUsernameResolverService usernameResolverService,
             IHubContext<MessageHub> context)
         {
@@ -46,14 +46,14 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _messageSendHandler = messageSender;
+            _messageMarker = messageSender;
             _webPushSender = webPushSender;
-            _unsentMessagesRedisService = unsentMessagesRedisService;
+            _longTermMessageStorageService = longTermMessageStorageService;
             _usernameResolverService = usernameResolverService;
 
             if (_reliableMessageSender is null)
             {
-                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _unsentMessagesRedisService);
+                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _longTermMessageStorageService);
             }
         }
 
@@ -125,10 +125,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 await PushOnlineUsersToClients();
             }
 
-            var storedMessages = await _unsentMessagesRedisService.GetSaved(usernameFromToken);
+            var storedMessages = await _longTermMessageStorageService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
-                await Dispatch(m);
+                await Dispatch(m).ConfigureAwait(false);
             }
         }
 
@@ -146,6 +146,20 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         /// <param name="message">A message that needs to be send</param>
         /// <exception cref="ApplicationException"></exception>
         public async Task Dispatch(Message message)
+        {
+            SendRegistrationConfirmationAsync(message);
+
+            if (IsClientConnectedToHub(message.TargetGroup!))
+                _reliableMessageSender.EnqueueAsync(message);
+            else
+            {
+                _longTermMessageStorageService.SaveAsync(message);
+                if (message.Type is not MessageType.DataPackage)
+                    SendNotificationAsync(message);
+            }
+        }
+
+        private async Task SendRegistrationConfirmationAsync(Message message)
         {
             if (message.Type is MessageType.Metadata)
             {
@@ -167,20 +181,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             {
                 await Clients.Caller.SendAsync("MessageRegisteredByHub", message.Id);
             }
-
-            if (IsClientConnectedToHub(message.TargetGroup!))
-            {
-                _reliableMessageSender.Enqueue(message);
-            }
-            else
-                await _unsentMessagesRedisService.Save(message);
-
-            await SendNotificationAsync(message);
         }
 
         private async Task SendNotificationAsync(Message message)
         {
-            var isReceiverOnline = IsClientConnectedToHub(message.TargetGroup);
+            var isReceiverOnline = IsClientConnectedToHub(message.TargetGroup!);
             if (!isReceiverOnline)
             {
                 string contentDescription = message.Type switch
@@ -190,13 +195,14 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 };
                 
                 await _webPushSender.SendPush($"You've got a new {contentDescription} from {message.Sender}",
-                    $"/user/{message.Sender}", message.TargetGroup);
+                    $"/{message.Sender}", message.TargetGroup);
             }
         }
 
         public async Task DeleteConversation(string requester, string acceptor)
         {
-            await Clients.Group(acceptor).SendAsync("OnConvertationDeleteRequest", requester);
+            _ = _longTermMessageStorageService.GetSaved(acceptor);
+            await Clients.Group(acceptor).SendAsync("OnConversationDeleteRequest", requester);
         }
 
         public async Task OnDataTranferSuccess(Guid fileId, string fileSender)
@@ -215,10 +221,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task MessageReceived(Guid messageId, string topicName, string targetGroup)
+        public async Task OnAck(Message syncMessage)
         {
-            _reliableMessageSender.OnAckReceived(messageId, targetGroup);
-            await _messageSendHandler.MarkAsReceived(messageId, topicName, Clients);
+            _reliableMessageSender.OnAck(syncMessage);
+            
+            await _messageMarker.MarkAsReceived(syncMessage.SyncItem.MessageId, syncMessage.Sender!, Clients);
         }
 
         /// <summary>
@@ -240,8 +247,13 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         {
             if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == messageSender))
             {
-                await _messageSendHandler.MarkAsReaded(messageId, messageSender, Clients);
+                await _messageMarker.MarkAsReaded(messageId, messageSender, Clients);
             }
+        }
+
+        public async Task OnTyping(string sender, string receiver)
+        {
+            await Clients.Group(receiver).SendAsync("OnTyping", sender);
         }
     }
 }

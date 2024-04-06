@@ -5,9 +5,11 @@ using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
+using EthachatShared.Models.Message.TransferStatus;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    BinaryReceiving;
 
 public class BinaryReceivingManager : IBinaryReceivingManager
 {
@@ -17,7 +19,8 @@ public class BinaryReceivingManager : IBinaryReceivingManager
     private ConcurrentDictionary<Guid, Metadata> FileIdToMetadata = new();
     private ConcurrentDictionary<Guid, ClientPackage[]> FileIdToPackages = new();
 
-    public BinaryReceivingManager(ICryptographyService cryptographyService, IJSRuntime jsRuntime, IMessageBox messageBox)
+    public BinaryReceivingManager(ICryptographyService cryptographyService, IJSRuntime jsRuntime,
+        IMessageBox messageBox)
     {
         _cryptographyService = cryptographyService;
         _jsRuntime = jsRuntime;
@@ -30,7 +33,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         {
             MessageType.Metadata => Store(message.Metadata ?? throw new ArgumentException("Invalid metadata")),
             MessageType.DataPackage => Store(await GetDecryptedPackage(message)),
-            _ =>(false, Guid.Empty)
+            _ => throw new ArgumentException("Unhandled type passed in")
         };
 
         if (progressStatus.isLoadingCompleted)
@@ -43,7 +46,8 @@ public class BinaryReceivingManager : IBinaryReceivingManager
     {
         var decryptedB64 = await _cryptographyService.DecryptAsync<AESHandler>(new()
         {
-            Cyphertext = message.Package?.B64Data ?? throw new ArgumentException("Cypher text cannot be an empty string."),
+            Cyphertext = message.Package?.B64Data ??
+                         throw new ArgumentException("Cypher text cannot be an empty string."),
             Iv = message.Package.IV
         }, message.Sender);
 
@@ -60,18 +64,17 @@ public class BinaryReceivingManager : IBinaryReceivingManager
     public (bool, Guid) Store(Metadata metadata)
     {
         FileIdToMetadata.TryAdd(metadata.DataFileId, metadata);
-        
+
         return (IsLoadingCompleted(metadata.DataFileId), metadata.DataFileId);
     }
 
     public (bool, Guid) Store(ClientPackage package)
     {
-        
         if (!FileIdToPackages.ContainsKey(package.FileDataid))
         {
             FileIdToPackages.TryAdd(package.FileDataid, new ClientPackage[package.Total]);
         }
-        
+
         FileIdToPackages.AddOrUpdate(package.FileDataid,
             _ => [package],
             (_, existingData) =>
@@ -79,22 +82,21 @@ public class BinaryReceivingManager : IBinaryReceivingManager
                 existingData[package.Index] = package;
                 return existingData;
             });
-        
+
         return (IsLoadingCompleted(package.FileDataid), package.FileDataid);
     }
 
     private bool IsLoadingCompleted(Guid fileId)
     {
         FileIdToMetadata.TryGetValue(fileId, out var metadata);
-        
+
         FileIdToPackages.TryGetValue(fileId, out var packages);
         
-        return metadata?.ChunksCount == packages?
-            .Where(x=>x is not null)
-            .Count();
+        var packagesCount = packages?.Count(x => x is not null) ?? 0;
+        var totalCount = metadata?.ChunksCount ?? 0;
+
+        return packagesCount == totalCount && packagesCount > 0;
     }
-    
-    
 
     private async Task AddToMessageBoxAsync(Message message)
     {
@@ -103,25 +105,26 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         var data = packages
             .SelectMany(x => Convert.FromBase64String(x.PlainB64Data))
             .ToArray();
-                            
+
         var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
-        
-        await _messageBox.AddMessageAsync(new ClientMessage()
+
+        _messageBox.AddMessage(new ClientMessage()
         {
             BlobLink = blobUrl,
             Id = metadata.DataFileId,
             Type = MessageType.BlobLink,
             TargetGroup = message.TargetGroup,
             Sender = message.Sender,
-            Metadata = metadata
-        }, isEncrypted: false);
+            Metadata = metadata,
+            DateSent = message.DateSent
+        });
     }
 
     public ClientPackage[] PopData(Guid fileId)
     {
         FileIdToPackages.TryGetValue(fileId, out var data);
         FileIdToPackages.TryRemove(fileId, out var _);
-        
+
         return data ?? Array.Empty<ClientPackage>();
     }
 

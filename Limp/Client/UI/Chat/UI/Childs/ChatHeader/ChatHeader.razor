@@ -1,0 +1,78 @@
+﻿@using EthachatShared.Encryption;
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.InboxService
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.IndicatorTypes
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Modals
+@using EthachatShared.Models.Message
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
+@inject IMessageBox _messageBox;
+@inject IMessageService _messageService
+
+<div class="header">
+    <AvatarOnlineIndicator
+        PartnerUsername="@PartnerName"/>
+
+    <div style="display: flex;
+                flex-direction: column;
+                margin-left: 10px;">
+
+        <span class="name">@PartnerName</span>
+
+        <div style="display: flex; flex-direction: row; gap: 10px;">
+            <TypingIndicator
+                PartnerUsername="@PartnerName"/>
+
+            <SendingFileIndicator
+                PartnerUsername="@PartnerName"/>
+        </div>
+
+    </div>
+    <div class="key-info">
+        <button title="Clear conversation" @onclick="DeleteConversation" style="border: none;">
+            <i class="bi bi-trash-fill key-icon"></i>
+        </button>
+        <button title="Renew AES Key" style="border: none;" @onclick=ShowModalAsync>
+            <i class="bi bi-key-fill key-icon"></i>
+        </button>
+        
+        <AesKeyIndicator
+            PartnerUsername=@PartnerName/>
+    </div>
+</div>
+
+<AESKeyRenewalModal
+    @ref=aesRenewalModal
+    OnAESRenewal="OnAESRenewal"/>
+
+@code {
+    [Parameter] public string PartnerName { get; set; } = "Unnamed";
+    [Parameter] public bool IsOnline { get; set; } = false;
+    [Parameter] public string AvatarLink { get; set; } = "/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg";
+    [Parameter] public EventCallback OnAESRenewal { get; set; }
+    private AESKeyRenewalModal? aesRenewalModal { get; set; }
+
+
+    private Guid GetFileId(Message message)
+    {
+        return message.Type switch
+        {
+            MessageType.Metadata => message.Metadata!.DataFileId,
+            MessageType.DataPackage => message.Package!.FileDataid,
+            _ => throw new ArgumentException("Unknown message type")
+        };
+    }
+
+    private async Task ShowModalAsync()
+    {
+        if (aesRenewalModal != null)
+            await aesRenewalModal.ShowModalAsync();
+    }
+
+    private void DeleteConversation()
+    {
+        _messageService.RequestPartnerToDeleteConvertation(PartnerName);
+        _messageBox.Delete(PartnerName);
+    }
+
+}

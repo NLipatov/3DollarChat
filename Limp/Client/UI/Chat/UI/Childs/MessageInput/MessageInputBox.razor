@@ -1,0 +1,132 @@
+﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.InboxService;
+@using Ethachat.Client.Cryptography
+@using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
+@using EthachatShared.Models.Message
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
+@using Ethachat.Client.Services.VideoStreamingService
+@using Ethachat.Client.UI.Chat.Logic.MessageBuilder
+@using FFmpegBlazor
+@using System.Text
+@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
+@inject IMessageBuilder _messageBuilder
+@inject IMessageService _messageService
+@inject IMessageBox _messageBox
+@inject IJSRuntime _jSRuntime
+@inject IMessageDecryptor _messageDecryptor 
+@inject IPackageMultiplexerService PackageMultiplexerService
+@inject ICallbackExecutor CallbackExecutor
+@inject ICryptographyService CryptographyService
+@inject IBinaryReceivingManager BinaryReceivingManager
+@inject IHlsStreamingService HlsStreamingService
+@inject NavigationManager NavigationManager
+
+<div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
+    <input @bind="MessageInput" @bind:event="oninput"/>
+
+    <label for="fileinput" class="label-wrapper" style="align-items: center;">
+        <span class="bi bi-paperclip"></span>
+        <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
+    </label>
+
+    <button @onclick="async () => await SendMessage()">Send</button>
+</div>
+
+<Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">
+    <BodyTemplate>
+        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes / 1024000)) MB.
+    </BodyTemplate>
+    <FooterTemplate>
+        <Button Color="ButtonColor.Secondary" @onclick="(async () => await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
+    </FooterTemplate>
+</Modal>
+
+<FileEncryptionModal/>
+<HlsConvertationModal/>
+
+@code {
+    [Parameter] public string TopicName { get; set; } = string.Empty;
+
+    [Parameter] public string MyUsername { get; set; } = string.Empty;
+
+    private string MessageInput { get; set; } = string.Empty;
+    private Guid FileInputId = Guid.NewGuid();
+    private Modal MaxFileSizeRestrictionModal = default!;
+    private const long MaxFileSizeBytes = long.MaxValue;
+
+    private async Task OnKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+            return;
+        }
+        
+        await _messageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
+                .ConfigureAwait(false);
+    }
+
+    private async Task OnFileInput(InputFileChangeEventArgs e)
+    {
+        //if file exceeds the max size limit
+        if (MaxFileSizeBytes - e.File.Size < 0)
+        {
+            await MaxFileSizeRestrictionModal.ShowAsync();
+            FileInputId = Guid.NewGuid();
+            return;
+        }
+        
+        //stream it if it can be streamed
+        if (await HlsStreamingService.CanFileBeStreamedAsync(e.File.Name))
+        {
+            CallbackExecutor.ExecuteSubscriptionsByName((true, e.File.Name), "OnHLSStreamingPreparationInProgress");
+            var playlist = await HlsStreamingService.ToM3U8Async(e.File);
+
+            await _messageService.SendMessage(new ClientMessage()
+            {
+                Id = Guid.NewGuid(),
+                HlsPlaylist = playlist,
+                Type = MessageType.HLSPlaylist,
+                TargetGroup = TopicName,
+                Sender = MyUsername,
+                DateSent = DateTime.UtcNow
+            });
+            return;
+        }
+
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+        await _messageService.SendMessage(new ()
+        {
+            BrowserFile = e.File,
+            Type = MessageType.BrowserFileMessage,
+            TargetGroup = TopicName,
+            Sender = MyUsername
+        });
+        CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(MessageInput) || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
+        {
+            MessageInput = string.Empty;
+            return;
+        }
+
+        if (!string.IsNullOrWhiteSpace(MessageInput))
+        {
+            await _messageService.SendMessage(new()
+            {
+                PlainText = MessageInput,
+                TargetGroup = TopicName,
+                Type = MessageType.TextMessage
+            });
+        }
+
+        MessageInput = string.Empty;
+    }
+}

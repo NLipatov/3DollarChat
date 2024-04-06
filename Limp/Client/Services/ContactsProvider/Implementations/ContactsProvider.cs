@@ -1,6 +1,6 @@
 ﻿using Microsoft.JSInterop;
 using System.Text.Json;
-using Ethachat.Client.Pages.Contacts.Models;
+using Ethachat.Client.UI.Contacts.Models;
 
 namespace Ethachat.Client.Services.ContactsProvider.Implementations;
 

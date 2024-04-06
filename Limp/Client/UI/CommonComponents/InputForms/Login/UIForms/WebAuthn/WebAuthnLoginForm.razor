@@ -1,0 +1,78 @@
+﻿@page "/signin/webauthn"
+@page "/signup/webauthn"
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.Services.LocalStorageService
+@using Ethachat.Client.UI.CommonComponents.InputForms.Registration;
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
+@using EthachatShared.Models.Authentication.Models.UserAuthentication
+@inject IJSRuntime Js;
+@inject IAuthService AuthService
+@inject ILocalStorageService LocalStorageService
+@inject NavigationManager NavigationManager
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+@if (string.IsNullOrWhiteSpace(AuthorisationServerAddress))
+{
+    <span>Loading</span>
+}
+else
+{
+    @if (IsLoginFormVisible)
+    {
+        <BaseLoginForm
+            OnLoginEvent="async (dto) => await OnLogin(dto)"
+            ViaWebAuthn=@true/> 
+        
+        @if (!string.IsNullOrWhiteSpace(LoginResultMessage))
+        {
+            <p>
+                @LoginResultMessage
+            </p>
+        }
+    }
+}
+
+@code {
+    [Parameter]
+    public bool IsRegisterFormVisible { get; set; }
+    
+    [Parameter]
+    public bool IsLoginFormVisible { get; set; }
+    
+    private IJSObjectReference? module;
+    private string AuthorisationServerAddress { get; set; } = string.Empty;
+    private string LoginResultMessage { get; set; } = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ComponentId = Guid.NewGuid();
+        SubscribeToHubEvents();
+        await AuthService.GetAuthorisationServerAddress();
+
+        await base.OnInitializedAsync();
+    }
+
+    protected override void SubscribeToHubEvents()
+    {
+        HubServiceSubscriptionManager.AddCallback<string>(OnAuthorisationServerAddressIsResolved, "OnAuthorisationServerAddressResponse", ComponentId);
+    }
+
+    private async Task OnAuthorisationServerAddressIsResolved(string address)
+    {
+        await Js.InvokeVoidAsync("setServiceAddress", address);
+        AuthorisationServerAddress = address;
+        StateHasChanged();
+    }
+
+    private async Task OnLogin(UserAuthentication userDTO)
+    {
+        await Js.InvokeVoidAsync("handleSignInSubmit", userDTO.Username);
+        var credentialId = await LocalStorageService.ReadPropertyAsync("credentialIdCounter");
+        await LocalStorageService.WritePropertyAsync("credentialIdCounter", "1");
+        if (string.IsNullOrWhiteSpace(credentialId))
+            LoginResultMessage = "Login attempt failed";
+        else
+            NavigationManager.NavigateTo("/contacts");
+    }
+}

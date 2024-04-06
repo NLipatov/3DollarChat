@@ -13,5 +13,6 @@ namespace Ethachat.Client.ClientOnlyModels
         public List<DataFile> Files { get; set; } = new();
         public new required MessageType Type { get; set; }
         public IBrowserFile BrowserFile { get; set; }
+        public byte[] TsFile { get; set; }
     }
 }

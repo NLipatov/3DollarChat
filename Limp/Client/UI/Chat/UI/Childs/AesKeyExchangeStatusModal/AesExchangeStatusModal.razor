@@ -1,0 +1,54 @@
+@using EthachatShared.Models.ConnectedUsersManaging
+@using Ethachat.Client.Cryptography.KeyStorage
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+@if (!KeyExists)
+{
+    @if (IsPartnerOnline)
+    {
+        <div class="card-holder">
+            <CardComponent
+                Style="margin: 3rem;"
+                Title="AES exchange."
+                BodyTitle="AES exchange in progress."
+                BodyText="Now we are exchanging the key for encrypting messages."/>
+        </div>
+    }
+    else
+    {
+        <div class="card-holder">
+            <CardComponent
+                Style="margin: 3rem;"
+                Title="AES exchange."
+                BodyTitle="AES exchange is not possible."
+                BodyText="Your partner is offline."/>
+        </div>
+    }
+}
+
+@code {
+    [Parameter] public string PartnerUsername { get; set; } = string.Empty;
+    [Parameter] public bool IsPartnerOnline { get; set; }
+
+    protected override void SubscribeToHubEvents()
+    {
+        base.SubscribeToHubEvents();
+        HubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+    }
+
+    private bool KeyExists => InMemoryKeyStorage
+        .AESKeyStorage
+        .FirstOrDefault(x => x.Key == PartnerUsername)
+        .Value is not null;
+
+    private void OnUsersOnlineUpdate(UserConnectionsReport userConnectionsReport)
+    {
+        IsPartnerOnline = userConnectionsReport.UserConnections
+            .Select(x => x.Username)
+            .Contains(PartnerUsername);
+    }
+
+    private void OnAESUpdated(bool keyRenewed) => StateHasChanged();
+
+}

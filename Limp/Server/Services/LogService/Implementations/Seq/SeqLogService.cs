@@ -12,7 +12,12 @@ public class SeqLogService : ILogService
             .WriteTo.Seq(configuration["Logging:Providers:Seq"] ?? string.Empty)
             .CreateLogger();
     }
-    
+
+    public async Task LogAsync(Exception exception)
+    {
+        await LogAsync(LogLevel.Error, "{@log}", exception);
+    }
+
     public async Task LogAsync(LogLevel level, string message)
     {
         Action<string> targetMethod = level switch

@@ -1,0 +1,118 @@
+﻿@page "/{topicName?}"
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@using EthachatShared.Models.ConnectedUsersManaging;
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying;
+@using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.BrowserKeyStorageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using Ethachat.Client.Services.VideoStreamingService
+@using Ethachat.Client.UI.Chat.UI.Childs.AesKeyExchangeStatusModal
+@inject NavigationManager _navigationManager
+@inject IMessageService _messageService
+@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject IBrowserKeyStorage _localKeyManager
+@inject IUsersService _usersService
+@inject IJSRuntime _jsRuntime
+@inject IAuthenticationHandler AuthenticationHandler
+@inject IHlsStreamingService HlsStreamingService
+@implements IDisposable
+
+@if (string.IsNullOrWhiteSpace(topicName))
+{
+    <div class="p-2">
+        <Callout Type="CalloutType.Warning">
+            <span>
+                Specify a username in a url like so: "<strong>/Pavel</strong>"
+            </span>
+        </Callout>
+    </div>
+}
+else
+{
+    <PageTitle>Chat with @topicName</PageTitle>
+
+    <AuthenticatedView>
+        <AuthenticatedContent>
+
+            <ChatHeader IsOnline=@(_usersOnlineMessage.UserConnections.Select(x => x.Username).Contains(topicName))
+                        PartnerName=@topicName
+                        OnAESRenewal=@(async () => await _messageService.NegotiateOnAESAsync(topicName))/>
+
+            <AesExchangeStatusModal
+                PartnerUsername=@topicName
+                IsPartnerOnline=@_usersOnlineMessage.UserConnections.Select(x => x.Username).Contains(topicName)/>
+
+            <MessageList @ref=MessageListComponent
+                         targetGroup=@topicName
+                         myUsername=@myUsername/>
+
+            <MessageInputBox MyUsername=@myUsername
+                             TopicName=@topicName/>
+        </AuthenticatedContent>
+        <UnauthenticatedContent>
+            <UnAuthorized/>
+        </UnauthenticatedContent>
+    </AuthenticatedView>
+}
+
+@code {
+    [Parameter] public string topicName { get; set; } = string.Empty;
+    [Parameter] public string myUsername { get; set; } = string.Empty;
+    private Guid ComponentId { get; set; }
+    private MessageList? MessageListComponent { get; set; } = new();
+    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
+
+    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    protected override async Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all of the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        myUsername = await AuthenticationHandler.GetUsernameAsync();
+
+        //If username was not read, ask user to relogin
+        if (string.IsNullOrWhiteSpace(myUsername))
+        {
+            _navigationManager.NavigateTo("/signIn");
+            return;
+        }
+
+        SubscribeToHubEvents();
+
+        await _usersService.CheckIfUserOnline(topicName);
+    }
+
+    private void SubscribeToHubEvents()
+    {
+        _hubServiceSubscriptionManager.AddCallback<UserConnection>(OnIsUserOnlineResponse, "IsUserOnlineResponse", ComponentId);
+        _hubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
+    }
+
+    private async Task OnIsUserOnlineResponse(UserConnection userConnection)
+    {
+        if (userConnection.Username == topicName)
+        {
+            if (userConnection.ConnectionIds.Count > 0)
+            {
+                _usersOnlineMessage.UserConnections = new[] { userConnection };
+            }
+
+            StateHasChanged();
+        }
+    }
+
+    private void OnUsersOnlineUpdate(UserConnectionsReport usersOnlineMessage)
+    {
+        if (_usersOnlineMessage == null || _usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        {
+            _usersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
+        }
+    }
+}

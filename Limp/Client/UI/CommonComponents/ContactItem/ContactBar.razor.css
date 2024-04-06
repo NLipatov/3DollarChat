@@ -1,0 +1,28 @@
+﻿.user-card {
+    padding: 1.25rem;
+    margin-bottom: 10px;
+    border-left: 0.25rem solid rgba(0, 10, 0, 1);
+    background-color: rgba(var(--bs-dark-rgb), .075);
+    border-radius: 0.25rem;
+}
+
+.user-card a.username {
+    text-decoration: none;
+    color: black;
+    font-size: 20px;
+}
+
+.online {
+    border-left: 0.25rem solid lawngreen !important;
+}
+
+.header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.person-icon,
+.key-icon {
+    font-size: 20px;
+}

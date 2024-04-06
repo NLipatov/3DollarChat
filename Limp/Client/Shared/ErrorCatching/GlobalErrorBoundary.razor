@@ -1,6 +1,8 @@
 ﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService
+@using Ethachat.Client.Shared.ErrorCatching.CustomClientExceptions
 @inherits ErrorBoundary
-@inject IExceptionLoggingService ExceptionLoggingService
+@inject ILoggingService LoggingService
+@inject IToastService _toastService
 
 @if (CurrentException is null)
 {
@@ -14,12 +16,12 @@ else
 {
     <div class="p-2">
         <h1>Something went wrong:</h1>
-            @foreach (var exception in receivedExceptions)
-            {
-                <Callout Type="CalloutType.Danger" Heading="Error">
-                    <span>@exception.Message</span>
-                </Callout>
-            }
+        @foreach (var exception in _receivedExceptions)
+        {
+            <Callout Type="CalloutType.Danger" Heading="Error">
+                <span>@exception.Message</span>
+            </Callout>
+        }
         <Button Color="ButtonColor.Primary" @onclick="Recover">
             Close
         </Button>
@@ -27,19 +29,39 @@ else
 }
 
 @code {
-    List<Exception> receivedExceptions = new();
+    List<Exception> _receivedExceptions = new();
+    private static Func<Exception, Task>? _staticOnErrorAsyncPointer;
+
+    protected override void OnInitialized()
+    {
+        _staticOnErrorAsyncPointer = OnErrorAsync;
+    }
 
     protected override async Task OnErrorAsync(Exception exception)
     {
-        await ExceptionLoggingService.LogException(exception);
-        receivedExceptions.Add(exception);
+        await LoggingService.LogException(exception);
+        _toastService.ShowError(exception.Message);
+        _receivedExceptions.Add(exception);
         StateHasChanged();
         await base.OnErrorAsync(exception);
     }
 
+    
+    //Catches JS exceptions if such exceptions are thrown via calling the ExceptionPasser.passErrorToDotNet function
+    [JSInvokable]
+    public static async Task OnJsException(string componentName, string errorDetails)
+    {
+        var jsException = new JsException(errorDetails, componentName);
+
+        if (_staticOnErrorAsyncPointer is not null)
+        {
+            await _staticOnErrorAsyncPointer(jsException);
+        }
+    }
+
     public new void Recover()
     {
-        receivedExceptions.Clear();
+        _receivedExceptions.Clear();
         base.Recover();
     }
 

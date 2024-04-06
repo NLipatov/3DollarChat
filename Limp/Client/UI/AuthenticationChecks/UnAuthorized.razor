@@ -1,0 +1,30 @@
+﻿@inject NavigationManager _navigationManager
+
+<section class="vh-100">
+    <div class="container py-5 h-100">
+        <div class="row d-flex align-items-center justify-content-center h-100">
+            <div class="col-md-8 col-lg-7 col-xl-6">
+            <img src="assets/svg/srQ.svg"
+                        class="img-fluid" alt="man inputting his account password">
+            </div>
+            <div class="col-md-7 col-lg-5 col-xl-5 offset-xl-1">
+                <button @onclick="NavigateToLogIn" class="btn btn-primary btn-lg btn-block d-flex mx-auto">
+                    Log in
+                </button>
+
+                <div class="divider d-flex align-items-center my-4">
+                    <p class="text-center fw-bold mx-3 mb-0 text-muted">OR</p>
+                </div>
+
+                <button @onclick="NavigateToRegister" class="btn btn-primary btn-lg btn-block d-flex mx-auto">
+                    Sign up
+                </button>
+            </div>
+        </div>
+    </div>
+</section>
+
+@code {
+    private void NavigateToLogIn() => _navigationManager.NavigateTo("/signIn");
+    private void NavigateToRegister() => _navigationManager.NavigateTo("/signUp");
+}

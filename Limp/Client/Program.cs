@@ -2,8 +2,6 @@ using Blazored.Toast;
 using Ethachat.Client;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
-using Ethachat.Client.Pages.AccountManagement.LogicHandlers;
-using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
@@ -40,6 +38,9 @@ using Ethachat.Client.Services.NotificationService;
 using Ethachat.Client.Services.NotificationService.Implementation;
 using Ethachat.Client.Services.UserAgent;
 using Ethachat.Client.Services.UserAgent.Implementation;
+using Ethachat.Client.Services.VideoStreamingService;
+using Ethachat.Client.UI.AccountManagement.LogicHandlers;
+using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -73,8 +74,9 @@ builder.Services.AddTransient<IPackageMultiplexerService, PackageMultiplexerServ
 builder.Services.AddTransient<IJwtHandler, JwtAuthenticationHandler>();
 builder.Services.AddTransient<IWebAuthnHandler, WebAuthnAuthenticationHandler>();
 builder.Services.AddTransient<IAuthenticationHandler, AuthenticationManager>();
-builder.Services.AddTransient<IExceptionLoggingService, ExceptionLoggingService>();
+builder.Services.AddTransient<ILoggingService, LoggingService>();
 builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>();
+builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

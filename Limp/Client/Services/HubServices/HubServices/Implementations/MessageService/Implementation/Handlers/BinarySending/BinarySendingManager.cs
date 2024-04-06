@@ -75,7 +75,7 @@ public class BinarySendingManager : IBinarySendingManager
         FileIdUploadProgress.TryAdd(fileDataId, (0, totalChunks));
         var metadataMessage = GenerateMetadataMessage(fileDataId, message, totalChunks);
 
-        await _messageBox.AddMessageAsync(metadataMessage, false);
+        _messageBox.AddMessage(metadataMessage);
 
         await SendViaHubConnectionAsync(new Message()
         {
@@ -83,6 +83,7 @@ public class BinarySendingManager : IBinarySendingManager
             Sender = metadataMessage.Sender,
             TargetGroup = metadataMessage.TargetGroup,
             Metadata = metadataMessage.Metadata,
+            DateSent = DateTime.UtcNow
         }, getHubConnection);
 
         await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.BrowserFile, message.Sender,
@@ -105,6 +106,7 @@ public class BinarySendingManager : IBinarySendingManager
                 Sender = message.Sender,
                 TargetGroup = message.TargetGroup,
                 Type = MessageType.DataPackage,
+                DateSent = DateTime.UtcNow
             };
 
             await SendViaHubConnectionAsync(packageMessage, getHubConnection);
@@ -142,15 +144,16 @@ public class BinarySendingManager : IBinarySendingManager
             await fileStream.CopyToAsync(memoryStream);
             var blobUrl = await BytesToBlobUrl(memoryStream.ToArray(), metadata.ContentType);
             
-            await _messageBox.AddMessageAsync(new ClientMessage()
+            _messageBox.AddMessage(new ClientMessage()
             {
                 BlobLink = blobUrl,
                 Id = metadata.DataFileId,
                 Type = MessageType.BlobLink,
                 TargetGroup = receiver,
                 Sender = sender,
-                Metadata = metadata
-            }, isEncrypted: false);
+                Metadata = metadata,
+                DateSent = DateTime.UtcNow
+            });
         }
     }
 

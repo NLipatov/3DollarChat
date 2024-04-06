@@ -1,4 +1,5 @@
-﻿using Ethachat.Client.Cryptography.KeyStorage;
+﻿using Ethachat.Client.Cryptography.KeyModels;
+using Ethachat.Client.Cryptography.KeyStorage;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 
@@ -36,11 +37,11 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 
         public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
         {
-            if (InMemoryKeyStorage.MyRSAPrivate?.Value == null)
+            if (InMemoryKeyStorage.MyRSAKey?.Value == null)
                 throw new ApplicationException("RSA Private key was null");
 
             string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
+                .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, (InMemoryKeyStorage.MyRSAKey.Value as CompositeRsa)!.PrivateKey);
 
             var result = new Cryptogramm()
             {

@@ -1,0 +1,96 @@
+﻿@using EthachatShared.Models.Authentication.Models;
+@using EthachatShared.Models.Authentication.Models.UserAuthentication;
+@using Microsoft.AspNetCore.SignalR.Client;
+@using Ethachat.Client.UI.AccountManagement.LogicHandlers
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
+@using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.WebAuthn
+@inject NavigationManager _navigationManager
+@inject ILoginHandler _loginHandler
+@page "/signIn"
+
+<div>
+    <div class="container text-center">
+        <div class="row mt-5">
+            <div class="col-md-6 offset-md-3">
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="text-center">Sign in your account</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-group text-center">
+                            <p>Choose a registration method:</p>
+                            <div class="btn-group" data-toggle="buttons">
+                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: #712cf9;" : "background-color: white; color: black;")>
+                                    <input @onclick=@(() => IsUsingWebAuthn = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsUsingWebAuthn)> Passwordless
+                                </label>
+                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: white; color: black;" : "background-color: #712cf9;")>
+                                    <input @onclick=@(() => IsUsingWebAuthn = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsUsingWebAuthn)> With Password
+                                </label>
+                            </div>
+                        </div>
+
+                        @if (IsUsingWebAuthn)
+                        {
+                            <WebAuthnLoginForm
+                                IsLoginFormVisible=@true/>
+                        }
+                        else
+                        {
+                            <BaseLoginForm
+                                OnLoginEvent="async (dto) => await OnLogIn(dto)"
+                                LoginAttemptResult="lasttokenFetchResult"/>
+                        }
+                    </div>
+                    <div class="on-login-success" style="display: none; padding: 10px;">
+                        <span>Done!</span>
+                        <span>
+                            You can
+                            <a href="/signin">
+                                login
+                            </a>
+                            now
+                        </span>
+                        <Icon Name="IconName.CheckCircleFill" Color="IconColor.Success"/>
+                    </div>
+                </div>
+
+                <Button Color="ButtonColor.Primary" @onclick=@(() => _navigationManager.NavigateTo("signup")) style="margin: 10px;">
+                    Not yet registered?
+                </Button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private AuthResult? lasttokenFetchResult = new();
+    private HubConnection? hubConnection;
+    private bool IsUsingWebAuthn { get; set; } = true;
+
+    private async void HandleOnLogInResponse(AuthResult authResult)
+    {
+        lasttokenFetchResult = authResult;
+
+        if (lasttokenFetchResult.Result != AuthResultType.Fail)
+        {
+            lasttokenFetchResult.Message = "You're logged in.";
+            _navigationManager.NavigateTo("/contacts");
+        }
+        else if (string.IsNullOrWhiteSpace(authResult?.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JwtPair?.RefreshToken?.Token))
+        {
+            lasttokenFetchResult = new AuthResult
+            {
+                Message = "Server authentification response was invalid",
+                Result = AuthResultType.Fail,
+            };
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task OnLogIn(UserAuthentication loggingInUser)
+    {
+        await _loginHandler.OnLogIn(loggingInUser, HandleOnLogInResponse);
+    }
+
+}

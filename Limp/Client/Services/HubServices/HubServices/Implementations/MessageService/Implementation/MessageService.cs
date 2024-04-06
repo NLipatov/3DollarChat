@@ -1,20 +1,23 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using System.Text.Json;
+using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.KeyStorage;
-using Ethachat.Client.Pages.Chat.Logic.MessageBuilder;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
+using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
+using Ethachat.Client.Cryptography.KeyModels;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
-using Ethachat.Client.Services.HubServices.CommonServices.HubServiceConnectionBuilder;
+using Ethachat.Client.Services.HubServices.HubServices.Builders;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
+using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
@@ -46,9 +49,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IContactsProvider _contactsProvider;
         private bool _isConnectionClosedCallbackSet = false;
         private string myName;
-        public bool IsConnected() => hubConnection?.State == HubConnectionState.Connected;
         private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
-
+        private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? hubConnection { get; set; }
 
         public MessageService
@@ -185,15 +187,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (message.Sender != "You")
                 {
-                    await hubConnection.SendAsync("MessageReceived", message.Id, message.Sender, message.TargetGroup);
+                    await (await GetHubConnectionAsync())
+                        .SendAsync("OnAck", AckMessageBuilder.CreateMessageAck(message));
                     
-                    if (hubConnection.State != HubConnectionState.Connected)
-                    {
-                        await hubConnection.StopAsync();
-                        await hubConnection.StartAsync();
-                    }
+                    if (_messageBox.Contains(message))
+                        return;
 
-                    if (message.Type is MessageType.TextMessage)
+                    if (message.Type is MessageType.TextMessage || message.Type is MessageType.HLSPlaylist)
                     {
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
@@ -216,8 +216,18 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             ClientMessage clientMessage = message.AsClientMessage();
 
                             if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogramm.Cyphertext))
-                                clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
-                            await _messageBox.AddMessageAsync(clientMessage, false);
+                            {
+                                if (message.Type is MessageType.HLSPlaylist)
+                                {
+                                    clientMessage.HlsPlaylist = JsonSerializer
+                                        .Deserialize<HlsPlaylist>(decryptedMessageCryptogramm.Cyphertext);
+                                }
+                                else
+                                {
+                                    clientMessage.PlainText = decryptedMessageCryptogramm.Cyphertext;
+                                }
+                            }
+                            _messageBox.AddMessage(clientMessage);
                         }
                         else
                         {
@@ -227,10 +237,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
-                        (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
+                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnBinaryTransmitting");
                         
+                        (bool isTransmissionCompleted, Guid fileId) progressStatus = await _binaryReceivingManager.StoreAsync(message);
+
                         if (progressStatus.isTransmissionCompleted)
+                        {
                             await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId, message.Sender ?? throw new ArgumentException($"Invalid {message.Sender}"));
+                        }
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {
@@ -309,12 +323,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                var rsaKey = InMemoryKeyStorage.MyRSAKey;
+
+                var rsaToPost = new Key
+                {
+                    Type = KeyType.RsaPublic,
+                    Format = KeyFormat.PemSpki,
+                    Author = myName,
+                    Value = (rsaKey!.Value as CompositeRsa)!.PublicKey,
+                    CreationDate = rsaKey.CreationDate,
+                };
+
+                if (string.IsNullOrWhiteSpace(rsaToPost.Value.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
+                await UpdateRSAPublicKeyAsync(rsaToPost);
             });
 
             hubConnection.On<Guid>("OnFileTransfered", messageId =>
@@ -322,8 +347,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived");
             });
 
-            hubConnection.On<string>("OnConvertationDeleteRequest",
+            hubConnection.On<string>("OnConversationDeleteRequest",
                 partnerName => { _messageBox.Delete(partnerName); });
+
+            hubConnection.On<string>("OnTyping", (partnerName) =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping");
+            });
         }
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
@@ -347,11 +377,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
         }
 
-        public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
+        public async Task UpdateRSAPublicKeyAsync(Key rsaPublicKey)
         {
             if (!InMemoryKeyStorage.isPublicKeySet)
             {
-                await _usersService.SetRSAPublicKey(RSAPublicKey);
+                await _usersService.SetRSAPublicKey(rsaPublicKey);
             }
         }
 
@@ -360,12 +390,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             string partnersUsername,
             string partnersPublicKey)
         {
-            await cryptographyService.GenerateAesKeyAsync(partnersUsername, async (aesKeyForConversation) =>
-            {
-                var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKeyForConversation);
-                await hubConnection!.SendAsync("Dispatch", offer);
-
-            });
+            var newAesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
+            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, newAesKey.Value!.ToString()!);
+            await hubConnection!.SendAsync("Dispatch", offer);
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
@@ -383,6 +410,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
         }
 
+        public async Task SendTypingEventToPartnerAsync(string sender, string receiver)
+        {
+            var connection = await GetHubConnectionAsync();
+            await connection.SendAsync("OnTyping", sender, receiver);
+        }
+
         public async Task ReconnectAsync()
         {
             if (hubConnection is not null)
@@ -398,6 +431,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             switch (message.Type)
             {
+                case MessageType.HLSPlaylist:
+                    await SendHlsPlaylist(message);
+                    break;
                 case MessageType.TextMessage:
                     await SendText(message);
                     break;
@@ -410,6 +446,27 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }
+        }
+
+        private async Task SendHlsPlaylist(ClientMessage message)
+        {
+            var messageToSend = new Message()
+            {
+                Id = message.Id,
+                Cryptogramm = await _cryptographyService
+                    .EncryptAsync<AESHandler>(new Cryptogramm
+                    {
+                        Cyphertext = JsonSerializer.Serialize(message.HlsPlaylist),
+                    }, contact: message.TargetGroup),
+                TargetGroup = message.TargetGroup,
+                DateSent = DateTime.UtcNow,
+                Type = MessageType.HLSPlaylist,
+                Sender = myName
+            };
+
+            AddToMessageBox(message);
+            
+            await (await GetHubConnectionAsync()).SendAsync("Dispatch", messageToSend);
         }
 
         private async Task SendText(ClientMessage message)
@@ -432,10 +489,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await GetHubConnectionAsync();
             await hubConnection!.SendAsync("DeleteConversation", myName, targetGroup);
         }
+        
+        private void AddToMessageBox(ClientMessage message)
+        {
+            _messageBox.AddMessage(message);
+        }
 
         private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
         {
-            await _messageBox.AddMessageAsync(new ClientMessage
+            _messageBox.AddMessage(new ClientMessage
                 {
                     Id = messageId,
                     Sender = myUsername,
@@ -443,8 +505,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     PlainText = text,
                     DateSent = DateTime.UtcNow,
                     Type = MessageType.TextMessage
-                },
-                isEncrypted: false);
+                });
         }
 
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)

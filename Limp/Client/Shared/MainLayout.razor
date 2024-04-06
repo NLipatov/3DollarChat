@@ -17,15 +17,7 @@
 {
     <div class="RSACalculatingWarning">
         <p>
-            Calculating an RSA key pair...
-        </p>
-    </div>
-}
-else if (!isConnectedToHubs)
-{
-    <div class="RSACalculatingWarning">
-        <p>
-            Connecting to application server
+            Generating RSA keys...
         </p>
     </div>
 }
@@ -47,7 +39,6 @@ else
 
 @code{
     private bool isRSAGenerated = false;
-    private bool isConnectedToHubs = false;
     private Guid ComponentId { get; set; }
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -61,12 +52,8 @@ else
         _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
 
         await _cryptographyService.GenerateRsaKeyPairAsync();
-        KeysGeneratedHandler.SubscribeToRsaKeysGeneratedEvent(() =>
-        {
-            isRSAGenerated = true;
-            StateHasChanged();
-            isConnectedToHubs = true;
-        });
+        isRSAGenerated = true;
+        StateHasChanged();
     }
 
     private async void ShowMessageToast()

@@ -17,8 +17,7 @@ namespace Ethachat.Client.Cryptography
             _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
 
-        [JSInvokable]
-        public static async void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
+        private void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
         {
             Key cryptoKey = new Key()
             {
@@ -40,7 +39,7 @@ namespace Ethachat.Client.Cryptography
                     InMemoryKeyStorage.AESKeyStorage.TryAdd(contact!, cryptoKey);
                     if (OnAesGeneratedCallback != null)
                     {
-                        OnAesGeneratedCallback(cryptoKey.Value.ToString() 
+                        OnAesGeneratedCallback(cryptoKey.Value.ToString()
                                                ?? throw new ArgumentException
                                                    ("Cryptography key was not well formed."));
                         OnAesGeneratedCallback = null;
@@ -48,23 +47,31 @@ namespace Ethachat.Client.Cryptography
 
                     break;
                 default:
-                    throw new ApplicationException($"Unknown key type passed in: {nameof(cryptoKey.Type)}");
+                    throw new ApplicationException($"Unsupported key type passed: {nameof(cryptoKey.Type)}");
             }
-
-            if (InMemoryKeyStorage.MyRSAPublic?.Value != null && InMemoryKeyStorage.MyRSAPrivate?.Value != null)
-                KeysGeneratedHandler.CallOnKeysGenerated();
         }
 
         public async Task GenerateRsaKeyPairAsync()
         {
-            if (InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
-                await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+            
+            if (InMemoryKeyStorage.MyRSAPublic != null && InMemoryKeyStorage.MyRSAPrivate != null)
+                return;
+            
+            var publicNPrivatePem = await _jSRuntime.InvokeAsync<string[]>("GenerateRSAOAEPKeyPair");
+            var publicKey = publicNPrivatePem.First();
+            var privateKey = publicNPrivatePem.Skip(1).First();
+            
+            OnKeyExtracted(publicKey, 2, 1);
+            OnKeyExtracted(privateKey, 1, 2);
         }
 
-        public async Task GenerateAesKeyAsync(string contact, Action<string> callback)
+        public async Task<string> GenerateAesKeyAsync(string contactName)
         {
-            OnAesGeneratedCallback = callback;
-            await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);
+            var key = await _jSRuntime.InvokeAsync<string>("GenerateKey",256, "AES-GCM");
+            
+            OnKeyExtracted(key, 3, 3, contactName);
+            
+            return key;
         }
 
         public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null)

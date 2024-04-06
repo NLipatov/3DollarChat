@@ -53,7 +53,6 @@ namespace Ethachat.Client.Cryptography
 
         public async Task GenerateRsaKeyPairAsync()
         {
-            
             if (InMemoryKeyStorage.MyRSAPublic != null && InMemoryKeyStorage.MyRSAPrivate != null)
                 return;
             

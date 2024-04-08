@@ -140,6 +140,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
+            _messageBox.OnDelivered(id);
             _messageBox.OnSeen(id);
             StateHasChanged();
         }), "OnReceiverMarkedMessageAsRead", componentId);

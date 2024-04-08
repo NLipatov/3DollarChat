@@ -1,0 +1,58 @@
+@using System.Collections.Concurrent
+@using System.Text.RegularExpressions
+@inject IJSRuntime JsRuntime
+
+<div id="@ComponentId"></div>
+
+@code {
+    private string ComponentId { get; set; }
+    [Parameter] public required Func<Task> Callback { get; set; }
+    private static ConcurrentDictionary<string, Func<Task>> IdToCallback = new();
+
+    [JSInvokable]
+    public static void OnScreen(string id)
+    {
+        if (IdToCallback.TryRemove(id, out var callback))
+        {
+            callback.Invoke();
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        var id = Guid.NewGuid().ToString().Replace("-", string.Empty);
+        ComponentId = Regex.Replace(id, @"[\d-]", string.Empty);
+        IdToCallback.TryAdd(ComponentId, Callback);
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        if (firstRender)
+        {
+            await AttachObserver();
+        }
+    }
+
+    private async Task AttachObserver()
+    {
+        var script = @"
+    'use strict';
+    const {CID}observer = new IntersectionObserver((entries, observer) => {{
+        entries.forEach(entry => {{
+            if (entry.isIntersecting) {{
+                DotNet.invokeMethodAsync('Ethachat.Client', 'OnScreen', '{CID}');
+                observer.unobserve(entry.target);
+                observer.disconnect();
+            }}
+        }});
+    }});
+
+    let {CID} = document.getElementById('{CID}');
+    {CID}observer.observe({CID});
+".Replace("{CID}", ComponentId);
+
+        await JsRuntime.InvokeVoidAsync("eval", script);
+    }
+}

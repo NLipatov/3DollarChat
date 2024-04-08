@@ -17,6 +17,7 @@
 @inject IJSRuntime _jSRuntime
 @inject IPackageMultiplexerService PackageMultiplexerService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
+@using Ethachat.Client.Shared.ReuseableComponents
 @implements IDisposable
 
 @if (message != null)
@@ -97,6 +98,7 @@
                 </span>
             }
         </div>
+        <OnObservedTrigger Callback=@(async () => Console.WriteLine("SEEN: " + message.PlainText))/>
     </div>
 }
 

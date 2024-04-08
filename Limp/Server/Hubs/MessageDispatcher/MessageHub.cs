@@ -154,7 +154,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             else
             {
                 _longTermMessageStorageService.SaveAsync(message);
-                if (message.Type is not MessageType.DataPackage)
+                if (message.Type is MessageType.Metadata or MessageType.TextMessage)
                     SendNotificationAsync(message);
             }
         }

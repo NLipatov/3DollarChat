@@ -193,6 +193,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     if (_messageBox.Contains(message))
                         return;
 
+                    if (message.Type is MessageType.MessageReadConfirmation)
+                    {
+                        var decryptedMessageIdData =
+                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
+                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!), "OnReceiverMarkedMessageAsRead");
+                    }
+
                     if (message.Type is MessageType.TextMessage || message.Type is MessageType.HLSPlaylist)
                     {
                         if (string.IsNullOrWhiteSpace(message.Sender))
@@ -287,12 +294,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 messageId =>
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsReceived");
-                });
-
-            hubConnection.On<Guid>("MessageHasBeenRead",
-                messageId =>
-                {
-                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsRead");
                 });
 
             //Handling server side response on partners Public Key
@@ -505,26 +506,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             if (messageSender ==
                 myUsername) //If it's our message, we don't want to notify partner that we've seen our message
                 return;
+            
+            var connection = await GetHubConnectionAsync();
 
-            if (hubConnection is not null)
+            var encryptedMessageIdData = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm()
             {
-                if (hubConnection?.State is not HubConnectionState.Connected)
-                {
-                    if (hubConnection is not null)
-                        await hubConnection.StopAsync();
-
-                    await GetHubConnectionAsync();
-                    await NotifySenderThatMessageWasReaded(messageId, messageSender, myUsername);
-                    return;
-                }
-
-                if (hubConnection.State is HubConnectionState.Connected)
-                {
-                    await hubConnection.SendAsync("MessageHasBeenRead", messageId, messageSender);
-                }
-            }
-
-            throw new ArgumentException("Notification was not sent because hub connection is lost.");
+                Cyphertext = messageId.ToString()
+            }, messageSender);
+            await connection.SendAsync("Dispatch", new Message
+            {
+                Type = MessageType.MessageReadConfirmation,
+                TargetGroup = messageSender,
+                Sender = myName,
+                Cryptogramm = encryptedMessageIdData
+            });
         }
         
         

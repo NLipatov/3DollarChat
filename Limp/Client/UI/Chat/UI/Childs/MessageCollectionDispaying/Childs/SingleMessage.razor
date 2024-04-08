@@ -98,7 +98,8 @@
                 </span>
             }
         </div>
-        <OnObservedTrigger Callback=@(async () => Console.WriteLine("SEEN: " + message.PlainText))/>
+        <OnObservedTrigger 
+            Callback=@(async () => await _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername))/>
     </div>
 }
 

@@ -17,6 +17,7 @@
 @inject IJSRuntime _jSRuntime
 @inject IPackageMultiplexerService PackageMultiplexerService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
+@using Ethachat.Client.Shared.ReuseableComponents
 @implements IDisposable
 
 @if (message != null)
@@ -97,6 +98,8 @@
                 </span>
             }
         </div>
+        <OnObservedTrigger 
+            Callback=@(async () => await _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername))/>
     </div>
 }
 
@@ -137,6 +140,7 @@
 
         _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
+            _messageBox.OnDelivered(id);
             _messageBox.OnSeen(id);
             StateHasChanged();
         }), "OnReceiverMarkedMessageAsRead", componentId);
@@ -160,19 +164,6 @@
         messageClass = isOutcoming ? "outcoming" : "incoming";
 
         await base.OnParametersSetAsync();
-    }
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await SetupObserver();
-        }
-    }
-
-    public async Task SetupObserver()
-    {
-#warning Todo: intersection observer
     }
 
 }

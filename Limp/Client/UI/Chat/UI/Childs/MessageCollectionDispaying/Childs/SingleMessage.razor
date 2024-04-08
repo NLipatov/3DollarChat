@@ -164,17 +164,4 @@
         await base.OnParametersSetAsync();
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
-    {
-        if (firstRender)
-        {
-            await SetupObserver();
-        }
-    }
-
-    public async Task SetupObserver()
-    {
-#warning Todo: intersection observer
-    }
-
 }

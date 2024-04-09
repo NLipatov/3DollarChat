@@ -6,61 +6,64 @@
 @using System.Text.Unicode
 @using System.Text
 @using Ethachat.Client.Services.VideoStreamingService
-@inject IMessageBox _messageBox
-@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IJSRuntime _jSRuntime
-@inject IMessageService _messageService
+@inject IMessageBox MessageBox
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@inject IJSRuntime JsRuntime
+@inject IMessageService MessageService
 @inject IHlsStreamingService HlsStreamingService
 @implements IDisposable
 
 <div class="messages-box">
+    @* ReSharper disable once UnusedParameter.Local *@
     <Virtualize
         Context="message"
-        Items="_messageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup).ToList()">
-        <SingleMessage Message="message" MyUsername=@myUsername/>
+        Items="MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.TargetGroup == TargetGroup || x.Sender == TargetGroup).ToList()">
+        <SingleMessage Message="message" MyUsername=@MyUsername/>
     </Virtualize>
 </div>
 
 @code {
 
     [Parameter]
-    public string targetGroup { get; set; } = string.Empty;
+    public string TargetGroup { get; set; } = string.Empty;
 
     [Parameter]
-    public string myUsername { get; set; } = string.Empty;
+    public string MyUsername { get; set; } = string.Empty;
 
     private Guid ComponentId { get; set; }
 
-    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        base.OnInitialized();
+        
         ComponentId = Guid.NewGuid();
         SubscribeToHubEvents();
     }
 
     private void SubscribeToHubEvents()
     {
-        _hubServiceSubscriptionManager
+        HubServiceSubscriptionManager
             .AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
         
-        _hubServiceSubscriptionManager
+        HubServiceSubscriptionManager
             .AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
         
-        _hubServiceSubscriptionManager
+        HubServiceSubscriptionManager
             .AddCallback<Guid>(MessageRegisteredByHub, "MessageRegisteredByHub", ComponentId);
     }
 
     public async Task MessageRegisteredByHub(Guid id)
     {
-        await _messageBox.OnRegistered(id);
+        await MessageBox.OnRegistered(id);
 
         StateHasChanged();
     }
 
     public async Task MarkAsReceived(Guid messageId)
     {
-        await _messageBox.OnDelivered(messageId);
+        await MessageBox.OnDelivered(messageId);
 
         StateHasChanged();
     }
@@ -78,7 +81,7 @@
             @"var messagesBox = document.querySelector('.messages-box');
         messagesBox.scrollTop = messagesBox.scrollHeight;";
 
-        await _jSRuntime.InvokeVoidAsync("eval", jsCode);
+        await JsRuntime.InvokeVoidAsync("eval", jsCode);
     }
 
 }

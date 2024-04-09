@@ -59,7 +59,7 @@ else
 
 @code {
     [Parameter]
-    public Action<UserAuthentication> OnLoginEvent { get; set; } = ((dto) => throw new ApplicationException
+    public Func<UserAuthentication, Task> OnLoginEvent { get; set; } = ((dto) => throw new ApplicationException
     ($"At {nameof(LoginFormModel)} component please provide a handler for event: {nameof(OnLogin)}"));
 
     [Parameter]

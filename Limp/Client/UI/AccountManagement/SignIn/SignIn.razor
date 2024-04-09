@@ -1,11 +1,10 @@
 ﻿@using EthachatShared.Models.Authentication.Models;
 @using EthachatShared.Models.Authentication.Models.UserAuthentication;
-@using Microsoft.AspNetCore.SignalR.Client;
 @using Ethachat.Client.UI.AccountManagement.LogicHandlers
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.WebAuthn
-@inject NavigationManager _navigationManager
-@inject ILoginHandler _loginHandler
+@inject NavigationManager NavigationManager
+@inject ILoginHandler LoginHandler
 @page "/signIn"
 
 <div>
@@ -37,8 +36,8 @@
                         else
                         {
                             <BaseLoginForm
-                                OnLoginEvent="async (dto) => await OnLogIn(dto)"
-                                LoginAttemptResult="lasttokenFetchResult"/>
+                                OnLoginEvent="async dto => await OnLogIn(dto)"
+                                LoginAttemptResult="_lasttokenFetchResult"/>
                         }
                     </div>
                     <div class="on-login-success" style="display: none; padding: 10px;">
@@ -54,7 +53,7 @@
                     </div>
                 </div>
 
-                <Button Color="ButtonColor.Primary" @onclick=@(() => _navigationManager.NavigateTo("signup")) style="margin: 10px;">
+                <Button Color="ButtonColor.Primary" @onclick=@(() => NavigationManager.NavigateTo("signup")) style="margin: 10px;">
                     Not yet registered?
                 </Button>
             </div>
@@ -63,22 +62,21 @@
 </div>
 
 @code {
-    private AuthResult? lasttokenFetchResult = new();
-    private HubConnection? hubConnection;
+    private AuthResult? _lasttokenFetchResult = new();
     private bool IsUsingWebAuthn { get; set; } = true;
 
-    private async void HandleOnLogInResponse(AuthResult authResult)
+    private void HandleOnLogInResponse(AuthResult authResult)
     {
-        lasttokenFetchResult = authResult;
+        _lasttokenFetchResult = authResult;
 
-        if (lasttokenFetchResult.Result != AuthResultType.Fail)
+        if (_lasttokenFetchResult.Result != AuthResultType.Fail)
         {
-            lasttokenFetchResult.Message = "You're logged in.";
-            _navigationManager.NavigateTo("/contacts");
+            _lasttokenFetchResult.Message = "You're logged in.";
+            NavigationManager.NavigateTo("/contacts");
         }
-        else if (string.IsNullOrWhiteSpace(authResult?.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult?.JwtPair?.RefreshToken?.Token))
+        else if (string.IsNullOrWhiteSpace(authResult.JwtPair?.AccessToken) || string.IsNullOrWhiteSpace(authResult.JwtPair?.RefreshToken?.Token))
         {
-            lasttokenFetchResult = new AuthResult
+            _lasttokenFetchResult = new AuthResult
             {
                 Message = "Server authentification response was invalid",
                 Result = AuthResultType.Fail,
@@ -90,7 +88,7 @@
 
     private async Task OnLogIn(UserAuthentication loggingInUser)
     {
-        await _loginHandler.OnLogIn(loggingInUser, HandleOnLogInResponse);
+        await LoginHandler.OnLogIn(loggingInUser, HandleOnLogInResponse);
     }
 
 }

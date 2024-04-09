@@ -11,7 +11,7 @@
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     [Parameter] public string AvatarLink { get; set; } = "/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg";
     private bool IsSendingBinary { get; set; }
-    private CancellationTokenSource typingCancellation = new();
+    private CancellationTokenSource _typingCancellation = new();
 
     protected override void SubscribeToHubEvents()
     {
@@ -24,9 +24,9 @@
         if (partnerName == PartnerUsername)
         {
             CancellationToken cancellationToken;
-            await typingCancellation.CancelAsync();
-            typingCancellation = new();
-            cancellationToken = typingCancellation.Token;
+            await _typingCancellation.CancelAsync();
+            _typingCancellation = new();
+            cancellationToken = _typingCancellation.Token;
 
             //Show indicator
             IsSendingBinary = true;

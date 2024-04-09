@@ -26,7 +26,7 @@ namespace Ethachat.Client.UI.Chat.Logic.MessageBuilder
                 Id = id,
                 Cryptogramm = cryptogramm,
                 DateSent = DateTime.UtcNow,
-                TargetGroup = topicName!,
+                TargetGroup = topicName,
                 Sender = myName ?? throw new ApplicationException
                     ($"Exception on message building phase: Cannot define message sender name."),
             };

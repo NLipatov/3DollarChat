@@ -1,5 +1,4 @@
-﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageMarker;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
+﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
@@ -23,7 +22,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IMessageMarker _messageMarker;
         private readonly IWebPushSender _webPushSender;
         private readonly ILongTermMessageStorageService _longTermMessageStorageService;
         private readonly IUsernameResolverService _usernameResolverService;
@@ -35,7 +33,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             IMessageBrokerService messageBrokerService,
             IUserConnectedHandler<MessageHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
-            IMessageMarker messageSender,
             IWebPushSender webPushSender,
             ILongTermMessageStorageService longTermMessageStorageService,
             IUsernameResolverService usernameResolverService,
@@ -46,7 +43,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _messageMarker = messageSender;
             _webPushSender = webPushSender;
             _longTermMessageStorageService = longTermMessageStorageService;
             _usernameResolverService = usernameResolverService;
@@ -224,8 +220,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task OnAck(Message syncMessage)
         {
             _reliableMessageSender.OnAck(syncMessage);
-            
-            await _messageMarker.MarkAsReceived(syncMessage.SyncItem.MessageId, syncMessage.Sender!, Clients);
         }
 
         /// <summary>
@@ -241,14 +235,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
             await Clients.Caller.SendAsync("ReceivePublicKey", username, pubKey);
-        }
-
-        public async Task MessageHasBeenRead(Guid messageId, string messageSender)
-        {
-            if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == messageSender))
-            {
-                await _messageMarker.MarkAsReaded(messageId, messageSender, Clients);
-            }
         }
 
         public async Task OnTyping(string sender, string receiver)

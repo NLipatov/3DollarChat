@@ -156,6 +156,12 @@
             chunksLoaded += 1;
             StateHasChanged();
         }, "OnChunkLoaded", componentId);
+
+        _hubServiceSubscriptionManager.AddCallback<Guid>((id) =>
+        {
+            _messageBox.OnDelivered(id);
+            StateHasChanged();
+        }, "OnReceiverMarkedMessageAsReceived", componentId);
     }
 
     protected override async Task OnParametersSetAsync()

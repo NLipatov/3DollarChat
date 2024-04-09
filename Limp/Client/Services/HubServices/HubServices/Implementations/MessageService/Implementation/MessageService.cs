@@ -200,8 +200,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!), "OnReceiverMarkedMessageAsRead");
                     }
 
+                    if (message.Type is MessageType.MessageReceivedConfirmation)
+                    {
+                        var decryptedMessageIdData =
+                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
+                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!), "OnReceiverMarkedMessageAsReceived");
+                    }
+
                     if (message.Type is MessageType.TextMessage || message.Type is MessageType.HLSPlaylist)
                     {
+                        await SendReceivedConfirmation(message.Id, message.Sender!);
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
                                 $"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
@@ -289,12 +297,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         await hubConnection.SendAsync("GetAnRSAPublic", message.Sender);
                 }
             });
-
-            hubConnection.On<Guid>("OnReceiverMarkedMessageAsReceived",
-                messageId =>
-                {
-                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnReceiverMarkedMessageAsReceived");
-                });
 
             //Handling server side response on partners Public Key
             hubConnection.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
@@ -501,10 +503,32 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 });
         }
 
+        public async Task SendReceivedConfirmation(Guid messageId, string messageSender)
+        {
+            var myUsername = await _authenticationHandler.GetUsernameAsync();
+            
+            if (messageSender == myUsername)
+                return;
+            
+            var connection = await GetHubConnectionAsync();
+
+            var encryptedMessageIdData = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogramm()
+            {
+                Cyphertext = messageId.ToString()
+            }, messageSender);
+
+            await connection.SendAsync("Dispatch", new Message
+            {
+                Sender = myUsername,
+                TargetGroup = messageSender,
+                Cryptogramm = encryptedMessageIdData,
+                Type = MessageType.MessageReceivedConfirmation
+            });
+        }
+
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)
         {
-            if (messageSender ==
-                myUsername) //If it's our message, we don't want to notify partner that we've seen our message
+            if (messageSender == myUsername)
                 return;
             
             var connection = await GetHubConnectionAsync();

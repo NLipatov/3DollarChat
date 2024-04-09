@@ -9,7 +9,7 @@
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     [Parameter] public int CooldownMs { get; set; } = 600;
     private bool IsTyping { get; set; }
-    private CancellationTokenSource typingCancellation = new();
+    private CancellationTokenSource _typingCancellation = new();
     
     protected override void SubscribeToHubEvents()
     {
@@ -25,9 +25,9 @@
         if (partnerName == PartnerUsername)
         {
             CancellationToken cancellationToken;
-            await typingCancellation.CancelAsync();
-            typingCancellation = new();
-            cancellationToken = typingCancellation.Token;
+            await _typingCancellation.CancelAsync();
+            _typingCancellation = new();
+            cancellationToken = _typingCancellation.Token;
 
             //Show indicator
             IsTyping = true;

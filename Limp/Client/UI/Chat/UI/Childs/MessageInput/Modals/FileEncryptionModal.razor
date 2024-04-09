@@ -2,7 +2,7 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
 @implements IDisposable
 
-<Modal @ref="modal"
+<Modal @ref="_modal"
        Title="Uploading"
        OnShown=@(() => IsModalShown = true)>
 
@@ -17,14 +17,15 @@
 </Modal>
 
 @code {
-    private Modal? modal = default!;
+    private Modal? _modal = default!;
     private decimal Progress { get; set; } = 0;
     private Guid ComponentId { get; set; }
     private bool IsModalShown { get; set; }
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
+        base.OnInitialized();
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all of the component event subscriptions
         ComponentId = Guid.NewGuid();
@@ -36,7 +37,7 @@
             .AddCallback<decimal>(ChangeProgressPercentage, "OnFileEncryptionProgressChanged", ComponentId);
     }
 
-    private async Task ChangeProgressPercentage(decimal progress)
+    private void ChangeProgressPercentage(decimal progress)
     {
         Progress = progress;
         StateHasChanged();
@@ -44,9 +45,12 @@
 
     private async Task FileIsBeingEncrypted(bool isProcessIsActive)
     {
+        if (_modal is null)
+            return;
+        
         if (isProcessIsActive)
         {
-            await modal?.ShowAsync();
+            await _modal.ShowAsync();
         }
         else
         {
@@ -58,7 +62,7 @@
                 await Task.Delay(500);
             }
 
-            await modal?.HideAsync();
+            await _modal.HideAsync();
             IsModalShown = false;
         }
     }

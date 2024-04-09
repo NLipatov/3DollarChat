@@ -35,7 +35,7 @@ function GenerateAESKeyForHLS(videoId) {
 
             DotNet.invokeMethodAsync("Ethachat.Client", "OnHlsKeyReady", hexKey, videoId);
         } catch (error) {
-            console.error('Could not generate a key:', error);
+            passErrorToDotNet("AES.Crypto.js", `Could not generate a key: ${error.toString()}`);
         }
     })();
 }

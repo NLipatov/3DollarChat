@@ -1,14 +1,24 @@
-﻿@using Ethachat.Client.Shared.ReuseableComponents.EditableList.Models;
+﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
 
 <div style="cursor: pointer; @Style" @onclick="HandleClick">
-    <div class="item-card @(ItemModel.IsActive ? "active" : "")">
+    <div class="item-card" style="border-left: none;">
         <div class="header">
-            <div class="profile-picture">
-                <i class="@IconClass item-icon"></i>
-            </div>
-            <div>
-                <span class="username" style="color: black; text-decoration: none;">@ItemModel.ItemName</span>
-            </div>
+            @if (ItemModel.AvatarOnlineIndicator is not null)
+            {
+                <AvatarOnlineIndicator
+                    PartnerUsername=@ItemModel.ItemName
+                    AvatarLink=@ItemModel.AvatarOnlineIndicator.AvatarLink/>
+                <div>
+                    <span class="username" style="color: black; text-decoration: none;">@ItemModel.ItemName</span>
+                </div>
+            }
+            else
+            {
+                <div class="profile-picture">
+                    <i class="@IconClass item-icon"></i>
+                </div>
+            }
             @if (ItemModel.IsEncryptionSettedUp)
             {
                 <div class="key-info">
@@ -19,7 +29,7 @@
             {
                 @foreach (var icon in ItemModel.Icons)
                 {
-                    <Icon 
+                    <Icon
                         Name=@icon.Name
                         Class=@icon.Class
                         Attributes=@icon.Attributes
@@ -39,29 +49,26 @@
 </div>
 
 @code {
-    [Parameter]
-    public string IconClass { get; set; } = string.Empty;
+    [Parameter] public string IconClass { get; set; } = string.Empty;
 
-    [Parameter]
-    public ItemModel ItemModel { get; set; } = new();
+    [Parameter] public ItemModel ItemModel { get; set; } = new();
 
-    [Parameter]
-    public Action<string>? OnItemClickedAction { get; set; }
+    [Parameter] public Action<string>? OnItemClickedAction { get; set; }
 
-    [Parameter]
-    public string Style { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
 
     private void HandleClick()
     {
         if (OnItemClickedAction is not null)
         {
             if (string.IsNullOrWhiteSpace(ItemModel.ItemName))
-                Console.WriteLine($"Invalid {typeof(ItemModel)} parameter passed in:" + 
-                $"{nameof(ItemModel.ItemName)} was a empty string or null.");
+                Console.WriteLine($"Invalid {typeof(ItemModel)} parameter passed in:" +
+                                  $"{nameof(ItemModel.ItemName)} was a empty string or null.");
 
             OnItemClickedAction.Invoke(ItemModel.ItemName);
         }
         else
             Console.WriteLine("On click event handler action parameter is not passed in.");
     }
+
 }

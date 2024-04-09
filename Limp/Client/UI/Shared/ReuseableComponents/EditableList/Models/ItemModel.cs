@@ -1,6 +1,7 @@
 ﻿using BlazorBootstrap;
+using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
 
-namespace Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
+namespace Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 {
     public class ItemModel
     {
@@ -11,5 +12,6 @@ namespace Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
         public BadgeModel BadgeModel { get; set; } = new();
         public bool ShowBadge { get; set; }
         public Icon[] Icons { get; set; } = Array.Empty<Icon>();
+        public AvatarOnlineIndicator? AvatarOnlineIndicator { get; set; }
     }
 }

@@ -7,6 +7,7 @@
 @using Ethachat.Client.UI.Contacts.UI.Child;
 @using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.ContactsProvider;
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
@@ -14,9 +15,9 @@
 @inject IJSRuntime _jSRuntime;
 @inject IBrowserKeyStorage _localKeyManager;
 @inject IMessageBox _messageBox
-@using Ethachat.Client.Shared.ReuseableComponents.EditableList;
-@using Ethachat.Client.Shared.ReuseableComponents.EditableList.Models
+@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList;
 @using Ethachat.Client.UI.Contacts.Models
+@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using EthachatShared.Models.Users;
 @implements IDisposable
 
@@ -43,8 +44,12 @@
                                 ItemName = x.Username,
                                 Icons = [x.IsTrusted ? new Icon{Name=IconName.ShieldFillCheck, Color=IconColor.Success} : new Icon{Name=IconName.ShieldFill, Color=IconColor.Danger}],
                                 BadgeModel = GetContactBadge(x),
-                                ShowBadge = x.UnreadedMessagesCount > 0
-                            })
+                                ShowBadge = x.UnreadedMessagesCount > 0,
+                                AvatarOnlineIndicator = new AvatarOnlineIndicator
+                                    {
+                                        PartnerUsername = x.Username
+                                    }, 
+                                    })
                             .ToList()"
                         OnItemClicked="NavigateToChatWithContact"
                         OnItemRemoved="RemoveContact" 

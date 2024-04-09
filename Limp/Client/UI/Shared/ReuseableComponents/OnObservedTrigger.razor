@@ -5,14 +5,14 @@
 <div id="@ComponentId"></div>
 
 @code {
-    private string ComponentId { get; set; }
+    private string ComponentId { get; set; } = string.Empty;
     [Parameter] public required Func<Task> Callback { get; set; }
-    private static ConcurrentDictionary<string, Func<Task>> IdToCallback = new();
+    private static ConcurrentDictionary<string, Func<Task>> _idToCallback = new();
 
     [JSInvokable]
     public static void OnScreen(string id)
     {
-        if (IdToCallback.TryRemove(id, out var callback))
+        if (_idToCallback.TryRemove(id, out var callback))
         {
             callback.Invoke();
         }
@@ -23,7 +23,7 @@
         await base.OnInitializedAsync();
         var id = Guid.NewGuid().ToString().Replace("-", string.Empty);
         ComponentId = Regex.Replace(id, @"[\d-]", string.Empty);
-        IdToCallback.TryAdd(ComponentId, Callback);
+        _idToCallback.TryAdd(ComponentId, Callback);
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

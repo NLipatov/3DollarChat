@@ -266,7 +266,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         if (hubConnection != null)
                         {
                             var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
-                            await MarkContactAsTrusted(message.TargetGroup!);
+                            await MarkContactAsTrusted(message.Sender!);
                             await hubConnection.SendAsync("Dispatch", offerResponse);
                             
                             if (offerResponse.Type is MessageType.AesOfferAccept)

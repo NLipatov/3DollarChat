@@ -60,6 +60,20 @@
     <_ContentIncludedByDefault Remove="UI\CommonComponents\UIComponents\SuccessOrErrorMessage\ResultMessagesBlock.razor" />
     <_ContentIncludedByDefault Remove="UI\CommonComponents\UIComponents\SuccessOrErrorMessage\SingleResultMessage.razor" />
     <_ContentIncludedByDefault Remove="UI\BaseComponents\BaseEventListeningComponent.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ChildComponents\SidebarMenu.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ErrorCatching\GlobalErrorBoundary.razor" />
+    <_ContentIncludedByDefault Remove="Shared\MainLayout.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ReuseableComponents\EditableList\EditableList.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ReuseableComponents\EditableList\EditableListItem.razor" />
+    <_ContentIncludedByDefault Remove="Shared\ReuseableComponents\OnObservedTrigger.razor" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <AdditionalFiles Include="UI\Shared\Sidebar\SidebarMenu.razor" />
+    <AdditionalFiles Include="UI\Shared\ErrorCatching\GlobalErrorBoundary.razor" />
+    <AdditionalFiles Include="UI\Shared\MainLayout.razor" />
+    <AdditionalFiles Include="UI\Shared\ReuseableComponents\EditableList\EditableList.razor" />
+    <AdditionalFiles Include="UI\Shared\ReuseableComponents\EditableList\EditableListItem.razor" />
   </ItemGroup>
 
 </Project>

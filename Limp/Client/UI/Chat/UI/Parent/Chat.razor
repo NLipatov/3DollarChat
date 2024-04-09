@@ -6,19 +6,14 @@
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying;
 @using Ethachat.Client.UI.AuthenticationChecks
 @using Ethachat.Client.Services.AuthenticationService.Handlers
-@using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
-@using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.UI.Childs.AesKeyExchangeStatusModal
 @inject NavigationManager _navigationManager
 @inject IMessageService _messageService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IBrowserKeyStorage _localKeyManager
 @inject IUsersService _usersService
-@inject IJSRuntime _jsRuntime
 @inject IAuthenticationHandler AuthenticationHandler
-@inject IHlsStreamingService HlsStreamingService
 @implements IDisposable
 
 @if (string.IsNullOrWhiteSpace(topicName))

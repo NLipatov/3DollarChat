@@ -10,164 +10,163 @@
 @using FFmpegBlazor
 @using System.Text
 @using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption
-@inject ICallbackExecutor _callbackExecutor
-@inject IMessageBox _messageBox
-@inject IMessageService _messageService
-@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IJSRuntime _jSRuntime
+@inject ICallbackExecutor CallbackExecutor
+@inject IMessageBox MessageBox
+@inject IMessageService MessageService
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@inject IJSRuntime JsRuntime
 @inject IPackageMultiplexerService PackageMultiplexerService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @using Ethachat.Client.UI.Shared.ReuseableComponents
 @implements IDisposable
 
-@if (message != null)
+@if (Message != null)
 {
-    <div class="message @messageClass" @ref="MessageElement">
+    <div class="message @_messageClass">
         <div class="message-text">
-            @if (message.Type is MessageType.BlobLink && message.Metadata!.ContentType.Contains("image"))
+            @if (Message.Type is MessageType.BlobLink && Message.Metadata!.ContentType.Contains("image"))
             {
-                <img style="max-width: 100%;" src="@message.BlobLink"/>
+                <img style="max-width: 100%;" src="@Message.BlobLink" alt="image that user sent to you"/>
             }
-            else if (message.Type is MessageType.BlobLink && message.Metadata!.ContentType.Contains("video"))
+            else if (Message.Type is MessageType.BlobLink && Message.Metadata!.ContentType.Contains("video"))
             {
                 <video controls="controls" style="max-width: 100%;">
-                    <source src="@message.BlobLink" type="video/mp4">
+                    <source src="@Message.BlobLink" type="video/mp4">
                 </video>
             }
-            else if (message.Type is MessageType.HLSPlaylist)
+            else if (Message.Type is MessageType.HLSPlaylist)
             {
-                <HlsVideoStreamMessage Message=@message/>
+                <HlsVideoStreamMessage Message=@Message/>
             }
-            else if (!string.IsNullOrWhiteSpace(message.BlobLink))
+            else if (!string.IsNullOrWhiteSpace(Message.BlobLink))
             {
                 <div>
                     <a
-                        href="@message.BlobLink"
-                        download="@message.Metadata!.Filename"
+                        href="@Message.BlobLink"
+                        download="@Message.Metadata!.Filename"
                         style="text-decoration: none;">
                         <i class="bi bi-cloud-download-fill"></i>
-                        <span>@message.Metadata?.Filename</span>
+                        <span>@Message.Metadata?.Filename</span>
                     </a>
                 </div>
             }
 
-            @if (!string.IsNullOrWhiteSpace(message.PlainText))
+            @if (!string.IsNullOrWhiteSpace(Message.PlainText))
             {
-                @(message.PlainText
+                @(Message.PlainText
                     .AsMarkupString()
                     .FormatLinks())
             }
         </div>
         <div class="message-footer">
-            <span>@message.DateSent.ToLocalTime().ToString("HH:mm")</span>
-            @if (message.Sender == myUsername)
+            <span>@Message.DateSent.ToLocalTime().ToString("HH:mm")</span>
+            @if (Message.Sender == MyUsername)
             {
-                @if (message.Sender == myUsername)
+                @if (Message.Sender == MyUsername)
                 {
-                    @if (message.IsSeen)
+                    @if (Message.IsSeen)
                     {
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
                         <span>
-                            <i class="fas fa-check-double @messageClass"></i>
+                            <i class="fas fa-check-double @_messageClass"></i>
                         </span>
                     }
-                    else if (message.IsRegisteredByHub)
+                    else if (Message.IsRegisteredByHub)
                     {
-                        if (message.IsDelivered)
+                        if (Message.IsDelivered)
                         {
                             //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                             //issue reference: https://stackoverflow.com/a/64686984
                             <span>
-                                <i class="fas fa-check @messageClass"></i>
+                                <i class="fas fa-check @_messageClass"></i>
                             </span>
                         }
                         else
                         {
                             <span>
-                                <i class="bi bi-database-check @messageClass"></i>
+                                <i class="bi bi-database-check @_messageClass"></i>
                             </span>
                         }
                     }
                 }
             }
-            @if (message.Packages.Any())
+            @if (Message.Packages.Any())
             {
-                <span @onclick="() => _messageBox.Delete(message)">
+                <span @onclick="() => MessageBox.Delete(Message)">
                     <Icon Name="IconName.TrashFill" Style="color: red;"></Icon>
                 </span>
             }
         </div>
         <OnObservedTrigger 
-            Callback=@(async () => await _messageService.NotifySenderThatMessageWasReaded(message.Id, message.Sender, myUsername))/>
+            Callback=@(async () => await MessageService.NotifySenderThatMessageWasReaded(Message.Id, Message.Sender!, MyUsername!))/>
     </div>
 }
 
 @code {
-    public ElementReference MessageElement { get; set; }
-    public bool IsIntersecting { get; set; }
-
     [Parameter] public EventCallback<ClientMessage> OnResend { get; set; }
 
-    [Parameter] public ClientMessage? message { get; set; }
+    [Parameter] public ClientMessage? Message { get; set; }
 
-    [Parameter] public string? myUsername { get; set; }
+    [Parameter] public string? MyUsername { get; set; }
 
-    private bool isOutcoming;
-    private string messageClass = string.Empty;
-    private Guid componentId { get; set; }
-    private int chunksLoaded { get; set; } = 0;
+    private bool _isOutcoming;
+    private string _messageClass = string.Empty;
+    private Guid ComponentId { get; set; }
+    private int ChunksLoaded { get; set; } = 0;
 
     public void Dispose()
     {
-        _hubServiceSubscriptionManager.RemoveComponentCallbacks(componentId);
+        HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
     }
 
-    protected override async Task OnInitializedAsync()
+    protected override void OnInitialized()
     {
-        componentId = Guid.NewGuid();
+        base.OnInitialized();
+        
+        ComponentId = Guid.NewGuid();
 
         SubscribeToHubEvents();
     }
 
     private void SubscribeToHubEvents()
     {
-        _hubServiceSubscriptionManager.AddCallback<Guid>(id =>
+        HubServiceSubscriptionManager.AddCallback<Guid>(id =>
         {
-            _messageBox.OnDelivered(id);
+            MessageBox.OnDelivered(id);
             StateHasChanged();
-        }, "OnFileReceived", componentId);
+        }, "OnFileReceived", ComponentId);
 
-        _hubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
+        HubServiceSubscriptionManager.AddCallback<Guid>(((id) =>
         {
-            _messageBox.OnDelivered(id);
-            _messageBox.OnSeen(id);
+            MessageBox.OnDelivered(id);
+            MessageBox.OnSeen(id);
             StateHasChanged();
-        }), "OnReceiverMarkedMessageAsRead", componentId);
+        }), "OnReceiverMarkedMessageAsRead", ComponentId);
 
-        _hubServiceSubscriptionManager.AddCallback<Guid>((fileId) =>
+        HubServiceSubscriptionManager.AddCallback<Guid>((fileId) =>
         {
-            if (message.Metadata.DataFileId != fileId)
+            if (Message?.Metadata?.DataFileId != fileId)
                 return;
 
-            if (chunksLoaded + 1 > message.Metadata.ChunksCount)
+            if (ChunksLoaded + 1 > Message.Metadata.ChunksCount)
                 return;
 
-            chunksLoaded += 1;
+            ChunksLoaded += 1;
             StateHasChanged();
-        }, "OnChunkLoaded", componentId);
+        }, "OnChunkLoaded", ComponentId);
 
-        _hubServiceSubscriptionManager.AddCallback<Guid>((id) =>
+        HubServiceSubscriptionManager.AddCallback<Guid>((id) =>
         {
-            _messageBox.OnDelivered(id);
+            MessageBox.OnDelivered(id);
             StateHasChanged();
-        }, "OnReceiverMarkedMessageAsReceived", componentId);
+        }, "OnReceiverMarkedMessageAsReceived", ComponentId);
     }
 
     protected override async Task OnParametersSetAsync()
     {
-        isOutcoming = message?.Sender == myUsername;
-        messageClass = isOutcoming ? "outcoming" : "incoming";
+        _isOutcoming = Message?.Sender == MyUsername;
+        _messageClass = _isOutcoming ? "outcoming" : "incoming";
 
         await base.OnParametersSetAsync();
     }

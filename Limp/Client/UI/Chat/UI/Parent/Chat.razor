@@ -42,8 +42,8 @@ else
                 IsPartnerOnline=@_usersOnlineMessage.UserConnections.Select(x => x.Username).Contains(topicName)/>
 
             <MessageList @ref=MessageListComponent
-                         targetGroup=@topicName
-                         myUsername=@myUsername/>
+                         TargetGroup=@topicName
+                         MyUsername=@myUsername/>
 
             <MessageInputBox MyUsername=@myUsername
                              TopicName=@topicName/>

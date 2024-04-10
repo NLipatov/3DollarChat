@@ -1,0 +1,57 @@
+@inject NavigationManager NavigationManager
+@inject ICallbackExecutor CallbackExecutor
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+<div
+    class=@(Link == _currentUri ? "active" : "")
+    @onclick=@OnNavigation
+    style="
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.5rem;
+    cursor:pointer;
+">
+    @if (!string.IsNullOrWhiteSpace(FaIcon))
+    {
+        <i class="@FaStyle @FaIcon"></i>
+    }
+    <span>@Name</span>
+</div>
+
+@code {
+[Parameter] public required string Name { get; set; } = string.Empty;
+[Parameter] public required string Link { get; set; } = string.Empty;
+[Parameter] public string FaIcon { get; set; } = string.Empty;
+[Parameter] public string FaStyle { get; set; } = "fa-solid";
+private string _currentUri = "/";
+
+protected override void SubscribeToHubEvents()
+{
+base.SubscribeToHubEvents();
+HubServiceSubscriptionManager.AddCallback<string>(uri =>
+{
+_currentUri = uri;
+StateHasChanged();
+}, "OnNavigation", ComponentId);
+}
+
+private bool IsActive()
+{
+var baseUri = NavigationManager.BaseUri.Replace("/", string.Empty);
+var currentUri = NavigationManager.Uri.Replace(baseUri, string.Empty);
+
+if (currentUri == Link)
+return true;
+
+return false;
+}
+
+private void OnNavigation()
+{
+CallbackExecutor.ExecuteSubscriptionsByName(Link, "OnNavigation");
+NavigationManager.NavigateTo(Link);
+}
+}

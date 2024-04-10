@@ -1,0 +1,47 @@
+@inject NavigationManager NavigationManager
+
+<div class="sidebar">
+
+    <div class="sidebar-header">
+        <span>
+            ηChat
+        </span>
+        <span @onclick=ToggleSidebar>
+            <i class="fa-solid fa-bars sidebar-toggle-btn"></i>
+        </span>
+    </div>
+
+    <div class="sidebar-body" style="display: @(IsSidebarShown ? "block" : "none"); background-color: white;">
+        <NavigationItem
+            Link="/contacts"
+            Name="Contacts"
+            FaIcon="fa-address-book"/>
+
+        <NavigationItem
+            Link="/users"
+            Name="Users Online"
+            FaIcon="fa-users"/>
+
+        <NavigationItem
+            Link="/settings"
+            Name="Settings"
+            FaIcon="fa-gear"/>
+
+        <NavigationItem
+            Link="/"
+            Name="About"
+            FaIcon="fa-circle-info"/>
+    </div>
+
+</div>
+
+@code {
+    private bool IsSidebarShown { get; set; }
+
+    private void ToggleSidebar()
+    {
+        IsSidebarShown = !IsSidebarShown;
+        StateHasChanged();
+    }
+
+}

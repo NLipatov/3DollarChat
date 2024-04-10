@@ -3,7 +3,6 @@
 @using Ethachat.Client.Services.AuthenticationService.Handlers
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.InboxService;
-@using Ethachat.Client.UI.Shared.Sidebar
 @using EthachatShared.Models.Message
 @inherits LayoutComponentBase
 @inject ICryptographyService _cryptographyService
@@ -32,7 +31,7 @@ else if (!isConnectedToHubs)
 else
 {
     <div class="ApplicationContent">
-        <SidebarMenu/>
+        <Ethachat.Client.UI.Shared.Sidebar.Sidebar/>
         <div style="width: 100%;">
             <GlobalErrorBoundary>
                 @Body

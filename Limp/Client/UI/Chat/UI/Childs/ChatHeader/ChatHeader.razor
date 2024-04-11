@@ -31,7 +31,7 @@
         <button title="Clear conversation" @onclick="DeleteConversation" style="border: none;">
             <i class="bi bi-trash-fill key-icon"></i>
         </button>
-        <button title="Renew AES Key" style="border: none;" @onclick=ShowModalAsync>
+        <button title="Renew AES Key" style="border: none;" @onclick=ShowModal>
             <i class="bi bi-key-fill key-icon"></i>
         </button>
         
@@ -62,10 +62,10 @@
         };
     }
 
-    private async Task ShowModalAsync()
+    private void ShowModal()
     {
         if (aesRenewalModal != null)
-            await aesRenewalModal.ShowModalAsync();
+            aesRenewalModal.ShowModal();
     }
 
     private void DeleteConversation()

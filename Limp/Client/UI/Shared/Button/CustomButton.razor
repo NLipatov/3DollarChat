@@ -1,0 +1,28 @@
+<button class=@($"custom-btn {ResolveClass()}") @onclick=@OnClick>
+    @Title
+</button>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public ButtonType ButtonType { get; set; } = ButtonType.Primary;
+    [Parameter] public Action? OnPress { get; set; }
+    [Parameter] public Func<Task>? OnPressAsync { get; set; }
+    
+    private async Task OnClick()
+    {
+        if (OnPress != null)
+            OnPress();
+        else if (OnPressAsync != null)
+            await OnPressAsync();
+    }
+
+    private string ResolveClass()
+    {
+        return ButtonType switch
+        {
+            ButtonType.Danger => "danger",
+            ButtonType.Success => "success",
+            _ => "primary"
+        };
+    }
+}

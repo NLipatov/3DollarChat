@@ -1,23 +1,19 @@
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.UI.Shared.Modal
 @implements IDisposable
 
-<Modal @ref="_modal"
-       Title="Uploading"
-       OnShown=@(() => IsModalShown = true)>
-
-    <BodyTemplate>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            <span>
-                Encryption progress: <strong>@Progress</strong>%
-            </span>
-            <span>You can close this dialog, upload will continue in a background.</span>
-        </div>
-    </BodyTemplate>
-</Modal>
+<CustomModal
+    @ref="_modal"
+    Title="Uploading"
+    BodyLines=@( 
+              [
+                  $"Encryption progress: {Progress}%", 
+                  "You can close this dialog, upload will continue in a background."
+              ])/>
 
 @code {
-    private Modal? _modal = default!;
+    private CustomModal _modal = default!;
     private decimal Progress { get; set; } = 0;
     private Guid ComponentId { get; set; }
     private bool IsModalShown { get; set; }
@@ -27,7 +23,7 @@
     {
         base.OnInitialized();
         //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         HubServiceSubscriptionManager
@@ -43,28 +39,12 @@
         StateHasChanged();
     }
 
-    private async Task FileIsBeingEncrypted(bool isProcessIsActive)
+    private void FileIsBeingEncrypted(bool isProcessIsActive)
     {
-        if (_modal is null)
-            return;
-        
-        if (isProcessIsActive)
-        {
-            await _modal.ShowAsync();
-        }
+        if(isProcessIsActive)
+            _modal.Show();
         else
-        {
-            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
-            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
-            while (!IsModalShown)
-            {
-                //500 is not a magic value here, any positive number will do the trick 
-                await Task.Delay(500);
-            }
-
-            await _modal.HideAsync();
-            IsModalShown = false;
-        }
+            _modal.Hide();
     }
 
 }

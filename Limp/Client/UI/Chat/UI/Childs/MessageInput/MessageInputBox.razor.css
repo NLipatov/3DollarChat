@@ -13,9 +13,9 @@
     background-color: #f1f1f1;
     bottom: 0;
     position: fixed;
-    max-width: 100%;
-    width: calc(100vw - var(--bb-sidebar-width));
     height: var(--input-bar-height);
+    right: 0;
+    width: calc(100vw - var(--bb-sidebar-width));
 }
 
 .message-input-box button {

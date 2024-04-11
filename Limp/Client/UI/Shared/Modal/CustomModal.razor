@@ -1,0 +1,48 @@
+@using Ethachat.Client.UI.Shared.Button
+@inject IJSRuntime JsRuntime
+
+@if (ShouldBeShown)
+{
+    <div class="modal-div" @onclick=@Hide>
+        <div class="modal-window" @onclick:stopPropagation="true">
+            <div class="modal-head">
+                <h1>@Title</h1>
+            </div>
+            
+            <div class="modal-body">
+                @foreach (var line in BodyLines)
+                {
+                    <span>@line</span>
+                }
+                
+                @foreach (var btn in Buttons)
+                {
+                    <CustomButton
+                        Title=@btn.Title
+                        ButtonType=@btn.ButtonType
+                        OnPress=@btn.OnPress
+                        OnPressAsync=@btn.OnPressAsync/>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string[] BodyLines { get; set; } = [];
+    [Parameter] public CustomButton[] Buttons { get; set; } = [];
+    private bool ShouldBeShown { get; set; }
+
+    public void Show()
+    {
+        ShouldBeShown = true;
+        StateHasChanged();
+    }
+
+    public void Hide()
+    {
+        ShouldBeShown = false;
+        StateHasChanged();
+    }
+}

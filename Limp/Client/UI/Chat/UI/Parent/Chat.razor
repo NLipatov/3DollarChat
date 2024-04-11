@@ -14,16 +14,16 @@
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IUsersService _usersService
 @inject IAuthenticationHandler AuthenticationHandler
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @implements IDisposable
 
 @if (string.IsNullOrWhiteSpace(topicName))
 {
     <div class="p-2">
-        <Callout Type="CalloutType.Warning">
-            <span>
-                Specify a username in a url like so: "<strong>/Pavel</strong>"
-            </span>
-        </Callout>
+        <CustomCallout
+            CalloutType="CalloutType.Warning"
+            CalloutBody="Specify a username like so: /Pavel"/>
     </div>
 }
 else

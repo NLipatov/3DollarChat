@@ -19,6 +19,8 @@
 @using Ethachat.Client.UI.Contacts.Models
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using EthachatShared.Models.Users;
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @implements IDisposable
 
 <AuthenticatedView>
@@ -58,12 +60,10 @@
                 }
                 else
                 {
-                    <Callout Type="CalloutType.Tip">
-                        <div style="display: flex; flex-direction: column;">
-                            <h3>Your contact book is empty</h3>
-                            <span>Add someone and start a new chat!</span>
-                        </div>
-                    </Callout>
+                    <CustomCallout 
+                        CalloutType="CalloutType.Idea"
+                        CalloutBody="Add someone and start a new chat!"
+                        CalloutTitle="Your contact book is empty"/>
                 }
             </div>
         </div>

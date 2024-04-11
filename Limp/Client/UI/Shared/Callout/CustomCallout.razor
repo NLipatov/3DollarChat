@@ -1,0 +1,31 @@
+<div class="callout @CalloutType.ToString().ToLower()">
+    <div class="callout-header">
+        <i class="@CalloutIconStyle @ResolveIconByType()"></i>
+        <span>@CalloutType.ToString()</span>
+    </div>
+    <h3>@CalloutTitle</h3>
+    <div>
+        <span>@CalloutBody</span>
+    </div>
+</div>
+
+@code {
+    [Parameter] public CalloutType CalloutType { get; set; } = CalloutType.Info;
+    [Parameter] public string CalloutIconStyle { get; set; } = "fa-solid";
+    [Parameter] public string CalloutTitle { get; set; } = string.Empty;
+    [Parameter] public string CalloutBody { get; set; } = string.Empty;
+
+    private string ResolveIconByType()
+    {
+        return CalloutType switch
+        {
+            CalloutType.Info => "fa-circle-info",
+            CalloutType.Idea => "fa-lightbulb",
+            CalloutType.Warning => "fa-triangle-exclamation",
+            CalloutType.Danger => "fa-circle-exclamation",
+            CalloutType.Error => "fa-bug",
+            _ => throw new ArgumentException("Unsupported callout type")
+        };
+    }
+
+}

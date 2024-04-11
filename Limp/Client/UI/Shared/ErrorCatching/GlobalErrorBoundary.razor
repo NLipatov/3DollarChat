@@ -3,6 +3,8 @@
 @inherits ErrorBoundary
 @inject ILoggingService LoggingService
 @inject IToastService _toastService
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 
 @if (CurrentException is null)
 {
@@ -15,12 +17,12 @@ else if (ErrorContent is not null)
 else
 {
     <div class="p-2">
-        <h1>Something went wrong:</h1>
         @foreach (var exception in _receivedExceptions)
         {
-            <Callout Type="CalloutType.Danger" Heading="Error">
-                <span>@exception.Message</span>
-            </Callout>
+            <CustomCallout
+                CalloutType="CalloutType.Danger"
+                CalloutTitle="Error"
+                CalloutBody="@exception.Message"/>
         }
         <Button Color="ButtonColor.Primary" @onclick="Recover">
             Close

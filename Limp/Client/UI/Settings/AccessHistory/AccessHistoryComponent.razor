@@ -9,18 +9,19 @@
 @using Ethachat.Client.Services.UserAgent
 @inject IAuthService _authService 
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
-@inject IJSRuntime _jS
 @inject IUserAgentService _userAgentService
 @inject IAuthenticationHandler AuthenticationHandler
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @implements IDisposable
 
 <AuthenticatedView>
     <AuthenticatedContent>
         <div class="p-2">
             <div>
-                <Callout Type="CalloutType.Info">
-                    This is a list of JWT-token renewal history for your account.
-                </Callout>
+                <CustomCallout
+                    CalloutType="CalloutType.Info"
+                    CalloutBody="This is a list of JWT-token renewal history for your account."/>
             </div>
             <div>
                 <Grid TItem="AccessRefreshEventLog"

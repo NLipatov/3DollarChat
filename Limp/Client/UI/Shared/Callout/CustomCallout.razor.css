@@ -1,0 +1,49 @@
+.callout {
+    display: flex;
+    flex-direction: column;
+    padding: 0.5rem;
+}
+
+.info {
+    border-left: 0.5rem solid #54a2ff;
+}
+
+.info svg {
+    color: #54a2ff;
+}
+
+.idea {
+    border-left: 0.5rem solid #c3e3ff;
+}
+
+.idea svg {
+    color: #c3e3ff;
+}
+
+.danger {
+    border-left: 0.5rem solid #ff1b23;
+}
+
+.danger svg {
+    color: #ff1b23;
+}
+
+.warning {
+    border-left: 0.5rem solid #ffe11b;
+}
+
+.warning svg {
+    color: #ffe11b;
+}
+
+.error {
+    border-left: 0.5rem solid #233525;
+}
+
+.error svg {
+    color: #233525;
+}
+
+.callout-header {
+    font-size: 1.5rem;
+}

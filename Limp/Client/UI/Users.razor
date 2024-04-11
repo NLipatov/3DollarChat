@@ -5,6 +5,8 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Ethachat.Client.UI.CommonComponents.ContactItem
 @using EthachatShared.Models.ConnectedUsersManaging;
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @inject NavigationManager _navigationManager
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
@@ -18,15 +20,15 @@
         <div class="ApplicationContent p-2">
             @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
             {
-                <Callout Type="CalloutType.Info">
-                    <span>Looks like everyone is offline now.</span>
-                </Callout>
+                <CustomCallout
+                    CalloutType="CalloutType.Info"
+                    CalloutBody="Looks like everyone is offline now."/>
             }
             else if (string.IsNullOrWhiteSpace(myUsername))
             {
-                <Callout Type="CalloutType.Info">
-                    <span>Resolving your username.</span>
-                </Callout>
+                <CustomCallout
+                    CalloutType="CalloutType.Info"
+                    CalloutBody="Resolving your username."/>
             }
             else
             {

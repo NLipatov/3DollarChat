@@ -3,6 +3,8 @@
 @using Ethachat.Client.UI.Contacts.Models
 @inject IContactsProvider _contactsProvider;
 @inject IJSRuntime _JSRuntime
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 
 <div class="p-2">
     <h3>AES key exchange settings</h3>
@@ -10,11 +12,9 @@
     <div class="trusted-contacts-group">
         @if (!_contacts.Any())
         {
-            <Callout Type="CalloutType.Info">
-                <span>
-                    No contacts. <a href="/contacts">Add someone</a> to assign a passphrase
-                </span>
-            </Callout>
+            <CustomCallout 
+                CalloutType="CalloutType.Info"
+                CalloutBody="No contacts. Add someone to assign a passphrase."/>
         }
         @foreach (var contact in _contacts.OrderBy(x => x.Username))
         {

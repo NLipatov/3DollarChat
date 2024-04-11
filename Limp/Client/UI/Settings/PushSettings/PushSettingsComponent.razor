@@ -11,6 +11,8 @@
 @using EthachatShared.Models.Authentication.Models.Credentials.Implementation
 @using EthachatShared.Models.Authentication.Types
 @using EthachatShared.Models.WebPushNotification;
+@using Ethachat.Client.UI.Shared.Callout
+@using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime Js
 @inject IUsersService UsersService
@@ -57,9 +59,9 @@
 
             @if (SubscriptionsWasLoaded && !WebPushSubscriptions.Any())
             {
-                <Callout Type="CalloutType.Tip">
-                    Allow us to send you a notifications
-                </Callout>
+                <CustomCallout
+                    CalloutType="CalloutType.Idea"
+                    CalloutBody="Allow us to send you a web-push notifications"/>
             }
             else
             {

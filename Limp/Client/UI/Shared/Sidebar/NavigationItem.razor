@@ -3,17 +3,8 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
-<div
-    class=@(Link == _currentUri ? "active" : "")
-    @onclick=@OnNavigation
-    style="
-    padding: 0.5rem;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-size: 1.5rem;
-    cursor:pointer;
-">
+<div class=@($"{(Link == _currentUri ? "active" : " ")} navigation-item-btn")
+    @onclick=@OnNavigation>
     @if (!string.IsNullOrWhiteSpace(FaIcon))
     {
         <i class="@FaStyle @FaIcon"></i>

@@ -2,3 +2,12 @@
     background-color: aliceblue;
     cursor: pointer;
 }
+
+.navigation-item-btn {
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    cursor: pointer;
+}

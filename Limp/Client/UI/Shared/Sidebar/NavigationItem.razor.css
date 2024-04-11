@@ -13,5 +13,5 @@
 }
 
 .navigation-item-btn:hover {
-    background-color: #f6fafd;
+    background-color: var(--hovered-color);
 }

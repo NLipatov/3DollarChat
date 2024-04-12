@@ -1,5 +1,7 @@
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using EthachatShared.Models.ConnectedUsersManaging
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+@inject IUsersService UsersService
 
 <div class="avatar-indicator @(IsOnline ? "online" : "")">
     <img src=@AvatarLink alt="Profile Picture">
@@ -9,6 +11,13 @@
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     [Parameter] public string AvatarLink { get; set; } = "/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg";
     private bool IsOnline { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        
+        await UsersService.ActualizeConnectedUsersAsync();
+    }
 
     protected override void SubscribeToHubEvents()
     {

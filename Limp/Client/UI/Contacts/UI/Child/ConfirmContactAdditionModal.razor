@@ -1,77 +1,64 @@
-﻿@using Ethachat.Client.UI.Contacts.Models
-<Modal
-    @ref="modal"
-    Title="Add user to contacts">
+﻿@using Ethachat.Client.Services.ContactsProvider
+@using Ethachat.Client.UI.Contacts.Models
+@using Ethachat.Client.UI.Shared.Button
+@using Ethachat.Client.UI.Shared.Modal
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
+@inject IContactsProvider ContactsProvider
+@inject IJSRuntime JsRuntime
 
-    <BodyTemplate>
-        @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-        {
-            <span>
-                @NewContactUsername is already in your contact book
-            </span>
-        }
-        else
-        {
-            @ModalBodyText
-        }
-    </BodyTemplate>
-    <FooterTemplate>
-        @if (IsUserExists)
-        {
-            @if (ContactCollection.Any(x => x.Username == NewContactUsername))
-            {
-                <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-            }
-            else
-            {
-                <Button Color="ButtonColor.Danger" @onclick="HideModalAsync">Cancel</Button>
-                <Button Color="ButtonColor.Success" @onclick="() => OnContactAddition.InvokeAsync(NewContactUsername)">Confirm</Button>
-            }
-        }
-        else
-        {
-            <Button Color="ButtonColor.Secondary" @onclick="HideModalAsync">Hide</Button>
-        }
-    </FooterTemplate>
-</Modal>
+<CustomModal
+    @ref="modal"
+    Title="Add user to contacts"
+    BodyLines=@BodyLines
+    Buttons=@GetModalButtons()/>
 
 @code {
-    [Parameter] public List<Contact> ContactCollection { get; set; } = new();
-
     [Parameter] public EventCallback<string> OnContactAddition { get; set; }
 
     //reference to a modal-component
-    private Modal? modal = default!;
+    private CustomModal? modal = default!;
 
-    public async Task ShowModalAsync() => await modal!.ShowAsync();
+    public void ShowModal() => modal?.Show();
+    public void HideModal() => modal?.Hide();
 
-    public async Task HideModalAsync() => await modal!.HideAsync();
+    private string[] BodyLines { get; set; } = [];
+    private bool _isUserExists = true;
+    private string _newContactUsername = string.Empty;
+    private Contact? Existing { get; set; }
 
-    private string ModalBodyText = string.Empty;
-    private bool IsUserExists = true;
-    private string NewContactUsername = string.Empty;
-
-    public async Task ShowModalWithBodyTextAsync(ContactAdditionModalDTO modalDTO)
+    public async Task ShowModalWithBodyTextAsync(ContactAdditionModalDTO modalDto)
     {
-        NewContactUsername = modalDTO.NewContactUsername;
-        IsUserExists = modalDTO.IsUserExists;
-        ModalBodyText = GetModalBodyText(modalDTO);
+        Existing = await ContactsProvider.GetContact(_newContactUsername, JsRuntime);
+        _newContactUsername = modalDto.NewContactUsername;
+        _isUserExists = modalDto.IsUserExists;
+        BodyLines = GetModalBodyText();
 
-        await ShowModalAsync();
+        modal?.Show();
     }
 
-    private string GetModalBodyText(ContactAdditionModalDTO modalDTO)
+    private string[] GetModalBodyText()
     {
-        if (string.IsNullOrWhiteSpace(modalDTO.ModalBodyText))
+        if (Existing is not null)
+            return [$"{_newContactUsername} is already in your contact book"];
+
+        if (_isUserExists)
+            return [$"Confirm adding '{_newContactUsername}' as new contact"];
+        
+        return ["There is no user with such username"];
+    }
+
+    private CustomButton[] GetModalButtons()
+    {
+        if (_isUserExists && Existing is null)
         {
-            return modalDTO.IsUserExists
-                ? $"Confirm adding '{modalDTO.NewContactUsername}' as new contact"
-                : $"There is no user with such username";
+            return
+            [
+                new CustomButton { ButtonType = ButtonType.Success, Title = "Confirm", OnPressAsync = () => OnContactAddition.InvokeAsync(_newContactUsername) },
+                new CustomButton { ButtonType = ButtonType.Secondary, Title = "Cancel", OnPress = HideModal }
+            ];
         }
-        else
-        {
-            return modalDTO.ModalBodyText;
-        }
+
+        return [new CustomButton { ButtonType = ButtonType.Secondary, Title = "Hide", OnPress = HideModal }];
     }
 
 }

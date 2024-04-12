@@ -72,7 +72,6 @@
         {
             <ConfirmContactAdditionModal 
                 @ref="contactAdditionModal"
-                ContactCollection="ContactsList"
                 OnContactAddition="HandleContactAddition"/>
         }
     </AuthenticatedContent>
@@ -142,7 +141,7 @@
             Username = username,
         }, _jSRuntime);
         await _usersService.ActualizeConnectedUsersAsync();
-        await contactAdditionModal!.HideModalAsync();
+        contactAdditionModal!.HideModal();
     }
 
 

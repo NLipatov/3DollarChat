@@ -1,5 +1,16 @@
 .custom-btn {
-    
+    display: inline-block;
+    outline: none;
+    border: none;
+    cursor: pointer;
+    text-align: center;
+    padding: 0.2rem 0.4rem;
+    min-height: 1rem;
+    min-width: 1rem;
+    color: black;
+    font-weight: 500;
+    font-size: 1rem;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 0px 0px, rgba(0, 0, 0, 0.2) 0px -1px 0px 0px
 }
 
 .success {
@@ -7,5 +18,9 @@
 }
 
 .danger {
-    background-color: #f13a4c;
+    background-color: #ff5d6d;
+}
+
+.secondary {
+    background-color: #939191;
 }

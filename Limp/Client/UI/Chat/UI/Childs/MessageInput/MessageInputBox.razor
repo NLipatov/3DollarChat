@@ -59,11 +59,11 @@
     private IJSObjectReference? JsModule { get; set; }
 
     [JSInvokable]
-    public static async Task FileFromClipboard(byte[] content, string name)
+    public static async Task FileFromClipboard(byte[] content, string name, string contentType)
     {
         if (SendIBrowserFileDelegate is not null)
         {
-            var browserFile = new ClipboardFile(content, name);
+            var browserFile = new ClipboardFile(content, name, contentType);
             await SendIBrowserFileDelegate(browserFile); 
         }
     }

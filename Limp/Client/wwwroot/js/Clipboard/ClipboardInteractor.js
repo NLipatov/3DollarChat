@@ -11,15 +11,11 @@ function RemoveOnPasteEvent() {
 }
 
 async function handlePaste(event) {
-    console.log("handlePaste");
     const clipboardData = (event.clipboardData || window.clipboardData);
-    console.log(clipboardData);
     const files = Array.from(clipboardData.files);
-    console.log(files);
     
     files.forEach(file => {
         const fileName = file.name;
-        console.log(fileName);
         const reader = new FileReader();
 
         reader.onload = function(event) {
@@ -27,7 +23,7 @@ async function handlePaste(event) {
             const byteArray = new Uint8Array(arrayBuffer);
 
 
-            DotNet.invokeMethodAsync("Ethachat.Client", "FileFromClipboard", byteArray, fileName);
+            DotNet.invokeMethodAsync("Ethachat.Client", "FileFromClipboard", byteArray, fileName, file.type);
         };
 
         reader.readAsArrayBuffer(file);

@@ -12,7 +12,8 @@ namespace Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extension
 
         public static MarkupString FormatLinks(this MarkupString markupString)
         {
-            var pattern = @"(http|https)://[^\s]+";
+            var pattern = @"(?:http|https)://[^\s""]+";
+
             Regex regex = new Regex(pattern);
 
             string formattedText = regex.Replace(markupString.Value, match =>

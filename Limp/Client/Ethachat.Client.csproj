@@ -21,6 +21,7 @@
     <Content Remove="wwwroot\dist\ffmpeg-core.worker.js" />
     <Content Remove="wwwroot\dist\ffmpeg-core.wasm" />
     <Content Remove="wwwroot\blazorFfmpeg.js" />
+    <None Include="wwwroot\js\Clipboard\ClipboardInteractor.js" />
   </ItemGroup>
 
   <ItemGroup>

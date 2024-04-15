@@ -8,42 +8,39 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
-@using FFmpegBlazor
-@using System.Text
 @using Ethachat.Client.ClientOnlyModels
-@using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg
+@using Ethachat.Client.UI.Shared.Modal
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
-@inject IMessageBuilder _messageBuilder
-@inject IMessageService _messageService
-@inject IMessageBox _messageBox
-@inject IJSRuntime _jSRuntime
-@inject IMessageDecryptor _messageDecryptor 
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
+@using Ethachat.Client.UI.Shared.Button
+@inject IMessageBuilder MessageBuilder
+@inject IMessageService MessageService
+@inject IMessageBox MessageBox
+@inject IJSRuntime JsRuntime
+@inject IMessageDecryptor MessageDecryptor 
 @inject IPackageMultiplexerService PackageMultiplexerService
 @inject ICallbackExecutor CallbackExecutor
 @inject ICryptographyService CryptographyService
 @inject IBinaryReceivingManager BinaryReceivingManager
 @inject IHlsStreamingService HlsStreamingService
 @inject NavigationManager NavigationManager
+@implements IAsyncDisposable
 
 <div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
     <input @bind="MessageInput" @bind:event="oninput"/>
 
     <label for="fileinput" class="label-wrapper" style="align-items: center;">
         <span class="bi bi-paperclip"></span>
-        <InputFile id="fileinput" @key="FileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
+        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
     </label>
 
     <button @onclick="async () => await SendMessage()">Send</button>
 </div>
 
-<Modal @ref="MaxFileSizeRestrictionModal" Title="Modal title">
-    <BodyTemplate>
-        Maximum file size is limited to @Math.Floor((decimal)(MaxFileSizeBytes / 1024000)) MB.
-    </BodyTemplate>
-    <FooterTemplate>
-        <Button Color="ButtonColor.Secondary" @onclick="(async () => await MaxFileSizeRestrictionModal.HideAsync())">Close</Button>
-    </FooterTemplate>
-</Modal>
+<CustomModal
+    @ref="TooLargeFileModal"
+    Title=@($"Maximum file size is {Math.Floor((decimal)MaxFileSizeBytes / 1024000)} MB.")
+    Buttons=@( [new CustomButton {Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])></CustomModal>
 
 <FileEncryptionModal/>
 <HlsConvertationModal/>
@@ -53,10 +50,40 @@
 
     [Parameter] public string MyUsername { get; set; } = string.Empty;
 
+    private CustomModal? TooLargeFileModal { get; set; }
+
     private string MessageInput { get; set; } = string.Empty;
-    private Guid FileInputId = Guid.NewGuid();
-    private Modal MaxFileSizeRestrictionModal = default!;
+    private Guid _fileInputId = Guid.NewGuid();
     private const long MaxFileSizeBytes = long.MaxValue;
+    private static Func<IBrowserFile, Task>? SendIBrowserFileDelegate { get; set; } = default;
+    private IJSObjectReference? JsModule { get; set; }
+
+    [JSInvokable]
+    public static async Task FileFromClipboard(byte[] content, string name)
+    {
+        if (SendIBrowserFileDelegate is not null)
+        {
+            var browserFile = new ClipboardFile(content, name);
+            await SendIBrowserFileDelegate(browserFile); 
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+
+        if (JsModule is null)
+        {
+            var path = "./js/Clipboard/ClipboardInteractor.js";
+            JsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", path);
+        }
+
+        if (firstRender)
+        {
+            SendIBrowserFileDelegate = SendIBrowserFile;
+            await JsModule.InvokeVoidAsync("AddOnPasteEvent");
+        }
+    }
 
     private async Task OnKeyDown(KeyboardEventArgs e)
     {
@@ -66,7 +93,7 @@
             return;
         }
         
-        await _messageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
+        await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
                 .ConfigureAwait(false);
     }
 
@@ -75,18 +102,25 @@
         //if file exceeds the max size limit
         if (MaxFileSizeBytes - e.File.Size < 0)
         {
-            await MaxFileSizeRestrictionModal.ShowAsync();
-            FileInputId = Guid.NewGuid();
+            TooLargeFileModal?.Show();
+            _fileInputId = Guid.NewGuid();
             return;
         }
+
+        await SendIBrowserFile(e.File);
+    }
+
+    private async Task SendIBrowserFile(IBrowserFile browserFile)
+    {
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
         
         //stream it if it can be streamed
-        if (await HlsStreamingService.CanFileBeStreamedAsync(e.File.Name))
+        if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
         {
-            CallbackExecutor.ExecuteSubscriptionsByName((true, e.File.Name), "OnHLSStreamingPreparationInProgress");
-            var playlist = await HlsStreamingService.ToM3U8Async(e.File);
+            CallbackExecutor.ExecuteSubscriptionsByName((true, browserFile.Name), "OnHLSStreamingPreparationInProgress");
+            var playlist = await HlsStreamingService.ToM3U8Async(browserFile);
 
-            await _messageService.SendMessage(new ClientMessage()
+            await MessageService.SendMessage(new ClientMessage()
             {
                 Id = Guid.NewGuid(),
                 HlsPlaylist = playlist,
@@ -97,11 +131,10 @@
             });
             return;
         }
-
-        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await _messageService.SendMessage(new ()
+        
+        await MessageService.SendMessage(new ()
         {
-            BrowserFile = e.File,
+            BrowserFile = browserFile,
             Type = MessageType.BrowserFileMessage,
             TargetGroup = TopicName,
             Sender = MyUsername
@@ -119,7 +152,7 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await _messageService.SendMessage(new()
+            await MessageService.SendMessage(new()
             {
                 PlainText = MessageInput,
                 TargetGroup = TopicName,
@@ -129,4 +162,14 @@
 
         MessageInput = string.Empty;
     }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (JsModule is not null)
+        {
+            await JsModule.InvokeVoidAsync("RemoveOnPasteEvent");
+            await JsModule.DisposeAsync();
+        }
+    }
+
 }

@@ -3,6 +3,7 @@
 @using Ethachat.Client.Services.VideoStreamingService.Converters.FFmpeg.HlsEncryption
 @using Ethachat.Client.Services.AuthenticationService.Handlers
 @inject IJSRuntime JsRuntime
+@inject NavigationManager NavigationManager
 @namespace Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @implements IAsyncDisposable
 
@@ -24,29 +25,10 @@
         if (string.IsNullOrWhiteSpace(Message.HlsPlaylist?.M3U8Content))
             throw new ArgumentException($"Invalid {nameof(Message.HlsPlaylist.M3U8Content)} value");
 
-        var keyFileGenerator = new HlsEncryptionManager(JsRuntime, Message!.Id.ToString());
-        //Generate a key file
-        var keyFile = keyFileGenerator.GenerateKeyFile(Message.HlsPlaylist!.HexKey);
-        //Create a blob with key file
-        var keyFileUri = await ToBlobUrlAsync(keyFile, "application/octet-stream");
-
-        var sb = new StringBuilder();
-        foreach (var line in Message.HlsPlaylist.M3U8Content.Split("\n"))
-        {
-            var modifiedLine = line;
-            if (line.StartsWith("#EXT-X-KEY:METHOD=AES-128"))
-            {
-                modifiedLine = $"#EXT-X-KEY:METHOD=AES-128,URI=\"{keyFileUri}\",IV=0x{Message.HlsPlaylist.HexIv}";
-            }
-
-            sb.AppendLine(modifiedLine);
-        }
-
-        var playlistContent = sb.ToString();
-
+        var playlistContent = Message.HlsPlaylist?.M3U8Content.Replace("$PROXYADDR/", NavigationManager.BaseUri + "hlsapi/");
+        
         var playlistBytes = Encoding.UTF8.GetBytes(playlistContent);
         var playlistUrl = await ToBlobUrlAsync(playlistBytes, "application/vnd.apple.mpegurl");
-
         await JsRuntime.InvokeVoidAsync("startStream", playlistUrl, Message.Id);
     }
 

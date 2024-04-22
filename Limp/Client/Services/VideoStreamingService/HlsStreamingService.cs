@@ -26,10 +26,6 @@ public class HlsStreamingService : IHlsStreamingService
     {
         try
         {
-            //Can ff be loaded? Is there enough memory on client device?
-            FfmpegInitializationManager ffmpegInitializationManager = new();
-            await ffmpegInitializationManager.InitializeAsync(_jsRuntime);
-        
             //Is HLS service can be accessed?
             var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
             using var client = new HttpClient();

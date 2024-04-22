@@ -5,8 +5,6 @@ using Ethachat.Server.Hubs.MessageDispatcher;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.
     InMemoryStorage;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.Redis
-    .RedisConnectionConfigurer;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
@@ -43,7 +41,6 @@ builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
-builder.Services.AddTransient<IRedisConnectionConfigurer, RedisConnectionConfigurer>();
 builder.Services.AddSingleton<ILongTermMessageStorageService, InMemoryLongTermStorage>();
 
 var app = builder.Build();

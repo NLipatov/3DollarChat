@@ -1,3 +1,5 @@
+using System.Text;
+
 namespace Ethachat.Server.DevEnv.HLS;
 
 internal static class HlsProxyService
@@ -43,7 +45,7 @@ internal static class HlsProxyService
                 }
             }
         });
-        app.MapPost("/hlsapi/store", async context =>
+        app.MapPost("/hlsapi/convert", async context =>
         {
             var formData = new MultipartFormDataContent();
 
@@ -59,13 +61,23 @@ internal static class HlsProxyService
             {
                 var hlsApiUrl = configuration.GetSection("HlsApi:Address").Value;
                 Log("Using HLS API: " + hlsApiUrl);
-                var targetUrl = $"{hlsApiUrl}/store";
+                var targetUrl = $"{hlsApiUrl}/convert";
                 Log("Targeting url POST: " + targetUrl);
 
                 var response = await httpClient.PostAsync(targetUrl, formData);
 
                 if (!response.IsSuccessStatusCode)
                     Log($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                else
+                {
+                    var playlist = await response.Content.ReadAsStringAsync();
+                    playlist = playlist.Replace(hlsApiUrl, "$PROXYADDR");
+
+                    var playlistBytes = Encoding.UTF8.GetBytes(playlist);
+
+                    context.Response.ContentType = "application/vnd.apple.mpegurl";
+                    await context.Response.Body.WriteAsync(playlistBytes, 0, playlistBytes.Length);
+                }
             }
         });
     }

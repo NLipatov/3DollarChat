@@ -40,7 +40,8 @@
 <CustomModal
     @ref="TooLargeFileModal"
     Title=@($"Maximum file size is {Math.Floor((decimal)MaxFileSizeBytes / 1024000)} MB.")
-    Buttons=@( [new CustomButton {Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])></CustomModal>
+    Buttons=@( [new CustomButton { Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
+</CustomModal>
 
 <FileEncryptionModal/>
 <HlsConvertationModal/>
@@ -64,7 +65,7 @@
         if (SendIBrowserFileDelegate is not null)
         {
             var browserFile = new ClipboardFile(content, name, contentType);
-            await SendIBrowserFileDelegate(browserFile); 
+            await SendIBrowserFileDelegate(browserFile);
         }
     }
 
@@ -92,9 +93,9 @@
             await SendMessage();
             return;
         }
-        
+
         await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
-                .ConfigureAwait(false);
+            .ConfigureAwait(false);
     }
 
     private async Task OnFileInput(InputFileChangeEventArgs e)
@@ -112,27 +113,31 @@
 
     private async Task SendIBrowserFile(IBrowserFile browserFile)
     {
-        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        
+
         //stream it if it can be streamed
         if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
         {
-            CallbackExecutor.ExecuteSubscriptionsByName((true, browserFile.Name), "OnHLSStreamingPreparationInProgress");
-            var playlist = await HlsStreamingService.ToM3U8Async(browserFile);
+            var playlist = await PostVideoToHlsapiAsync(browserFile);
 
-            await MessageService.SendMessage(new ClientMessage()
+            if (playlist is not null)
             {
-                Id = Guid.NewGuid(),
-                HlsPlaylist = playlist,
-                Type = MessageType.HLSPlaylist,
-                TargetGroup = TopicName,
-                Sender = MyUsername,
-                DateSent = DateTime.UtcNow
-            });
-            return;
+                CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+
+                await MessageService.SendMessage(new ClientMessage
+                {
+                    Id = Guid.NewGuid(),
+                    HlsPlaylist = playlist,
+                    Type = MessageType.HLSPlaylist,
+                    TargetGroup = TopicName,
+                    Sender = MyUsername,
+                    DateSent = DateTime.UtcNow
+                });
+                return;
+            }
         }
-        
-        await MessageService.SendMessage(new ()
+
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+        await MessageService.SendMessage(new()
         {
             BrowserFile = browserFile,
             Type = MessageType.BrowserFileMessage,
@@ -140,6 +145,35 @@
             Sender = MyUsername
         });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+    }
+
+    private async Task<HlsPlaylist?> PostVideoToHlsapiAsync(IBrowserFile browserFile)
+    {
+        var formData = new MultipartFormDataContent();
+
+        var fileContent = new StreamContent(browserFile.OpenReadStream(long.MaxValue));
+        formData.Add(fileContent, "payload", browserFile.Name);
+
+        using (var httpClient = new HttpClient())
+        {
+            var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
+
+            var request = await httpClient.PostAsync(hlsApiUrl, formData);
+
+            if (!request.IsSuccessStatusCode)
+                throw new ApplicationException("Could not post video to HLS API");
+
+            var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
+
+            if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
+                return null;
+
+            return new HlsPlaylist
+            {
+                Name = browserFile.Name,
+                M3U8Content = m3U8PlaylistContent,
+            };
+        }
     }
 
     private async Task SendMessage()

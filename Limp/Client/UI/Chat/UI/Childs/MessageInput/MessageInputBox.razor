@@ -149,10 +149,19 @@
 
     private async Task<HlsPlaylist?> PostVideoToHlsapiAsync(IBrowserFile browserFile)
     {
+        CallbackExecutor.ExecuteSubscriptionsByName($"Uploading a {browserFile.Name}", "OnTitleChange");
+        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnShouldRender");
         var formData = new MultipartFormDataContent();
 
-        var fileContent = new StreamContent(browserFile.OpenReadStream(long.MaxValue));
-        formData.Add(fileContent, "payload", browserFile.Name);
+        var progressStreamContent = new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
+        progressStreamContent.ProgressChanged += (bytes, currBytes, totalBytes) =>
+        {
+            var ratio = (double)currBytes / (double)totalBytes;
+            var percentage = Math.Round(ratio * 100, 1);
+            CallbackExecutor.ExecuteSubscriptionsByName(percentage, "OnVideoUploadProgressChanged");
+        };
+
+        formData.Add(progressStreamContent, "payload", browserFile.Name);
 
         using (var httpClient = new HttpClient())
         {
@@ -168,6 +177,7 @@
             if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
                 return null;
 
+            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
             return new HlsPlaylist
             {
                 Name = browserFile.Name,

@@ -165,24 +165,34 @@
 
         using (var httpClient = new HttpClient())
         {
-            var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
-
-            var request = await httpClient.PostAsync(hlsApiUrl, formData);
-
-            if (!request.IsSuccessStatusCode)
-                throw new ApplicationException("Could not post video to HLS API");
-
-            var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
-                return null;
-
-            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
-            return new HlsPlaylist
+            try
             {
-                Name = browserFile.Name,
-                M3U8Content = m3U8PlaylistContent,
-            };
+                var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
+
+                var request = await httpClient.PostAsync(hlsApiUrl, formData);
+
+                if (!request.IsSuccessStatusCode)
+                    throw new ApplicationException("Could not post video to HLS API");
+
+                var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
+
+                if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
+                    return null;
+            
+                return new HlsPlaylist
+                {
+                    Name = browserFile.Name,
+                    M3U8Content = m3U8PlaylistContent,
+                };
+            }
+            catch (Exception e)
+            {
+                throw new ApplicationException("Could not convert video to HLS", e);
+            }
+            finally
+            {
+                CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
+            }
         }
     }
 

@@ -1,34 +1,20 @@
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
+@using Ethachat.Client.UI.Shared.Modal
 @implements IDisposable
 
-<Modal @ref="_modal"
-       Title=@Title
-       OnShown=@(() => IsModalShown = true)>
-
-    <BodyTemplate>
-        <div style="display: flex; flex-direction: column; gap: 1rem;">
-            @if (!string.IsNullOrWhiteSpace(currentStatus))
-            {
-                <span>Status: <strong>@currentStatus</strong></span>
-            }
-            <span>Uploaded: @_tsUploaded / @(_tsTotal > 0 ? _tsTotal : "counting...")</span>
-            <span>You can close this dialog, process will continue in a background.</span>
-        </div>
-    </BodyTemplate>
-</Modal>
+<CustomModal @ref="_modal"
+             Title=@Title
+             BodyLines=@( [$"Upload: {UploadProgressPercentage}%"])>
+</CustomModal>
 
 @code {
-    [Parameter]
-    public string Title { get; set; } = "Uploading a file";
+    [Parameter] public string Title { get; set; } = "Uploading a video";
 
-    private string currentStatus = string.Empty;
-    private Modal? _modal = default!;
-    private string _filename = string.Empty;
-    private int _tsUploaded = 0;
-    private int _tsTotal = -1;
+    private CustomModal? _modal = default!;
     private Guid ComponentId { get; set; }
     private bool IsModalShown { get; set; }
+    private double UploadProgressPercentage { get; set; } = 0;
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
@@ -38,57 +24,33 @@
         ComponentId = Guid.NewGuid();
 
         HubServiceSubscriptionManager
-            .AddCallback<(bool, string)>(OnHLSStreamingPreparationInProgress, "OnHLSStreamingPreparationInProgress", ComponentId);
-        
+            .AddCallback<bool>(OnShouldRender, "OnShouldRender", ComponentId);
+
         HubServiceSubscriptionManager
-            .AddCallback<bool>(OnHLSMediaSegmentUploaded, "OnHLSMediaSegmentUploaded", ComponentId);
-        
+            .AddCallback<double>(OnVideoUploadProgressChanged, "OnVideoUploadProgressChanged", ComponentId);
+
         HubServiceSubscriptionManager
-            .AddCallback<int>(OnTotalSegmentsCountResolved, "OnTotalSegmentsCountResolved", ComponentId);
-        
-        HubServiceSubscriptionManager
-            .AddCallback<string>(OnStatusUpdate, "OnStatusUpdate", ComponentId);
+            .AddCallback<string>(OnTitleChange, "OnTitleChange", ComponentId);
     }
 
-    private void OnStatusUpdate(string newStatus)
+    private void OnTitleChange(string modalTitle)
     {
-        currentStatus = newStatus;
+        Title = modalTitle;
         StateHasChanged();
     }
 
-    private async Task OnTotalSegmentsCountResolved(int totalCount)
+    private void OnVideoUploadProgressChanged(double uploadProgressPercentage)
     {
-        _tsTotal = totalCount;
+        UploadProgressPercentage = uploadProgressPercentage;
         StateHasChanged();
     }
 
-    private async Task OnHLSMediaSegmentUploaded(bool _)
+    private void OnShouldRender(bool shouldRender)
     {
-        Interlocked.Increment(ref _tsUploaded);
-        StateHasChanged();
-    }
-
-    private async Task OnHLSStreamingPreparationInProgress((bool isProcessActive, string fileName) processDetails)
-    {
-        Title = $"Uploading: {processDetails.fileName}";
-        _filename = processDetails.fileName;
-        if (processDetails.isProcessActive)
-        {
-            await _modal?.ShowAsync();
-        }
+        if (shouldRender)
+            _modal?.Show();
         else
-        {
-            //It's a common scenario when modal.Hide is getting called before modal.Show is ran to completion
-            //If so, we need to wait before IsModalShown will be set to true, which means that modal.Show is ran to completion
-            while (!IsModalShown)
-            {
-                //500 is not a magic value here, any positive number will do the trick 
-                await Task.Delay(500);
-            }
-
-            await _modal?.HideAsync();
-            IsModalShown = false;
-        }
+            _modal?.Hide();
     }
 
 }

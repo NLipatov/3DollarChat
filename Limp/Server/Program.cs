@@ -13,7 +13,9 @@ using Ethachat.Server.Services.LogService.Implementations.Seq;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
+using Microsoft.AspNetCore.Server.Kestrel.Core;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,6 +36,17 @@ builder.Services.AddResponseCompression(opts =>
 builder.Services.UseServerHttpClient();
 
 builder.Services.UseKafkaService();
+
+builder.Services.Configure<KestrelServerOptions>(options =>
+{
+    options.Limits.MaxRequestBodySize = long.MaxValue;
+});
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = long.MaxValue;
+    options.ValueLengthLimit = int.MaxValue;
+});
 
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
@@ -74,8 +87,6 @@ app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
 
-#if DEBUG
-    app.UseHlsProxyService(builder.Configuration);
-#endif
+app.UseHlsProxyService(builder.Configuration);
 
 app.Run();

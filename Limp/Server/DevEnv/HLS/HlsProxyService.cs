@@ -10,8 +10,9 @@ internal static class HlsProxyService
 
         app.MapGet("/hlsapi/health", async context =>
         {
+            Console.WriteLine("Proxy got health request");
             var healthRequestUrl = string.Join('/', [configuration.GetSection("HlsApi:Address").Value, "health"]);
-            Log($"Requesting {healthRequestUrl}");
+            Log($"Forwarding health request to {healthRequestUrl}");
             using (var client = new HttpClient())
             {
                 var request = await client.GetAsync(healthRequestUrl);

@@ -20,10 +20,15 @@
 
     private async Task PrepareHlsStreamingVideo()
     {
+        Console.WriteLine("Preparing hls video");
+        Console.WriteLine($"Playlist:\n{Message.HlsPlaylist?.M3U8Content}");
         if (string.IsNullOrWhiteSpace(Message.HlsPlaylist?.M3U8Content))
             throw new ArgumentException($"Invalid {nameof(Message.HlsPlaylist.M3U8Content)} value");
 
         var playlistContent = Message.HlsPlaylist?.M3U8Content.Replace("$PROXYADDR/", NavigationManager.BaseUri + "hlsapi/");
+        Console.WriteLine($"After 1st filtration: \n{playlistContent}");
+        playlistContent = Message.HlsPlaylist?.M3U8Content.Replace("http://localhost:9001/", NavigationManager.BaseUri + "hlsapi/");
+        Console.WriteLine($"After 2nd filtration: \n{playlistContent}");
         
         var playlistBytes = Encoding.UTF8.GetBytes(playlistContent);
         var playlistUrl = await ToBlobUrlAsync(playlistBytes, "application/vnd.apple.mpegurl");

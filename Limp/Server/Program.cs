@@ -37,10 +37,7 @@ builder.Services.UseServerHttpClient();
 
 builder.Services.UseKafkaService();
 
-builder.Services.Configure<KestrelServerOptions>(options =>
-{
-    options.Limits.MaxRequestBodySize = long.MaxValue;
-});
+builder.Services.Configure<KestrelServerOptions>(options => { options.Limits.MaxRequestBodySize = long.MaxValue; });
 
 builder.Services.Configure<FormOptions>(options =>
 {
@@ -86,7 +83,8 @@ app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
-
+#if DEBUG
 app.UseHlsProxyService(builder.Configuration);
+#endif
 
 app.Run();

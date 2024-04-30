@@ -72,7 +72,7 @@ internal static class HlsProxyService
                 else
                 {
                     var playlist = await response.Content.ReadAsStringAsync();
-                    playlist = playlist.Replace(hlsApiUrl, "$PROXYADDR");
+                    playlist = playlist.Replace(hlsApiUrl, "$HLS_PROXY_ADDRESS");
 
                     var playlistBytes = Encoding.UTF8.GetBytes(playlist);
 

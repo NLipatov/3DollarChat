@@ -149,7 +149,7 @@
 
     private async Task<HlsPlaylist?> PostVideoToHlsapiAsync(IBrowserFile browserFile)
     {
-        CallbackExecutor.ExecuteSubscriptionsByName($"Uploading a {browserFile.Name}", "OnTitleChange");
+        CallbackExecutor.ExecuteSubscriptionsByName($"HLS: Uploading a {browserFile.Name}", "OnTitleChange");
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnShouldRender");
         var formData = new MultipartFormDataContent();
 

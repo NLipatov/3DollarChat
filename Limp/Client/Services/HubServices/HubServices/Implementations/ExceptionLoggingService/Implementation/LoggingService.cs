@@ -57,13 +57,10 @@ public class LoggingService : ILoggingService
         if (hubConnection == null)
             throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
 
-        while (hubConnection.State is not HubConnectionState.Connected)
+        while (hubConnection.State is HubConnectionState.Disconnected)
         {
             try
             {
-                if (hubConnection.State is not HubConnectionState.Disconnected)
-                    await hubConnection.StopAsync();
-
                 await hubConnection.StartAsync();
             }
             catch

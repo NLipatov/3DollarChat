@@ -122,13 +122,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             if (HubConnectionInstance == null)
                 throw new ArgumentException($"{nameof(HubConnectionInstance)} was not properly instantiated.");
 
-            while (HubConnectionInstance.State is not HubConnectionState.Connected)
+            while (HubConnectionInstance.State is HubConnectionState.Disconnected)
             {
                 try
                 {
-                    if (HubConnectionInstance.State is not HubConnectionState.Disconnected)
-                        await HubConnectionInstance.StopAsync();
-
                     await HubConnectionInstance.StartAsync();
                 }
                 catch

@@ -111,13 +111,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             if (hubConnection == null)
                 throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
 
-            while (hubConnection.State is not HubConnectionState.Connected)
+            while (hubConnection.State is HubConnectionState.Disconnected)
             {
                 try
                 {
-                    if (hubConnection.State is not HubConnectionState.Disconnected)
-                        await hubConnection.StopAsync();
-
                     await hubConnection.StartAsync();
                 }
                 catch
@@ -385,17 +382,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            if (hubConnection?.State is not HubConnectionState.Connected)
-            {
-                if (hubConnection is not null)
-                    await hubConnection.StopAsync();
+            var connection = await GetHubConnectionAsync();
 
-                await GetHubConnectionAsync();
-                await NegotiateOnAESAsync(partnerUsername);
-                return;
-            }
-
-            await hubConnection.SendAsync("GetAnRSAPublic", partnerUsername);
+            await connection.SendAsync("GetAnRSAPublic", partnerUsername);
         }
 
         public async Task SendTypingEventToPartnerAsync(string sender, string receiver)

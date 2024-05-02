@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using Microsoft.AspNetCore.Http.Extensions;
 
 namespace Ethachat.Server.BackendServiceProxy.AuthAPI;
 
@@ -93,15 +94,24 @@ internal static class AuthApiProxyService
 
     private static string GetAuthApiUrl(IConfiguration configuration, HttpContext context)
     {
-        var authApiUrl = configuration.GetSection("AuthAutority:Address").Value?.TrimEnd('/');
-        if (string.IsNullOrWhiteSpace(authApiUrl))
+        var authApiAddress = configuration.GetSection("AuthAutority:Address").Value?.TrimEnd('/');
+        if (string.IsNullOrWhiteSpace(authApiAddress))
         {
             Log("Could not get auth api address from configuration");
             throw new ArgumentException("Auth API address not configured");
         }
+        
+        Log($"Using auth api address: {authApiAddress}");
 
-        return Regex.Replace(string.Join('/', authApiUrl, context.Request.Path), @"(?<!:\S)//", "/");
+        var fullPath = context.Request.GetEncodedUrl();
+
+        var targetUrl = Regex.Replace(fullPath, @"(?<!:\S)//", "/");
+        
+        Log($"target url: {targetUrl}");
+        
+        return targetUrl;
     }
+
 
     private static async Task<HttpContent> GetFormDataContentAsync(HttpContext context)
     {

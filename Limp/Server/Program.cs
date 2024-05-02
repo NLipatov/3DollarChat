@@ -1,4 +1,3 @@
-using Ethachat.Server.BackendServiceProxy.AuthAPI;
 using Ethachat.Server.BackendServiceProxy.HLS;
 using Ethachat.Server.Extensions;
 using Ethachat.Server.Hubs;
@@ -84,7 +83,6 @@ app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
 app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
-app.UseAuthApiProxyService(builder.Configuration);
 #if DEBUG
     app.UseHlsProxyService(builder.Configuration);
 #endif

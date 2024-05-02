@@ -1,6 +1,4 @@
 using System.Text;
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http.Extensions;
 
 namespace Ethachat.Server.BackendServiceProxy.AuthAPI;
 
@@ -28,21 +26,26 @@ internal static class AuthApiProxyService
 
         app.MapPost("/api/WebAuthn/makeAssertion/{username}", async context =>
         {
-            using var httpClient = new HttpClient();
-            var response = await httpClient.PostAsync(GetAuthApiUrl(configuration, context),
-                await GetFormDataContentAsync(context));
+            var requestBody = await new StreamReader(context.Request.Body).ReadToEndAsync();
 
-            if (!response.IsSuccessStatusCode)
+            using (var httpClient = new HttpClient())
             {
-                var errorResponse = await response.Content.ReadAsStringAsync();
-                Log($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-                await context.Response.WriteAsync(errorResponse);
-            }
-            else
-            {
-                var responseData = await response.Content.ReadAsStringAsync();
-                context.Response.StatusCode = (int)response.StatusCode;
-                await context.Response.WriteAsync(responseData);
+                var content = new StringContent(requestBody, Encoding.UTF8, "application/json");
+
+                var response = await httpClient.PostAsync(GetAuthApiUrl(configuration, context), content);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    var errorResponse = await response.Content.ReadAsStringAsync();
+                    Console.WriteLine($"Error: {response.StatusCode} - {response.ReasonPhrase}");
+                    await context.Response.WriteAsync(errorResponse);
+                }
+                else
+                {
+                    var responseData = await response.Content.ReadAsStringAsync();
+                    context.Response.StatusCode = (int)response.StatusCode;
+                    await context.Response.WriteAsync(responseData);
+                }
             }
         });
 
@@ -54,10 +57,9 @@ internal static class AuthApiProxyService
 
             if (!response.IsSuccessStatusCode)
             {
-                // Если произошла ошибка при запросе к удаленному API
                 var errorResponse = await response.Content.ReadAsStringAsync();
                 Log($"Error: {response.StatusCode} - {response.ReasonPhrase}");
-                await context.Response.WriteAsync(errorResponse); // Отправляем обратно в ответе
+                await context.Response.WriteAsync(errorResponse);
             }
             else
             {
@@ -100,18 +102,23 @@ internal static class AuthApiProxyService
             Log("Could not get auth api address from configuration");
             throw new ArgumentException("Auth API address not configured");
         }
-        
+    
         Log($"Using auth api address: {authApiAddress}");
 
-        var fullPath = context.Request.GetEncodedUrl();
+        if (authApiAddress.EndsWith("/"))
+        {
+            authApiAddress = authApiAddress.Remove(authApiAddress.Length - 1);
+            Log($"Removing trailing slash. New auth api address: {authApiAddress}");
+        }
 
-        var targetUrl = Regex.Replace(fullPath, @"(?<!:\S)//", "/");
-        
+        var requestPath = context.Request.Path.ToString().TrimStart('/');
+
+        var targetUrl = $"{authApiAddress}/{requestPath}";
+
         Log($"target url: {targetUrl}");
-        
+    
         return targetUrl;
     }
-
 
     private static async Task<HttpContent> GetFormDataContentAsync(HttpContext context)
     {

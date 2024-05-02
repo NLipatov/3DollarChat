@@ -47,11 +47,5 @@ namespace Ethachat.Server.Hubs
             
             await Clients.Caller.SendAsync("OnRefreshCredentials", result);
         }
-
-        public async Task GetAuthorisationServerAddress()
-        {
-            var address = await _serverHttpClient.GetServerAddress();
-            await Clients.Caller.SendAsync("AuthorisationServerAddressResolved", address);
-        }
     }
 }

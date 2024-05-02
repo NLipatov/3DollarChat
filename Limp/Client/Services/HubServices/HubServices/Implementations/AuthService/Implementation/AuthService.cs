@@ -121,11 +121,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
             });
 
-            HubConnectionInstance.On<string>("AuthorisationServerAddressResolved", result =>
-            {
-                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnAuthorisationServerAddressResponse");
-            });
-
             HubConnectionInstance.On<AuthResult, Guid>("OnCredentialIdRefresh", async (result, eventId) =>
             {
                 var currentCounter = uint.Parse(await _localStorageService.ReadPropertyAsync("credentialIdCounter") ?? "0");
@@ -237,13 +232,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
             var accessToken = await _authenticationManager.GetAccessCredential();
 
             await hubConnection.SendAsync("GetTokenRefreshHistory", accessToken);
-        }
-
-        public async Task GetAuthorisationServerAddress()
-        {
-            var hubConnection = await GetHubConnectionAsync();
-
-            await hubConnection.SendAsync("GetAuthorisationServerAddress");
         }
     }
 }

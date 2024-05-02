@@ -1,6 +1,6 @@
 using System.Text;
 
-namespace Ethachat.Server.DevEnv.HLS;
+namespace Ethachat.Server.BackendServiceProxy.HLS;
 
 internal static class HlsProxyService
 {

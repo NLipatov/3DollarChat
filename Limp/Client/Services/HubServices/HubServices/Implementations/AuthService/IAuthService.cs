@@ -11,6 +11,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
         Task Register(UserAuthentication newUserDto);
         Task LogIn(UserAuthentication userAuthentication);
         Task GetRefreshTokenHistory();
-        Task GetAuthorisationServerAddress();
     }
 }

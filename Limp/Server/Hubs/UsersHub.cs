@@ -210,8 +210,7 @@ namespace Ethachat.Server.Hubs
             var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             if (userRequestResult.Result is not AuthResultType.Success)
-                throw new ArgumentException(
-                    $"Exception:{nameof(UsersHub)}.{nameof(SetRSAPublicKey)}:Access token was not valid");
+                throw new ArgumentException("Access token was not valid");
 
             var username = userRequestResult.Message ?? string.Empty;
 

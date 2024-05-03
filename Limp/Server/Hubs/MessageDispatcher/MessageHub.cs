@@ -5,7 +5,6 @@ using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Utilities.HttpMessaging;
-using Ethachat.Server.Utilities.Kafka;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Models.Authentication.Models;
@@ -19,7 +18,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
     public class MessageHub : Hub
     {
         private readonly IServerHttpClient _serverHttpClient;
-        private readonly IMessageBrokerService _messageBrokerService;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IWebPushSender _webPushSender;
@@ -30,7 +28,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public MessageHub
         (IServerHttpClient serverHttpClient,
-            IMessageBrokerService messageBrokerService,
             IUserConnectedHandler<MessageHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
             IWebPushSender webPushSender,
@@ -40,7 +37,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         {
             _context = context;
             _serverHttpClient = serverHttpClient;
-            _messageBrokerService = messageBrokerService;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
             _webPushSender = webPushSender;
@@ -220,15 +216,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task OnAck(Message syncMessage)
         {
             _reliableMessageSender.OnAck(syncMessage);
-        }
-
-        /// <summary>
-        /// Sends message to a message broker system
-        /// </summary>
-        /// <param name="message">Message to ship</param>
-        public async Task Ship(Message message)
-        {
-            await _messageBrokerService.ProduceAsync(message);
         }
 
         public async Task GetAnRSAPublic(string username)

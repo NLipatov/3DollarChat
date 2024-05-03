@@ -16,7 +16,7 @@
 }
 
 .sidebar-toggle-btn {
-    color: var(--font-color);
+    color: white;
     display: none;
     cursor: pointer;
 }

@@ -73,9 +73,7 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
         var dto = await GetCredentialsDto();
 
         if (dto.WebAuthnPair is null)
-            throw new ArgumentException(
-                $"Exception:{nameof(WebAuthnAuthenticationHandler)}.{nameof(UpdateCredentials)}:" +
-                $"Invalid credentials stored in local storage.");
+            throw new ArgumentException("Invalid credentials stored in local storage.");
 
         uint updatedCounter = dto.WebAuthnPair.Counter + 1;
         await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);

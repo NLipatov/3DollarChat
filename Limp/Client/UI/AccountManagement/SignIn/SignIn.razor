@@ -11,9 +11,9 @@
     <div class="container text-center">
         <div class="row mt-5">
             <div class="col-md-6 offset-md-3">
-                <div class="card">
+                <div class="card" style="min-width: 40dvw;">
                     <div class="card-header">
-                        <h2 class="text-center">Sign in your account</h2>
+                        <h2 class="text-center">Sign in to your account</h2>
                     </div>
                     <div class="card-body">
                         <div class="form-group text-center">
@@ -39,6 +39,10 @@
                                 OnLoginEvent="async dto => await OnLogIn(dto)"
                                 LoginAttemptResult="_lasttokenFetchResult"/>
                         }
+
+                        <Button Color="ButtonColor.Primary" @onclick=@(() => NavigationManager.NavigateTo("signup")) style="margin: 10px;">
+                            Not yet registered?
+                        </Button>
                     </div>
                     <div class="on-login-success" style="display: none; padding: 10px;">
                         <span>Done!</span>
@@ -52,10 +56,6 @@
                         <Icon Name="IconName.CheckCircleFill" Color="IconColor.Success"/>
                     </div>
                 </div>
-
-                <Button Color="ButtonColor.Primary" @onclick=@(() => NavigationManager.NavigateTo("signup")) style="margin: 10px;">
-                    Not yet registered?
-                </Button>
             </div>
         </div>
     </div>

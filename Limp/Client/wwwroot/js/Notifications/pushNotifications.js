@@ -1,5 +1,5 @@
 (function () {
-    const applicationServerPublicKey = 'BA6mK_HXP2I9vXg6e4r2t_3wFwkhCh6l2THvFPqrPb1ERENvFN82VDk4pKnoHMxsd6oKGrTccX_0aLCDDFmXH00';
+    const applicationServerPublicKey = 'BFICFdeXtnQqtoVo5XkFFBTr7VNvgoXrfb9Qp_O3PDAUG5TR7gnsvYt9hWSvZHQ24ZJ2y4kV4P7LfJ1akYV0Nb8';
     const baseUrl = window.location.origin;
     console.log('Base URL:', baseUrl);
     window.blazorPushNotifications = {

@@ -10,7 +10,7 @@ self.addEventListener('install', async event => {
 
 // Initialize the Firebase app in the service worker by passing in the messagingSenderId.
 firebase.initializeApp({
-    apiKey: "AIzaSyCexghrqeFwvGqjaTe3JIwUTrxUc2X-bdw",
+    apiKey: "AIzaSyCbSDI-E1HgNTuZiFVPoL0yOJ-DD-P_rDE",
     authDomain: "ethachat-2023.firebaseapp.com",
     projectId: "ethachat-2023",
     storageBucket: "ethachat-2023.appspot.com",

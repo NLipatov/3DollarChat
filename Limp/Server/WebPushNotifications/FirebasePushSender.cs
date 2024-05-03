@@ -9,25 +9,26 @@ namespace Ethachat.Server.WebPushNotifications;
 public class FirebasePushSender : IWebPushSender
 {
     private readonly string _configurationPath = Path
-        .Combine(AppDomain.CurrentDomain.BaseDirectory, "FCMConfiguration.json");
-    
+        .Combine(AppDomain.CurrentDomain.BaseDirectory, "FirebaseCloudMessageConfiguration.json");
+
     private readonly IServerHttpClient _serverHttpClient;
 
     public FirebasePushSender(IServerHttpClient serverHttpClient)
     {
         _serverHttpClient = serverHttpClient;
-
-        if (!File.Exists(_configurationPath))
-            throw new ArgumentException($"FCMConfiguration.json is required and could not be found " +
-                                        $"in specified path: '{_configurationPath}'.");
+        
+        var rawFcmCongifJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
+        var fcmConfigJson = Uri.UnescapeDataString(rawFcmCongifJson);
+        File.WriteAllLines(_configurationPath, new[] { fcmConfigJson });
     }
+
     public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)
     {
         try
         {
             var subscriptions = await _serverHttpClient
                 .GetUserWebPushSubscriptionsByAccessToken(receiverUsername);
-        
+
             if (!subscriptions.Any())
                 return;
 
@@ -45,7 +46,7 @@ public class FirebasePushSender : IWebPushSender
         Task[] workload = new Task[subscriptions.Length];
         for (int i = 0; i < subscriptions.Length; i++)
         {
-            int index = i; // Сделать копию значения i
+            int index = i;
 
             workload[index] = Task.Run(async () =>
             {
@@ -53,10 +54,10 @@ public class FirebasePushSender : IWebPushSender
                 {
                     Notification = new Notification()
                     {
-                        Title = "Etha Chat",
+                        Title = "η Chat",
                         Body = pushBodyText
                     },
-                    Token = subscriptions[index].FirebaseRegistrationToken // Использовать скопированный index
+                    Token = subscriptions[index].FirebaseRegistrationToken
                 };
 
                 if (FirebaseApp.DefaultInstance == null)

@@ -83,7 +83,7 @@ namespace Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers
                 await AddUserToGroup(connection, username, default);
             }
 
-            await SendToCaller("OnMyNameResolve", username, default);
+            await SendToCaller("OnMyNameResolved", username, default);
         }
 
         private void GuaranteeDelegatesNotNull(params object?[] delegateObjects)

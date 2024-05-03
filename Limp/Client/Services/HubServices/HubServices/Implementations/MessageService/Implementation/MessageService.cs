@@ -311,7 +311,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await RegenerateAESAsync(_cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
-            hubConnection.On<string>("OnMyNameResolve", async username =>
+            hubConnection.On<string>("OnMyNameResolved", async username =>
             {
                 myName = username;
                 if (!await _authenticationHandler.IsSetToUseAsync())

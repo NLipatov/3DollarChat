@@ -9,6 +9,7 @@ using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Services.LogService.Implementations.Seq;
+using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
@@ -47,6 +48,7 @@ builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
 builder.Services.AddSingleton<ILongTermMessageStorageService, InMemoryLongTermStorage>();
+builder.Services.AddTransient<IServerHttpClient, ServerHttpClient>();
 
 var app = builder.Build();
 
@@ -68,7 +70,6 @@ app.UseBlazorFrameworkFiles();
 app.UseStaticFiles();
 
 app.UseRouting();
-
 
 app.MapRazorPages();
 app.MapControllers();

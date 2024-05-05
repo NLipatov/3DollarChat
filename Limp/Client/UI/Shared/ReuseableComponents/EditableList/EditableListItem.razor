@@ -1,4 +1,5 @@
-﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
+﻿@using Ethachat.Client.UI.Shared.Icon
+@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
 
 <div style="cursor: pointer; @Style" @onclick="HandleClick">
@@ -29,15 +30,11 @@
             {
                 @foreach (var icon in ItemModel.Icons)
                 {
-                    <Icon
+                    <CustomIcon
                         Name=@icon.Name
-                        Class=@icon.Class
-                        Attributes=@icon.Attributes
                         Color=@icon.Color
-                        Size=@icon.Size
-                        Style=@icon.Style
-                        ElementId=@icon.ElementId
-                        CustomIconName=@icon.CustomIconName/>
+                        Type=@icon.Type
+                        CursorPointer=@icon.CursorPointer/>
                 }
             }
             @if (ItemModel.ShowBadge)

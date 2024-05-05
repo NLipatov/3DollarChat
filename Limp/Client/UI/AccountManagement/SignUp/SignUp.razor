@@ -6,6 +6,7 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Ethachat.Client.Services.UserAgent
 @using Ethachat.Client.UI.AccountManagement.LogicHandlers
+@using Ethachat.Client.UI.Shared.Icon
 @inject ILoginHandler _loginHandler
 @inject NavigationManager _navigationManager
 @inject IUserAgentService _userAgentService
@@ -58,7 +59,7 @@
                             </a>
                             now
                         </span>
-                        <Icon Name="IconName.CheckCircleFill" Color="IconColor.Success"/>
+                        <CustomIcon Color="green" Name="circle-check"/>
                     </div>
                 </div>
             </div>

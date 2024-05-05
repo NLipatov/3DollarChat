@@ -1,6 +1,8 @@
+@using Ethachat.Client.UI.Shared.Icon
+
 <div class="callout @CalloutType.ToString().ToLower()">
     <div class="callout-header">
-        <i class="@CalloutIconStyle @ResolveIconByType()"></i>
+        <CustomIcon Type="CustomIconType.Solid" Name=@ResolveIconByType()/>
         <span>@CalloutType.ToString()</span>
     </div>
     <h3>@CalloutTitle</h3>
@@ -19,11 +21,11 @@
     {
         return CalloutType switch
         {
-            CalloutType.Info => "fa-circle-info",
-            CalloutType.Idea => "fa-lightbulb",
-            CalloutType.Warning => "fa-triangle-exclamation",
-            CalloutType.Danger => "fa-circle-exclamation",
-            CalloutType.Error => "fa-bug",
+            CalloutType.Info => "circle-info",
+            CalloutType.Idea => "lightbulb",
+            CalloutType.Warning => "triangle-exclamation",
+            CalloutType.Danger => "circle-exclamation",
+            CalloutType.Error => "bug",
             _ => throw new ArgumentException("Unsupported callout type")
         };
     }

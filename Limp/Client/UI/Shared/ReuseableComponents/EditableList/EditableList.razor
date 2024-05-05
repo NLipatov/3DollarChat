@@ -1,4 +1,6 @@
 ﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
+@using Ethachat.Client.UI.Shared.Icon
+
 <div class="p-2" style="
         background-color: white;">
     <div style="
@@ -7,22 +9,24 @@
         <h1>@ListHeader</h1>
         <Button Color="ButtonColor.Primary"
                 Outline="true"
-        @onclick="ToggleContactEditionMode">
+                @onclick="ToggleContactEditionMode">
             @(EditionMode ? "Done" : "Edit")
         </Button>
     </div>
     <div>
         <Virtualize Items="@itemCollection" Context="item">
-            <div style="display: flex;
-                align-items: baseline;
-                gap: 10px;">
-                @if (EditionMode)
-                {
-                    <Icon Style="color: red; font-size: 20px; cursor: pointer;" Name="IconName.DashCircle"
-                    @onclick="(() => OnItemRemoved.InvokeAsync(item))"></Icon>
-                }
-                <EditableListItem 
-                    OnItemClickedAction=@(( itemName) => OnItemClicked.InvokeAsync(item))
+            <div style="align-items: baseline; gap: 10px; display: flex;"
+                 @onclick:preventDefault="true"
+                 @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item);})>
+                <div style="display: @(EditionMode ? "" : "none");">
+                    <CustomIcon
+                        Color="red"
+                        Name="circle-minus"
+                        CursorPointer="true"/>
+                </div>
+
+                <EditableListItem
+                    OnItemClickedAction=@((itemName) => OnItemClicked.InvokeAsync(item))
                     ItemModel="item"
                     IconClass=@IconClass
                     Style="width: 100%; margin-top: 10px;"/>
@@ -32,27 +36,21 @@
 </div>
 
 @code {
-    [Parameter]
-    public string? IconClass { get; set; } = string.Empty;
+    [Parameter] public string? IconClass { get; set; } = string.Empty;
 
-    [Parameter]
-    public string ListHeader { get; set; } = "Items";
+    [Parameter] public string ListHeader { get; set; } = "Items";
 
-    [Parameter]
-    public bool EditionMode { get; set; } = false;
+    [Parameter] public bool EditionMode { get; set; } = false;
 
-    [Parameter]
-    public List<ItemModel> itemCollection { get; set; } = new();
+    [Parameter] public List<ItemModel> itemCollection { get; set; } = new();
+
+    [Parameter] public EventCallback<ItemModel> OnItemRemoved { get; set; }
+
+    [Parameter] public EventCallback<ItemModel> OnItemClicked { get; set; }
 
     private void ToggleContactEditionMode()
     {
         EditionMode = !EditionMode;
         StateHasChanged();
     }
-
-    [Parameter]
-    public EventCallback<ItemModel> OnItemRemoved { get; set; }
-
-    [Parameter]
-    public EventCallback<ItemModel> OnItemClicked { get; set; }
 }

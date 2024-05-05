@@ -3,6 +3,7 @@
 @using Ethachat.Client.UI.AccountManagement.LogicHandlers
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.WebAuthn
+@using Ethachat.Client.UI.Shared.Icon
 @inject NavigationManager NavigationManager
 @inject ILoginHandler LoginHandler
 @page "/signIn"
@@ -53,7 +54,7 @@
                             </a>
                             now
                         </span>
-                        <Icon Name="IconName.CheckCircleFill" Color="IconColor.Success"/>
+                        <CustomIcon Name="circle-check" Color="green"/>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,6 @@
 ﻿@inject NavigationManager _navigationManager
 @using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.UI.Shared.Icon
 @page "/settings"
 
 <AuthenticatedView>
@@ -11,7 +12,7 @@
                 Style="width:100%; cursor: pointer;"
                 @onclick=@(() => _navigationManager.NavigateTo("settings/notifications"))>
                 <CardHeader>
-                    <Icon Name="IconName.BellFill"/>
+                    <CustomIcon Name="bell"/>
                     Web Push
                 </CardHeader>
                 <CardBody>
@@ -25,7 +26,7 @@
                 Style="width:100%; cursor: pointer;"
                 @onclick=@(() => _navigationManager.NavigateTo("settings/aes-exchange-settings"))>
                 <CardHeader>
-                    <Icon Name="IconName.PatchCheckFill" Color="IconColor.Success"/>
+                    <CustomIcon Name="shield-halved"/>
                     Trusted StoredContacts
                 </CardHeader>
                 <CardBody>

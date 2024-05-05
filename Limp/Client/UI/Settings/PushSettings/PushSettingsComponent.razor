@@ -20,6 +20,7 @@
 @inject ILocalStorageService LocalStorageService
 @inject IAuthenticationHandler AuthenticationHandler
 @using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.UI.Shared.Icon
 @implements IDisposable
 
 <AuthenticatedView>
@@ -37,7 +38,7 @@
                     padding: 1rem;
                     font-size: 1.6rem;
                     gap: 0.5rem;">
-                    <Icon Name="IconName.BellFill"/>
+                    <CustomIcon Name="bell"/>
                     <span>Notifications</span>
                     <Switch
                         @bind-Value="_IsEnabled"
@@ -53,7 +54,7 @@
                     padding: 1rem;
                     font-size: 1.6rem;
                     gap: 0.5rem;">
-                    <Icon Name="IconName.BugFill"/>
+                    <CustomIcon Name="bug"/>
                     <span>No service worker is installed. Try to clear a browser cache and reload the page.</span>
                 </div>
             }

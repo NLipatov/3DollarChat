@@ -1,0 +1,11 @@
+<i class="@IconClasses" style="color: @Color; cursor: @(CursorPointer ? "pointer" : "auto");">
+</i>
+
+@code {
+    [Parameter] public CustomIconType Type { get; set; } = CustomIconType.Solid;
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string Color { get; set; } = "black";
+    [Parameter] public bool CursorPointer { get; set; } = true;
+
+    private string IconClasses => $"fa-{Type.ToString().ToLower()} {(string.IsNullOrWhiteSpace(Name) ? string.Empty : $"fa-{Name}")}";
+}

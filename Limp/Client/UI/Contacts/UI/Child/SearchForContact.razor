@@ -1,29 +1,39 @@
-﻿@using Ethachat.Client.UI.Shared.Icon
+﻿@using Ethachat.Client.UI.Shared.Button
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 
-<div class="p-2" style="
+<div style="
         background-color: whitesmoke;">
-    <div class="input-group mb-3">
+    <div class="input-group">
         <div class="input-group-prepend">
-            <span class="input-group-text" id="basic-addon1">@("@")</span>
+            <span
+                style="height: 2.5rem;"
+                class="input-group-text" id="basic-addon1">@("@")</span>
         </div>
-        <input type="text" 
-            class="form-control" 
-            placeholder="Add someone new" 
-            aria-label="Username" 
-            aria-describedby="basic-addon1"
-            @bind="NewContactUsername"
-            @bind:event="oninput"
-            @onkeydown="((e)=> HandleKeyDown(e))">
+        <input type="text"
+               style="
+               height: 2.5rem; 
+               box-shadow: none;"
+               class="form-control"
+               placeholder="Type username here"
+               aria-label="Username"
+               aria-describedby="basic-addon1"
+               @bind="NewContactUsername"
+               @bind:event="oninput"
+               @onkeydown="((e) => HandleKeyDown(e))">
+
+        <CustomButton
+            StyleString="height: 2.5rem; box-shadow: none;"
+            Title="Search"
+            ButtonType="ButtonType.Primary"
+            OnPressAsync="() => OnNewContactSearch.InvokeAsync(NewContactUsername)">
+            <ChildContext>
+            </ChildContext>
+        </CustomButton>
     </div>
-    <Button Color="ButtonColor.Primary" @onclick="() => OnNewContactSearch.InvokeAsync(NewContactUsername)">
-        <span>Search for a user</span>
-        <CustomIcon Type="CustomIconType.Solid" Name="magnifying-glass" />
-    </Button>
 </div>
 
 @code {
-    [Parameter]
-    public EventCallback<string> OnNewContactSearch { get; set; }
+    [Parameter] public EventCallback<string> OnNewContactSearch { get; set; }
 
     private string NewContactUsername { get; set; } = string.Empty;
 
@@ -34,4 +44,5 @@
             await OnNewContactSearch.InvokeAsync(NewContactUsername);
         }
     }
+
 }

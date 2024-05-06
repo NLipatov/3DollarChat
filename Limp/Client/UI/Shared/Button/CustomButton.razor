@@ -1,12 +1,26 @@
-<button class=@($"custom-btn {ResolveClass()}") @onclick=@OnClick>
-    @Title
+<button 
+    style=@(StyleString)
+    type=@(HtmlType)
+    class=@($"{ClassString} custom-btn {ResolveClass()}") @onclick=@OnClick>
+    @if (!string.IsNullOrWhiteSpace(Title))
+    {
+        @Title
+    }
+    @if (ChildContext is not null)
+    {
+        @ChildContext
+    }
 </button>
 
 @code {
     [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string HtmlType { get; set; } = string.Empty;
+    [Parameter] public string ClassString { get; set; } = string.Empty;
+    [Parameter] public string StyleString { get; set; } = string.Empty;
     [Parameter] public ButtonType ButtonType { get; set; } = ButtonType.Primary;
     [Parameter] public Action? OnPress { get; set; }
     [Parameter] public Func<Task>? OnPressAsync { get; set; }
+    [Parameter] public RenderFragment? ChildContext { get; set; }
     
     private async Task OnClick()
     {

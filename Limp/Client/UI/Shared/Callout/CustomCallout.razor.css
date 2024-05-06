@@ -3,6 +3,7 @@
     flex-direction: column;
     padding: 0.5rem;
     border-bottom-style: hidden;
+    margin-bottom: 1rem;
 }
 
 .info {

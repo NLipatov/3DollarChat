@@ -13,6 +13,7 @@
 @using EthachatShared.Models.WebPushNotification;
 @using Ethachat.Client.UI.Shared.Callout
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
+@using Ethachat.Client.UI.Shared.Button
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime Js
 @inject IUsersService UsersService
@@ -21,6 +22,7 @@
 @inject IAuthenticationHandler AuthenticationHandler
 @using Ethachat.Client.UI.AuthenticationChecks
 @using Ethachat.Client.UI.Shared.Icon
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 @implements IDisposable
 
 <AuthenticatedView>
@@ -88,7 +90,15 @@
                     You have removed your current browser web push subscriptions. Please also reset your browser notification permissions.
                 </BodyTemplate>
                 <FooterTemplate>
-                    <Button Color="ButtonColor.Success" @onclick="(() => ToggleSuggestResetPermissionsModal(false))">Ok</Button>
+                    <CustomButton
+                        OnPressAsync=@(()=>ToggleSuggestResetPermissionsModal(false))
+                        ButtonType="ButtonType.Success">
+                        <ChildContext>
+                            <span>
+                                Ok
+                            </span>
+                        </ChildContext>
+                    </CustomButton>
                 </FooterTemplate>
             </Modal>
         </div>

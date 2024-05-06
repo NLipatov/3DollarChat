@@ -1,5 +1,4 @@
-﻿using Ethachat.Client.Services.AuthenticationService.Exceptions;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
+﻿using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 using EthachatShared.Models.Authentication.Models;
@@ -21,7 +20,7 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
         _webAuthnHandler = webAuthnHandler;
     }
 
-    private async Task<IAuthenticationHandler> GetAvailableHandlerAsync()
+    private async Task<IAuthenticationHandler?> GetAvailableHandlerAsync()
     {
         if (await _jwtHandler.IsSetToUseAsync())
             return _jwtHandler;
@@ -29,7 +28,7 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
         if (await _webAuthnHandler.IsSetToUseAsync())
             return _webAuthnHandler;
         
-        throw new NoActiveAuthenticationHandlers("No active authentication handlers.");
+        return null;
     }
 
     public async Task<CredentialsDTO> GetCredentialsDto()
@@ -70,19 +69,12 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
 
     public async Task<bool> IsSetToUseAsync()
     {
-        try
-        {
-            var handler = await GetAvailableHandlerAsync();
-            return await handler.IsSetToUseAsync();
-        }
-        catch (NoActiveAuthenticationHandlers noActiveAuthenticationHandlers)
-        {
+        var handler = await GetAvailableHandlerAsync();
+        
+        if (handler is null) 
             return false;
-        }
-        catch (Exception e)
-        {
-            return false;
-        }
+        
+        return await handler.IsSetToUseAsync();
     }
 
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)

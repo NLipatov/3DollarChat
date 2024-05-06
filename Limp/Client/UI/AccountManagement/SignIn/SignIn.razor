@@ -4,6 +4,8 @@
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.BaseForm
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.UIForms.WebAuthn
 @using Ethachat.Client.UI.Shared.Icon
+@using Ethachat.Client.UI.Shared.Button
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 @inject NavigationManager NavigationManager
 @inject ILoginHandler LoginHandler
 @page "/signIn"
@@ -20,10 +22,12 @@
                         <div class="form-group text-center">
                             <p>Choose a registration method:</p>
                             <div class="btn-group" data-toggle="buttons">
-                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: #712cf9;" : "background-color: white; color: black;")>
+                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: black; color: white;" : "background-color: white; color: black;")>
                                     <input @onclick=@(() => IsUsingWebAuthn = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsUsingWebAuthn)> Passwordless
                                 </label>
-                                <label class="btn mb-3 border-dark" style=@(IsUsingWebAuthn ? "background-color: white; color: black;" : "background-color: #712cf9;")>
+                                <label
+                                    style=@(IsUsingWebAuthn ? "background-color: white; color: black;" : "background-color: black; color: white;")
+                                    class="btn mb-3 border-dark">
                                     <input @onclick=@(() => IsUsingWebAuthn = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsUsingWebAuthn)> With Password
                                 </label>
                             </div>
@@ -41,9 +45,14 @@
                                 LoginAttemptResult="_lasttokenFetchResult"/>
                         }
 
-                        <Button Color="ButtonColor.Primary" @onclick=@(() => NavigationManager.NavigateTo("signup")) style="margin: 10px;">
-                            Not yet registered?
-                        </Button>
+                        <CustomButton
+                            StyleString="width: 5rem; margin-top: 1rem;"
+                            ButtonType="ButtonType.Primary"
+                            OnPress=@(() => NavigationManager.NavigateTo("signup"))>
+                            <ChildContext>
+                                <span>Register</span>
+                            </ChildContext>
+                        </CustomButton>
                     </div>
                     <div class="on-login-success" style="display: none; padding: 10px;">
                         <span>Done!</span>

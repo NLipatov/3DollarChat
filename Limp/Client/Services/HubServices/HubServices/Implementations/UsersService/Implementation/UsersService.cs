@@ -116,7 +116,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             if (!await _authenticationHandler.IsSetToUseAsync())
             {
                 NavigationManager.NavigateTo("signin");
-                return null;
             }
 
             if (HubConnectionInstance == null)

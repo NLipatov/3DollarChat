@@ -1,9 +1,11 @@
 ﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService
 @using Ethachat.Client.Shared.ErrorCatching.CustomClientExceptions
+@using Ethachat.Client.UI.Shared.Button
 @inherits ErrorBoundary
 @inject ILoggingService LoggingService
 @inject IToastService _toastService
 @using Ethachat.Client.UI.Shared.Callout
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 
 @if (CurrentException is null)
@@ -24,9 +26,13 @@ else
                 CalloutTitle="Error"
                 CalloutBody="@exception.Message"/>
         }
-        <Button Color="ButtonColor.Primary" @onclick="Recover">
-            Close
-        </Button>
+        <CustomButton ButtonType="ButtonType.Primary" OnPress="Recover">
+            <ChildContext>
+                <span>
+                    Close
+                </span>
+            </ChildContext>
+        </CustomButton>
     </div>
 }
 
@@ -48,7 +54,7 @@ else
         await base.OnErrorAsync(exception);
     }
 
-    
+
     //Catches JS exceptions if such exceptions are thrown via calling the ExceptionPasser.passErrorToDotNet function
     [JSInvokable]
     public static async Task OnJsException(string componentName, string errorDetails)

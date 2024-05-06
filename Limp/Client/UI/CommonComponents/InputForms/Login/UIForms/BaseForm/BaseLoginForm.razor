@@ -1,4 +1,5 @@
-﻿@using Ethachat.Client.UI.CommonComponents.InputForms.InputBoxes
+﻿@using Ethachat.Client.UI.Shared.Button
+@using Ethachat.Client.UI.CommonComponents.InputForms.InputBoxes
 @using Ethachat.Client.UI.CommonComponents.InputForms.Login.Models
 @using EthachatShared.Models.Authentication.Models;
 @using EthachatShared.Models.Authentication.Models.UserAuthentication;
@@ -31,8 +32,15 @@
                                       OnInput="((value) => LoginFormModel.Password = value)" />
                         }
 
-                        <!-- Submit button -->
-                        <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in</button>
+                        <CustomButton
+                            StyleString="width: 5rem;"
+                            HtmlType="submit">
+                            <ChildContext>
+                                <span>
+                                    Sign in
+                                </span>
+                            </ChildContext>
+                        </CustomButton>
 
                         <div class="validation-results">
                             <DataAnnotationsValidator />

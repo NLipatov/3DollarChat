@@ -4,13 +4,13 @@
     border: none;
     cursor: pointer;
     text-align: center;
-    padding: 0.2rem 0.4rem;
     min-height: 1rem;
-    min-width: 1rem;
+    min-width: 5rem;
     color: black;
     font-weight: 500;
     font-size: 1rem;
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 0px 0px, rgba(0, 0, 0, 0.2) 0px -1px 0px 0px
+    padding: 0.5rem;
+    box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 0px 0px, rgba(0, 0, 0, 0.2) 0px -1px 0px 0px;
 }
 
 .success {

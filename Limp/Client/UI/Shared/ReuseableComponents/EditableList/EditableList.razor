@@ -1,5 +1,7 @@
 ﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using Ethachat.Client.UI.Shared.Icon
+@using Ethachat.Client.UI.Shared.Button
+@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 
 <div class="p-2" style="
         background-color: white;">
@@ -7,17 +9,21 @@
             display: flex;
             justify-content: space-between;">
         <h1>@ListHeader</h1>
-        <Button Color="ButtonColor.Primary"
-                Outline="true"
-                @onclick="ToggleContactEditionMode">
-            @(EditionMode ? "Done" : "Edit")
-        </Button>
+        <CustomButton
+            ButtonType="ButtonType.Primary"
+            OnPress=@ToggleContactEditionMode>
+            <ChildContext>
+                <span>
+                    @(EditionMode ? "Done" : "Edit")
+                </span>
+            </ChildContext>
+        </CustomButton>
     </div>
     <div>
         <Virtualize Items="@itemCollection" Context="item">
             <div style="align-items: baseline; gap: 10px; display: flex;"
                  @onclick:preventDefault="true"
-                 @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item);})>
+                 @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item); })>
                 <div style="display: @(EditionMode ? "" : "none");">
                     <CustomIcon
                         Color="red"
@@ -53,4 +59,5 @@
         EditionMode = !EditionMode;
         StateHasChanged();
     }
+
 }

@@ -1,4 +1,5 @@
 ﻿@page "/contacts"
+@using Ethachat.Client.Services.AuthenticationService.Handlers
 @using Ethachat.Client.UI.AuthenticationChecks
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
@@ -7,7 +8,6 @@
 @using Ethachat.Client.UI.Contacts.UI.Child;
 @using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.ContactsProvider;
-@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
@@ -16,7 +16,8 @@
 @inject IJSRuntime _jSRuntime;
 @inject IBrowserKeyStorage _localKeyManager;
 @inject IMessageBox _messageBox
-@inject ICallbackExecutor _callbackExecutor
+@inject IAuthenticationHandler AuthenticationHandler
+@inject NavigationManager NavigationManager
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList;
 @using Ethachat.Client.UI.Contacts.Models
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
@@ -149,13 +150,15 @@
         contactAdditionModal!.HideModal();
     }
 
-
     protected override async Task OnInitializedAsync()
     {
+        if (!await AuthenticationHandler.IsSetToUseAsync())
+            return;
+        
         contactAdditionModal = new();
         
         //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         //Subscribing to server event of updating online users

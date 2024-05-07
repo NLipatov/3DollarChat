@@ -1,39 +1,20 @@
-﻿@inject NavigationManager _navigationManager
+﻿@inject NavigationManager NavigationManager
 @using Ethachat.Client.UI.AuthenticationChecks
-@using Ethachat.Client.UI.Shared.Icon
 @page "/settings"
 
 <AuthenticatedView>
     <AuthenticatedContent>
-        <div class="p-2">
+        <div class="p-2 card-container">
             <Card
-                Color="CardColor.Primary"
-                Class="mb-4"
-                Style="width:100%; cursor: pointer;"
-                @onclick=@(() => _navigationManager.NavigateTo("settings/notifications"))>
-                <CardHeader>
-                    <CustomIcon Name="bell"/>
-                    Web Push
-                </CardHeader>
-                <CardBody>
-                    <CardTitle>Manage your push notifications</CardTitle>
-                    <CardText>See active subscriptions, add new one, delete old ones and so on</CardText>
-                </CardBody>
-            </Card>
+                OnPress=@(() => NavigationManager.NavigateTo("settings/notifications"))
+                Icon=@(new CustomIcon() { Name = "bell" })
+                Title="Web Push"
+                Text="Manage your web push notifications"/>
             <Card
-                Color="CardColor.Primary"
-                Class="mb-4"
-                Style="width:100%; cursor: pointer;"
-                @onclick=@(() => _navigationManager.NavigateTo("settings/aes-exchange-settings"))>
-                <CardHeader>
-                    <CustomIcon Name="shield-halved"/>
-                    Trusted StoredContacts
-                </CardHeader>
-                <CardBody>
-                    <CardTitle>Manage your trusted contacts</CardTitle>
-                    <CardText>Set up a trusted password for a contacts</CardText>
-                </CardBody>
-            </Card>
+                OnPress=@(() => NavigationManager.NavigateTo("settings/aes-exchange-settings"))
+                Icon=@(new CustomIcon() { Name = "shield-halved" })
+                Title="Trusted Contacts"
+                Text="Manage your trusted contacts"/>
         </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>

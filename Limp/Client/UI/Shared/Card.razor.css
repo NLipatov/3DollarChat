@@ -1,0 +1,13 @@
+.card-icon-top {
+    height: 10rem;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: rgba(0, 0, 0, 0.1);
+    font-size: 3rem;
+}
+
+.card-body {
+    min-height: 7rem;
+}

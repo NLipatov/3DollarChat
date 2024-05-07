@@ -13,7 +13,6 @@
 @using EthachatShared.Models.WebPushNotification;
 @using Ethachat.Client.UI.Shared.Callout
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
-@using Ethachat.Client.UI.Shared.Button
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime Js
 @inject IUsersService UsersService
@@ -21,8 +20,6 @@
 @inject ILocalStorageService LocalStorageService
 @inject IAuthenticationHandler AuthenticationHandler
 @using Ethachat.Client.UI.AuthenticationChecks
-@using Ethachat.Client.UI.Shared.Icon
-@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 @implements IDisposable
 
 <AuthenticatedView>
@@ -42,9 +39,23 @@
                     gap: 0.5rem;">
                     <CustomIcon Name="bell"/>
                     <span>Notifications</span>
-                    <Switch
-                        @bind-Value="_IsEnabled"
-                        Style="margin-left: auto; font-size: 2rem;"/>
+                    <CustomButton
+                        OnPress=@(() => NotificationSwitchChanged(!IsEnabled))>
+                        <ChildContext>
+                            @if (IsEnabled)
+                            {
+                                <span>
+                                    On
+                                </span>
+                            }
+                            else
+                            {
+                                <span>
+                                    Off
+                                </span>
+                            }
+                        </ChildContext>
+                    </CustomButton>
                 </div>
             }
             else
@@ -71,36 +82,12 @@
             {
                 <EditableList
                     ListHeader="Active subscriptions"
-                    itemCollection="WebPushSubscriptions
-                    .Select(x => new ItemModel 
-                    { 
-                        Id = x.Id, 
-                        ItemName = GetUserAgentItemName(x.UserAgentId), 
-                        IsActive = x.UserAgentId == UserAgentWebPushNotificationId 
-                    })
-                    .ToList()"
+                    itemCollection="WebPushSubscriptions.Select(x => new ItemModel { Id = x.Id, ItemName = GetUserAgentItemName(x.UserAgentId), IsActive = IsSameUserAgent(x.UserAgentId)}).ToList()"
 
                     OnItemRemoved="OnRemoveSubscriptions"
                     OnItemClicked=@(() => { })
                     IconClass="bi bi-display"/>
             }
-
-            <Modal @ref="_modal" Title="Current browser notifications subscriptions deleted">
-                <BodyTemplate>
-                    You have removed your current browser web push subscriptions. Please also reset your browser notification permissions.
-                </BodyTemplate>
-                <FooterTemplate>
-                    <CustomButton
-                        OnPressAsync=@(()=>ToggleSuggestResetPermissionsModal(false))
-                        ButtonType="ButtonType.Success">
-                        <ChildContext>
-                            <span>
-                                Ok
-                            </span>
-                        </ChildContext>
-                    </CustomButton>
-                </FooterTemplate>
-            </Modal>
         </div>
     </AuthenticatedContent>
     <UnauthenticatedContent>
@@ -109,7 +96,6 @@
 </AuthenticatedView>
 
 @code {
-    private Modal _modal = default!;
     private Guid ComponentId { get; set; }
     private NotificationSubscriptionDto[] WebPushSubscriptions { get; set; } = Array.Empty<NotificationSubscriptionDto>();
     private bool SubscriptionsWasLoaded { get; set; } = false;
@@ -151,6 +137,13 @@
         if (userAgentId == UserAgentWebPushNotificationId)
             return "Current user agent";
         return "Different user agent";
+    }
+
+    private bool IsSameUserAgent(Guid userAgentId)
+    {
+        if (userAgentId == UserAgentWebPushNotificationId)
+            return true;
+        return false;
     }
 
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
@@ -201,14 +194,6 @@
         StateHasChanged();
     }
 
-    private async Task ToggleSuggestResetPermissionsModal(bool modalShoulBeDisplayed = true)
-    {
-        if (!modalShoulBeDisplayed)
-            await _modal.HideAsync();
-        else
-            await _modal.ShowAsync();
-    }
-
     private async Task OnRemoveSubscriptions(ItemModel itemModel)
     {
         var credentials = await AuthenticationHandler.GetCredentials();
@@ -224,11 +209,6 @@
 
     private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
     {
-        if (subscriptionsToRemove.Any(x => x.UserAgentId == UserAgentWebPushNotificationId))
-        {
-            await ToggleSuggestResetPermissionsModal();
-        }
-
         await UsersService.RemoveUserWebPushSubscriptions(subscriptionsToRemove);
     }
 
@@ -285,5 +265,4 @@
                                        $"{nameof(PushSettingsComponent)}.{nameof(GetCredentialsDTO)}:" +
                                        $"Unsupported authentication type - {authenticationType}.");
     }
-
 }

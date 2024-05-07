@@ -24,39 +24,10 @@
                     CalloutBody="This is a list of JWT-token renewal history for your account."/>
             </div>
             <div>
-                <Grid TItem="AccessRefreshEventLog"
-                      Class="table table-hover table-bordered table-striped"
-                      Data="_tokenRenewalRecords"
-                      AllowSorting="true">
-
-                    <GridColumn
-                        TItem="AccessRefreshEventLog"
-                        HeaderText="User Agent"
-                        SortKeySelector="item => item.UserAgent">
-                        @context.UserAgent
-                    </GridColumn>
-
-                    <GridColumn
-                        TItem="AccessRefreshEventLog"
-                        HeaderText="User Agent Id"
-                        SortKeySelector="item => item.UserAgentId">
-                        @(UserAgentInformation?.UserAgentId == context.UserAgentId ? "Same agent" : "Different agent")
-                    </GridColumn>
-
-                    <GridColumn
-                        TItem="AccessRefreshEventLog"
-                        HeaderText="Access request reason"
-                        SortKeySelector="item => item.IssueReason">
-                        @(InterpretateAccessRefreshReason(context.IssueReason))
-                    </GridColumn>
-
-                    <GridColumn
-                        TItem="AccessRefreshEventLog"
-                        HeaderText="Date"
-                        SortKeySelector="item => item.DateTime">
-                        @context.DateTime.ToLocalTime().ToString("f")
-                    </GridColumn>
-                </Grid>
+                @foreach (var item in _tokenRenewalRecords)
+                {
+                    <span>@item.UserAgent - @InterpretateAccessRefreshReason(item.IssueReason) - @item.DateTime.ToLocalTime().ToString("f")</span>
+                }
             </div>
         </div>
     </AuthenticatedContent>

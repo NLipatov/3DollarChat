@@ -1,0 +1,57 @@
+<div class="card" style="width: 18rem; cursor: pointer;" @onclick=@OnClick>
+    @if (!string.IsNullOrWhiteSpace(ImageUrl))
+    {
+        <img class="card-img-top" src=@ImageUrl alt="Card image cap">
+    }
+    @if (Icon is not null)
+    {
+        <div class="card-icon-top">
+            <CustomIcon
+                Color=@Icon.Color
+                Name=@Icon.Name
+                Type=@Icon.Type
+                CursorPointer=@Icon.CursorPointer/>
+        </div>
+    }
+    <div class="card-body">
+        <h5 class="card-title">
+            @Title
+        </h5>
+        <p class="card-text">
+            @Text
+        </p>
+        @if (Button is not null)
+        {
+            <CustomButton
+                Title=@Button.Title
+                ButtonType=@Button.ButtonType
+                ClassString=@Button.ClassString
+                HtmlType=@Button.HtmlType
+                OnPress=@Button.OnPress
+                StyleString=@Button.StyleString
+                OnPressAsync=@Button.OnPressAsync>
+                <ChildContext>
+                    @Button.ChildContext
+                </ChildContext>
+            </CustomButton>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string Title { get; set; } = string.Empty;
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public CustomButton? Button { get; set; }
+    [Parameter] public string ImageUrl { get; set; } = string.Empty;
+    [Parameter] public CustomIcon? Icon { get; set; }
+    [Parameter] public Action? OnPress { get; set; }
+    [Parameter] public Func<Task>? OnPressAsync { get; set; }
+    
+    private async Task OnClick()
+    {
+        if (OnPress != null)
+            OnPress();
+        else if (OnPressAsync != null)
+            await OnPressAsync();
+    }
+}

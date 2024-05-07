@@ -79,14 +79,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task SaveKey(string aesKey, Message offerMessage)
         {
-            Key key = new()
+            Key key = new Key()
             {
                 Value = aesKey,
                 Contact = offerMessage.Sender,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,
                 Author = offerMessage.Sender,
-                IsAccepted = true
+                IsAccepted = true,
+                OfferMessageId = offerMessage.Id
             };
 
             InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender!] = key;

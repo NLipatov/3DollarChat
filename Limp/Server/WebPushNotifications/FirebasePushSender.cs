@@ -8,8 +8,7 @@ namespace Ethachat.Server.WebPushNotifications;
 
 public class FirebasePushSender : IWebPushSender
 {
-    private readonly string _configurationPath = Path
-        .Combine(AppDomain.CurrentDomain.BaseDirectory, "FirebaseCloudMessageConfiguration.json");
+    private string configuration { get; } = string.Empty;
 
     private readonly IServerHttpClient _serverHttpClient;
 
@@ -19,10 +18,7 @@ public class FirebasePushSender : IWebPushSender
         
         var rawFcmCongifJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
         var fcmConfigJson = Uri.UnescapeDataString(rawFcmCongifJson);
-        if (!Path.Exists(_configurationPath) || File.ReadAllText(_configurationPath) != fcmConfigJson)
-        {
-            File.WriteAllLines(_configurationPath, new[] { fcmConfigJson });
-        }
+        configuration = fcmConfigJson;
     }
 
     public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)
@@ -67,7 +63,7 @@ public class FirebasePushSender : IWebPushSender
                 {
                     var options = new AppOptions()
                     {
-                        Credential = GoogleCredential.FromFile(_configurationPath)
+                        Credential = GoogleCredential.FromJson(configuration)
                     };
 
                     FirebaseApp.Create(options);

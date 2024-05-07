@@ -1,5 +1,4 @@
 ﻿using System.Text.Json;
-using System.Text.Json.Serialization;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.KeyStorage;
@@ -260,14 +259,21 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {
+                        if (InMemoryKeyStorage.AESKeyStorage[message.Sender!].AcceptMessageId == message.Id)
+                            return;
+
+                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].AcceptMessageId = message.Id;
+                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         await MarkContactAsTrusted(message.Sender!);
-                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
                         return;
                     }
                     else if (message.Type == MessageType.AesOffer)
                     {
+                        if (InMemoryKeyStorage.AESKeyStorage[message.Sender!].OfferMessageId == message.Id)
+                            return;
+                        
                         var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
                         await MarkContactAsTrusted(message.Sender!);
                         await hubConnection.SendAsync("Dispatch", offerResponse);

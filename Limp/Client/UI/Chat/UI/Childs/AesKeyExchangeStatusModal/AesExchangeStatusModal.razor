@@ -35,7 +35,8 @@
 
     private bool KeyExists => InMemoryKeyStorage
         .AESKeyStorage
-        .FirstOrDefault(x => x.Key == PartnerUsername)
+        .OrderBy(x=>x.Value.CreationDate)
+        .FirstOrDefault(x => x.Key == PartnerUsername && x.Value.IsAccepted)
         .Value is not null;
 
     private void OnUsersOnlineUpdate(UserConnectionsReport userConnectionsReport)

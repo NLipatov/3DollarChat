@@ -19,7 +19,10 @@ public class FirebasePushSender : IWebPushSender
         
         var rawFcmCongifJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
         var fcmConfigJson = Uri.UnescapeDataString(rawFcmCongifJson);
-        File.WriteAllLines(_configurationPath, new[] { fcmConfigJson });
+        if (!Path.Exists(_configurationPath) || File.ReadAllText(_configurationPath) != fcmConfigJson)
+        {
+            File.WriteAllLines(_configurationPath, new[] { fcmConfigJson });
+        }
     }
 
     public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)

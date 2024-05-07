@@ -7,21 +7,17 @@
     @if (IsPartnerOnline)
     {
         <div class="card-holder">
-            <CardComponent
-                Style="margin: 3rem;"
-                Title="AES exchange."
-                BodyTitle="AES exchange in progress."
-                BodyText="Now we are exchanging the key for encrypting messages."/>
+            <Card
+                Title="AES exchange"
+                Text="Now we are exchanging the key for encrypting messages"/>
         </div>
     }
     else
     {
         <div class="card-holder">
-            <CardComponent
-                Style="margin: 3rem;"
-                Title="AES exchange."
-                BodyTitle="AES exchange is not possible."
-                BodyText="Your partner is offline."/>
+            <Card
+                Title="AES exchange"
+                Text="AES exchange is not possible - Your partner is offline"/>
         </div>
     }
 }

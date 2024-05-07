@@ -28,13 +28,25 @@
 
     </div>
     <div class="key-info">
-        <button title="Clear conversation" @onclick="DeleteConversation" style="border: none;">
-            <i class="bi bi-trash-fill key-icon"></i>
-        </button>
-        <button title="Renew AES Key" style="border: none;" @onclick=ShowModal>
-            <i class="bi bi-key-fill key-icon"></i>
-        </button>
-        
+        <CustomButton
+            StyleString="box-shadow: none; min-width: auto;"
+            OnPress=@DeleteConversation
+            HtmlTitle="Clear conversation">
+            <ChildContext>
+                <CustomIcon
+                    Name="trash-can"/>
+            </ChildContext>
+        </CustomButton>
+        <CustomButton
+            StyleString="box-shadow: none; min-width: auto;"
+            OnPress=@ShowModal
+            HtmlTitle="Renew AES Key">
+            <ChildContext>
+                <CustomIcon
+                    Name="key"/>
+            </ChildContext>
+        </CustomButton>
+
         <AesKeyIndicator
             PartnerUsername=@PartnerName/>
     </div>

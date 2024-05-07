@@ -15,7 +15,7 @@
     position: fixed;
     height: var(--input-bar-height);
     right: 0;
-    width: calc(100vw - var(--bb-sidebar-width));
+    width: calc(100vw - 15rem);
 }
 
 .message-input-box button {

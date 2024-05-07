@@ -49,6 +49,7 @@
     <Folder Include="HubConnectionManagement\ConnectionHandlers\MessageDispatcher\" />
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
     <Folder Include="UI\CommonComponents\" />
+    <Folder Include="UI\Shared\Card\" />
   </ItemGroup>
 
   <ItemGroup>

@@ -13,18 +13,41 @@ public class LocalStorageKeyStorage : IKeyStorage
         _jsRuntime = jsRuntime;
     }
 
-    public async Task Store(Key key)
+    public async Task<Key?> GetLastAccepted(string accessor, KeyType type)
     {
-        var serializedKey = JsonSerializer.Serialize(key);
-        await _jsRuntime.InvokeAsync<string?>("localStorage.setItem", $"aes-key-{key.Contact}-{key.Type}");
+        var keys = await Get(accessor, type);
+        var acceptedKeys = keys.Where(x => x.IsAccepted);
+        return acceptedKeys.MaxBy(x => x.CreationDate);
     }
 
-    public async Task<Key?> Get(string accessor, KeyType type)
+    public async Task Store(Key key)
     {
-        string? serializedKey =
-            await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", $"aes-key-{accessor}-{type}");
-        var key = JsonSerializer.Deserialize<Key>(serializedKey);
+        var existingCollection = await Get(key.Contact, key.Type ?? KeyType.Unspecified);
+        existingCollection.Add(key);
 
-        return key;
+        var serializedKeys = JsonSerializer.Serialize(existingCollection);
+        await _jsRuntime.InvokeAsync<string?>("localStorage.setItem", $"key-{key.Contact}-{key.Type}", serializedKeys);
+    }
+
+    public async Task Delete(Key key)
+    {
+        var storedKeys = await Get(key.Contact, key.Type ?? KeyType.Unspecified);
+        var updatedKeys = storedKeys.Where(x => x.CreationDate != key.CreationDate).ToArray();
+        
+        var serializedKeys = JsonSerializer.Serialize(updatedKeys);
+        await _jsRuntime.InvokeAsync<string?>("localStorage.setItem", $"key-{key.Contact}-{key.Type}", serializedKeys);
+    }
+
+    public async Task<List<Key>> Get(string accessor, KeyType type)
+    {
+        var serializedKeyCollection =
+            await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", $"key-{accessor}-{type}");
+        
+        if (serializedKeyCollection is null)
+            return [];
+
+        var keyCollection = JsonSerializer.Deserialize<List<Key>>(serializedKeyCollection);
+
+        return keyCollection ?? [];
     }
 }

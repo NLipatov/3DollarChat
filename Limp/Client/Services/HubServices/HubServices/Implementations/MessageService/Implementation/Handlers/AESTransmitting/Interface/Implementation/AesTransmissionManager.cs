@@ -2,6 +2,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     AESTransmitting.Interface.Implementation.ReceiveOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     AESTransmitting.Interface.Implementation.SendOffer;
+using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -18,7 +19,7 @@ public class AesTransmissionManager : IAesTransmissionManager
         _offerSender = offerSender;
     }
 
-    public async Task<Message> GenerateOffer(string partnersUsername, string partnersPublicKey, string aesKey) =>
+    public async Task<Message> GenerateOffer(string partnersUsername, string partnersPublicKey, Key aesKey) =>
         await _offerSender.SendAesOfferAsync(partnersUsername, partnersPublicKey, aesKey);
 
     public async Task<Message> GenerateOfferResponse(Message incomingOffer) =>

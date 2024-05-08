@@ -1,8 +1,10 @@
 @using EthachatShared.Models.ConnectedUsersManaging
-@using Ethachat.Client.Cryptography.KeyStorage
+@using Ethachat.Client.Services.KeyStorageService.Implementations
+@using EthachatShared.Encryption
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+@inject IJSRuntime jSRuntime
 
-@if (!KeyExists)
+@if (!KeyExist)
 {
     @if (IsPartnerOnline)
     {
@@ -25,6 +27,7 @@
 @code {
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     [Parameter] public bool IsPartnerOnline { get; set; }
+    private bool KeyExist { get; set; }
 
     protected override void SubscribeToHubEvents()
     {
@@ -33,11 +36,11 @@
         HubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
     }
 
-    private bool KeyExists => InMemoryKeyStorage
-        .AESKeyStorage
-        .OrderBy(x=>x.Value.CreationDate)
-        .FirstOrDefault(x => x.Key == PartnerUsername && x.Value.IsAccepted)
-        .Value is not null;
+    protected override async Task OnInitializedAsync()
+    {
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAccepted(PartnerUsername, KeyType.Aes) != null;
+        await base.OnInitializedAsync();
+    }
 
     private void OnUsersOnlineUpdate(UserConnectionsReport userConnectionsReport)
     {

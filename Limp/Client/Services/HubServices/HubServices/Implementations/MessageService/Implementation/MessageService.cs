@@ -1,7 +1,6 @@
 ﻿using System.Text.Json;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Cryptography;
-using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
@@ -19,6 +18,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
+using Ethachat.Client.Services.KeyStorageService.Implementations;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -29,6 +29,7 @@ using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
+using InMemoryKeyStorage = Ethachat.Client.Cryptography.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -184,6 +185,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     if (_messageBox.Contains(message))
                         return;
 
+                    if (message.Type is MessageType.RsaPubKey)
+                    {
+                        InMemoryKeyStorage.RSAKeyStorage.TryGetValue(message.Sender, out var rsaKey);
+                        if (rsaKey?.Value?.ToString() == message.Cryptogramm?.Cyphertext && !string.IsNullOrWhiteSpace(rsaKey?.Value?.ToString()))
+                            return;
+                        
+                        //Storing Public Key in our in-memory storage
+                        InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
+                        {
+                            Type = KeyType.RsaPublic,
+                            Contact = message.Sender,
+                            Format = KeyFormat.PemSpki,
+                            Value = message.Cryptogramm!.Cyphertext
+                        });
+                        await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
+                    }
+
                     if (message.Type is MessageType.MessageReadConfirmation)
                     {
                         var decryptedMessageIdData =
@@ -259,11 +277,18 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {
-                        if (InMemoryKeyStorage.AESKeyStorage[message.Sender!].AcceptMessageId == message.Id)
-                            return;
+                        var keyStorageService = new LocalStorageKeyStorage(_jsRuntime);
+                        var keys = await keyStorageService.Get(message.Sender, KeyType.Aes);
+                        var acceptedKeyDateTime = message.Cryptogramm!.KeyDateTime;
 
-                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].AcceptMessageId = message.Id;
-                        InMemoryKeyStorage.AESKeyStorage[message.Sender!].IsAccepted = true;
+                        var acceptedKey = keys.First(x => x.CreationDate == acceptedKeyDateTime);
+                        if (acceptedKey.IsAccepted)
+                            return;
+                        
+                        await keyStorageService.Delete(acceptedKey);
+                        acceptedKey.IsAccepted = true;
+                        await keyStorageService.Store(acceptedKey);
+                        
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         await MarkContactAsTrusted(message.Sender!);
@@ -282,39 +307,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                     }
                 }
-
-                //If we dont yet know a partner Public Key and we dont have an AES Key for chat with partner,
-                //we will request it from server side.
-                if (InMemoryKeyStorage.RSAKeyStorage.FirstOrDefault(x => x.Key == message.Sender).Value == null
-                    &&
-                    _browserKeyStorage.GetAESKeyForChat(message.Sender!) == null)
-                {
-                    if (hubConnection == null)
-                    {
-                        await ReconnectAsync();
-                    }
-                    else
-                        await hubConnection.SendAsync("GetAnRSAPublic", message.Sender);
-                }
-            });
-
-            //Handling server side response on partners Public Key
-            hubConnection.On<string, string>("ReceivePublicKey", async (partnersUsername, partnersPublicKey) =>
-            {
-                if (partnersUsername == "You")
-                    return;
-                //Storing Public Key in our in-memory storage
-                InMemoryKeyStorage.RSAKeyStorage.TryAdd(partnersUsername, new Key
-                {
-                    Type = KeyType.RsaPublic,
-                    Contact = partnersUsername,
-                    Format = KeyFormat.PemSpki,
-                    Value = partnersPublicKey
-                });
-
-                //Now we can send an encrypted offer on AES Key
-                //We will encrypt our offer with a partners RSA Public Key
-                await RegenerateAESAsync(_cryptographyService!, partnersUsername, partnersPublicKey);
             });
 
             hubConnection.On<string>("OnMyNameResolved", async username =>
@@ -378,19 +370,18 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             string partnersUsername,
             string partnersPublicKey)
         {
-            await cryptographyService.GenerateAesKeyAsync(partnersUsername, async (aesKeyForConversation) =>
-            {
-                var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey,
-                    aesKeyForConversation);
-                await hubConnection!.SendAsync("Dispatch", offer);
-            });
+            var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
+            
+            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKey);
+            var connection = await GetHubConnectionAsync();
+            await connection.SendAsync("Dispatch", offer);
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
             var connection = await GetHubConnectionAsync();
 
-            await connection.SendAsync("GetAnRSAPublic", partnerUsername);
+            await connection.SendAsync("GetAnRSAPublic", partnerUsername, await _authenticationHandler.GetUsernameAsync());
         }
 
         public async Task SendTypingEventToPartnerAsync(string sender, string receiver)
@@ -462,10 +453,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             await AddToMessageBox(message.PlainText, message.TargetGroup, myUsername, messageId);
 
-            if (hubConnection?.State is not HubConnectionState.Connected)
-                hubConnection = await GetHubConnectionAsync();
+            var connection = await GetHubConnectionAsync();
 
-            await hubConnection.SendAsync("Dispatch", messageToSend);
+            await connection.SendAsync("Dispatch", messageToSend);
         }
 
         public async Task RequestPartnerToDeleteConvertation(string targetGroup)

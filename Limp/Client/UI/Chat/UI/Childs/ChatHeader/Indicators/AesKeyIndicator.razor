@@ -1,9 +1,10 @@
 @using EthachatShared.Encryption
-@using Ethachat.Client.Cryptography.KeyStorage
 @using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.Services.KeyStorageService.Implementations
 @inject IBrowserKeyStorage LocalKeyManager
 @inject IMessageService MessageService
+@inject IJSRuntime jSRuntime 
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 @if (AesKey is not null)
@@ -26,7 +27,9 @@
 
     private async Task UpdateAesKey()
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(PartnerUsername);
+        var keyStorageService = new LocalStorageKeyStorage(jSRuntime);
+
+        AesKey = await keyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes); 
         if (AesKey is null)
             await MessageService.NegotiateOnAESAsync(PartnerUsername);
     }

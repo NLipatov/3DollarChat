@@ -1,5 +1,6 @@
 ﻿using Ethachat.Client.Cryptography.CryptoHandlers;
 using Ethachat.Client.Cryptography.KeyStorage;
+using Ethachat.Client.Services.AuthenticationService.Handlers;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
@@ -9,11 +10,13 @@ namespace Ethachat.Client.Cryptography
     public class CryptographyService : ICryptographyService
     {
         private readonly IJSRuntime _jSRuntime;
+        private readonly IAuthenticationHandler _authenticationHandler;
         private static Action<string>? OnAesGeneratedCallback { get; set; }
 
-        public CryptographyService(IJSRuntime jSRuntime)
+        public CryptographyService(IJSRuntime jSRuntime, IAuthenticationHandler authenticationHandler)
         {
             _jSRuntime = jSRuntime;
+            _authenticationHandler = authenticationHandler;
             _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
 
@@ -61,10 +64,19 @@ namespace Ethachat.Client.Cryptography
                 await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
         }
 
-        public async Task GenerateAesKeyAsync(string contact, Action<string> callback)
+        public async Task<Key> GenerateAesKeyAsync(string contact)
         {
-            OnAesGeneratedCallback = callback;
-            await _jSRuntime.InvokeVoidAsync("GenerateAESKey", contact);
+            var key = await _jSRuntime.InvokeAsync<string>("GenerateAESKeyAsync");
+            return new Key
+            {
+                Value = key,
+                Format = KeyFormat.Raw,
+                Type = KeyType.Aes,
+                Author = await _authenticationHandler.GetUsernameAsync(),
+                Contact = contact,
+                CreationDate = DateTime.UtcNow,
+                IsAccepted = false
+            };
         }
 
         public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null)

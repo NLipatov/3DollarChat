@@ -45,7 +45,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
             if (_reliableMessageSender is null)
             {
-                _reliableMessageSender = new ReliableMessageSender(new SignalRGateway(_context), _longTermMessageStorageService);
+                _reliableMessageSender =
+                    new ReliableMessageSender(new SignalRGateway(_context), _longTermMessageStorageService);
             }
         }
 
@@ -87,7 +88,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         }
 
         public async Task SetUsername(CredentialsDTO credentialsDto)
-         {
+        {
             AuthResult usernameRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
             if (usernameRequestResult.Result is not AuthResultType.Success)
             {
@@ -185,7 +186,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                     MessageType.Metadata => "file",
                     _ => "message"
                 };
-                
+
                 await _webPushSender.SendPush($"You've got a new {contentDescription} from {message.Sender}",
                     $"/{message.Sender}", message.TargetGroup);
             }
@@ -218,10 +219,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _reliableMessageSender.OnAck(syncMessage);
         }
 
-        public async Task GetAnRSAPublic(string username)
+        public async Task GetAnRSAPublic(string username, string requesterUsername)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
-            await Clients.Caller.SendAsync("ReceivePublicKey", username, pubKey);
+            var message = new Message { TargetGroup = requesterUsername, Sender = username, Type = MessageType.RsaPubKey, Cryptogramm = new Cryptogramm { Cyphertext = pubKey } };
+            await Dispatch(message);
         }
 
         public async Task OnTyping(string sender, string receiver)

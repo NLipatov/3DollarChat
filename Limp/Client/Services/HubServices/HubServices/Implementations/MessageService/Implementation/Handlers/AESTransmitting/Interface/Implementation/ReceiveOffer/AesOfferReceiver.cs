@@ -1,13 +1,14 @@
 ﻿using System.Text.Json;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
+using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
+using InMemoryKeyStorage = Ethachat.Client.Cryptography.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     AESTransmitting.Interface.Implementation.ReceiveOffer
@@ -30,7 +31,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task<Message> ReceiveAesOfferAsync(Message offerMessage)
         {
-            string aesKey;
+            Key aesKey;
             try
             {
                 aesKey = await GetAesKey(offerMessage);
@@ -45,17 +46,31 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 };
             }
 
-            await SaveKey(aesKey, offerMessage);
+            var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
+            await keyStorage.Store(new Key
+            {
+                Value = aesKey.Value,
+                Contact = offerMessage.Sender,
+                Format = KeyFormat.Raw,
+                Type = KeyType.Aes,
+                Author = offerMessage.Sender,
+                IsAccepted = true,
+                OfferMessageId = offerMessage.Id,
+            });
 
             return new Message
             {
                 Sender = offerMessage.TargetGroup,
                 Type = MessageType.AesOfferAccept,
                 TargetGroup = offerMessage.Sender,
+                Cryptogramm = new()
+                {
+                    KeyDateTime = aesKey.CreationDate
+                }
             };
         }
 
-        private async Task<string> GetAesKey(Message offerMessage)
+        private async Task<Key> GetAesKey(Message offerMessage)
         {
             var decryptedCryptogram = await _cryptographyService.DecryptAsync<RSAHandler>
             (new Cryptogramm
@@ -65,7 +80,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             AesOffer? offer = JsonSerializer.Deserialize<AesOffer>(decryptedCryptogram.Cyphertext ?? string.Empty);
 
-            if (string.IsNullOrWhiteSpace(offer?.AesKey))
+            if (string.IsNullOrWhiteSpace(offer?.key.Value?.ToString()))
                 throw new ArgumentException("Could not decrypt an AES Key.");
 
             var contact = await _contactsProvider.GetContact(offerMessage.Sender ?? string.Empty, _jsRuntime);
@@ -74,24 +89,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             if (offer.PassPhrase != contactPassPhrase)
                 throw new ArgumentException("Passphrase is not matching.");
 
-            return offer.AesKey;
-        }
-
-        private async Task SaveKey(string aesKey, Message offerMessage)
-        {
-            Key key = new Key()
-            {
-                Value = aesKey,
-                Contact = offerMessage.Sender,
-                Format = KeyFormat.Raw,
-                Type = KeyType.Aes,
-                Author = offerMessage.Sender,
-                IsAccepted = true,
-                OfferMessageId = offerMessage.Id
-            };
-
-            InMemoryKeyStorage.AESKeyStorage[offerMessage.Sender!] = key;
-            await _localKeyManager.SaveInMemoryKeysInLocalStorage();
+            return offer.key;
         }
     }
 }

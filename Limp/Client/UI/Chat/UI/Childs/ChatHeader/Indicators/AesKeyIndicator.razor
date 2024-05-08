@@ -18,18 +18,18 @@
 @code {
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     private Key? AesKey { get; set; }
+    private LocalStorageKeyStorage KeyStorageService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        KeyStorageService = new LocalStorageKeyStorage(jSRuntime);
         await UpdateAesKey();
         await base.OnInitializedAsync();
     }
 
     private async Task UpdateAesKey()
     {
-        var keyStorageService = new LocalStorageKeyStorage(jSRuntime);
-
-        AesKey = await keyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes); 
+        AesKey = await KeyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes);
         if (AesKey is null)
             await MessageService.NegotiateOnAESAsync(PartnerUsername);
     }
@@ -42,17 +42,15 @@
 
     private async Task OnAesKeyReady(string partnerName)
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(partnerName);
-        if (AesKey is null)
-            throw new ApplicationException("Could not get an AES key.");
+        AesKey = await KeyStorageService.GetLastAccepted(partnerName, KeyType.Aes);
 
-        await LocalKeyManager.SaveInMemoryKeysInLocalStorage();
         StateHasChanged();
     }
 
     private async Task OnAesUpdated(bool keyRenewed)
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(PartnerUsername);
+        AesKey = await KeyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes);
+        
         StateHasChanged();
     }
 

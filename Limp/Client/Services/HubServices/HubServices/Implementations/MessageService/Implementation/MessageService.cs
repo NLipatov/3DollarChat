@@ -296,9 +296,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.AesOffer)
                     {
-                        if (InMemoryKeyStorage.AESKeyStorage[message.Sender!].OfferMessageId == message.Id)
-                            return;
-                        
                         var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
                         await MarkContactAsTrusted(message.Sender!);
                         await hubConnection.SendAsync("Dispatch", offerResponse);

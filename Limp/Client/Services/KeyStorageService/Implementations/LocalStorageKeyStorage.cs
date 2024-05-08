@@ -23,6 +23,14 @@ public class LocalStorageKeyStorage : IKeyStorage
     public async Task Store(Key key)
     {
         var existingCollection = await Get(key.Contact, key.Type ?? KeyType.Unspecified);
+        
+        if (existingCollection.Any(x=>x.Value.ToString() == key.Value.ToString() 
+            && x.CreationDate.Date == key.CreationDate.Date
+            && x.CreationDate.Hour == key.CreationDate.Hour
+            && x.CreationDate.Minute == key.CreationDate.Minute
+            && x.CreationDate.Second == key.CreationDate.Second))
+            return;
+        
         existingCollection.Add(key);
 
         var serializedKeys = JsonSerializer.Serialize(existingCollection);

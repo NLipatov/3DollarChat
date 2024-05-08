@@ -69,7 +69,7 @@ public class AesOfferSender : IAesOfferSender
             Format = KeyFormat.Raw,
             Type = KeyType.Aes,
             Author = messageWithAesOffer.Sender,
-            IsAccepted = true,
+            IsAccepted = false,
             OfferMessageId = messageWithAesOffer.Id,
             CreationDate = aesKey.CreationDate
         });

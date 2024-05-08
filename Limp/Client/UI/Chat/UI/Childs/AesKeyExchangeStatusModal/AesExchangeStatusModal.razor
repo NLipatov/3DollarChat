@@ -49,6 +49,11 @@
             .Contains(PartnerUsername);
     }
 
-    private void OnAESUpdated(bool keyRenewed) => StateHasChanged();
+    private async Task OnAESUpdated(bool keyRenewed)
+    {
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAccepted(PartnerUsername, KeyType.Aes) != null;
+        StateHasChanged();
+    }
+
 
 }

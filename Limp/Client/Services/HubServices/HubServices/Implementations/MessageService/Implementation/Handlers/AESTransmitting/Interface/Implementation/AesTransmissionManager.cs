@@ -20,7 +20,7 @@ public class AesTransmissionManager : IAesTransmissionManager
     }
 
     public async Task<Message> GenerateOffer(string partnersUsername, string partnersPublicKey, Key aesKey) =>
-        await _offerSender.SendAesOfferAsync(partnersUsername, partnersPublicKey, aesKey);
+        await _offerSender.GenerateAesOfferAsync(partnersUsername, partnersPublicKey, aesKey);
 
     public async Task<Message> GenerateOfferResponse(Message incomingOffer) =>
         await _offerReceiver.ReceiveAesOfferAsync(incomingOffer);

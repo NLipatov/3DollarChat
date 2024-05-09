@@ -24,11 +24,7 @@ public class LocalStorageKeyStorage : IKeyStorage
     {
         var existingCollection = await Get(key.Contact, key.Type ?? KeyType.Unspecified);
         
-        if (existingCollection.Any(x=>x.Value.ToString() == key.Value.ToString() 
-            && x.CreationDate.Date == key.CreationDate.Date
-            && x.CreationDate.Hour == key.CreationDate.Hour
-            && x.CreationDate.Minute == key.CreationDate.Minute
-            && x.CreationDate.Second == key.CreationDate.Second))
+        if (existingCollection.Any(x=>x.Id == key.Id))
             return;
         
         existingCollection.Add(key);

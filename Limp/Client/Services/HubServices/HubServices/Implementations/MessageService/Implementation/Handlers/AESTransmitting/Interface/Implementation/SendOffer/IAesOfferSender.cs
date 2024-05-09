@@ -6,5 +6,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public interface IAesOfferSender
 {
-    Task<Message> SendAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey);
+    Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey);
 }

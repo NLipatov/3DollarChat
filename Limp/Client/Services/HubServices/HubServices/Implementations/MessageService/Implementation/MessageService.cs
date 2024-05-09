@@ -8,7 +8,6 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
-using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
@@ -41,7 +40,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IMessageBuilder _messageBuilder;
-        private readonly IBrowserKeyStorage _browserKeyStorage;
         private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
@@ -63,7 +61,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IUsersService usersService,
             ICallbackExecutor callbackExecutor,
             IMessageBuilder messageBuilder,
-            IBrowserKeyStorage browserKeyStorage,
             IMessageDecryptor messageDecryptor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
@@ -79,7 +76,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
             _messageBuilder = messageBuilder;
-            _browserKeyStorage = browserKeyStorage;
             _messageDecryptor = messageDecryptor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
@@ -103,10 +99,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 NavigationManager.NavigateTo("signin");
                 return null;
             }
-
-            //Loading from local storage earlier saved AES keys
-            InMemoryKeyStorage.AESKeyStorage =
-                (await _browserKeyStorage.ReadLocalKeyChainAsync())?.AESKeyStorage ?? new();
 
             if (hubConnection == null)
                 throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
@@ -279,9 +271,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         var keyStorageService = new LocalStorageKeyStorage(_jsRuntime);
                         var keys = await keyStorageService.Get(message.Sender, KeyType.Aes);
-                        var acceptedKeyDateTime = message.Cryptogramm!.KeyDateTime;
+                        var acceptedKeyId = message.Cryptogramm!.KeyId;
 
-                        var acceptedKey = keys.First(x => x.CreationDate == acceptedKeyDateTime);
+                        var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
                         if (acceptedKey.IsAccepted)
                             return;
                         
@@ -292,7 +284,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
                         await MarkContactAsTrusted(message.Sender!);
-                        return;
                     }
                     else if (message.Type == MessageType.AesOffer)
                     {

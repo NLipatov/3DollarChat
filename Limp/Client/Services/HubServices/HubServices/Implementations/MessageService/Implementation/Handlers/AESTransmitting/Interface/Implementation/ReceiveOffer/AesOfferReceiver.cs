@@ -1,14 +1,12 @@
 ﻿using System.Text.Json;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
-using InMemoryKeyStorage = Ethachat.Client.Cryptography.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     AESTransmitting.Interface.Implementation.ReceiveOffer
@@ -16,15 +14,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     public class AesOfferReceiver : IAesOfferReceiver
     {
         private readonly ICryptographyService _cryptographyService;
-        private readonly IBrowserKeyStorage _localKeyManager;
         private readonly IContactsProvider _contactsProvider;
         private readonly IJSRuntime _jsRuntime;
 
-        public AesOfferReceiver(ICryptographyService cryptographyService, IBrowserKeyStorage localKeyManager,
+        public AesOfferReceiver(ICryptographyService cryptographyService,
             IContactsProvider contactsProvider, IJSRuntime jsRuntime)
         {
             _cryptographyService = cryptographyService;
-            _localKeyManager = localKeyManager;
             _contactsProvider = contactsProvider;
             _jsRuntime = jsRuntime;
         }
@@ -49,6 +45,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
             await keyStorage.Store(new Key
             {
+                Id = aesKey.Id,
                 Value = aesKey.Value,
                 Contact = offerMessage.Sender,
                 Format = KeyFormat.Raw,
@@ -65,7 +62,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 TargetGroup = offerMessage.Sender,
                 Cryptogramm = new()
                 {
-                    KeyDateTime = aesKey.CreationDate
+                    KeyId = aesKey.Id
                 }
             };
         }
@@ -75,7 +72,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var decryptedCryptogram = await _cryptographyService.DecryptAsync<RSAHandler>
             (new Cryptogramm
             {
-                Cyphertext = offerMessage.Cryptogramm?.Cyphertext
+                Cyphertext = offerMessage.Cryptogramm?.Cyphertext,
+                KeyId = offerMessage.Cryptogramm!.KeyId
             });
 
             AesOffer? offer = JsonSerializer.Deserialize<AesOffer>(decryptedCryptogram.Cyphertext ?? string.Empty);

@@ -2,7 +2,6 @@ using System.Text.Json;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
@@ -29,7 +28,7 @@ public class AesOfferSender : IAesOfferSender
         _jsRuntime = jsRuntime;
     }
 
-    public async Task<Message> SendAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
+    public async Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
     {
         if (string.IsNullOrWhiteSpace(aesKey.Value?.ToString()))
             throw new ApplicationException("Could not properly generated an AES Key for conversation");
@@ -57,13 +56,14 @@ public class AesOfferSender : IAesOfferSender
             Cryptogramm = new()
             {
                 Cyphertext = encryptedOffer,
-                KeyDateTime = aesKey.CreationDate
+                KeyId = aesKey.Id
             }
         };
         
         var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
         await keyStorage.Store(new Key
         {
+            Id = aesKey.Id,
             Value = aesKey.Value,
             Contact = messageWithAesOffer.TargetGroup,
             Format = KeyFormat.Raw,

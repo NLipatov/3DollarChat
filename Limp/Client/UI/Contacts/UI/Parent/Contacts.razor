@@ -6,24 +6,22 @@
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.ConnectedUsersManaging
 @using Ethachat.Client.UI.Contacts.UI.Child;
-@using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.ContactsProvider;
+@using Ethachat.Client.Services.KeyStorageService.Implementations
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
 @inject NavigationManager _navigationManager;
 @inject IContactsProvider _contactsProvider;
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime;
-@inject IBrowserKeyStorage _localKeyManager;
 @inject IMessageBox _messageBox
 @inject IAuthenticationHandler AuthenticationHandler
-@inject NavigationManager NavigationManager
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList;
 @using Ethachat.Client.UI.Contacts.Models
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using EthachatShared.Models.Users;
 @using Ethachat.Client.UI.Shared.Callout
-@using Ethachat.Client.UI.Shared.Icon
+@using EthachatShared.Encryption
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @implements IDisposable
 
@@ -182,7 +180,7 @@
         {
             contact.IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username);
             contact.LastMessage = _messageBox.Messages.MaxBy(x=>x.DateSent)?.DateSent ?? DateTime.UtcNow;
-            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAccepted(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Count(x => x.Sender == contact.Username && !x.IsSeen);
         }
 
@@ -195,7 +193,7 @@
         Contact? contact = ContactsList.FirstOrDefault(x => x.Username == contactUsername);
         if (contact is not null)
         {
-            contact.IsKeyReady = await _localKeyManager.IsAESKeyReady(contact.Username);
+            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAccepted(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsSeen).Count();
             StateHasChanged();
         }

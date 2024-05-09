@@ -27,7 +27,17 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
                 var keys = await localKeyStorageService.GetAsync(contact, KeyType.Aes);
                 if (!keys.Any())
                     throw new ApplicationException($"No keys stored for {contact}");
+                
                 var key = keys.FirstOrDefault(x => x.Id == cryptogramm.KeyId);
+
+                //Contact has some previous key, but not the latest one.
+                //In this case we need to mark that last key that contact has as last accepted key 
+                var supposedKey = await localKeyStorageService.GetLastAcceptedAsync(contact, KeyType.Aes);
+                if (key is not null && supposedKey is not null && key.Id != supposedKey.Id)
+                {
+                    key.CreationDate = DateTime.UtcNow;
+                    await localKeyStorageService.UpdateAsync(key);
+                }
 
                 if (key is null)
                     throw new ApplicationException("Message was encrypted with key that is not presented in key storage.");

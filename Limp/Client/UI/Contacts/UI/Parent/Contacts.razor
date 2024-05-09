@@ -180,7 +180,7 @@
         {
             contact.IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username);
             contact.LastMessage = _messageBox.Messages.MaxBy(x=>x.DateSent)?.DateSent ?? DateTime.UtcNow;
-            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAccepted(contact.Username, KeyType.Aes) != null;
+            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Count(x => x.Sender == contact.Username && !x.IsSeen);
         }
 
@@ -193,7 +193,7 @@
         Contact? contact = ContactsList.FirstOrDefault(x => x.Username == contactUsername);
         if (contact is not null)
         {
-            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAccepted(contact.Username, KeyType.Aes) != null;
+            contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsSeen).Count();
             StateHasChanged();
         }

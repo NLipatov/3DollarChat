@@ -27,7 +27,7 @@
 
     private async Task UpdateAesKey()
     {
-        AesKey = await KeyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes);
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         if (AesKey is null)
             await MessageService.NegotiateOnAESAsync(PartnerUsername);
     }
@@ -40,14 +40,14 @@
 
     private async Task OnAesKeyReady(string partnerName)
     {
-        AesKey = await KeyStorageService.GetLastAccepted(partnerName, KeyType.Aes);
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(partnerName, KeyType.Aes);
 
         StateHasChanged();
     }
 
     private async Task OnAesUpdated(bool keyRenewed)
     {
-        AesKey = await KeyStorageService.GetLastAccepted(PartnerUsername, KeyType.Aes);
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         
         StateHasChanged();
     }

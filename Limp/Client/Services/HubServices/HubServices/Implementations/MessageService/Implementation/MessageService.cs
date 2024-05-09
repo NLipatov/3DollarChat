@@ -269,17 +269,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     }
                     else if (message.Type == MessageType.AesOfferAccept)
                     {
-                        var keyStorageService = new LocalStorageKeyStorage(_jsRuntime);
-                        var keys = await keyStorageService.Get(message.Sender, KeyType.Aes);
-                        var acceptedKeyId = message.Cryptogramm!.KeyId;
-
-                        var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
-                        if (acceptedKey.IsAccepted)
-                            return;
+                        if (string.IsNullOrWhiteSpace(message.Sender)
+                            || message.Cryptogramm?.KeyId == Guid.Empty
+                            || message.Cryptogramm?.KeyId == null)
+                            throw new ArgumentException("Invalid offer accept message");
                         
-                        await keyStorageService.Delete(acceptedKey);
-                        acceptedKey.IsAccepted = true;
-                        await keyStorageService.Store(acceptedKey);
+                        await MarkKeyAsAccepted(message.Cryptogramm.KeyId, message.Sender);
                         
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
                         _callbackExecutor.ExecuteSubscriptionsByName(true, "AESUpdated");
@@ -322,6 +317,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             hubConnection.On<string>("OnTyping",
                 (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
+        }
+
+        private async Task MarkKeyAsAccepted(Guid keyId, string contact)
+        {
+            var keyStorageService = new LocalStorageKeyStorage(_jsRuntime);
+            var keys = await keyStorageService.GetAsync(contact, KeyType.Aes);
+            var acceptedKeyId = keyId;
+
+            var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
+            if (acceptedKey.IsAccepted)
+                return;
+                        
+            acceptedKey.IsAccepted = true;
+            await keyStorageService.UpdateAsync(acceptedKey);
         }
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)

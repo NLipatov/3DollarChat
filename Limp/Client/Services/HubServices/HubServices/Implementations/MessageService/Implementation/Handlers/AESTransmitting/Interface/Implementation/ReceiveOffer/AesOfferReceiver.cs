@@ -43,7 +43,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
 
             var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
-            await keyStorage.Store(new Key
+            await keyStorage.StoreAsync(new Key
             {
                 Id = aesKey.Id,
                 Value = aesKey.Value,

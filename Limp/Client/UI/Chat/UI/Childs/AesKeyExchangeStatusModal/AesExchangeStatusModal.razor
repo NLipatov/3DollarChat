@@ -38,7 +38,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAccepted(PartnerUsername, KeyType.Aes) != null;
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         await base.OnInitializedAsync();
     }
 
@@ -51,7 +51,7 @@
 
     private async Task OnAESUpdated(bool keyRenewed)
     {
-        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAccepted(PartnerUsername, KeyType.Aes) != null;
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         StateHasChanged();
     }
 

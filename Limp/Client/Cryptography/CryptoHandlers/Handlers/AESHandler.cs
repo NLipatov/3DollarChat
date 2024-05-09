@@ -24,7 +24,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 
                 await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv, cryptogramm.Cyphertext);
 
-                var keys = await localKeyStorageService.Get(contact, KeyType.Aes);
+                var keys = await localKeyStorageService.GetAsync(contact, KeyType.Aes);
                 if (!keys.Any())
                     throw new ApplicationException($"No keys stored for {contact}");
                 var key = keys.FirstOrDefault(x => x.Id == cryptogramm.KeyId);
@@ -62,7 +62,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             try
             {
                 var localKeyStorageService = new LocalStorageKeyStorage(_jSRuntime);
-                Key key = await localKeyStorageService.GetLastAccepted(contact, KeyType.Aes);
+                Key key = await localKeyStorageService.GetLastAcceptedAsync(contact, KeyType.Aes);
 
                 if (key is null)
                     throw new ApplicationException("Could not resolve a AES key for encryption.");

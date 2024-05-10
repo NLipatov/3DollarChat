@@ -112,7 +112,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
             BlobLink = blobUrl,
             Id = metadata.DataFileId,
             Type = MessageType.BlobLink,
-            TargetGroup = message.TargetGroup,
+            Target = message.Target,
             Sender = message.Sender,
             Metadata = metadata,
             DateSent = message.DateSent

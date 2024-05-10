@@ -34,7 +34,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
         public void Delete(string targetGroup)
         {
             var messagesToRemove = Messages
-                .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
+                .Where(x => x.Target == targetGroup || x.Sender == targetGroup);
 
             Messages.RemoveAll(x => messagesToRemove.Contains(x));
             _storedSet.RemoveWhere(x => messagesToRemove.Any(m => GetMessageKey(m) == x));

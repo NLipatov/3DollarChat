@@ -15,7 +15,7 @@
     @* ReSharper disable once UnusedParameter.Local *@
     <Virtualize
         Context="message"
-        Items="MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.TargetGroup == TargetGroup || x.Sender == TargetGroup).ToList()">
+        Items="MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.Target == TargetGroup || x.Sender == TargetGroup).ToList()">
         <SingleMessage Message="message" MyUsername=@MyUsername/>
     </Virtualize>
 </div>

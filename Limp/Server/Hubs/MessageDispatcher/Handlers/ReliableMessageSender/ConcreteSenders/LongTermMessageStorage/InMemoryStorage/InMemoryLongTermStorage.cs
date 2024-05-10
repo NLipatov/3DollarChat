@@ -5,13 +5,13 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage.InMemoryStorage;
 
-public class InMemoryLongTermStorage : ILongTermMessageStorageService
+public class InMemoryLongTermStorage : ILongTermStorageService<Message>
 {
     private ConcurrentDictionary<string, ConcurrentQueue<UnsentItem>> _storedMessages = new();
-    public async Task SaveAsync(Message message)
+    public async Task SaveAsync(Message data)
     {
-        var receiver = message.TargetGroup!;
-        var unsentMessage = message.ToUnsentMessage();
+        var receiver = data.Target!;
+        var unsentMessage = data.ToUnsentMessage();
 
         var targetStack = _storedMessages.GetOrAdd(receiver, new ConcurrentQueue<UnsentItem>());
         targetStack.Enqueue(unsentMessage);

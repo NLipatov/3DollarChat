@@ -79,7 +79,7 @@ namespace Ethachat.Client.Cryptography
             };
         }
 
-        public async Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null)
+        public async Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, string? contact = null)
             where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
@@ -89,7 +89,7 @@ namespace Ethachat.Client.Cryptography
             return await cryptoHandler.Decrypt(cryptogram, contact);
         }
 
-        public async Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogram, string? contact = null,
+        public async Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, string? contact = null,
             string? publicKeyToEncryptWith = null) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);

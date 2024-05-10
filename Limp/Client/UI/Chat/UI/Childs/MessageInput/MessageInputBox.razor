@@ -125,7 +125,7 @@
                     Id = Guid.NewGuid(),
                     HlsPlaylist = playlist,
                     Type = MessageType.HLSPlaylist,
-                    TargetGroup = TopicName,
+                    Target = TopicName,
                     Sender = MyUsername,
                     DateSent = DateTime.UtcNow
                 });
@@ -138,7 +138,7 @@
         {
             BrowserFile = browserFile,
             Type = MessageType.BrowserFileMessage,
-            TargetGroup = TopicName,
+            Target = TopicName,
             Sender = MyUsername
         });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
@@ -206,7 +206,7 @@
             await MessageService.SendMessage(new()
             {
                 PlainText = MessageInput,
-                TargetGroup = TopicName,
+                Target = TopicName,
                 Type = MessageType.TextMessage
             });
         }

@@ -13,22 +13,22 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, string? contact = null)
         {
             try
             {
                 var localKeyStorageService = new LocalStorageKeyStorage(_jSRuntime);
                 
-                if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
+                if (string.IsNullOrWhiteSpace(cryptogram.Iv))
                     throw new ArgumentException("Please provide an IV");
 
-                await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv, cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogram.Iv, cryptogram.Cyphertext);
 
                 var keys = await localKeyStorageService.GetAsync(contact, KeyType.Aes);
                 if (!keys.Any())
                     throw new ApplicationException($"No keys stored for {contact}");
                 
-                var key = keys.FirstOrDefault(x => x.Id == cryptogramm.KeyId);
+                var key = keys.FirstOrDefault(x => x.Id == cryptogram.KeyId);
 
                 //Contact has some previous key, but not the latest one.
                 //In this case we need to mark that last key that contact has as last accepted key 
@@ -45,19 +45,19 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
                 await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
 
                 string decryptedMessage = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
                 {
                     decryptedMessage = await _jSRuntime
-                        .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
+                        .InvokeAsync<string>("AESDecryptText", cryptogram.Cyphertext, key.Value.ToString());
                 }
 
-                var result = new Cryptogramm()
+                var result = new Cryptogram()
                 {
                     Cyphertext = decryptedMessage,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext)
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext)
                 };
 
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
                 return result;
             }
@@ -67,7 +67,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             }
         }
 
-        public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             try
             {
@@ -78,20 +78,20 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
                     throw new ApplicationException("Could not resolve a AES key for encryption.");
 
                 string encryptedText = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
                 {
                     encryptedText = await _jSRuntime
-                        .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, key.Value!.ToString());
+                        .InvokeAsync<string>("AESEncryptText", cryptogram.Cyphertext, key.Value!.ToString());
                 }
 
-                var result = new Cryptogramm
+                var result = new Cryptogram
                 {
                     Cyphertext = encryptedText,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext),
                     KeyId = key.Id,
                 };
                 
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
                 return result;
             }

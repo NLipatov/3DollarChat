@@ -36,9 +36,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 return new Message
                 {
-                    Sender = offerMessage.TargetGroup,
+                    Sender = offerMessage.Target,
                     Type = MessageType.AesOfferDecline,
-                    TargetGroup = offerMessage.Sender,
+                    Target = offerMessage.Sender,
                 };
             }
 
@@ -57,9 +57,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             return new Message
             {
-                Sender = offerMessage.TargetGroup,
+                Sender = offerMessage.Target,
                 Type = MessageType.AesOfferAccept,
-                TargetGroup = offerMessage.Sender,
+                Target = offerMessage.Sender,
                 Cryptogramm = new()
                 {
                     KeyId = aesKey.Id
@@ -70,7 +70,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private async Task<Key> GetAesKey(Message offerMessage)
         {
             var decryptedCryptogram = await _cryptographyService.DecryptAsync<RSAHandler>
-            (new Cryptogramm
+            (new Cryptogram
             {
                 Cyphertext = offerMessage.Cryptogramm?.Cyphertext,
                 KeyId = offerMessage.Cryptogramm!.KeyId

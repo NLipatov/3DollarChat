@@ -43,7 +43,7 @@ public class AesOfferSender : IAesOfferSender
 
         string? encryptedOffer = (await _cryptographyService
             .EncryptAsync<RSAHandler>
-            (new Cryptogramm { Cyphertext = JsonSerializer.Serialize(offer) },
+            (new Cryptogram { Cyphertext = JsonSerializer.Serialize(offer) },
                 //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
                 publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
 
@@ -52,7 +52,7 @@ public class AesOfferSender : IAesOfferSender
             Type = MessageType.AesOffer,
             DateSent = DateTime.UtcNow,
             Sender = await _authenticationHandler.GetUsernameAsync(),
-            TargetGroup = partnersUsername,
+            Target = partnersUsername,
             Cryptogramm = new()
             {
                 Cyphertext = encryptedOffer,
@@ -65,7 +65,7 @@ public class AesOfferSender : IAesOfferSender
         {
             Id = aesKey.Id,
             Value = aesKey.Value,
-            Contact = messageWithAesOffer.TargetGroup,
+            Contact = messageWithAesOffer.Target,
             Format = KeyFormat.Raw,
             Type = KeyType.Aes,
             Author = messageWithAesOffer.Sender,

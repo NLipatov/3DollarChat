@@ -6,8 +6,8 @@ namespace Ethachat.Client.Cryptography
 {
     public interface ICryptographyService
     {
-        Task<Cryptogramm> DecryptAsync<T>(Cryptogramm cryptogram, string? contact = null) where T : ICryptoHandler;
-        Task<Cryptogramm> EncryptAsync<T>(Cryptogramm cryptogram, string? contact = null, string? publicKeyToEncryptWith = null) where T : ICryptoHandler;
+        Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, string? contact = null) where T : ICryptoHandler;
+        Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, string? contact = null, string? publicKeyToEncryptWith = null) where T : ICryptoHandler;
         Task<Key> GenerateAesKeyAsync(string contact);
         Task GenerateRsaKeyPairAsync();
     }

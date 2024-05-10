@@ -1,10 +1,10 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
 
 namespace Ethachat.Client.UI.Chat.Logic.MessageBuilder
 {
     public interface IMessageBuilder
     {
-        IAsyncEnumerable<Message> BuildTextMessageToBeSend(ClientMessage message);
+        IAsyncEnumerable<TextMessage> BuildTextMessage(ClientMessage message);
     }
 }

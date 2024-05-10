@@ -34,7 +34,6 @@
 
 
   <ItemGroup>
-    <Folder Include="Hubs\MessageDispatcher\Handlers\ReliableMessageSender\ConcreteSenders\SenderImplementations\" />
     <Folder Include="Services\LogService\Implementations\" />
   </ItemGroup>
 

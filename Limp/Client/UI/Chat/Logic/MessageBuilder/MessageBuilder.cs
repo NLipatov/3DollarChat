@@ -1,56 +1,39 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
-using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.TransferStatus;
+using EthachatShared.Models.Message.ClientToClientTransferData;
 
-namespace Ethachat.Client.UI.Chat.Logic.MessageBuilder
+namespace Ethachat.Client.UI.Chat.Logic.MessageBuilder;
+
+public class MessageBuilder : IMessageBuilder
 {
-    public class MessageBuilder : IMessageBuilder
+    private const int MaxTextChunkLength = 512;
+    private readonly IAuthenticationHandler _authenticationHandler;
+
+    public MessageBuilder(IAuthenticationHandler authenticationHandler)
     {
-        private const int MaxTextChunkLength = 512;
-        private readonly ICryptographyService _cryptographyService;
-        private readonly IAuthenticationHandler _authenticationHandler;
+        _authenticationHandler = authenticationHandler;
+    }
 
-        public MessageBuilder(ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler)
+    public async IAsyncEnumerable<TextMessage> BuildTextMessage(ClientMessage message)
+    {
+        var currentUserUsername = await _authenticationHandler.GetUsernameAsync();
+        var messagesCount = (int)Math.Ceiling(message.PlainText.Length / (decimal)MaxTextChunkLength);
+        for (int i = 0; i * MaxTextChunkLength < message.PlainText.Length; i++)
         {
-            _cryptographyService = cryptographyService;
-            _authenticationHandler = authenticationHandler;
-        }
-        
-        public async IAsyncEnumerable<Message> BuildTextMessageToBeSend(ClientMessage message)
-        {
-            var currentUserUsername = await _authenticationHandler.GetUsernameAsync();
-            var messagesCount = (int)Math.Ceiling(message.PlainText.Length / (decimal)MaxTextChunkLength);
-            for (int i = 0; i * MaxTextChunkLength < message.PlainText.Length; i++)
+            var textChunk = message.PlainText.Substring(i * MaxTextChunkLength,
+                Math.Min(MaxTextChunkLength, message.PlainText.Length - i * MaxTextChunkLength));
+
+            var messageToSend = new TextMessage
             {
-                var textChunk = message.PlainText.Substring(i * MaxTextChunkLength, Math.Min(MaxTextChunkLength, message.PlainText.Length - i * MaxTextChunkLength));
-                Cryptogramm cryptogramm = await _cryptographyService
-                    .EncryptAsync<AESHandler>(new Cryptogramm
-                    {
-                        Cyphertext = textChunk,
-                    }, contact: message.TargetGroup);
+                Id = message.Id,
+                Total = messagesCount,
+                Receiver = message.Target ?? throw new ArgumentException("Missing message target"),
+                Sender = currentUserUsername,
+                Index = i,
+                Text = textChunk,
+            };
 
-                Message messageToSend = new Message
-                {
-                    SyncItem = new SyncItem
-                    {
-                        Index = i,
-                        TotalItems = messagesCount,
-                        MessageId = message.Id
-                    },
-                    Type = MessageType.TextMessage,
-                    Id = Guid.NewGuid(),
-                    Cryptogramm = cryptogramm,
-                    DateSent = DateTime.UtcNow,
-                    TargetGroup = message.TargetGroup,
-                    Sender = currentUserUsername ?? throw new ApplicationException
-                        ($"Exception on message building phase: Cannot define message sender name."),
-                };
-
-                yield return messageToSend;
-            }
+            yield return messageToSend;
         }
     }
 }

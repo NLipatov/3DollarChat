@@ -12,7 +12,7 @@ public class MessageDecryptor : IMessageDecryptor
     {
         _cryptographyService = cryptographyService;
     }
-    public async Task<Cryptogramm> DecryptAsync(Message encryptedMessage)
+    public async Task<Cryptogram> DecryptAsync(Message encryptedMessage)
     {
         if (encryptedMessage.Cryptogramm == null)
             throw new ArgumentException($"Given message {nameof(Message.Cryptogramm)} property was null.");

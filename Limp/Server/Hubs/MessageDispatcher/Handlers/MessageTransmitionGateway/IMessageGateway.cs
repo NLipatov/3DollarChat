@@ -1,8 +1,9 @@
-using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.Interfaces;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 
-public interface IMessageGateway
+public interface IMessageGateway<T> where T : IDestinationResolvable
 {
-    Task SendAsync(Message message);
+    Task SendAsync(T data);
+    Task TransferAsync(T data);
 }

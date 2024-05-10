@@ -4,6 +4,6 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers;
 
 public interface ICryptoHandler
 {
-    public Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null);
-    public Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null);
+    public Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? PublicKeyToEncryptWith = null);
+    public Task<Cryptogram> Decrypt(Cryptogram cryptogram, string? contact = null);
 }

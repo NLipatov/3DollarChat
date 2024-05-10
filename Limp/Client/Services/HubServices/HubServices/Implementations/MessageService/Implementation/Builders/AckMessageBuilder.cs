@@ -43,7 +43,7 @@ public class AckMessageBuilder
             },
             Type = MessageType.SyncItem,
             Sender = message.Sender,
-            TargetGroup = message.TargetGroup
+            Target = message.Target
         };
     }
 }

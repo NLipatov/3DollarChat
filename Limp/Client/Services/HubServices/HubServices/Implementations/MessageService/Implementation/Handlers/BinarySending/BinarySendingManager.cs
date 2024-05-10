@@ -81,13 +81,13 @@ public class BinarySendingManager : IBinarySendingManager
         {
             Type = metadataMessage.Type,
             Sender = metadataMessage.Sender,
-            TargetGroup = metadataMessage.TargetGroup,
+            Target = metadataMessage.Target,
             Metadata = metadataMessage.Metadata,
             DateSent = DateTime.UtcNow
         }, getHubConnection);
 
         await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.BrowserFile, message.Sender,
-            message.TargetGroup);
+            message.Target);
 
         int chunksCounter = 0;
         await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
@@ -102,9 +102,9 @@ public class BinarySendingManager : IBinarySendingManager
 
             var packageMessage = new Message
             {
-                Package = await EncryptPackage(package, message.TargetGroup),
+                Package = await EncryptPackage(package, message.Target),
                 Sender = message.Sender,
-                TargetGroup = message.TargetGroup,
+                Target = message.Target,
                 Type = MessageType.DataPackage,
                 DateSent = DateTime.UtcNow
             };
@@ -130,7 +130,7 @@ public class BinarySendingManager : IBinarySendingManager
                 ChunksCount = totalChunks
             },
             Sender = message.Sender,
-            TargetGroup = message.TargetGroup
+            Target = message.Target
         };
 
         return metadataMessage;
@@ -149,7 +149,7 @@ public class BinarySendingManager : IBinarySendingManager
                 BlobLink = blobUrl,
                 Id = metadata.DataFileId,
                 Type = MessageType.BlobLink,
-                TargetGroup = receiver,
+                Target = receiver,
                 Sender = sender,
                 Metadata = metadata,
                 DateSent = DateTime.UtcNow

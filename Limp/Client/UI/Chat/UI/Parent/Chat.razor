@@ -37,11 +37,9 @@ else
                         PartnerName=@topicName
                         OnAESRenewal=@(async () => await _messageService.NegotiateOnAESAsync(topicName))/>
 
-            <div class="aes-exchange-modal">
-                <AesExchangeStatusModal
-                    PartnerUsername=@topicName
-                    IsPartnerOnline=@_usersOnlineMessage.UserConnections.Select(x => x.Username).Contains(topicName)/>
-            </div>
+            <AesExchangeStatusModal
+                PartnerUsername=@topicName
+                IsPartnerOnline=@_usersOnlineMessage.UserConnections.Select(x => x.Username).Contains(topicName)/>
 
             <MessageList @ref=MessageListComponent
                          TargetGroup=@topicName
@@ -112,4 +110,5 @@ else
             StateHasChanged();
         }
     }
+
 }

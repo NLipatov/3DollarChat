@@ -173,49 +173,24 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 {
                     await (await GetHubConnectionAsync())
                         .SendAsync("OnAck", AckMessageBuilder.CreateMessageAck(message));
-
-                    if (_messageBox.Contains(message))
-                        return;
-
-                    if (message.Type is MessageType.RsaPubKey)
-                    {
-                        InMemoryKeyStorage.RSAKeyStorage.TryGetValue(message.Sender, out var rsaKey);
-                        if (rsaKey?.Value?.ToString() == message.Cryptogramm?.Cyphertext && !string.IsNullOrWhiteSpace(rsaKey?.Value?.ToString()))
-                            return;
-                        
-                        //Storing Public Key in our in-memory storage
-                        InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
-                        {
-                            Type = KeyType.RsaPublic,
-                            Contact = message.Sender,
-                            Format = KeyFormat.PemSpki,
-                            Value = message.Cryptogramm!.Cyphertext
-                        });
-                        await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
-                    }
-
-                    if (message.Type is MessageType.MessageReadConfirmation)
-                    {
-                        var decryptedMessageIdData =
-                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
-                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
-                            "OnReceiverMarkedMessageAsRead");
-                    }
-
-                    if (message.Type is MessageType.MessageReceivedConfirmation)
-                    {
-                        var decryptedMessageIdData =
-                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
-                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
-                            "OnReceiverMarkedMessageAsReceived");
-                    }
-
+                    
                     if (message.Type is MessageType.TextMessage || message.Type is MessageType.HLSPlaylist)
                     {
-                        await SendReceivedConfirmation(message.Id, message.Sender!);
+                        if (message.SyncItem is null && _messageBox.Contains(message)) //not a composite message, duplicate
+                            return;
+                        
                         if (string.IsNullOrWhiteSpace(message.Sender))
                             throw new ArgumentException(
                                 $"Cannot get a message sender - {nameof(message.Sender)} contains empty string.");
+
+                        if (message.SyncItem is not null)
+                        {
+                            await SendReceivedConfirmation(message.SyncItem.MessageId, message.Sender);
+                        }
+                        else
+                        {
+                            await SendReceivedConfirmation(message.Id, message.Sender);
+                        }
 
                         Cryptogramm decryptedMessageCryptogramm = new Cryptogramm();
                         try
@@ -254,7 +229,43 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 await NegotiateOnAESAsync(message.Sender);
                         }
                     }
-                    else if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
+
+                    if (_messageBox.Contains(message))
+                        return;
+
+                    if (message.Type is MessageType.RsaPubKey)
+                    {
+                        InMemoryKeyStorage.RSAKeyStorage.TryGetValue(message.Sender, out var rsaKey);
+                        if (rsaKey?.Value?.ToString() == message.Cryptogramm?.Cyphertext && !string.IsNullOrWhiteSpace(rsaKey?.Value?.ToString()))
+                            return;
+                        
+                        //Storing Public Key in our in-memory storage
+                        InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
+                        {
+                            Type = KeyType.RsaPublic,
+                            Contact = message.Sender,
+                            Format = KeyFormat.PemSpki,
+                            Value = message.Cryptogramm!.Cyphertext
+                        });
+                        await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
+                    }
+
+                    if (message.Type is MessageType.MessageReadConfirmation)
+                    {
+                        var decryptedMessageIdData =
+                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
+                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
+                            "OnReceiverMarkedMessageAsRead");
+                    }
+
+                    if (message.Type is MessageType.MessageReceivedConfirmation)
+                    {
+                        var decryptedMessageIdData =
+                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
+                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
+                            "OnReceiverMarkedMessageAsReceived");
+                    }
+                    if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
                     {
                         _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnBinaryTransmitting");
 
@@ -442,17 +453,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task SendText(ClientMessage message)
         {
-            var myUsername = await _authenticationHandler.GetUsernameAsync();
-            Guid messageId = Guid.NewGuid();
-            Message messageToSend =
-                await _messageBuilder.BuildMessageToBeSend(message.PlainText, message.TargetGroup, myUsername,
-                    messageId, MessageType.TextMessage);
+            await AddToMessageBox(message.PlainText, message.TargetGroup, message.Id);
+            await foreach (var tMessage in _messageBuilder.BuildTextMessageToBeSend(message))
+            {
+                var connection = await GetHubConnectionAsync();
 
-            await AddToMessageBox(message.PlainText, message.TargetGroup, myUsername, messageId);
-
-            var connection = await GetHubConnectionAsync();
-
-            await connection.SendAsync("Dispatch", messageToSend);
+                await connection.SendAsync("Dispatch", tMessage);
+            }
         }
 
         public async Task RequestPartnerToDeleteConvertation(string targetGroup)
@@ -466,14 +473,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _messageBox.AddMessage(message);
         }
 
-        private async Task AddToMessageBox(string text, string targetGroup, string myUsername, Guid messageId)
+        private async Task AddToMessageBox(string plainText, string target, Guid id)
         {
             _messageBox.AddMessage(new ClientMessage
             {
-                Id = messageId,
-                Sender = myUsername,
-                TargetGroup = targetGroup,
-                PlainText = text,
+                Id = id,
+                Sender = await _authenticationHandler.GetUsernameAsync(),
+                TargetGroup = target,
+                PlainText = plainText,
                 DateSent = DateTime.UtcNow,
                 Type = MessageType.TextMessage
             });

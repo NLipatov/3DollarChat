@@ -1,8 +1,0 @@
-.aes-exchange-modal {
-    display: flex;
-    height: 100dvh;
-    width: 100dvw;
-    position: fixed;
-    justify-content: center;
-    margin-top: 1rem;
-}

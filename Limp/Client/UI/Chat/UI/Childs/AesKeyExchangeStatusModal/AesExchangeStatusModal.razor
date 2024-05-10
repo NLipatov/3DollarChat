@@ -6,22 +6,24 @@
 
 @if (!KeyExist)
 {
-    @if (IsPartnerOnline)
-    {
-        <div class="card-holder">
-            <Card
-                Title="AES exchange"
-                Text="Now we are exchanging the key for encrypting messages"/>
-        </div>
-    }
-    else
-    {
-        <div class="card-holder">
-            <Card
-                Title="AES exchange"
-                Text="AES exchange is not possible - Your partner is offline"/>
-        </div>
-    }
+    <div class="aes-exchange-modal">
+        @if (IsPartnerOnline)
+        {
+            <div class="card-holder">
+                <Card
+                    Title="AES exchange"
+                    Text="Now we are exchanging the key for encrypting messages"/>
+            </div>
+        }
+        else
+        {
+            <div class="card-holder">
+                <Card
+                    Title="AES exchange"
+                    Text="AES exchange is not possible - Your partner is offline"/>
+            </div>
+        }
+    </div>
 }
 
 @code {
@@ -54,6 +56,4 @@
         KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         StateHasChanged();
     }
-
-
 }

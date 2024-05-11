@@ -184,6 +184,19 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                                 await OnTextMessageReceived(textMessage);
                             }
+
+                            if (edt.DataType == typeof(ClientMessage))
+                            {
+                                var clientMessage = (ClientMessage?)dataType;
+                                if (clientMessage is null)
+                                    throw new ArgumentException("Could not convert data transfer to target type");
+                                
+                                if (clientMessage.Type == MessageType.MessageReceivedConfirmation)
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id, "OnReceiverMarkedMessageAsReceived"); 
+                                
+                                if (clientMessage.Type == MessageType.MessageReadConfirmation)
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id, "OnReceiverMarkedMessageAsRead");
+                            }
                         }
                     }
                 }
@@ -272,22 +285,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Value = message.Cryptogramm!.Cyphertext
                         });
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
-                    }
-
-                    if (message.Type is MessageType.MessageReadConfirmation)
-                    {
-                        var decryptedMessageIdData =
-                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
-                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
-                            "OnReceiverMarkedMessageAsRead");
-                    }
-
-                    if (message.Type is MessageType.MessageReceivedConfirmation)
-                    {
-                        var decryptedMessageIdData =
-                            await _cryptographyService.DecryptAsync<AESHandler>(message.Cryptogramm!, message.Sender);
-                        _callbackExecutor.ExecuteSubscriptionsByName(Guid.Parse(decryptedMessageIdData.Cyphertext!),
-                            "OnReceiverMarkedMessageAsReceived");
                     }
 
                     if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
@@ -569,40 +566,28 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             if (messageSender == myUsername)
                 return;
 
-            var connection = await GetHubConnectionAsync();
-
-            var encryptedMessageIdData = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogram()
-            {
-                Cyphertext = messageId.ToString()
-            }, messageSender);
-
-            await connection.SendAsync("Dispatch", new Message
-            {
-                Sender = myUsername,
-                Target = messageSender,
-                Cryptogramm = encryptedMessageIdData,
-                Type = MessageType.MessageReceivedConfirmation
-            });
+            await TransferAsync(new ClientMessage()
+                {
+                    Id = messageId,
+                    Sender = myUsername,
+                    Target = messageSender,
+                    Type = MessageType.MessageReceivedConfirmation
+                },
+                messageSender);
         }
 
         public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)
         {
             if (messageSender == myUsername)
                 return;
-
-            var connection = await GetHubConnectionAsync();
-
-            var encryptedMessageIdData = await _cryptographyService.EncryptAsync<AESHandler>(new Cryptogram()
-            {
-                Cyphertext = messageId.ToString()
-            }, messageSender);
-            await connection.SendAsync("Dispatch", new Message
+            
+            await TransferAsync(new ClientMessage
             {
                 Type = MessageType.MessageReadConfirmation,
                 Target = messageSender,
                 Sender = myName,
-                Cryptogramm = encryptedMessageIdData
-            });
+                Id = messageId  
+            },messageSender);
         }
 
 

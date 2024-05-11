@@ -196,6 +196,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 
                                 if (clientMessage.Type == MessageType.MessageReadConfirmation)
                                     _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id, "OnReceiverMarkedMessageAsRead");
+
+                                if (clientMessage.Type == MessageType.HLSPlaylist)
+                                {
+                                    _messageBox.AddMessage(clientMessage);
+                                }
                             }
                         }
                     }
@@ -444,23 +449,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task SendHlsPlaylist(ClientMessage message)
         {
-            var messageToSend = new Message()
+            AddToMessageBox(message);
+
+            await TransferAsync(new ClientMessage
             {
                 Id = message.Id,
-                Cryptogramm = await _cryptographyService
-                    .EncryptAsync<AESHandler>(new Cryptogram
-                    {
-                        Cyphertext = JsonSerializer.Serialize(message.HlsPlaylist),
-                    }, contact: message.Target),
+                HlsPlaylist = message.HlsPlaylist,
                 Target = message.Target,
                 DateSent = DateTime.UtcNow,
                 Type = MessageType.HLSPlaylist,
                 Sender = myName
-            };
-
-            AddToMessageBox(message);
-
-            await (await GetHubConnectionAsync()).SendAsync("Dispatch", messageToSend);
+            }, message.Target);
         }
 
         private async Task OnTextMessageReceived(TextMessage textMessage)

@@ -53,8 +53,11 @@ namespace Ethachat.Client.Services.InboxService.Implementation
         {
             if (message.SyncItem is not null)
                 AddCompositeMessage(message);
-            else 
-                AddSingleMessage(message);
+            else
+            {
+                if (!Contains(message))
+                    AddSingleMessage(message);
+            }
         }
 
         private void AddCompositeMessage(ClientMessage message)

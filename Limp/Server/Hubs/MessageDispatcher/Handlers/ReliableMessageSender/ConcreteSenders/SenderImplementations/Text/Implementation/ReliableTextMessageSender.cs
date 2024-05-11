@@ -71,9 +71,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 .Where(x => x.Key == username)
                 .SelectMany(x => x.Value).Any();
 
-        public void OnAck(Message syncMessage)
+        public void OnAck(Message data)
         {
-            _acked.TryAdd(syncMessage.SyncItem!.MessageId, true);
+            _acked.TryAdd(data.SyncItem!.MessageId, true);
         }
 
         private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)

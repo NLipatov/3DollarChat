@@ -40,9 +40,9 @@ public class ReliableMessageSender : IReliableMessageSender<Message>
         }
     }
 
-    public void OnAck(Message syncMessage)
+    public void OnAck(Message data)
     {
-        GetTargetSender(syncMessage.Type).OnAck(syncMessage);
+        GetTargetSender(data.Type).OnAck(data);
     }
 
     private IReliableMessageSender<Message> GetTargetSender(MessageType type)

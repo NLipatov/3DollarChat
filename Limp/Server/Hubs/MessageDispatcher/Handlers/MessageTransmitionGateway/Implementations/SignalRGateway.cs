@@ -3,7 +3,7 @@ using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
 
-public class SignalRGateway<T> : IMessageGateway<T> where T : IDestinationResolvable
+public class SignalRGateway<T> : IMessageGateway<T> where T : IDestinationResolvable, IIdentifiable
 {
     private readonly IHubContext<MessageHub> _context;
 

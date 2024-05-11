@@ -70,9 +70,9 @@ public class EncryptedDataReliableSender : IReliableMessageSender<EncryptedDataT
             .Where(x => x.Key == username)
             .SelectMany(x => x.Value).Any();
 
-    public void OnAck(EncryptedDataTransfer syncMessage)
+    public void OnAck(EncryptedDataTransfer data)
     {
-        _acked.TryAdd(syncMessage.Id, true);
+        _acked.TryAdd(data.Id, true);
     }
 
     private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)
@@ -88,7 +88,7 @@ public class EncryptedDataReliableSender : IReliableMessageSender<EncryptedDataT
 
     private void Remove(Guid messageId)
     {
-        _unsentItems.TryRemove(messageId, out var _);
-        _acked.TryRemove(messageId, out var _);
+        _unsentItems.TryRemove(messageId, out _);
+        _acked.TryRemove(messageId, out _);
     }
 }

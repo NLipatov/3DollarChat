@@ -98,18 +98,18 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             };
         }
 
-        public void OnAck(Message syncMessage)
+        public void OnAck(Message data)
         {
-            var fileId = syncMessage.SyncItem?.FileId ?? Guid.Empty;
+            var fileId = data.SyncItem?.FileId ?? Guid.Empty;
             
             if (fileId == Guid.Empty) return; //Invalid ack
-            if (syncMessage.SyncItem is null) return; //Invalid ack
+            if (data.SyncItem is null) return; //Invalid ack
 
             _ackedChunks.AddOrUpdate(fileId,
-                _ => new HashSet<int>{syncMessage.SyncItem.Index},
+                _ => new HashSet<int>{data.SyncItem.Index},
                 (_, existingData) =>
                 {
-                    existingData.Add(syncMessage.SyncItem!.Index);
+                    existingData.Add(data.SyncItem!.Index);
 
                     return existingData;
                 });

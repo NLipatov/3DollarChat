@@ -239,6 +239,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
+        public async Task OnTransferAcked(EncryptedDataTransfer edt)
+        {
+            _reliableTransferDataSender.OnAck(edt);
+        }
+
         public async Task OnAck(Message syncMessage)
         {
             _reliableMessageSender.OnAck(syncMessage);

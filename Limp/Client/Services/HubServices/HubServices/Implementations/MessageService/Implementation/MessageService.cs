@@ -18,7 +18,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
-using Ethachat.Client.Services.KeyStorageService;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
@@ -157,6 +156,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             hubConnection.On<EncryptedDataTransfer>("OnTransfer", async edt =>
             {
+                if (edt.Sender != await _authenticationHandler.GetUsernameAsync())
+                {
+                    var connection = await GetHubConnectionAsync();
+                    await connection.SendAsync("OnTransferAcked", edt);
+                }
+                
                 var decryptionMethodName = nameof(DecryptTransferAsync);
                 MethodInfo? method = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                     .FirstOrDefault(m => m.Name == decryptionMethodName && m.IsGenericMethod);

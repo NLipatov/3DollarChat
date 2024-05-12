@@ -69,7 +69,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task<Key> GetAesKey(Message offerMessage)
         {
-            var decryptedCryptogram = await _cryptographyService.DecryptAsync<RSAHandler>
+            var decryptedCryptogram = await _cryptographyService.DecryptAsync<RsaHandler>
             (new Cryptogram
             {
                 Cyphertext = offerMessage.Cryptogramm?.Cyphertext,

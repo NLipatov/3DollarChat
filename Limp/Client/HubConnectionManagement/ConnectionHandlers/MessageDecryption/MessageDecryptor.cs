@@ -18,6 +18,6 @@ public class MessageDecryptor : IMessageDecryptor
             throw new ArgumentException($"Given message {nameof(Message.Cryptogramm)} property was null.");
 
         return await _cryptographyService
-            .DecryptAsync<AESHandler>(encryptedMessage.Cryptogramm, contact: encryptedMessage.Sender);
+            .DecryptAsync<AesHandler>(encryptedMessage.Cryptogramm, contact: encryptedMessage.Sender);
     }
 }

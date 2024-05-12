@@ -4,21 +4,21 @@ using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 {
-    public class RSAHandler : ICryptoHandler
+    public class RsaHandler : ICryptoHandler
     {
         private readonly IJSRuntime _jSRuntime;
 
-        public RSAHandler(IJSRuntime jSRuntime)
+        public RsaHandler(IJSRuntime jSRuntime)
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? publicKeyToEncryptWith = null)
         {
-            if (string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
+            if (string.IsNullOrWhiteSpace(publicKeyToEncryptWith))
                 throw new ArgumentException("Please provide an RSA Key to Encrypt your text with.");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("EncryptWithRSAPublicKey", cryptogram.Cyphertext, PublicKeyToEncryptWith);
+                .InvokeAsync<string>("EncryptWithRSAPublicKey", cryptogram.Cyphertext, publicKeyToEncryptWith);
 
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ApplicationException("Could not encrypt text.");

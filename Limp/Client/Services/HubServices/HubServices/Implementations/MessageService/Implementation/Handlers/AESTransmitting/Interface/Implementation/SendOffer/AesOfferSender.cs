@@ -42,7 +42,7 @@ public class AesOfferSender : IAesOfferSender
         };
 
         string? encryptedOffer = (await _cryptographyService
-            .EncryptAsync<RSAHandler>
+            .EncryptAsync<RsaHandler>
             (new Cryptogram { Cyphertext = JsonSerializer.Serialize(offer) },
                 //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
                 publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;

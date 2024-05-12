@@ -493,7 +493,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
-                .EncryptAsync<AESHandler>(new Cryptogram
+                .EncryptAsync<AesHandler>(new Cryptogram
                 {
                     Cyphertext = serializedData,
                 }, contact: target);
@@ -518,7 +518,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await NegotiateOnAESAsync(dataTransfer.Sender);
             
             var cryptogram = await _cryptographyService
-                .DecryptAsync<AESHandler>(dataTransfer.Cryptogram, dataTransfer.Sender);
+                .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, dataTransfer.Sender);
 
             var json = cryptogram.Cyphertext ?? string.Empty;
             return JsonSerializer.Deserialize<T>(json);

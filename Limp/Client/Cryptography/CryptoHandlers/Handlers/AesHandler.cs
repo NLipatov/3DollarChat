@@ -5,11 +5,11 @@ using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 {
-    public class AESHandler : ICryptoHandler
+    public class AesHandler : ICryptoHandler
     {
         private readonly IJSRuntime _jSRuntime;
 
-        public AESHandler(IJSRuntime jSRuntime)
+        public AesHandler(IJSRuntime jSRuntime)
         {
             _jSRuntime = jSRuntime;
         }

@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
 using Ethachat.Client.Services.InboxService;
@@ -21,20 +19,17 @@ public class BinarySendingManager : IBinarySendingManager
     private readonly IMessageBox _messageBox;
     private readonly ICallbackExecutor _callbackExecutor;
     private readonly IPackageMultiplexerService _packageMultiplexerService;
-    private readonly ICryptographyService _cryptographyService;
 
     public BinarySendingManager
     (IJSRuntime jsRuntime,
         IMessageBox messageBox,
         ICallbackExecutor callbackExecutor,
-        IPackageMultiplexerService packageMultiplexerService,
-        ICryptographyService cryptographyService)
+        IPackageMultiplexerService packageMultiplexerService)
     {
         _jsRuntime = jsRuntime;
         _messageBox = messageBox;
         _callbackExecutor = callbackExecutor;
         _packageMultiplexerService = packageMultiplexerService;
-        _cryptographyService = cryptographyService;
     }
 
     public void StoreMetadata(Message metadataMessage)
@@ -67,7 +62,7 @@ public class BinarySendingManager : IBinarySendingManager
         await connection.SendAsync("Dispatch", message);
     }
 
-    public async Task SendFile(ClientMessage message, Func<Task<HubConnection>> getHubConnection)
+    public async IAsyncEnumerable<ClientMessage> SendFile(ClientMessage message)
     {
         var fileDataId = Guid.NewGuid();
         var chunkableBinary = await _packageMultiplexerService.SplitAsync(message.BrowserFile);
@@ -77,14 +72,14 @@ public class BinarySendingManager : IBinarySendingManager
 
         _messageBox.AddMessage(metadataMessage);
 
-        await SendViaHubConnectionAsync(new Message()
+        yield return new ClientMessage()
         {
-            Type = metadataMessage.Type,
+            Type = MessageType.Metadata,
             Sender = metadataMessage.Sender,
             Target = metadataMessage.Target,
             Metadata = metadataMessage.Metadata,
             DateSent = DateTime.UtcNow
-        }, getHubConnection);
+        };
 
         await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.BrowserFile, message.Sender,
             message.Target);
@@ -92,24 +87,24 @@ public class BinarySendingManager : IBinarySendingManager
         int chunksCounter = 0;
         await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
         {
-            var package = new ClientPackage()
+            var package = new Package()
             {
                 Index = chunksCounter,
                 Total = totalChunks,
-                PlainB64Data = chunk,
+                Data = chunk,
                 FileDataid = fileDataId
             };
 
-            var packageMessage = new Message
+            var packageMessage = new ClientMessage
             {
-                Package = await EncryptPackage(package, message.Target),
+                Package = package,
                 Sender = message.Sender,
                 Target = message.Target,
                 Type = MessageType.DataPackage,
-                DateSent = DateTime.UtcNow
+                DateSent = DateTime.UtcNow,
             };
 
-            await SendViaHubConnectionAsync(packageMessage, getHubConnection);
+            yield return packageMessage;
 
             chunksCounter++;
             decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
@@ -167,23 +162,6 @@ public class BinarySendingManager : IBinarySendingManager
         var connection = await getHubConnection();
 
         await connection.SendAsync("Dispatch", message);
-    }
-
-    private async Task<Package> EncryptPackage(ClientPackage package, string usernameAesKey)
-    {
-        var cryptogram = await _cryptographyService.EncryptAsync<AESHandler>(new()
-        {
-            Cyphertext = package.PlainB64Data
-        }, usernameAesKey);
-
-        return new()
-        {
-            B64Data = cryptogram.Cyphertext,
-            IV = cryptogram.Iv,
-            FileDataid = package.FileDataid,
-            Index = package.Index,
-            Total = package.Total
-        };
     }
 
     public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)

@@ -2,7 +2,12 @@
 
 @if (IsSendingBinary)
 {
-    <i title="sending a binary file" class="bi bi-file-earmark-binary-fill"></i>
+    <span>
+        <CustomIcon
+            Name="file-shield"
+            Type="CustomIconType.Solid"
+            HtmlTitle="binary file transmission"/>
+    </span>
 }
 
 @code {

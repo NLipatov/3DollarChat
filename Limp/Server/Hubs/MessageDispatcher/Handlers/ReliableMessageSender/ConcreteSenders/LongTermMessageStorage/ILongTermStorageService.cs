@@ -1,6 +1,4 @@
-﻿using EthachatShared.Models.Message.Interfaces;
-
-namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
+﻿namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 
 public interface ILongTermStorageService<T>
 {

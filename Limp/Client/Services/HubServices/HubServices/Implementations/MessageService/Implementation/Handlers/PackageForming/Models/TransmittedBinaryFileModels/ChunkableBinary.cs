@@ -3,7 +3,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public record ChunkableBinary(MemoryStream DataStream, int MaxChunkSizeInKb = 15) : IChunkableBinary
 {
     public int Count => (int)Math.Ceiling((double)DataStream.Length / (MaxChunkSizeInKb * 1024));
-    public async IAsyncEnumerable<string> GenerateChunksAsync()
+    public async IAsyncEnumerable<byte[]> GenerateChunksAsync()
     {
         int maxChunkSizeInBytes = MaxChunkSizeInKb * 1024;
         byte[] buffer = new byte[maxChunkSizeInBytes];
@@ -14,7 +14,9 @@ public record ChunkableBinary(MemoryStream DataStream, int MaxChunkSizeInKb = 15
         while ((bytesRead = await DataStream.ReadAsync(buffer, 0, maxChunkSizeInBytes)) > 0)
         {
             totalBytesRead += bytesRead;
-            yield return Convert.ToBase64String(buffer, 0, bytesRead);
+            byte[] chunk = new byte[bytesRead];
+            Array.Copy(buffer, chunk, bytesRead);
+            yield return chunk;
         }
     }
 }

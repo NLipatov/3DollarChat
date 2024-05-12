@@ -1,4 +1,4 @@
-<i class="@(string.Join(" ", [IconClasses, HtmlClass]))IconClasses" style="color: @Color; cursor: @(CursorPointer ? "pointer" : "auto");">
+<i title=@HtmlTitle class="@(string.Join(" ", [IconClasses, HtmlClass]))IconClasses" style="color: @Color; cursor: @(CursorPointer ? "pointer" : "auto");">
 </i>
 
 @code {
@@ -7,6 +7,7 @@
     [Parameter] public string Color { get; set; } = "black";
     [Parameter] public bool CursorPointer { get; set; } = true;
     [Parameter] public string HtmlClass { get; set; } = string.Empty;
+    [Parameter] public string HtmlTitle { get; set; } = string.Empty;
 
     private string IconClasses => $"fa-{Type.ToString().ToLower()} {(string.IsNullOrWhiteSpace(Name) ? string.Empty : $"fa-{Name}")}";
 }

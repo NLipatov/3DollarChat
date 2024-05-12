@@ -28,7 +28,6 @@ using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.Interfaces;
-using EthachatShared.Models.Message.TransferStatus;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -201,6 +200,21 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 {
                                     _messageBox.AddMessage(clientMessage);
                                 }
+
+                                if (clientMessage.Type is MessageType.Metadata || clientMessage.Type is MessageType.DataPackage)
+                                {
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender, "OnBinaryTransmitting");
+
+                                    (bool isTransmissionCompleted, Guid fileId) progressStatus =
+                                        await _binaryReceivingManager.StoreAsync(clientMessage);
+
+                                    if (progressStatus.isTransmissionCompleted)
+                                    {
+                                        await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
+                                            clientMessage.Sender ?? throw new ArgumentException($"Invalid {clientMessage.Sender}"));
+                                    }
+                                }
+
                             }
                         }
                     }
@@ -292,20 +306,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
 
-                    if (message.Type is MessageType.Metadata || message.Type is MessageType.DataPackage)
-                    {
-                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnBinaryTransmitting");
-
-                        (bool isTransmissionCompleted, Guid fileId) progressStatus =
-                            await _binaryReceivingManager.StoreAsync(message);
-
-                        if (progressStatus.isTransmissionCompleted)
-                        {
-                            await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
-                                message.Sender ?? throw new ArgumentException($"Invalid {message.Sender}"));
-                        }
-                    }
-                    else if (message.Type == MessageType.AesOfferAccept)
+                    if (message.Type == MessageType.AesOfferAccept)
                     {
                         if (string.IsNullOrWhiteSpace(message.Sender)
                             || message.Cryptogramm?.KeyId == Guid.Empty
@@ -440,7 +441,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await _binarySendingManager.SendMetadata(message, GetHubConnectionAsync);
                     break;
                 case MessageType.BrowserFileMessage:
-                    await _binarySendingManager.SendFile(message, GetHubConnectionAsync);
+                    await SendBrowserFile(message);
                     break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
@@ -479,6 +480,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await foreach (var tMessage in _messageBuilder.BuildTextMessage(message))
                 await TransferAsync(tMessage, tMessage.Receiver
                                               ?? throw new ArgumentException("Target is a required parameter"));
+        }
+
+        private async Task SendBrowserFile(ClientMessage message)
+        {
+            await foreach (var dataPartMessage in _binarySendingManager.SendFile(message))
+                await TransferAsync(dataPartMessage, dataPartMessage.Target);
         }
 
         private async Task TransferAsync<T>(T data, string target) where T: IIdentifiable

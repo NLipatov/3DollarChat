@@ -11,7 +11,7 @@ namespace Ethachat.Client.ClientOnlyModels
         private List<TextChunk> _textChunks = new();
         public string PlainText => GetText();
         public bool IsToastShown { get; set; } = false;
-        public List<ClientPackage> Packages { get; set; } = new();
+        public List<Package> Packages { get; set; } = new();
         public List<ClientDataFile> ClientFiles { get; set; }
         public List<DataFile> Files { get; set; } = new();
         public new required MessageType Type { get; set; }

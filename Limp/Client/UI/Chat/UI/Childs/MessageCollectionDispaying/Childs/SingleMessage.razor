@@ -14,6 +14,7 @@
 @inject IPackageMultiplexerService PackageMultiplexerService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @using Ethachat.Client.UI.Shared.ReuseableComponents
+@using EthachatShared.Models.Message.ClientToClientTransferData
 @implements IDisposable
 
 @if (Message != null)
@@ -172,6 +173,11 @@
             MessageBox.OnDelivered(id);
             StateHasChanged();
         }, "OnReceiverMarkedMessageAsReceived", ComponentId);
+
+        HubServiceSubscriptionManager.AddCallback<Guid>(id =>
+        {
+            StateHasChanged();
+        }, "TextMessageUpdate", ComponentId);
     }
 
     protected override async Task OnParametersSetAsync()

@@ -203,12 +203,18 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await MessageService.SendMessage(new()
+            var message = new ClientMessage
             {
-                PlainText = MessageInput,
                 Target = TopicName,
                 Type = MessageType.TextMessage
+            };
+            message.AddChunk(new()
+            {
+                Text = MessageInput,
+                Index = 0,
+                Total = 1
             });
+            await MessageService.SendMessage(message);
         }
 
         MessageInput = string.Empty;

@@ -1,6 +1,7 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
 
 namespace Ethachat.Client.Services.InboxService.Implementation
 {
@@ -13,6 +14,8 @@ namespace Ethachat.Client.Services.InboxService.Implementation
 
         private readonly ICallbackExecutor _callbackExecutor;
         private HashSet<Guid> _storedSet = new();
+
+        public List<TextMessage> TextMessages { get; } = [];
 
         public List<ClientMessage> Messages { get; private set; } = new();
 
@@ -48,47 +51,48 @@ namespace Ethachat.Client.Services.InboxService.Implementation
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
+        public void AddMessage(TextMessage message)
+        {
+            if (_storedSet.Contains(message.Id))
+            {
+                Messages.First(x => x.Id == message.Id).AddChunk(new()
+                {
+                    Index = message.Index,
+                    Total = message.Total,
+                    Text = message.Text
+                });
+
+                _callbackExecutor.ExecuteSubscriptionsByName(message.Id, "TextMessageUpdate");
+            }
+            else
+            {
+                var clientMessage = new ClientMessage
+                {
+                    Id = message.Id,
+                    Type = MessageType.TextMessage,
+                    Sender = message.Sender,
+                    DateReceived = DateTime.UtcNow,
+                    Target = message.Receiver,
+                };
+                clientMessage.AddChunk(new TextChunk
+                {
+                    Text = message.Text,
+                    Index = message.Index,
+                    Total = message.Total
+                });
+                Messages.Add(clientMessage);
+
+                _storedSet.Add(message.Id);
+
+                _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+            }
+        }
+
         public void AddMessage(ClientMessage message)
-        {
-            if (message.SyncItem is not null)
-                AddCompositeMessage(message);
-            else
-                AddSingleMessage(message);
-        }
-
-        private void AddCompositeMessage(ClientMessage message)
-        {
-            if (message.SyncItem is null)
-                throw new ArgumentException("Message is not composite");
-
-            if (_storedSet.Contains(message.SyncItem.MessageId))
-            {
-                var compositeMessages = Messages
-                    .Where(x => x.SyncItem is not null && x.SyncItem.MessageId == message.SyncItem.MessageId).ToList();
-                compositeMessages.Add(message);
-                compositeMessages = compositeMessages
-                    .DistinctBy(x => x.SyncItem!.Index)
-                    .OrderBy(x => x.SyncItem!.Index)
-                    .ToList();
-
-                var text = string.Join(string.Empty, compositeMessages.Select(x => x.PlainText));
-                message.Id = message.SyncItem.MessageId;
-                Delete(message);
-                message.PlainText = text;
-                AddSingleMessage(message);
-            }
-            else
-            {
-                message.Id = message.SyncItem.MessageId;
-                AddSingleMessage(message);
-            }
-        }
-
-        private void AddSingleMessage(ClientMessage message)
         {
             if (Contains(message)) //duplicate
                 return;
-            
+
             Messages.Add(message);
 
             _storedSet.Add(GetMessageKey(message));

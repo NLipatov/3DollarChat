@@ -470,24 +470,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             await SendReceivedConfirmation(textMessage.Id, textMessage.Sender);
 
-            ClientMessage clientMessage = new ClientMessage
-            {
-                Id = textMessage.Id,
-                Type = MessageType.TextMessage,
-                Sender = textMessage.Sender,
-                DateReceived = DateTime.UtcNow,
-                Target = textMessage.Receiver,
-                PlainText = textMessage.Text,
-                SyncItem = textMessage.Total > 1
-                    ? new SyncItem
-                    {
-                        Index = textMessage.Index,
-                        TotalItems = textMessage.Total
-                    }
-                    : null
-            };
-
-            _messageBox.AddMessage(clientMessage);
+            _messageBox.AddMessage(textMessage);
         }
 
         private async Task SendText(ClientMessage message)
@@ -547,15 +530,21 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task AddToMessageBox(string plainText, string target, Guid id)
         {
-            _messageBox.AddMessage(new ClientMessage
+            var message = new ClientMessage
             {
                 Id = id,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
                 Target = target,
-                PlainText = plainText,
                 DateSent = DateTime.UtcNow,
                 Type = MessageType.TextMessage
+            };
+            message.AddChunk(new()
+            {
+                Index = 0,
+                Total = 1,
+                Text = plainText
             });
+            _messageBox.AddMessage(message);
         }
 
         public async Task SendReceivedConfirmation(Guid messageId, string messageSender)

@@ -6,8 +6,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {
-        public MessageBox
-            (ICallbackExecutor callbackExecutor)
+        public MessageBox(ICallbackExecutor callbackExecutor)
         {
             _callbackExecutor = callbackExecutor;
         }
@@ -54,27 +53,25 @@ namespace Ethachat.Client.Services.InboxService.Implementation
             if (message.SyncItem is not null)
                 AddCompositeMessage(message);
             else
-            {
-                if (!Contains(message))
-                    AddSingleMessage(message);
-            }
+                AddSingleMessage(message);
         }
 
         private void AddCompositeMessage(ClientMessage message)
         {
             if (message.SyncItem is null)
                 throw new ArgumentException("Message is not composit");
-            
+
             if (_storedSet.Contains(message.SyncItem.MessageId))
             {
-                var compositeMessages = Messages.Where(x => x.SyncItem is not null && x.SyncItem.MessageId == message.SyncItem.MessageId).ToList();
+                var compositeMessages = Messages
+                    .Where(x => x.SyncItem is not null && x.SyncItem.MessageId == message.SyncItem.MessageId).ToList();
                 compositeMessages.Add(message);
                 compositeMessages = compositeMessages
-                    .DistinctBy(x=>x.SyncItem!.Index)
+                    .DistinctBy(x => x.SyncItem!.Index)
                     .OrderBy(x => x.SyncItem!.Index)
                     .ToList();
-                
-                var text = string.Join(string.Empty, compositeMessages.Select(x=>x.PlainText));
+
+                var text = string.Join(string.Empty, compositeMessages.Select(x => x.PlainText));
                 message.Id = message.SyncItem.MessageId;
                 Delete(message);
                 message.PlainText = text;
@@ -89,6 +86,9 @@ namespace Ethachat.Client.Services.InboxService.Implementation
 
         private void AddSingleMessage(ClientMessage message)
         {
+            if (!Contains(message)) //duplicate
+                return;
+            
             Messages.Add(message);
 
             _storedSet.Add(GetMessageKey(message));

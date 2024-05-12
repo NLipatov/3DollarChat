@@ -86,7 +86,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
 
         private void AddSingleMessage(ClientMessage message)
         {
-            if (!Contains(message)) //duplicate
+            if (Contains(message)) //duplicate
                 return;
             
             Messages.Add(message);

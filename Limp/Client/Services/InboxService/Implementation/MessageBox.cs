@@ -59,7 +59,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
         private void AddCompositeMessage(ClientMessage message)
         {
             if (message.SyncItem is null)
-                throw new ArgumentException("Message is not composit");
+                throw new ArgumentException("Message is not composite");
 
             if (_storedSet.Contains(message.SyncItem.MessageId))
             {

@@ -12,43 +12,43 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             if (string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
                 throw new ArgumentException("Please provide an RSA Key to Encrypt your text with.");
 
             string encryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("EncryptWithRSAPublicKey", cryptogramm.Cyphertext, PublicKeyToEncryptWith);
+                .InvokeAsync<string>("EncryptWithRSAPublicKey", cryptogram.Cyphertext, PublicKeyToEncryptWith);
 
             if (string.IsNullOrWhiteSpace(encryptedMessage))
                 throw new ApplicationException("Could not encrypt text.");
 
-            var result = new Cryptogramm
+            var result = new Cryptogram
             {
                 Cyphertext = encryptedMessage,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext),
             };
             
-            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
             return result;
         }
 
-        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, string? contact = null)
         {
             if (InMemoryKeyStorage.MyRSAPrivate?.Value == null)
                 throw new ApplicationException("RSA Private key was null");
 
             string decryptedMessage = await _jSRuntime
-                .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogramm.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
+                .InvokeAsync<string>("DecryptWithRSAPrivateKey", cryptogram.Cyphertext, InMemoryKeyStorage.MyRSAPrivate.Value);
 
-            var result = new Cryptogramm()
+            var result = new Cryptogram()
             {
                 Cyphertext = decryptedMessage,
-                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
+                Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext),
             };
             
-            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+            await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
             return result;
         }

@@ -1,30 +1,35 @@
 @using EthachatShared.Models.ConnectedUsersManaging
-@using Ethachat.Client.Cryptography.KeyStorage
+@using Ethachat.Client.Services.KeyStorageService.Implementations
+@using EthachatShared.Encryption
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+@inject IJSRuntime jSRuntime
 
-@if (!KeyExists)
+@if (!KeyExist)
 {
-    @if (IsPartnerOnline)
-    {
-        <div class="card-holder">
-            <Card
-                Title="AES exchange"
-                Text="Now we are exchanging the key for encrypting messages"/>
-        </div>
-    }
-    else
-    {
-        <div class="card-holder">
-            <Card
-                Title="AES exchange"
-                Text="AES exchange is not possible - Your partner is offline"/>
-        </div>
-    }
+    <div class="aes-exchange-modal">
+        @if (IsPartnerOnline)
+        {
+            <div class="card-holder">
+                <Card
+                    Title="AES exchange"
+                    Text="Now we are exchanging the key for encrypting messages"/>
+            </div>
+        }
+        else
+        {
+            <div class="card-holder">
+                <Card
+                    Title="AES exchange"
+                    Text="AES exchange is not possible - Your partner is offline"/>
+            </div>
+        }
+    </div>
 }
 
 @code {
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     [Parameter] public bool IsPartnerOnline { get; set; }
+    private bool KeyExist { get; set; }
 
     protected override void SubscribeToHubEvents()
     {
@@ -33,11 +38,11 @@
         HubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
     }
 
-    private bool KeyExists => InMemoryKeyStorage
-        .AESKeyStorage
-        .OrderBy(x=>x.Value.CreationDate)
-        .FirstOrDefault(x => x.Key == PartnerUsername && x.Value.IsAccepted)
-        .Value is not null;
+    protected override async Task OnInitializedAsync()
+    {
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
+        await base.OnInitializedAsync();
+    }
 
     private void OnUsersOnlineUpdate(UserConnectionsReport userConnectionsReport)
     {
@@ -46,6 +51,9 @@
             .Contains(PartnerUsername);
     }
 
-    private void OnAESUpdated(bool keyRenewed) => StateHasChanged();
-
+    private async Task OnAESUpdated(bool keyRenewed)
+    {
+        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
+        StateHasChanged();
+    }
 }

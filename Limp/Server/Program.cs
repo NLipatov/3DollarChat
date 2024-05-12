@@ -14,6 +14,7 @@ using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
 using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
+using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
@@ -48,7 +49,8 @@ builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddTransient<ILogService, SeqLogService>();
-builder.Services.AddSingleton<ILongTermMessageStorageService, InMemoryLongTermStorage>();
+builder.Services.AddSingleton<ILongTermStorageService<Message>, InMemoryLongTermStorage>();
+builder.Services.AddSingleton<ILongTermStorageService<EncryptedDataTransfer>, InMemoryLongTermTransferStorage>();
 builder.Services.AddTransient<IServerHttpClient, ServerHttpClient>();
 
 var app = builder.Build();

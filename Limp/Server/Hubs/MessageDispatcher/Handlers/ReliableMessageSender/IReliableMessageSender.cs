@@ -1,9 +1,7 @@
-using EthachatShared.Models.Message;
-
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 
-public interface IReliableMessageSender
+public interface IReliableMessageSender<T>
 {
-    Task EnqueueAsync(Message message);
-    void OnAck(Message syncMessage);
+    Task EnqueueAsync(T message);
+    void OnAck(T data);
 }

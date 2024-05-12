@@ -65,7 +65,12 @@
                         //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                         //issue reference: https://stackoverflow.com/a/64686984
                         <span>
-                            <i class="fas fa-check-double @_messageClass"></i>
+                            <CustomIcon
+                                Type="CustomIconType.Solid"
+                                Name="check-double"
+                                Color="limegreen"
+                                CursorPointer="false"
+                                HtmlClass=@_messageClass/>
                         </span>
                     }
                     else if (Message.IsRegisteredByHub)
@@ -75,13 +80,23 @@
                             //Wrapping i in span tag solves "Cannot read property 'removeChild' of null" error.
                             //issue reference: https://stackoverflow.com/a/64686984
                             <span>
-                                <i class="fas fa-check @_messageClass"></i>
+                                <CustomIcon
+                                    Type="CustomIconType.Solid"
+                                    Name="check"
+                                    Color="limegreen"
+                                    CursorPointer="false"
+                                    HtmlClass=@_messageClass/>
                             </span>
                         }
                         else
                         {
                             <span>
-                                <i class="bi bi-database-check @_messageClass"></i>
+                                <CustomIcon
+                                    Type="CustomIconType.Solid"
+                                    Name="paper-plane"
+                                    Color="limegreen"
+                                    CursorPointer="false"
+                                    HtmlClass=@(_messageClass)/>
                             </span>
                         }
                     }
@@ -157,6 +172,11 @@
             MessageBox.OnDelivered(id);
             StateHasChanged();
         }, "OnReceiverMarkedMessageAsReceived", ComponentId);
+
+        HubServiceSubscriptionManager.AddCallback<Guid>(id =>
+        {
+            StateHasChanged();
+        }, "TextMessageUpdate", ComponentId);
     }
 
     protected override async Task OnParametersSetAsync()

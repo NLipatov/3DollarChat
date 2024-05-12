@@ -14,7 +14,6 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.SignalR;
-using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Server.Hubs
 {

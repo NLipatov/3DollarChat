@@ -10,16 +10,16 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 {
     public class ReliableBinaryMessageSender : IReliableBinaryMessageSender
     {
-        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
-        private readonly IMessageGateway _gateway;
+        private readonly ILongTermStorageService<Message> _longTermStorageService;
+        private readonly IMessageGateway<Message> _gateway;
         private readonly ConcurrentDictionary<Guid, ConcurrentBag<UnsentItem>> _fileIdToUnsentItems = new();
         private readonly ConcurrentDictionary<Guid, HashSet<int>> _ackedChunks = new();
         private const int MetadataFilesCount = 1;
 
-        public ReliableBinaryMessageSender(IMessageGateway gateway,
-            ILongTermMessageStorageService longTermMessageStorageService)
+        public ReliableBinaryMessageSender(IMessageGateway<Message> gateway,
+            ILongTermStorageService<Message> longTermStorageService)
         {
-            _longTermMessageStorageService = longTermMessageStorageService;
+            _longTermStorageService = longTermStorageService;
             _gateway = gateway;
         }
 
@@ -46,7 +46,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             if (_fileIdToUnsentItems.TryGetValue(fileId, out var unsentItems)
                 && !IsFileAcked(fileId))
             {
-                if (!HasActiveConnections(message.TargetGroup!))
+                if (!HasActiveConnections(message.Target!))
                 {
                     await PassToLongTermSender(fileId);
                     Remove(fileId);
@@ -98,18 +98,18 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             };
         }
 
-        public void OnAck(Message syncMessage)
+        public void OnAck(Message data)
         {
-            var fileId = syncMessage.SyncItem?.FileId ?? Guid.Empty;
+            var fileId = data.SyncItem?.FileId ?? Guid.Empty;
             
             if (fileId == Guid.Empty) return; //Invalid ack
-            if (syncMessage.SyncItem is null) return; //Invalid ack
+            if (data.SyncItem is null) return; //Invalid ack
 
             _ackedChunks.AddOrUpdate(fileId,
-                _ => new HashSet<int>{syncMessage.SyncItem.Index},
+                _ => new HashSet<int>{data.SyncItem.Index},
                 (_, existingData) =>
                 {
-                    existingData.Add(syncMessage.SyncItem!.Index);
+                    existingData.Add(data.SyncItem!.Index);
 
                     return existingData;
                 });
@@ -153,7 +153,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _fileIdToUnsentItems.TryRemove(fileId, out var unsentItems);
             foreach (var unsentItem in unsentItems ?? new())
             {
-                await _longTermMessageStorageService.SaveAsync(unsentItem.Message);
+                await _longTermStorageService.SaveAsync(unsentItem.Message);
             }
         }
 

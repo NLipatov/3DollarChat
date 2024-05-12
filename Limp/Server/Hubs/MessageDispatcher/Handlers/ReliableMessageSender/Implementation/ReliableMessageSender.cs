@@ -1,4 +1,3 @@
-using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Binary;
@@ -9,21 +8,21 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 
-public class ReliableMessageSender : IReliableMessageSender
+public class ReliableMessageSender : IReliableMessageSender<Message>
 {
     private static IReliableTextMessageSender _reliableTextMessageSender;
     private static IReliableBinaryMessageSender _reliableBinaryMessageSender;
 
-    public ReliableMessageSender(IMessageGateway gateway, ILongTermMessageStorageService longTermMessageStorageService)
+    public ReliableMessageSender(IMessageGateway<Message> gateway, ILongTermStorageService<Message> longTermStorageService)
     {
         if (_reliableTextMessageSender is null)
         {
-            _reliableTextMessageSender = new ReliableTextMessageSender(gateway, longTermMessageStorageService);
+            _reliableTextMessageSender = new ReliableTextMessageSender(gateway, longTermStorageService);
         }
 
         if (_reliableBinaryMessageSender is null)
         {
-            _reliableBinaryMessageSender = new ReliableBinaryMessageSender(gateway, longTermMessageStorageService);
+            _reliableBinaryMessageSender = new ReliableBinaryMessageSender(gateway, longTermStorageService);
         }
     }
 
@@ -41,15 +40,16 @@ public class ReliableMessageSender : IReliableMessageSender
         }
     }
 
-    public void OnAck(Message syncMessage)
+    public void OnAck(Message data)
     {
-        GetTargetSender(syncMessage.Type).OnAck(syncMessage);
+        GetTargetSender(data.Type).OnAck(data);
     }
 
-    private IReliableMessageSender GetTargetSender(MessageType type)
+    private IReliableMessageSender<Message> GetTargetSender(MessageType type)
     {
         return type switch
         {
+            
             MessageType.Metadata or MessageType.DataPackage => _reliableBinaryMessageSender,
             _ => _reliableTextMessageSender
         };

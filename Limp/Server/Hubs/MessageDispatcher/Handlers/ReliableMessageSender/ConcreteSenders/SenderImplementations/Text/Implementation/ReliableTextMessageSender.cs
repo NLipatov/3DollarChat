@@ -10,16 +10,16 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 {
     public class ReliableTextMessageSender : IReliableTextMessageSender
     {
-        private readonly ILongTermMessageStorageService _longTermMessageStorageService;
-        private readonly IMessageGateway _gateway;
+        private readonly ILongTermStorageService<Message> _longTermStorageService;
+        private readonly IMessageGateway<Message> _gateway;
         private ConcurrentDictionary<Guid, UnsentItem> _unsentItems = new();
         private ConcurrentDictionary<Guid, bool> _acked = new();
         private volatile bool _isSending;
 
-        public ReliableTextMessageSender(IMessageGateway gateway,
-            ILongTermMessageStorageService longTermMessageStorageService)
+        public ReliableTextMessageSender(IMessageGateway<Message> gateway,
+            ILongTermStorageService<Message> longTermStorageService)
         {
-            _longTermMessageStorageService = longTermMessageStorageService;
+            _longTermStorageService = longTermStorageService;
             _gateway = gateway;
         }
 
@@ -35,7 +35,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         {
             if (_unsentItems.ContainsKey(message.Id))
             {
-                if (!HasActiveConnections(message.TargetGroup!))
+                if (!HasActiveConnections(message.Target!))
                 {
                     await PassToLongTermSender(message.Id);
                     Remove(message.Id);
@@ -62,7 +62,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
             if (unsentItems is not null)
             {
-                await _longTermMessageStorageService.SaveAsync(unsentItems.Message);
+                await _longTermStorageService.SaveAsync(unsentItems.Message);
             }
         }
 
@@ -71,9 +71,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 .Where(x => x.Key == username)
                 .SelectMany(x => x.Value).Any();
 
-        public void OnAck(Message syncMessage)
+        public void OnAck(Message data)
         {
-            _acked.TryAdd(syncMessage.SyncItem!.MessageId, true);
+            _acked.TryAdd(data.SyncItem!.MessageId, true);
         }
 
         private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)

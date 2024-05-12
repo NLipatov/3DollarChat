@@ -1,5 +1,6 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
 
 namespace Ethachat.Client.Services.InboxService
 {
@@ -20,6 +21,7 @@ namespace Ethachat.Client.Services.InboxService
         /// Adds message to message box
         /// </summary>
         void AddMessage(ClientMessage message);
+        void AddMessage(TextMessage message);
 
         /// <summary>
         /// Marks message as seen

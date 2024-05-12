@@ -4,5 +4,5 @@ namespace Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecr
 
 public interface IMessageDecryptor
 {
-    Task<Cryptogramm> DecryptAsync(Message encryptedMessage);
+    Task<Cryptogram> DecryptAsync(Message encryptedMessage);
 }

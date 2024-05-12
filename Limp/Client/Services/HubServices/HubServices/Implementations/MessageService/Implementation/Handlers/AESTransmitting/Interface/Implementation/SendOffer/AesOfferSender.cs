@@ -1,10 +1,10 @@
 using System.Text.Json;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.BrowserKeyStorageService;
 using Ethachat.Client.Services.ContactsProvider;
+using Ethachat.Client.Services.KeyStorageService.Implementations;
+using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
@@ -17,43 +17,33 @@ public class AesOfferSender : IAesOfferSender
     private readonly ICryptographyService _cryptographyService;
     private readonly IAuthenticationHandler _authenticationHandler;
     private readonly IContactsProvider _contactsProvider;
-    private readonly IBrowserKeyStorage _browserKeyStorage;
     private readonly IJSRuntime _jsRuntime;
 
     public AesOfferSender(ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler,
-        IContactsProvider contactsProvider, IBrowserKeyStorage browserKeyStorage, IJSRuntime jsRuntime)
+        IContactsProvider contactsProvider, IJSRuntime jsRuntime)
     {
         _cryptographyService = cryptographyService;
         _authenticationHandler = authenticationHandler;
         _contactsProvider = contactsProvider;
-        _browserKeyStorage = browserKeyStorage;
         _jsRuntime = jsRuntime;
     }
 
-    public async Task<Message> SendAesOfferAsync(string partnersUsername, string partnersPublicKey, string aesKey)
+    public async Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
     {
-        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.CreationDate =
-            DateTime.UtcNow;
-        InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value =
-            aesKey;
-        await _browserKeyStorage.SaveInMemoryKeysInLocalStorage();
-        string? offeredAESKeyForConversation =
-            InMemoryKeyStorage.AESKeyStorage.First(x => x.Key == partnersUsername).Value.Value!.ToString();
-
-        if (string.IsNullOrWhiteSpace(offeredAESKeyForConversation))
+        if (string.IsNullOrWhiteSpace(aesKey.Value?.ToString()))
             throw new ApplicationException("Could not properly generated an AES Key for conversation");
 
         var contact = await _contactsProvider.GetContact(partnersUsername, _jsRuntime);
 
         AesOffer offer = new()
         {
-            AesKey = offeredAESKeyForConversation,
+            key = aesKey,
             PassPhrase = contact?.TrustedPassphrase ?? string.Empty
         };
 
         string? encryptedOffer = (await _cryptographyService
             .EncryptAsync<RSAHandler>
-            (new Cryptogramm { Cyphertext = JsonSerializer.Serialize(offer) },
+            (new Cryptogram { Cyphertext = JsonSerializer.Serialize(offer) },
                 //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
                 publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
 
@@ -62,12 +52,27 @@ public class AesOfferSender : IAesOfferSender
             Type = MessageType.AesOffer,
             DateSent = DateTime.UtcNow,
             Sender = await _authenticationHandler.GetUsernameAsync(),
-            TargetGroup = partnersUsername,
+            Target = partnersUsername,
             Cryptogramm = new()
             {
                 Cyphertext = encryptedOffer,
+                KeyId = aesKey.Id
             }
         };
+        
+        var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
+        await keyStorage.StoreAsync(new Key
+        {
+            Id = aesKey.Id,
+            Value = aesKey.Value,
+            Contact = messageWithAesOffer.Target,
+            Format = KeyFormat.Raw,
+            Type = KeyType.Aes,
+            Author = messageWithAesOffer.Sender,
+            IsAccepted = false,
+            OfferMessageId = messageWithAesOffer.Id,
+            CreationDate = aesKey.CreationDate
+        });
 
         return messageWithAesOffer;
     }

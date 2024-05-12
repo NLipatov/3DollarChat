@@ -1,9 +1,8 @@
 @using EthachatShared.Encryption
-@using Ethachat.Client.Cryptography.KeyStorage
-@using Ethachat.Client.Services.BrowserKeyStorageService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
-@inject IBrowserKeyStorage LocalKeyManager
+@using Ethachat.Client.Services.KeyStorageService.Implementations
 @inject IMessageService MessageService
+@inject IJSRuntime jSRuntime 
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 @if (AesKey is not null)
@@ -17,16 +16,18 @@
 @code {
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
     private Key? AesKey { get; set; }
+    private LocalStorageKeyStorage KeyStorageService { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
+        KeyStorageService = new LocalStorageKeyStorage(jSRuntime);
         await UpdateAesKey();
         await base.OnInitializedAsync();
     }
 
     private async Task UpdateAesKey()
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(PartnerUsername);
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         if (AesKey is null)
             await MessageService.NegotiateOnAESAsync(PartnerUsername);
     }
@@ -39,17 +40,15 @@
 
     private async Task OnAesKeyReady(string partnerName)
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(partnerName);
-        if (AesKey is null)
-            throw new ApplicationException("Could not get an AES key.");
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(partnerName, KeyType.Aes);
 
-        await LocalKeyManager.SaveInMemoryKeysInLocalStorage();
         StateHasChanged();
     }
 
     private async Task OnAesUpdated(bool keyRenewed)
     {
-        AesKey = await LocalKeyManager.GetAESKeyForChat(PartnerUsername);
+        AesKey = await KeyStorageService.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
+        
         StateHasChanged();
     }
 

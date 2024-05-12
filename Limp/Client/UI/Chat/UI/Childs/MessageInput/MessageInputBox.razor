@@ -1,4 +1,5 @@
-﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+﻿@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Cryptography
 @using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
@@ -8,7 +9,6 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
-@using Ethachat.Client.ClientOnlyModels
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
 @inject IMessageBuilder MessageBuilder
@@ -111,34 +111,34 @@
 
     private async Task SendIBrowserFile(IBrowserFile browserFile)
     {
-        // //stream it if it can be streamed
-        // if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
-        // {
-        //     var playlist = await PostVideoToHlsapiAsync(browserFile);
-        //
-        //     if (playlist is not null)
-        //     {
-        //         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-        //
-        //         await MessageService.SendMessage(new ClientMessage
-        //         {
-        //             Id = Guid.NewGuid(),
-        //             HlsPlaylist = playlist,
-        //             Type = MessageType.HLSPlaylist,
-        //             TargetGroup = TopicName,
-        //             Sender = MyUsername,
-        //             DateSent = DateTime.UtcNow
-        //         });
-        //         return;
-        //     }
-        // }
+        //stream it if it can be streamed
+        if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
+        {
+            var playlist = await PostVideoToHlsapiAsync(browserFile);
+        
+            if (playlist is not null)
+            {
+                CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+        
+                await MessageService.SendMessage(new ClientMessage
+                {
+                    Id = Guid.NewGuid(),
+                    HlsPlaylist = playlist,
+                    Type = MessageType.HLSPlaylist,
+                    Target = TopicName,
+                    Sender = MyUsername,
+                    DateSent = DateTime.UtcNow
+                });
+                return;
+            }
+        }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
         await MessageService.SendMessage(new()
         {
             BrowserFile = browserFile,
             Type = MessageType.BrowserFileMessage,
-            TargetGroup = TopicName,
+            Target = TopicName,
             Sender = MyUsername
         });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
@@ -203,12 +203,18 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await MessageService.SendMessage(new()
+            var message = new ClientMessage
             {
-                PlainText = MessageInput,
-                TargetGroup = TopicName,
+                Target = TopicName,
                 Type = MessageType.TextMessage
+            };
+            message.AddChunk(new()
+            {
+                Text = MessageInput,
+                Index = 0,
+                Total = 1
             });
+            await MessageService.SendMessage(message);
         }
 
         MessageInput = string.Empty;

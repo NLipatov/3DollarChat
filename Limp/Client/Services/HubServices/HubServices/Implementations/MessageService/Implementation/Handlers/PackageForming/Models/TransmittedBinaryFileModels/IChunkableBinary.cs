@@ -11,5 +11,5 @@ public interface IChunkableBinary
     /// Gets next chunk of Base64 data
     /// </summary>
     /// <returns></returns>
-    IAsyncEnumerable<string> GenerateChunksAsync();
+    IAsyncEnumerable<byte[]> GenerateChunksAsync();
 }

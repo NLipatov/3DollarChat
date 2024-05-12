@@ -1,19 +1,21 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
 
 namespace Ethachat.Client.Services.InboxService.Implementation
 {
     public class MessageBox : IMessageBox
     {
-        public MessageBox
-            (ICallbackExecutor callbackExecutor)
+        public MessageBox(ICallbackExecutor callbackExecutor)
         {
             _callbackExecutor = callbackExecutor;
         }
 
         private readonly ICallbackExecutor _callbackExecutor;
         private HashSet<Guid> _storedSet = new();
+
+        public List<TextMessage> TextMessages { get; } = [];
 
         public List<ClientMessage> Messages { get; private set; } = new();
 
@@ -34,7 +36,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
         public void Delete(string targetGroup)
         {
             var messagesToRemove = Messages
-                .Where(x => x.TargetGroup == targetGroup || x.Sender == targetGroup);
+                .Where(x => x.Target == targetGroup || x.Sender == targetGroup);
 
             Messages.RemoveAll(x => messagesToRemove.Contains(x));
             _storedSet.RemoveWhere(x => messagesToRemove.Any(m => GetMessageKey(m) == x));
@@ -49,8 +51,48 @@ namespace Ethachat.Client.Services.InboxService.Implementation
             _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
         }
 
+        public void AddMessage(TextMessage message)
+        {
+            if (_storedSet.Contains(message.Id))
+            {
+                Messages.First(x => x.Id == message.Id).AddChunk(new()
+                {
+                    Index = message.Index,
+                    Total = message.Total,
+                    Text = message.Text
+                });
+
+                _callbackExecutor.ExecuteSubscriptionsByName(message.Id, "TextMessageUpdate");
+            }
+            else
+            {
+                var clientMessage = new ClientMessage
+                {
+                    Id = message.Id,
+                    Type = MessageType.TextMessage,
+                    Sender = message.Sender,
+                    DateReceived = DateTime.UtcNow,
+                    Target = message.Receiver,
+                };
+                clientMessage.AddChunk(new TextChunk
+                {
+                    Text = message.Text,
+                    Index = message.Index,
+                    Total = message.Total
+                });
+                Messages.Add(clientMessage);
+
+                _storedSet.Add(message.Id);
+
+                _callbackExecutor.ExecuteSubscriptionsByName("MessageBoxUpdate");
+            }
+        }
+
         public void AddMessage(ClientMessage message)
         {
+            if (Contains(message)) //duplicate
+                return;
+
             Messages.Add(message);
 
             _storedSet.Add(GetMessageKey(message));

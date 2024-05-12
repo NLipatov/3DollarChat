@@ -1,17 +1,23 @@
 ﻿let iv;
 
-function GenerateAESKey(contactName) {
-    window.crypto.subtle.generateKey
-        (
-            {
-                name: "AES-GCM",
-                length: 256
-            },
-            true,
-            ["encrypt", "decrypt"]
-    ).then(async (Key) => {
-        await exportAESKeyToDotnet(Key, contactName);
-        });
+async function GenerateAESKeyAsync() {
+    let key = await window.crypto.subtle.generateKey
+    (
+        {
+            name: "AES-GCM",
+            length: 256
+        },
+        true,
+        ["encrypt", "decrypt"]
+    )
+    const exportedKey = await window.crypto.subtle.exportKey(
+        "raw",
+        key
+    );
+    const exportedKeyBuffer = new Uint8Array(exportedKey);
+    const exportedKeyBufferString = ab2str(exportedKeyBuffer);
+    
+    return exportedKeyBufferString;
 }
 
 function GenerateAESKeyForHLS(videoId) {

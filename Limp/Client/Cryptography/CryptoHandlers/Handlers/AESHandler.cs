@@ -1,4 +1,4 @@
-﻿using Ethachat.Client.Cryptography.KeyStorage;
+﻿using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
@@ -13,35 +13,51 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
         {
             _jSRuntime = jSRuntime;
         }
-        public async Task<Cryptogramm> Decrypt(Cryptogramm cryptogramm, string? contact = null)
+        public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, string? contact = null)
         {
             try
             {
-                if (string.IsNullOrWhiteSpace(cryptogramm.Iv))
+                var localKeyStorageService = new LocalStorageKeyStorage(_jSRuntime);
+                
+                if (string.IsNullOrWhiteSpace(cryptogram.Iv))
                     throw new ArgumentException("Please provide an IV");
 
-                await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogramm.Iv, cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogram.Iv, cryptogram.Cyphertext);
 
-                Key? key = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact);
-                if (key == null)
-                    throw new ApplicationException("RSA Public key was null");
+                var keys = await localKeyStorageService.GetAsync(contact, KeyType.Aes);
+                if (!keys.Any())
+                    throw new ApplicationException($"No keys stored for {contact}");
+                
+                var key = keys.FirstOrDefault(x => x.Id == cryptogram.KeyId);
 
+                //Contact has some previous key, but not the latest one.
+                //In this case we need to mark that last key that contact has as last accepted key 
+                var supposedKey = await localKeyStorageService.GetLastAcceptedAsync(contact, KeyType.Aes);
+                if (key is not null && supposedKey is not null && key.Id != supposedKey.Id)
+                {
+                    key.CreationDate = DateTime.UtcNow;
+                    await localKeyStorageService.UpdateAsync(key);
+                }
+
+                if (key is null)
+                    throw new ApplicationException("Message was encrypted with key that is not presented in key storage.");
+                
                 await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
 
                 string decryptedMessage = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
                 {
                     decryptedMessage = await _jSRuntime
-                        .InvokeAsync<string>("AESDecryptText", cryptogramm.Cyphertext, key.Value.ToString());
+                        .InvokeAsync<string>("AESDecryptText", cryptogram.Cyphertext, key.Value.ToString());
                 }
 
-                var result = new Cryptogramm()
+                var result = new Cryptogram()
                 {
                     Cyphertext = decryptedMessage,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext)
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext)
                 };
 
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
                 return result;
             }
@@ -51,34 +67,31 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
             }
         }
 
-        public async Task<Cryptogramm> Encrypt(Cryptogramm cryptogramm, string? contact = null, string? PublicKeyToEncryptWith = null)
+        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, string? contact = null, string? PublicKeyToEncryptWith = null)
         {
             try
             {
-                string? aesKey = string.Empty;
+                var localKeyStorageService = new LocalStorageKeyStorage(_jSRuntime);
+                Key key = await localKeyStorageService.GetLastAcceptedAsync(contact, KeyType.Aes);
 
-                if (!string.IsNullOrWhiteSpace(PublicKeyToEncryptWith))
-                    aesKey = PublicKeyToEncryptWith;
-                else if (!string.IsNullOrWhiteSpace(contact))
-                    aesKey = InMemoryKeyStorage.AESKeyStorage.GetValueOrDefault(contact)?.Value?.ToString();
-
-                if (string.IsNullOrWhiteSpace(aesKey))
+                if (key is null)
                     throw new ApplicationException("Could not resolve a AES key for encryption.");
 
                 string encryptedText = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogramm.Cyphertext))
+                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
                 {
                     encryptedText = await _jSRuntime
-                        .InvokeAsync<string>("AESEncryptText", cryptogramm.Cyphertext, aesKey);
+                        .InvokeAsync<string>("AESEncryptText", cryptogram.Cyphertext, key.Value!.ToString());
                 }
 
-                var result = new Cryptogramm
+                var result = new Cryptogram
                 {
                     Cyphertext = encryptedText,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogramm.Cyphertext),
+                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext),
+                    KeyId = key.Id,
                 };
                 
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogramm.Cyphertext);
+                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
 
                 return result;
             }

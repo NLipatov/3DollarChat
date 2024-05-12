@@ -28,11 +28,18 @@
     <input @bind="MessageInput" @bind:event="oninput"/>
 
     <label for="fileinput" class="label-wrapper" style="align-items: center;">
-        <span class="bi bi-paperclip"></span>
+        <span>
+            <CustomIcon
+                Name="paperclip"
+                Type="CustomIconType.Solid"/>
+        </span>
         <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
     </label>
 
-    <button @onclick="async () => await SendMessage()">Send</button>
+    <CustomButton 
+        OnPressAsync=@(async () => await SendMessage())
+        StyleString="box-shadow: none; border: 0.01rem solid black; background-color: rgba(0, 0, 0, 0.15);"
+        Title="Send"/>
 </div>
 
 <CustomModal
@@ -218,6 +225,7 @@
         }
 
         MessageInput = string.Empty;
+        StateHasChanged();
     }
 
     public async ValueTask DisposeAsync()

@@ -1,5 +1,10 @@
-﻿<div style="cursor: pointer; @Style" @onclick="()=>OnClickCallback()">
-    <div class="user-card">
+﻿@inject IUsersService usersService
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
+@using EthachatShared.Models.ConnectedUsersManaging
+@inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
+
+<div style="cursor: pointer; @Style" @onclick="()=>OnClickCallback()">
+    <div class="user-card @(IsOnline ? "active" : "")">
         <div class="header">
             <div class="profile-picture">
                 <i class="bi bi-person-fill person-icon"></i>
@@ -22,9 +27,6 @@
     public string Username { get; set; }
 
     [Parameter]
-    public bool IsOnline { get; set; }
-
-    [Parameter]
     public Action OnClickCallback { get; set; }
 
     [Parameter]
@@ -32,4 +34,30 @@
 
     [Parameter]
     public bool IsKeyReady { get; set; } = false;
+    
+    private UserConnectionsReport UsersOnlineMessage { get; set; } = new();
+
+    private bool IsOnline => UsersOnlineMessage.UserConnections.FirstOrDefault(x => x.Username == Username)?.ConnectionIds.Any() ?? false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await usersService.ActualizeConnectedUsersAsync();
+        await base.OnInitializedAsync();
+    }
+
+    protected override void SubscribeToHubEvents()
+    {
+        HubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+        base.SubscribeToHubEvents();
+    }
+    
+
+    private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
+    {
+        if (UsersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        {
+            UsersOnlineMessage = usersOnlineMessage;
+            StateHasChanged();
+        }
+    }
 }

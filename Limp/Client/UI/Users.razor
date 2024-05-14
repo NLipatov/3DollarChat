@@ -37,7 +37,6 @@
                     Context="connection">
 
                     <ContactBar Username="@connection.Username"
-                                IsOnline="true"
                                 OnClickCallback="@(() => _navigationManager.NavigateTo($"{connection.Username}"))"/>
                 </Virtualize>
             }

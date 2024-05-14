@@ -1,37 +1,38 @@
 .callout {
     display: flex;
     flex-direction: column;
-    padding: 0.5rem;
+    padding: var(--app-padding);
     border-bottom-style: hidden;
     margin-bottom: 1rem;
+    border-radius: var(--app-border-radius);
 }
 
 .info {
-    border-left: 0.5rem solid #54a2ff;
+    border-left: var(--app-ribbon-width) solid var(--app-blue);
 }
 
 .info svg {
-    color: #54a2ff;
+    color: var(--app-blue);
 }
 
 .idea {
-    border-left: 0.5rem solid #c3e3ff;
+    border-left: var(--app-ribbon-width) solid var(--app-blue);
 }
 
 .idea svg {
-    color: #c3e3ff;
+    color: var(--app-blue);
 }
 
 .danger {
-    border-left: 0.5rem solid #ff1b23;
+    border-left: var(--app-ribbon-width) solid var(--app-red);
 }
 
 .danger svg {
-    color: #ff1b23;
+    color: var(--app-red);
 }
 
 .warning {
-    border-left: 0.5rem solid #ffe11b;
+    border-left: var(--app-ribbon-width) solid #ffe11b;
 }
 
 .warning svg {
@@ -39,7 +40,7 @@
 }
 
 .error {
-    border-left: 0.5rem solid #233525;
+    border-left: var(--app-ribbon-width) solid #233525;
 }
 
 .error svg {

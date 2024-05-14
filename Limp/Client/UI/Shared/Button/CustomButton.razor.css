@@ -11,7 +11,7 @@
     font-size: 1rem;
     padding: 0.5rem;
     box-shadow: none;
-    border-radius: var(--border-radius);
+    border-radius: var(--app-border-radius);
 }
 
 .custom-btn:hover{

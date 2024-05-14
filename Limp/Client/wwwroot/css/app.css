@@ -5,10 +5,12 @@
     --hovered-color: #f6fafd;
     --background-color: white;
     --font-color: black;
-    --border-radius: 0.3rem;
+    --app-border-radius: 0.3rem;
+    --app-padding: 1rem;
     --app-green: lawngreen;
     --app-blue: skyblue;
     --app-red: #ff0000;
+    --app-ribbon-width: 0.25rem;
 }
 
 html, body {

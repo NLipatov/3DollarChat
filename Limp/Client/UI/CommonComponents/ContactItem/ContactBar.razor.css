@@ -4,7 +4,11 @@
     border-left: 0.25rem solid rgba(0, 10, 0, 1);
     background-color: rgba(var(--bs-dark-rgb), .075);
     border-radius: 0.25rem;
-    border-left: 0.25rem solid var(--app-blue) !important;
+    border-left: var(--app-ribbon-width) solid black !important;
+}
+
+.active {
+    border-left: var(--app-ribbon-width) solid var(--app-green) !important;
 }
 
 .user-card a.username {

@@ -10,7 +10,12 @@
     font-weight: 500;
     font-size: 1rem;
     padding: 0.5rem;
-    box-shadow: rgba(0, 0, 0, 0.05) 0px 1px 0px 0px, rgba(0, 0, 0, 0.2) 0px -1px 0px 0px;
+    box-shadow: none;
+    border-radius: var(--border-radius);
+}
+
+.custom-btn:hover{
+    background-color: #0404044d;
 }
 
 .success {

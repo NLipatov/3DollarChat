@@ -12,7 +12,7 @@
 }
 
 .active {
-    border-left: 0.25rem solid lawngreen !important;
+    border-left: 0.25rem solid var(--app-green) !important;
 }
 
 .header {

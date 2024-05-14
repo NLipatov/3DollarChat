@@ -9,5 +9,5 @@
 }
 
 .online img{
-    border: 1.5px solid lawngreen !important;
+    border: 1.5px solid var(--app-green) !important;
 }

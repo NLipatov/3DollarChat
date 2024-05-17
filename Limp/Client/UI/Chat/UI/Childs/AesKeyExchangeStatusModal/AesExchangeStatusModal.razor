@@ -35,7 +35,7 @@
     {
         base.SubscribeToHubEvents();
         HubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(OnUsersOnlineUpdate, "ReceiveOnlineUsers", ComponentId);
-        HubServiceSubscriptionManager.AddCallback<bool>(OnAESUpdated, "AESUpdated", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<string>(OnAESUpdated, "AESUpdated", ComponentId);
     }
 
     protected override async Task OnInitializedAsync()
@@ -51,7 +51,7 @@
             .Contains(PartnerUsername);
     }
 
-    private async Task OnAESUpdated(bool keyRenewed)
+    private async Task OnAESUpdated(string _)
     {
         KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         StateHasChanged();

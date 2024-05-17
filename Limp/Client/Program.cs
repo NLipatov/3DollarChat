@@ -34,6 +34,8 @@ using Ethachat.Client.Services.InboxService.Implementation;
 using Ethachat.Client.Services.LocalStorageService;
 using Ethachat.Client.Services.NotificationService;
 using Ethachat.Client.Services.NotificationService.Implementation;
+using Ethachat.Client.Services.UndecryptedMessagesService;
+using Ethachat.Client.Services.UndecryptedMessagesService.Models;
 using Ethachat.Client.Services.UserAgent;
 using Ethachat.Client.Services.UserAgent.Implementation;
 using Ethachat.Client.Services.VideoStreamingService;

@@ -35,7 +35,7 @@
     protected override void SubscribeToHubEvents()
     {
         HubServiceSubscriptionManager.AddCallback<string>(OnAesKeyReady, "OnPartnerAESKeyReady", ComponentId);
-        HubServiceSubscriptionManager.AddCallback<bool>(OnAesUpdated, "AESUpdated", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<string>(OnAesUpdated, "AESUpdated", ComponentId);
     }
 
     private async Task OnAesKeyReady(string partnerName)
@@ -45,7 +45,7 @@
         StateHasChanged();
     }
 
-    private async Task OnAesUpdated(bool keyRenewed)
+    private async Task OnAesUpdated(string _)
     {
         AesKey = await KeyStorageService.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         

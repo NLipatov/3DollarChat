@@ -1,4 +1,5 @@
-﻿using Ethachat.Client.Services.KeyStorageService.Implementations;
+﻿using Ethachat.Client.Cryptography.Exceptions;
+using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
@@ -26,7 +27,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
 
                 var keys = await localKeyStorageService.GetAsync(contact, KeyType.Aes);
                 if (!keys.Any())
-                    throw new ApplicationException($"No keys stored for {contact}");
+                    throw new EncryptionKeyNotFoundException("Missing AES key");
                 
                 var key = keys.FirstOrDefault(x => x.Id == cryptogram.KeyId);
 
@@ -40,7 +41,7 @@ namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
                 }
 
                 if (key is null)
-                    throw new ApplicationException("Message was encrypted with key that is not presented in key storage.");
+                    throw new EncryptionKeyNotFoundException("Missing AES key");
                 
                 await _jSRuntime.InvokeVoidAsync("importSecretKey", key.Value.ToString());
 

@@ -21,6 +21,12 @@
     cursor: pointer;
 }
 
+.sidebar-footer{
+    padding: 0.3rem;
+    background-color: rgba(0, 0, 0, 0.05);
+    width: 100%;
+}
+
 @media only screen and (max-width: 640px) {
     .sidebar {
         display: flex;
@@ -34,6 +40,10 @@
     
     .sidebar-toggle-btn {
         display: unset;
+    }
+    
+    .sidebar-footer{
+        display: none;
     }
 }
 

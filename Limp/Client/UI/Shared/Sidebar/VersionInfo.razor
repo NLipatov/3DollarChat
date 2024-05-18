@@ -1,0 +1,10 @@
+@using Ethachat.Client.Services.VersioningService
+@inject IVersionService VersionService
+<div class="version-container">
+    <span>
+        Version: @VersionService.GetSemVer()
+    </span>
+    <span>
+        Date: @VersionService.GetCommitDate()
+    </span>
+</div>

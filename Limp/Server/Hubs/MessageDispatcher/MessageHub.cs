@@ -217,12 +217,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task DeleteConversation(string requester, string acceptor)
-        {
-            _ = _longTermStorageService.GetSaved(acceptor);
-            await Clients.Group(acceptor).SendAsync("OnConversationDeleteRequest", requester);
-        }
-
         public async Task OnDataTranferSuccess(Guid fileId, string fileSender)
         {
             try

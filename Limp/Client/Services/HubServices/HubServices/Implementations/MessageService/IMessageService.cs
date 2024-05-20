@@ -7,7 +7,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task NegotiateOnAESAsync(string partnerUsername);
         Task SendTypingEventToPartnerAsync(string sender, string receiver);
         Task SendMessage(ClientMessage message);
-        Task RequestPartnerToDeleteConvertation(string targetGroup);
-        Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername);
+        Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername);
     }
 }

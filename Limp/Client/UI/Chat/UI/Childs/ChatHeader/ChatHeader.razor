@@ -1,10 +1,13 @@
-﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+﻿@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.Services.AuthenticationService.Handlers
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Modals
 @using EthachatShared.Models.Message
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
-@inject IMessageBox _messageBox;
+@inject IMessageBox _messageBox
 @inject IMessageService _messageService
+@inject IAuthenticationHandler AuthenticationHandler
 
 <div class="header">
     <AvatarOnlineIndicator
@@ -28,7 +31,7 @@
     <div class="key-info">
         <CustomButton
             StyleString="box-shadow: none; min-width: auto;"
-            OnPress=@DeleteConversation
+            OnPressAsync=@DeleteConversationAsync
             HtmlTitle="Clear conversation">
             <ChildContext>
                 <CustomIcon
@@ -78,9 +81,14 @@
             aesRenewalModal.ShowModal();
     }
 
-    private void DeleteConversation()
+    private async Task DeleteConversationAsync()
     {
-        _messageService.RequestPartnerToDeleteConvertation(PartnerName);
+        await _messageService.SendMessage(new ClientMessage
+        {
+            Type = MessageType.ConversationDeletionRequest,
+            Target = PartnerName,
+            Sender = await AuthenticationHandler.GetUsernameAsync()
+        });
         _messageBox.Delete(PartnerName);
     }
 

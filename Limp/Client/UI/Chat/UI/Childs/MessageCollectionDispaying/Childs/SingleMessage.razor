@@ -110,7 +110,7 @@
             }
         </div>
         <OnObservedTrigger 
-            Callback=@(async () => await MessageService.NotifySenderThatMessageWasReaded(Message.Id, Message.Sender!, MyUsername!))/>
+            Callback=@(async () => await MessageService.NotifySenderThatMessageWasRead(Message.Id, Message.Sender!, MyUsername!))/>
     </div>
 }
 

@@ -223,7 +223,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                             clientMessage.Sender ?? throw new ArgumentException($"Invalid {clientMessage.Sender}"));
                                     }
                                 }
-
+                                
+                                if (clientMessage.Type is MessageType.ConversationDeletionRequest)
+                                {
+                                    _messageBox.Delete(clientMessage.Sender);
+                                }
                             }
                         }
                     }
@@ -324,9 +328,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             HubConnection.On<Guid>("OnFileTransfered",
                 messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived"); });
 
-            HubConnection.On<string>("OnConversationDeleteRequest",
-                partnerName => { _messageBox.Delete(partnerName); });
-
             HubConnection.On<string>("OnTyping",
                 (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
         }
@@ -416,6 +417,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await SendBrowserFile(message);
                     break;
                 case MessageType.ResendRequest:
+                    await TransferAsync(message);
+                    break;
+                case MessageType.ConversationDeletionRequest:
                     await TransferAsync(message);
                     break;
                 default:
@@ -541,12 +545,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
         }
 
-        public async Task RequestPartnerToDeleteConvertation(string targetGroup)
-        {
-            await GetHubConnectionAsync();
-            await HubConnection!.SendAsync("DeleteConversation", await _authenticationHandler.GetUsernameAsync(), targetGroup);
-        }
-
         private void AddToMessageBox(ClientMessage message)
         {
             _messageBox.AddMessage(message);
@@ -587,7 +585,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 });
         }
 
-        public async Task NotifySenderThatMessageWasReaded(Guid messageId, string messageSender, string myUsername)
+        public async Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername)
         {
             if (messageSender == myUsername)
                 return;

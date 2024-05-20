@@ -39,7 +39,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 {
     public class MessageService : IMessageService
     {
-        public NavigationManager NavigationManager { get; set; }
+        private NavigationManager NavigationManager { get; set; }
         private readonly IMessageBox _messageBox;
         private readonly ICryptographyService _cryptographyService;
         private readonly IUsersService _usersService;
@@ -53,10 +53,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IAesTransmissionManager _aesTransmissionManager;
         private readonly IContactsProvider _contactsProvider;
         private bool _isConnectionClosedCallbackSet = false;
-        private string myName;
-        private bool IsRoutinesCompleted => !string.IsNullOrWhiteSpace(myName);
         private AckMessageBuilder AckMessageBuilder => new();
-        private HubConnection? hubConnection { get; set; }
+        private HubConnection? HubConnection { get; set; }
         private LocalStorageKeyStorage KeyStorageService => new (_jsRuntime);
 
         public MessageService
@@ -97,8 +95,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task<HubConnection> GetHubConnectionAsync()
         {
             //Shortcut connection is alive and ready to be used
-            if (hubConnection?.State is HubConnectionState.Connected && IsRoutinesCompleted)
-                return hubConnection;
+            if (HubConnection?.State is HubConnectionState.Connected 
+                && !string.IsNullOrWhiteSpace(await _authenticationHandler.GetUsernameAsync()))
+                return HubConnection;
 
             if (!await _authenticationHandler.IsSetToUseAsync())
             {
@@ -106,14 +105,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return null;
             }
 
-            if (hubConnection == null)
-                throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
+            if (HubConnection == null)
+                throw new ArgumentException($"{nameof(HubConnection)} was not properly instantiated.");
 
-            while (hubConnection.State is HubConnectionState.Disconnected)
+            while (HubConnection.State is HubConnectionState.Disconnected)
             {
                 try
                 {
-                    await hubConnection.StartAsync();
+                    await HubConnection.StartAsync();
                 }
                 catch
                 {
@@ -123,17 +122,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
             }
 
-            await hubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
+            await HubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
 
             _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
 
             if (_isConnectionClosedCallbackSet is false)
             {
-                hubConnection.Closed += OnConnectionLost;
+                HubConnection.Closed += OnConnectionLost;
                 _isConnectionClosedCallbackSet = true;
             }
 
-            return hubConnection;
+            return HubConnection;
         }
 
         private async Task OnConnectionLost(Exception? exception)
@@ -144,19 +143,19 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private void InitializeHubConnection()
         {
-            if (hubConnection is not null)
+            if (HubConnection is not null)
                 return;
 
-            hubConnection = HubServiceConnectionBuilder
+            HubConnection = HubServiceConnectionBuilder
                 .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.MessageHubRelativeAddress));
         }
 
         private void RegisterHubEventHandlers()
         {
-            if (hubConnection is null)
+            if (HubConnection is null)
                 throw new NullReferenceException("Could not register event handlers - hub was null.");
 
-            hubConnection.On<EncryptedDataTransfer>("OnTransfer", async edt =>
+            HubConnection.On<EncryptedDataTransfer>("OnTransfer", async edt =>
             {
                 if (edt.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
@@ -231,27 +230,27 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
             });
 
-            hubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers",
+            HubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers",
                 updatedTrackedUserConnections =>
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
                 });
 
-            hubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
+            HubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
                 messageId =>
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
                 });
 
-            hubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
+            HubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
                 _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
 
-            hubConnection.On<AuthResult>("OnAccessTokenInvalid",
+            HubConnection.On<AuthResult>("OnAccessTokenInvalid",
                 authResult => { NavigationManager.NavigateTo("signin"); });
 
-            hubConnection.On<Guid>("MetadataRegisteredByHub", metadataId => { });
+            HubConnection.On<Guid>("MetadataRegisteredByHub", metadataId => { });
 
-            hubConnection.On<Message>("ReceiveMessage", async message =>
+            HubConnection.On<Message>("ReceiveMessage", async message =>
             {
                 if (message.Sender != "You")
                 {
@@ -298,7 +297,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
                         await MarkContactAsTrusted(message.Sender!);
-                        await hubConnection.SendAsync("Dispatch", offerResponse);
+                        await HubConnection.SendAsync("Dispatch", offerResponse);
 
                         if (offerResponse.Type is MessageType.AesOfferAccept)
                             _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "AESUpdated");
@@ -306,9 +305,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
             });
 
-            hubConnection.On<string>("OnMyNameResolved", async username =>
+            HubConnection.On<string>("OnMyNameResolved", async username =>
             {
-                myName = username;
                 if (!await _authenticationHandler.IsSetToUseAsync())
                 {
                     NavigationManager.NavigateTo("/signIn");
@@ -323,13 +321,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
             });
 
-            hubConnection.On<Guid>("OnFileTransfered",
+            HubConnection.On<Guid>("OnFileTransfered",
                 messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived"); });
 
-            hubConnection.On<string>("OnConversationDeleteRequest",
+            HubConnection.On<string>("OnConversationDeleteRequest",
                 partnerName => { _messageBox.Delete(partnerName); });
 
-            hubConnection.On<string>("OnTyping",
+            HubConnection.On<string>("OnTyping",
                 (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
         }
 
@@ -348,11 +346,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
         {
-            if (hubConnection != null && hubConnection.State is HubConnectionState.Connected)
+            if (HubConnection != null && HubConnection.State is HubConnectionState.Connected)
             {
                 try
                 {
-                    await hubConnection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
+                    await HubConnection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
                 }
                 catch (Exception e)
                 {
@@ -436,7 +434,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 Target = message.Target,
                 DateSent = DateTime.UtcNow,
                 Type = MessageType.HLSPlaylist,
-                Sender = myName
+                Sender = await _authenticationHandler.GetUsernameAsync()
             });
         }
 
@@ -546,7 +544,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task RequestPartnerToDeleteConvertation(string targetGroup)
         {
             await GetHubConnectionAsync();
-            await hubConnection!.SendAsync("DeleteConversation", myName, targetGroup);
+            await HubConnection!.SendAsync("DeleteConversation", await _authenticationHandler.GetUsernameAsync(), targetGroup);
         }
 
         private void AddToMessageBox(ClientMessage message)
@@ -598,7 +596,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 Type = MessageType.MessageReadConfirmation,
                 Target = messageSender,
-                Sender = myName,
+                Sender = await _authenticationHandler.GetUsernameAsync(),
                 Id = messageId  
             });
         }

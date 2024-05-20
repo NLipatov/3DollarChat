@@ -6,10 +6,8 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
-using Ethachat.Client.ClientOnlyModels.ClientOnlyExtentions;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Cryptography.Exceptions;
-using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
@@ -47,7 +45,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IMessageBuilder _messageBuilder;
-        private readonly IMessageDecryptor _messageDecryptor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
@@ -69,7 +66,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IUsersService usersService,
             ICallbackExecutor callbackExecutor,
             IMessageBuilder messageBuilder,
-            IMessageDecryptor messageDecryptor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
             IBinarySendingManager binarySendingManager,
@@ -85,7 +81,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
             _messageBuilder = messageBuilder;
-            _messageDecryptor = messageDecryptor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
             _binarySendingManager = binarySendingManager;
@@ -262,43 +257,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 {
                     await (await GetHubConnectionAsync())
                         .SendAsync("OnAck", AckMessageBuilder.CreateMessageAck(message));
-
-                    if (message.Type is MessageType.HLSPlaylist)
-                    {
-
-                        Cryptogram decryptedMessageCryptogram = new Cryptogram();
-                        try
-                        {
-                            decryptedMessageCryptogram = await _messageDecryptor.DecryptAsync(message);
-                        }
-                        catch (Exception ex)
-                        {
-                            await Console.Out.WriteLineAsync(
-                                "Cannot decrypt received user message. Regenerating AES key.");
-                            await NegotiateOnAESAsync(message.Sender);
-                        }
-
-                        if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogram.Cyphertext))
-                        {
-                            ClientMessage clientMessage = message.AsClientMessage();
-
-                            if (!string.IsNullOrWhiteSpace(decryptedMessageCryptogram.Cyphertext))
-                            {
-                                if (message.Type is MessageType.HLSPlaylist)
-                                {
-                                    clientMessage.HlsPlaylist = JsonSerializer
-                                        .Deserialize<HlsPlaylist>(decryptedMessageCryptogram.Cyphertext);
-                                }
-                            }
-
-                            _messageBox.AddMessage(clientMessage);
-                        }
-                        else
-                        {
-                            if (message.Sender is not null)
-                                await NegotiateOnAESAsync(message.Sender);
-                        }
-                    }
 
                     if (_messageBox.Contains(message))
                         return;

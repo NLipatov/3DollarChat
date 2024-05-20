@@ -1,7 +1,6 @@
 using Blazored.Toast;
 using Ethachat.Client;
 using Ethachat.Client.Cryptography;
-using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
@@ -50,7 +49,6 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();
 builder.Services.AddSingleton<IMessageBox, MessageBox>();
-builder.Services.AddTransient<IMessageDecryptor, MessageDecryptor>();
 builder.Services.AddTransient<IAesOfferReceiver, AesOfferReceiver>();
 builder.Services.AddTransient<IAesOfferSender, AesOfferSender>();
 builder.Services.AddTransient<IAesTransmissionManager, AesTransmissionManager>();

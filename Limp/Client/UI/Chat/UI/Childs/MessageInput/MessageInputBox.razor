@@ -2,7 +2,6 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Cryptography
-@using Ethachat.Client.HubConnectionManagement.ConnectionHandlers.MessageDecryption
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
@@ -15,7 +14,6 @@
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime
-@inject IMessageDecryptor MessageDecryptor 
 @inject IPackageMultiplexerService PackageMultiplexerService
 @inject ICallbackExecutor CallbackExecutor
 @inject ICryptographyService CryptographyService

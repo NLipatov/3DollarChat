@@ -17,10 +17,9 @@
             </ChildContext>
         </CustomButton>
     </div>
-    <div>
-        <Virtualize Items="@itemCollection" Context="item">
+    <div class="editable-list-item-container">
+        <Virtualize Items="@ItemCollection" Context="item">
             <div style="align-items: baseline; gap: 10px; display: flex;"
-                 @onclick:preventDefault="true"
                  @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item); })>
                 <div style="display: @(EditionMode ? "" : "none");">
                     <CustomIcon
@@ -28,13 +27,13 @@
                         Name="circle-minus"
                         CursorPointer="true"/>
                 </div>
-
-                <EditableListItem
-                    OnItemClickedAction=@((itemName) => OnItemClicked.InvokeAsync(item))
-                    ItemModel="item"
-                    IconClass=@IconClass
-                    Style="width: 100%; margin-top: 10px;"/>
             </div>
+            
+            <EditableListItem
+                OnItemClickedAction=@((_) => OnItemClicked.InvokeAsync(item))
+                ItemModel="item"
+                IconClass=@IconClass
+                Style="width: 100%; margin-top: 10px;"/>
         </Virtualize>
     </div>
 </div>
@@ -44,9 +43,9 @@
 
     [Parameter] public string ListHeader { get; set; } = "Items";
 
-    [Parameter] public bool EditionMode { get; set; } = false;
+    [Parameter] public bool EditionMode { get; set; }
 
-    [Parameter] public List<ItemModel> itemCollection { get; set; } = new();
+    [Parameter] public List<ItemModel> ItemCollection { get; set; } = new();
 
     [Parameter] public EventCallback<ItemModel> OnItemRemoved { get; set; }
 

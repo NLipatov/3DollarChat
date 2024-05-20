@@ -12,38 +12,35 @@
     <div class="trusted-contacts-group">
         @if (!_contacts.Any())
         {
-            <CustomCallout 
+            <CustomCallout
                 CalloutType="CalloutType.Info"
                 CalloutBody="No contacts. Add someone to assign a passphrase."/>
         }
         @foreach (var contact in _contacts.OrderBy(x => x.Username))
         {
-            <Card Class="trusted-contacts">
-                <CardHeader>
-                    @contact.Username
-                    @if (contact.IsTrusted)
-                    {
-                        <CustomIcon Type="CustomIconType.Solid" Name="user-check" Color="green"/>
-                    }
-                    else
-                    {
-                        <CustomIcon Type="CustomIconType.Solid" Name="user-secret" Color="red"/>
-                    }
-                </CardHeader>
-                <CardBody>
-                    Passphrase: <input placeholder="Set a trust passphrase" @bind="@contact.TrustedPassphrase" @bind:event="oninput"/>
-                </CardBody>
-                @if (usernameToPassphrase[contact.Username] != contact.TrustedPassphrase)
+            <div>
+                @contact.Username
+                @if (contact.IsTrusted)
                 {
-                    <CardFooter>
-                        <Button
-                            Color="ButtonColor.Success"
-                            @onclick="async () => { await _contactsProvider.UpdateContact(contact, _JSRuntime); usernameToPassphrase[contact.Username] = contact.TrustedPassphrase; }">
-                            Apply
-                        </Button>
-                    </CardFooter>
+                    <CustomIcon Type="CustomIconType.Solid" Name="user-check" Color="green"/>
                 }
-            </Card>
+                else
+                {
+                    <CustomIcon Type="CustomIconType.Solid" Name="user-secret" Color="red"/>
+                }
+            </div>
+            <div>
+                Passphrase: <input placeholder="Set a trust passphrase" @bind="@contact.TrustedPassphrase" @bind:event="oninput"/>
+            </div>
+            @if (usernameToPassphrase[contact.Username] != contact.TrustedPassphrase)
+            {
+                <div>
+                    <CustomButton
+                        Title="Apply"
+                        ButtonType="ButtonType.Success"
+                        OnPress="async () => { await _contactsProvider.UpdateContact(contact, _JSRuntime); usernameToPassphrase[contact.Username] = contact.TrustedPassphrase; }"/>
+                </div>
+            }
         }
     </div>
 </div>
@@ -55,7 +52,7 @@
     protected override async Task OnInitializedAsync()
     {
         _contacts = await _contactsProvider.GetContacts(_JSRuntime);
-        
+
         foreach (var contact in _contacts)
             usernameToPassphrase.Add(contact.Username, contact.TrustedPassphrase);
 

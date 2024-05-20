@@ -1,4 +1,4 @@
-<div class="card" style="width: 18rem; cursor: pointer;" @onclick=@OnClick>
+<div class="card @ClassString" style="width: 18rem; cursor: pointer;" @onclick=@OnClick>
     @if (!string.IsNullOrWhiteSpace(ImageUrl))
     {
         <img class="card-img-top" src=@ImageUrl alt="Card image cap">
@@ -46,6 +46,7 @@
     [Parameter] public CustomIcon? Icon { get; set; }
     [Parameter] public Action? OnPress { get; set; }
     [Parameter] public Func<Task>? OnPressAsync { get; set; }
+    [Parameter] public string ClassString { get; set; } = string.Empty;
     
     private async Task OnClick()
     {

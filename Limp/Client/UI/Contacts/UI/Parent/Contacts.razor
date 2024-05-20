@@ -40,7 +40,7 @@
                 @if(ContactsList.Any())
                 {
                     <EditableList 
-                        itemCollection=@(ContactsList
+                        ItemCollection=@(ContactsList
                             .Select(x=> new ItemModel
                             {
                                 IsActive = x.IsOnline, 

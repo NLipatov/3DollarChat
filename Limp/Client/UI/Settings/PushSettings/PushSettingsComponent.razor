@@ -82,7 +82,7 @@
             {
                 <EditableList
                     ListHeader="Active subscriptions"
-                    itemCollection="WebPushSubscriptions.Select(x => new ItemModel { Id = x.Id, ItemName = GetUserAgentItemName(x.UserAgentId), IsActive = IsSameUserAgent(x.UserAgentId)}).ToList()"
+                    ItemCollection="WebPushSubscriptions.Select(x => new ItemModel { Id = x.Id, ItemName = GetUserAgentItemName(x.UserAgentId), IsActive = IsSameUserAgent(x.UserAgentId)}).ToList()"
 
                     OnItemRemoved="OnRemoveSubscriptions"
                     OnItemClicked=@(() => { })
@@ -162,7 +162,7 @@
             return;
 
         //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         //Subscribing to server event of updating online users
@@ -204,7 +204,7 @@
         subscriptionToDelete.JwtPair = credentials as JwtPair;
         subscriptionToDelete.WebAuthnPair = credentials as WebAuthnPair;
 
-        await RemoveWebPushSubscriptions(new NotificationSubscriptionDto[1] { subscriptionToDelete });
+        await RemoveWebPushSubscriptions([subscriptionToDelete]);
     }
 
     private async Task RemoveWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)

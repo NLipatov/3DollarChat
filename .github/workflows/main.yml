@@ -1,5 +1,8 @@
 name: ethachat-workflow
-on: workflow_dispatch
+on: 
+  push:
+    branches:
+      - dev
 jobs:
   publish:
     runs-on: ubuntu-latest

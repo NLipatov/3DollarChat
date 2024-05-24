@@ -31,7 +31,7 @@ jobs:
       - name: Push image to hub
         run: docker push nlipatov/ethacore-ethachat:etha-web-app
 
-      - name: ssh and redeploy
+      - name: Redeploy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.SSH_HOST }}

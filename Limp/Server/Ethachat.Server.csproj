@@ -12,6 +12,9 @@
     <Content Remove="WebPushNotifications\Models\**" />
     <EmbeddedResource Remove="WebPushNotifications\Models\**" />
     <None Remove="WebPushNotifications\Models\**" />
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
   <ItemGroup>

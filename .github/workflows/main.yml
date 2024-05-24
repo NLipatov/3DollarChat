@@ -4,17 +4,20 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
+      - name: Get repository code
+        uses: actions/checkout@v4
+    
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
         
-      - name: publish a project
+      - name: Publish a project
         run: dotnet publish -r linux-x64 -o distro
         
-      - name: build a Docker container
+      - name: Build a Docker container
         run: docker build -t etha-web-app ./distro
         
-      - name: tag image as latest
+      - name: Tag Docker image as latest
         run: docker tag etha-web-app:latest nlipatov/ethacore-ethachat:etha-web-app
         
-      - name: push image to hub
+      - name: Push image to hub
         run: docker push nlipatov/ethacore-ethachat:etha-web-app

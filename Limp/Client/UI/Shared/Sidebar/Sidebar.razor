@@ -11,7 +11,11 @@
         </span>
     </div>
 
-    <div class="sidebar-body" style="display: @(IsSidebarShown ? "block" : "none"); background-color: white;">
+    <div class="sidebar-body" style="display: @(IsSidebarShown ? "block" : "none");">
+
+        <div class="sidebar-split-line">
+        </div>
+        
         <NavigationItem
             Link="/contacts"
             Name="Contacts"
@@ -32,7 +36,7 @@
             Name="About"
             FaIcon="fa-circle-info"/>
     </div>
-    
+
     <div class="sidebar-footer">
         <VersionInfo/>
     </div>

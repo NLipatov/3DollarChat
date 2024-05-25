@@ -1,5 +1,5 @@
 .active {
-    background-color: aliceblue;
+    background-color: rgba(41,56,41,255);
     cursor: pointer;
 }
 
@@ -10,8 +10,11 @@
     gap: 0.5rem;
     font-size: 1rem;
     cursor: pointer;
+    color: white;
+    border-radius: 0.8rem;
+    margin-bottom: 0.2rem;
 }
 
 .navigation-item-btn:hover {
-    background-color: var(--hovered-color);
+    background-color: rgb(41 56 41 / 40%);;
 }

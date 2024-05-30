@@ -4,18 +4,149 @@
 
 <AuthenticatedView>
     <AuthenticatedContent>
-        <div class="p-2 card-container">
-            <Card
-                OnPress=@(() => NavigationManager.NavigateTo("settings/notifications"))
-                Icon=@(new CustomIcon() { Name = "bell" })
-                Title="Web Push"
-                Text="Manage your web push notifications"/>
-            <Card
-                OnPress=@(() => NavigationManager.NavigateTo("settings/aes-exchange-settings"))
-                Icon=@(new CustomIcon() { Name = "shield-halved" })
-                Title="Trusted Contacts"
-                Text="Manage your trusted contacts"/>
+        <div class="container">
+            <div class="main-content">
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Appearance</h3>
+                    <div class="settings-item">
+                        <span>Theme</span>
+                        <span>Dark</span>
+                    </div>
+                </div>
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Privacy</h3>
+                    <div class="settings-item">
+                        <span>Last seen</span>
+                        <span>Nobody</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Profile photo</span>
+                        <span>Contacts</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Read receipts</span>
+                        <span>Off</span>
+                    </div>
+                </div>
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Security</h3>
+                    <div class="settings-item">
+                        <span>Two-step verification</span>
+                        <span>&gt;</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Passcode lock</span>
+                        <span>&gt;</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Face ID</span>
+                        <span><input type="checkbox" checked disabled></span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Touch ID</span>
+                        <span><input type="checkbox" checked disabled></span>
+                    </div>
+                </div>
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Media and Storage</h3>
+                    <div class="settings-item">
+                        <span>Auto-download media</span>
+                        <span>Wi-Fi</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Media visibility</span>
+                        <span>Yes</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Storage usage</span>
+                        <span>&gt;</span>
+                    </div>
+                </div>
+                <div class="settings-section">
+                    <h3>Notifications</h3>
+                    <div class="settings-item">
+                        <span>Message notifications</span>
+                        <span>On</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Group notifications</span>
+                        <span>On</span>
+                    </div>
+                    <div class="settings-item">
+                        <span>Call notifications</span>
+                        <span>On</span>
+                    </div>
+                </div>
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Connected Devices</h3>
+                    <div class="settings-item">
+                        <span>Desktop</span>
+                        <span>&gt;</span>
+                    </div>
+                </div>
+                <div class="settings-section deactivated-setting">
+                    <div class="deactivated-setting-overlay"></div>
+                    <div class="deactivated-setting-component">
+                        <CustomIcon
+                            Name="lock"
+                            Color="white"/>
+                        <span>Under construction</span>
+                    </div>
+                    <h3>Blocked</h3>
+                    <div class="settings-item">
+                        <span>Blocked contacts</span>
+                        <span>&gt;</span>
+                    </div>
+                </div>
+            </div>
         </div>
+        @* <div class="p-2 card-container"> *@
+        @*     <Card *@
+        @*         OnPress=@(() => NavigationManager.NavigateTo("settings/notifications")) *@
+        @*         Icon=@(new CustomIcon() { Name = "bell" }) *@
+        @*         Title="Web Push" *@
+        @*         Text="Manage your web push notifications"/> *@
+        @*     <Card *@
+        @*         OnPress=@(() => NavigationManager.NavigateTo("settings/aes-exchange-settings")) *@
+        @*         Icon=@(new CustomIcon() { Name = "shield-halved" }) *@
+        @*         Title="Trusted Contacts" *@
+        @*         Text="Manage your trusted contacts"/> *@
+        @* </div> *@
     </AuthenticatedContent>
     <UnauthenticatedContent>
         <UnAuthorized/>

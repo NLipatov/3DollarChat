@@ -1,0 +1,20 @@
+<div class="toggle-switch" @onclick=@OnClick>
+    <input type="checkbox" id="switch" @bind="IsToggled"/>
+    <label for="switch" class="toggle-label" style=@(BackgroundColor.Length > 0 ? $"background-color: {BackgroundColor};" : "")></label>
+</div>
+
+@code {
+    [Parameter] public Func<Task>? OnPressAsync { get; set; }
+    [Parameter] public Action? OnPress { get; set; }
+    [Parameter] public string BackgroundColor { get; set; } = string.Empty;
+    private bool IsToggled { get; set; }
+
+    private async Task OnClick()
+    {
+        if (OnPress != null)
+            OnPress();
+        else if (OnPressAsync != null)
+            await OnPressAsync();
+    }
+
+}

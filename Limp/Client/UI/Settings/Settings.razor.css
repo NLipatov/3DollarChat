@@ -1,6 +1,104 @@
-.card-container{
+.container {
+    background-color: rgba(18, 23, 17, 255);
     display: flex;
-    gap: 1rem;
-    flex-wrap: wrap;
-    justify-content: center;
+    color: #FFFFFF;
+    max-width: 100%;
+}
+.main-content {
+    flex: 1;
+    padding: 20px;
+}
+.settings-section {
+    margin-bottom: 30px;
+}
+.settings-section h3 {
+    color: #FFFFFF;
+    margin-bottom: 10px;
+}
+.settings-item {
+    display: flex;
+    justify-content: space-between;
+    margin: 10px 0;
+}
+
+.deactivated-setting {
+    position: relative;
+    pointer-events: none;
+    margin: 10px 0 1.5rem;
+}
+
+.deactivated-setting-overlay {
+    position: absolute;
+    top: -5px; /* Adjust for extra coverage */
+    left: -5px; /* Adjust for extra coverage */
+    right: -5px; /* Adjust for extra coverage */
+    bottom: -5px; /* Adjust for extra coverage */
+    background-color: rgba(0, 0, 0, 0.5); /* Black color with some transparency */
+    backdrop-filter: blur(1px); /* Adds blur effect */
+    z-index: 1; /* Ensures the blur is below the icon */
+    border-radius: 5px; /* Optional: adds rounded corners */
+}
+
+.deactivated-setting-component {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 2; /* Ensures the component is above the blur effect */
+}
+
+/* Accordion styles */
+.accordion .accordion-item {
+    background-color: rgba(30, 30, 30, 1);
+    border: none;
+    margin-bottom: 1rem;
+    border-radius: 5px;
+}
+
+.accordion .accordion-header {
+    padding: 1rem;
+    background-color: rgba(50, 50, 50, 1);
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion .accordion-button {
+    width: 100%;
+    text-align: left;
+    background: none;
+    border: none;
+    color: #FFFFFF;
+    padding: 0;
+    font-size: 1.2rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.accordion .accordion-button:hover {
+    color: #AAAAAA;
+}
+
+.accordion .accordion-button i {
+    margin-left: 1rem;
+    transition: transform 0.3s;
+}
+
+.accordion .accordion-button i.expanded {
+    transform: rotate(180deg);
+}
+
+.accordion .accordion-collapse {
+    padding: 1rem;
+    background-color: rgba(40, 40, 40, 1);
+    border-radius: 5px;
+}
+
+.accordion .accordion-body {
+    padding: 1rem;
+    background-color: rgba(30, 30, 30, 1);
+    border-radius: 5px;
+    color: #FFFFFF;
 }

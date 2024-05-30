@@ -2,7 +2,7 @@
     background-color: rgba(18, 23, 17, 255);
     width: 15rem;
     height: 100dvh;
-    position: relative;
+    position: sticky;
     top: 0;
     left: 0;
     padding-left: 0.9rem;
@@ -46,6 +46,7 @@
     .sidebar {
         width: 100%;
         height: unset;
+        position: relative;
     }
     
     .sidebar-split-line {

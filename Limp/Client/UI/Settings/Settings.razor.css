@@ -10,6 +10,7 @@
 }
 .settings-section {
     margin-bottom: 30px;
+    border-radius: 0.8rem;
 }
 .settings-section h3 {
     color: #FFFFFF;
@@ -36,7 +37,7 @@
     background-color: rgba(0, 0, 0, 0.5); /* Black color with some transparency */
     backdrop-filter: blur(1px); /* Adds blur effect */
     z-index: 1; /* Ensures the blur is below the icon */
-    border-radius: 5px; /* Optional: adds rounded corners */
+    border-radius: 0.8rem;
 }
 
 .deactivated-setting-component {
@@ -45,4 +46,17 @@
     left: 50%;
     transform: translate(-50%, -50%);
     z-index: 2; /* Ensures the component is above the blur effect */
+}
+
+/* Accordion styles */
+.accordion .card-header {
+    cursor: pointer;
+}
+
+.accordion .collapse {
+    display: none;
+}
+
+.accordion .collapse.show {
+    display: block;
 }

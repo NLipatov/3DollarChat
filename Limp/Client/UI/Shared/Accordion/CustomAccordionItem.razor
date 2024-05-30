@@ -1,0 +1,28 @@
+@code {
+[Parameter] public string Id { get; set; }
+[Parameter] public string Title { get; set; }
+[Parameter] public RenderFragment ChildContent { get; set; }
+
+private bool IsExpanded { get; set; }
+
+private void Toggle()
+{
+IsExpanded = !IsExpanded;
+}
+}
+
+<div class="card" style="cursor: pointer;">
+    <div class="card-header" id="heading@Id">
+        <h5 class="mb-0">
+            <button class="btn btn-link" @onclick="Toggle" aria-expanded="@IsExpanded" aria-controls="collapse@Id">
+                @Title
+            </button>
+        </h5>
+    </div>
+
+    <div id="collapse@Id" class="collapse @(IsExpanded ? "show" : "")" aria-labelledby="heading@Id">
+        <div class="card-body">
+            @ChildContent
+        </div>
+    </div>
+</div>

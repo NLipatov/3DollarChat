@@ -1,5 +1,6 @@
 ﻿@inject NavigationManager NavigationManager
 @using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.UI.Settings.PushSettings
 @page "/settings"
 
 <AuthenticatedView>
@@ -92,18 +93,11 @@
                 </div>
                 <div class="settings-section">
                     <h3>Notifications</h3>
-                    <div class="settings-item">
-                        <span>Message notifications</span>
-                        <span>On</span>
-                    </div>
-                    <div class="settings-item">
-                        <span>Group notifications</span>
-                        <span>On</span>
-                    </div>
-                    <div class="settings-item">
-                        <span>Call notifications</span>
-                        <span>On</span>
-                    </div>
+                    <CustomAccordion>
+                        <CustomAccordionItem Id="notifications" Title="Notifications">
+                            <PushSettingsComponent />
+                        </CustomAccordionItem>
+                    </CustomAccordion>
                 </div>
                 <div class="settings-section deactivated-setting">
                     <div class="deactivated-setting-overlay"></div>

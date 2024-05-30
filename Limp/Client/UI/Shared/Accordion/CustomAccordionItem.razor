@@ -1,28 +1,48 @@
-@code {
-[Parameter] public string Id { get; set; }
-[Parameter] public string Title { get; set; }
-[Parameter] public RenderFragment ChildContent { get; set; }
-
-private bool IsExpanded { get; set; }
-
-private void Toggle()
-{
-IsExpanded = !IsExpanded;
-}
-}
-
-<div class="card" style="cursor: pointer;">
-    <div class="card-header" id="heading@Id">
-        <h5 class="mb-0">
-            <button class="btn btn-link" @onclick="Toggle" aria-expanded="@IsExpanded" aria-controls="collapse@Id">
-                @Title
-            </button>
-        </h5>
+<div class="accordion-item">
+    <div class="accordion-header" id="heading@Id">
+        <button 
+            class="accordion-button" 
+            @onclick="Toggle" 
+            aria-expanded="@IsExpanded" 
+            aria-controls="collapse@Id"
+            style="justify-content: space-between;">
+            <span>@Title</span>
+            @if (ChevronDown)
+            {
+                <i>
+                    <CustomIcon
+                        Name="chevron-down"/>
+                </i>
+            }
+            else
+            {
+                <i>
+                    <CustomIcon
+                        Name="chevron-up"/>
+                </i>
+            }
+        </button>
     </div>
 
-    <div id="collapse@Id" class="collapse @(IsExpanded ? "show" : "")" aria-labelledby="heading@Id">
-        <div class="card-body">
+    <div id="collapse@Id" class="accordion-collapse collapse @(IsExpanded ? "show" : "")" aria-labelledby="heading@Id">
+        <div class="accordion-body">
             @ChildContent
         </div>
     </div>
 </div>
+
+@code {
+    [Parameter] public string Id { get; set; }
+    [Parameter] public string Title { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+
+    private bool IsExpanded { get; set; }
+    private bool ChevronDown { get; set; } = true;
+
+    private void Toggle()
+    {
+        IsExpanded = !IsExpanded;
+        ChevronDown = !ChevronDown;
+        StateHasChanged();
+    }
+}

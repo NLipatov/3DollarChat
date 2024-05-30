@@ -1,6 +1,6 @@
 <div class="toggle-switch" @onclick=@OnClick>
-    <input type="checkbox" id="switch" @bind="IsToggled"/>
-    <label for="switch" class="toggle-label" style=@(BackgroundColor.Length > 0 ? $"background-color: {BackgroundColor};" : "")></label>
+    <input type="checkbox" id=@Id @bind="IsToggled"/>
+    <label for=@Id class="toggle-label" style=@(BackgroundColor.Length > 0 ? $"background-color: {BackgroundColor};" : "")></label>
 </div>
 
 @code {
@@ -8,6 +8,7 @@
     [Parameter] public Action? OnPress { get; set; }
     [Parameter] public string BackgroundColor { get; set; } = string.Empty;
     [Parameter] public bool IsToggled { get; set; }
+    private string Id { get; set; } = $"toggle_{Guid.NewGuid()}";
 
     private async Task OnClick()
     {

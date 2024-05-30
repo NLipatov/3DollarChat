@@ -22,6 +22,7 @@
 <AuthenticatedView>
     <AuthenticatedContent>
         <CustomToggleSwitch
+            IsToggled=@(IsEnabled)
             BackgroundColor=@(IsEnabled ? "#3ca04c" : "")
             OnPress=@(() => NotificationSwitchChanged(!IsEnabled))
             />

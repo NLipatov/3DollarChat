@@ -30,20 +30,23 @@
     </div>
     <div class="key-info">
         <CustomButton
-            StyleString="box-shadow: none; min-width: auto;"
+            StyleString="box-shadow: none; min-width: auto; background-color: transparent;"
             OnPressAsync=@DeleteConversationAsync
             HtmlTitle="Clear conversation">
             <ChildContext>
                 <CustomIcon
+                    Color="white"
                     Name="trash-can"/>
             </ChildContext>
         </CustomButton>
         <CustomButton
-            StyleString="box-shadow: none; min-width: auto;"
+            StyleString="box-shadow: none; min-width: auto; background-color: transparent;"
             OnPress=@ShowModal
-            HtmlTitle="Renew AES Key">
+            HtmlTitle="Renew AES Key"
+            ClassString="background-color: transparent;">
             <ChildContext>
                 <CustomIcon
+                    Color="white"
                     Name="key"/>
             </ChildContext>
         </CustomButton>

@@ -21,10 +21,10 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 50%;
+    border-radius: var(--app-border-radius);
 }
 
 .check-icon-container svg {
     font-size: xxx-large;
-    color: white;
+    color: var(--app-font-color);
 }

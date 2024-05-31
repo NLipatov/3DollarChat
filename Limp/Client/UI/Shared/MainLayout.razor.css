@@ -1,9 +1,9 @@
 html{
-    background-color: #ededed;
 }
 
 .ApplicationContent {
     display: flex;
+    color: var(--app-font-color);
 }
 
 .ApplicationBody{

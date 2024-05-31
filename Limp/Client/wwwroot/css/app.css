@@ -4,8 +4,8 @@
     --input-bar-height: 3.75rem;
     --hovered-color: #f6fafd;
     --background-color: white;
-    --font-color: black;
-    --app-border-radius: 0.3rem;
+    --app-font-color: white;
+    --app-border-radius: 0.8rem;
     --app-padding: 1rem;
     --app-green: lawngreen;
     --app-blue: skyblue;
@@ -17,6 +17,7 @@ html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
+    background-color: rgba(18, 23, 17, 255) !important;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -52,7 +53,7 @@ html, body {
 
 .blazor-error-boundary {
     padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
+    color: var(--app-font-color);
 }
 
 .blazor-error-boundary::after {

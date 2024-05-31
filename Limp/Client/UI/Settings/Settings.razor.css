@@ -12,7 +12,7 @@
     margin-bottom: 30px;
     background-color: rgba(83 89 89 / 9%);
     padding: 0.5rem;
-    border-radius: 0.8rem;
+    border-radius: var(--app-border-radius);
 }
 
 .settings-section:hover{
@@ -44,7 +44,7 @@
     background-color: rgba(0, 0, 0, 0.5); /* Black color with some transparency */
     backdrop-filter: blur(1px); /* Adds blur effect */
     z-index: 1; /* Ensures the blur is below the icon */
-    border-radius: 5px; /* Optional: adds rounded corners */
+    border-radius: var(--app-border-radius);
 }
 
 .deactivated-setting-component {
@@ -60,13 +60,13 @@
     background-color: rgba(30, 30, 30, 1);
     border: none;
     margin-bottom: 1rem;
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
 }
 
 .accordion .accordion-header {
     padding: 1rem;
     background-color: rgba(50, 50, 50, 1);
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -101,12 +101,12 @@
 .accordion .accordion-collapse {
     padding: 1rem;
     background-color: rgba(40, 40, 40, 1);
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
 }
 
 .accordion .accordion-body {
     padding: 1rem;
     background-color: rgba(30, 30, 30, 1);
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
     color: #FFFFFF;
 }

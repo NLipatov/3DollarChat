@@ -22,7 +22,7 @@
     height: 40px;
     padding: 0 20px;
     border: none;
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
     background-color: #007bff;
     color: #fff;
     font-size: 16px;

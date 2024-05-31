@@ -1,7 +1,7 @@
 .avatar-indicator img {
     width: 40px;
     height: 40px;
-    border-radius: 50%;
+    border-radius: var(--app-border-radius);
 }
 
 .avatar-indicator.online img {

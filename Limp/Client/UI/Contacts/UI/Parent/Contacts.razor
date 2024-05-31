@@ -43,7 +43,6 @@
                         ItemCollection=@(ContactsList
                             .Select(x=> new ItemModel
                             {
-                                IsActive = x.IsOnline, 
                                 IsEncryptionSettedUp = x.IsKeyReady, 
                                 ItemName = x.Username,
                                 Icons = [x.IsTrusted ? new CustomIcon{Name="shield", Color="green"} : new CustomIcon{Name="shield", Color="red"}],
@@ -56,8 +55,7 @@
                                     })
                             .ToList())
                         OnItemClicked="NavigateToChatWithContact"
-                        OnItemRemoved="RemoveContact" 
-                        ListHeader="Contacts:"
+                        OnItemRemoved="RemoveContact"
                         IconClass="bi bi-person-fill"/>
                 }
                 else

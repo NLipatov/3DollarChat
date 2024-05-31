@@ -2,7 +2,7 @@
     display: flex;
     flex-direction: column;
     background-color: lightgreen;
-    border-radius: 16px;
+    border-radius: var(--app-border-radius);
     margin: 8px 0;
     max-width: 75%;
 }

@@ -1,5 +1,5 @@
 .version-container {
-    color: white;
+    color: var(--app-font-color);
     background-color: rgba(41, 56, 41, 9);
     position: absolute;
     bottom: 0;

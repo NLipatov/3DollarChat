@@ -1,12 +1,12 @@
 ﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 
-<div class="p-2" style="
-        background-color: white;">
-    <div style="
-            display: flex;
-            justify-content: space-between;">
-        <h1>@ListHeader</h1>
+<div class="editable-list-container">
+    <div class="editable-list-header">
+        @if (!string.IsNullOrWhiteSpace(ListHeader))
+        {
+            <h1>@ListHeader</h1>
+        }
         <CustomButton
             ButtonType="ButtonType.Primary"
             OnPress=@ToggleContactEditionMode>
@@ -19,21 +19,19 @@
     </div>
     <div class="editable-list-item-container">
         <Virtualize Items="@ItemCollection" Context="item">
-            <div style="align-items: baseline; gap: 10px; display: flex;"
-                 @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item); })>
-                <div style="display: @(EditionMode ? "" : "none");">
+            <div class="editable-list-item" @onclick=@(async () => { await OnItemRemoved.InvokeAsync(item); })>
+                <div style="display: @(EditionMode ? "" : "none"); font-size: 1.5rem;">
                     <CustomIcon
                         Color="red"
                         Name="circle-minus"
                         CursorPointer="true"/>
                 </div>
+                <EditableListItem
+                    OnItemClickedAction=@((_) => OnItemClicked.InvokeAsync(item))
+                    ItemModel="item"
+                    IconClass=@IconClass
+                    Style="width: 100%;"/>
             </div>
-            
-            <EditableListItem
-                OnItemClickedAction=@((_) => OnItemClicked.InvokeAsync(item))
-                ItemModel="item"
-                IconClass=@IconClass
-                Style="width: 100%; margin-top: 10px;"/>
         </Virtualize>
     </div>
 </div>

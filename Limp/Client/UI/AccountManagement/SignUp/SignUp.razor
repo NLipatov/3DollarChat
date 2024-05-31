@@ -27,10 +27,10 @@
                         <div class="form-group text-center">
                             <p>Choose a registration method:</p>
                             <div class="btn-group" data-toggle="buttons">
-                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: black; color: white;" : "background-color: white; color: black;")>
+                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: black; color: var(--app-font-color);" : "background-color: white; color: black;")>
                                     <input @onclick=@(() => IsWebAuthnUsed = true) type="radio" name="registrationType" id="webAuthnRadio" checked=@(IsWebAuthnUsed)> Passwordless
                                 </label>
-                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: white; color: black;" : "background-color: black; color: white;")>
+                                <label class="btn mb-3 border-dark" style=@(IsWebAuthnUsed ? "background-color: var(--app-font-color); color: black;" : "background-color: black; color: white;")>
                                     <input @onclick=@(() => IsWebAuthnUsed = false) type="radio" name="registrationType" id="loginPasswordRadio" checked=@(!IsWebAuthnUsed)> With Password
                                 </label>
                             </div>

@@ -4,7 +4,7 @@
 }
 
 .input-block input {
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
     height: 20px;
     border: none;
 }

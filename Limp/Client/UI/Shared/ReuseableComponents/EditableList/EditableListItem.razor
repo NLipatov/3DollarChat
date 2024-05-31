@@ -1,52 +1,17 @@
 ﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
 
-<div style="cursor: pointer; @Style" @onclick="HandleClick">
-    <div class="item-card @(ItemModel.IsActive ? "active" : "")" style="border-left: none;">
-        <div class="header">
-            @if (ItemModel.AvatarOnlineIndicator is not null)
-            {
-                <AvatarOnlineIndicator
-                    PartnerUsername=@ItemModel.ItemName
-                    AvatarLink=@ItemModel.AvatarOnlineIndicator.AvatarLink/>
-                <div>
-                    <span class="username" style="color: black; text-decoration: none;">@ItemModel.ItemName</span>
-                </div>
-            }
-            else
-            {
-                <div class="profile-picture">
-                    <i class="@IconClass item-icon"></i>
-                </div>
-            }
-            @if (ItemModel.AvatarOnlineIndicator is null)
-            {
-                <div>
-                    <span style="color: black; text-decoration: none;">@ItemModel.ItemName</span>
-                </div>
-            }
-            @if (ItemModel.IsEncryptionSettedUp)
-            {
-                <div class="key-info">
-                    <i class="bi bi-key-fill key-icon" data-bs-toggle="tooltip" title="AES key for secure communication"></i>
-                </div>
-            }
-            @if (ItemModel.Icons.Any())
-            {
-                @foreach (var icon in ItemModel.Icons)
-                {
-                    <CustomIcon
-                        Name=@icon.Name
-                        Color=@icon.Color
-                        Type=@icon.Type
-                        CursorPointer=@icon.CursorPointer/>
-                }
-            }
-            @if (ItemModel.ShowBadge)
-            {
-                <Badge Style=@ItemModel.BadgeModel.InlineStyles>@ItemModel.BadgeModel.Text</Badge>
-            }
-        </div>
+<div class="editable-list-item-content" style="@Style" @onclick="HandleClick">
+    <div class="avatar-indicator">
+        @if (ItemModel.AvatarOnlineIndicator is not null)
+        {
+            <AvatarOnlineIndicator
+                PartnerUsername=@ItemModel.ItemName
+                AvatarLink=@ItemModel.AvatarOnlineIndicator.AvatarLink/>
+        }
+    </div>
+    <div class="item-details">
+        <span class="item-name">@ItemModel.ItemName</span>
     </div>
 </div>
 
@@ -72,5 +37,4 @@
         else
             Console.WriteLine("On click event handler action parameter is not passed in.");
     }
-
 }

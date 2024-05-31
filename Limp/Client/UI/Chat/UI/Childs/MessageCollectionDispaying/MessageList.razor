@@ -11,7 +11,7 @@
 @inject IHlsStreamingService HlsStreamingService
 @implements IDisposable
 
-<div class="messages-box">
+<div class="messages-box @HtmlClass">
     @* ReSharper disable once UnusedParameter.Local *@
     <Virtualize
         Context="message"
@@ -27,6 +27,8 @@
 
     [Parameter]
     public string MyUsername { get; set; } = string.Empty;
+
+    [Parameter] public string HtmlClass { get; set; } = string.Empty;
 
     private Guid ComponentId { get; set; }
 

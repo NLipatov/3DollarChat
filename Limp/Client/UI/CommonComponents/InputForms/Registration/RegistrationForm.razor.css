@@ -1,6 +1,6 @@
 ﻿.registration-form-header {
     background-color: black;
-    color: white;
+    color: var(--app-font-color);
     display: flex;
     justify-content: center;
     padding: 10px;
@@ -11,7 +11,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
 }
 
 .registration-form {
@@ -30,7 +30,7 @@
 }
 
 .input-block input {
-    border-radius: 5px;
+    border-radius: var(--app-border-radius);
     height: 20px;
     border: none;
 }

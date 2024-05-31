@@ -2,8 +2,8 @@
     padding: 1.25rem;
     margin-bottom: 10px;
     border-left: 0.25rem solid rgba(0, 10, 0, 1);
-    background-color: rgba(var(--bs-dark-rgb), .075);
-    border-radius: 0.25rem;
+    background-color: rgba(83 89 89 / 9%);
+    border-radius: var(--app-border-radius);
     border-left: var(--app-ribbon-width) solid black !important;
 }
 
@@ -13,7 +13,7 @@
 
 .user-card a.username {
     text-decoration: none;
-    color: black;
+    color: white;
     font-size: 20px;
 }
 

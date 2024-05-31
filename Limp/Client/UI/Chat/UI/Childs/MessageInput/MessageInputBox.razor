@@ -22,22 +22,17 @@
 @inject NavigationManager NavigationManager
 @implements IAsyncDisposable
 
-<div class="message-input-box" @onkeydown="((e) => OnKeyDown(e))">
-    <input @bind="MessageInput" @bind:event="oninput"/>
+<div class="message-input-box">
+    <input type="text" class="message-input" placeholder="Send a message..." value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown" />
 
-    <label for="fileinput" class="label-wrapper" style="align-items: center;">
+    <label for="fileinput" class="label-wrapper">
         <span>
-            <CustomIcon
-                Name="paperclip"
-                Type="CustomIconType.Solid"/>
+            <i class="fas fa-paperclip paperclip-icon"></i>
         </span>
-        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none; font-size: 0.7rem;"/>
+        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;" />
     </label>
 
-    <CustomButton 
-        OnPressAsync=@(async () => await SendMessage())
-        StyleString="box-shadow: none; border: 0.01rem solid black; background-color: rgba(0, 0, 0, 0.15);"
-        Title="Send"/>
+    <button class="send-button" @onclick="SendMessage">Send</button>
 </div>
 
 <CustomModal
@@ -46,13 +41,12 @@
     Buttons=@( [new CustomButton { Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
 </CustomModal>
 
-<FileEncryptionModal/>
-<HlsConvertationModal/>
+<FileEncryptionModal />
+<HlsConvertationModal />
 
 @code {
-    [Parameter] public string TopicName { get; set; } = string.Empty;
-
     [Parameter] public string MyUsername { get; set; } = string.Empty;
+    [Parameter] public string TopicName { get; set; } = string.Empty;
 
     private CustomModal? TooLargeFileModal { get; set; }
 
@@ -89,16 +83,21 @@
         }
     }
 
-    private async Task OnKeyDown(KeyboardEventArgs e)
+    private void UpdateMessageInput(ChangeEventArgs e)
+    {
+        MessageInput = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
             await SendMessage();
-            return;
         }
-
-        await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
-            .ConfigureAwait(false);
+        else
+        {
+            await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName).ConfigureAwait(false);
+        }
     }
 
     private async Task OnFileInput(InputFileChangeEventArgs e)
@@ -234,5 +233,4 @@
             await JsModule.DisposeAsync();
         }
     }
-
 }

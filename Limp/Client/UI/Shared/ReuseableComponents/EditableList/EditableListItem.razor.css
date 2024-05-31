@@ -1,30 +1,25 @@
-﻿.item-card {
-    padding: 1.25rem;
-    border-left: 0.25rem solid rgba(0, 10, 0, 1);
-    background-color: rgba(var(--bs-dark-rgb), .075);
-    border-radius: 0.25rem;
-}
-
-.item-card a.name {
-    text-decoration: none;
-    color: black;
-    font-size: 20px;
-}
-
-.active {
-    border-left: 0.25rem solid var(--app-green) !important;
-}
-
-.header {
+﻿.editable-list-item-content {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 1rem;
+    cursor: pointer;
 }
 
-.item-picture {
+.avatar-indicator {
+    flex-shrink: 0;
 }
 
-.item-icon,
-.key-icon {
-    font-size: 20px;
+.item-details {
+    display: flex;
+    flex-direction: column;
+}
+
+.item-name {
+    color: var(--app-font-color);
+    font-size: 1rem;
+}
+
+.item-status {
+    color: #7c7c7c;
+    font-size: 0.875rem;
 }

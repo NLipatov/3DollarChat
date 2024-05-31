@@ -1,16 +1,17 @@
 html{
-    background-color: #ededed;
 }
 
 .ApplicationContent {
     display: flex;
+    color: var(--app-font-color);
 }
 
 .ApplicationBody{
-    width: 100%;
+    width: calc(100dvw - var(--app-sidebar-width));
 }
 
 .RSACalculatingWarning {
+    color: var(--app-font-color);
     position: absolute;
     height: 100dvh;
     width: 100vw;

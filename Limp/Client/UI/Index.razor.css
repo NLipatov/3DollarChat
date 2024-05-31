@@ -1,5 +1,5 @@
 ﻿.heading h2 {
-    color: #3c3c3c;
+    color: var(--app-font-color);
     padding-bottom: 15px;
     text-transform: capitalize;
     font-weight: 700;

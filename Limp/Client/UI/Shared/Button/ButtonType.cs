@@ -2,8 +2,8 @@ namespace Ethachat.Client.UI.Shared.Button;
 
 public enum ButtonType
 {
-    Primary,
+    Danger,
     Secondary,
+    Primary,
     Success,
-    Danger
 }

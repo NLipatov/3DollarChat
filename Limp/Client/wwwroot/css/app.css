@@ -4,19 +4,21 @@
     --input-bar-height: 3.75rem;
     --hovered-color: #f6fafd;
     --background-color: white;
-    --font-color: black;
-    --app-border-radius: 0.3rem;
+    --app-font-color: white;
+    --app-border-radius: 0.8rem;
     --app-padding: 1rem;
     --app-green: lawngreen;
     --app-blue: skyblue;
     --app-red: #ff0000;
     --app-ribbon-width: 0.25rem;
+    --app-sidebar-width: 15rem;
 }
 
 html, body {
     font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
     margin: 0;
     padding: 0;
+    background-color: rgba(18, 23, 17, 255) !important;
 }
 
 .valid.modified:not([type=checkbox]) {
@@ -52,7 +54,7 @@ html, body {
 
 .blazor-error-boundary {
     padding: 1rem 1rem 1rem 3.7rem;
-    color: white;
+    color: var(--app-font-color);
 }
 
 .blazor-error-boundary::after {
@@ -69,14 +71,14 @@ html, body {
 
 .loading-progress circle {
     fill: none;
-    stroke: #e0e0e0;
+    stroke: #686868;
     stroke-width: 0.6rem;
     transform-origin: 50% 50%;
     transform: rotate(-90deg);
 }
 
 .loading-progress circle:last-child {
-    stroke: #1b6ec2;
+    stroke: #ffffff;
     stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
     transition: stroke-dasharray 0.05s ease-in-out;
 }
@@ -86,6 +88,7 @@ html, body {
     text-align: center;
     font-weight: bold;
     inset: calc(20dvh + 3.25rem) 0 auto 0.2rem;
+    color: var(--app-font-color);
 }
 
 .loading-progress-text:after {

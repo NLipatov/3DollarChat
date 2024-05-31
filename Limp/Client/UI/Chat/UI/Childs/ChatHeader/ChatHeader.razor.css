@@ -4,6 +4,7 @@
     padding: 10px;
     background-color: #f1f1f1;
     height: var(--sidebar-header-height);
+    background-color: rgba(41, 56, 41, 0.1);
 }
 
 .name {
@@ -24,7 +25,6 @@
     margin-left: auto;
 }
 
-.key-icon {
-    font-size: 20px;
-    margin-right: 5px;
+.key-info button .svg-inline--fa {
+    fill: #ff0000;
 }

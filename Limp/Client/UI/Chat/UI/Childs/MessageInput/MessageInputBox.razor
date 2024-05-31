@@ -23,13 +23,13 @@
 @implements IAsyncDisposable
 
 <div class="message-input-box">
-    <input type="text" class="message-input" placeholder="Send a message..." @bind="MessageInput" @onkeydown="((e) => OnKeyDown(e))"/>
+    <input type="text" class="message-input" placeholder="Send a message..." value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown" />
 
     <label for="fileinput" class="label-wrapper">
         <span>
             <i class="fas fa-paperclip paperclip-icon"></i>
         </span>
-        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;"/>
+        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;" />
     </label>
 
     <button class="send-button" @onclick="SendMessage">Send</button>
@@ -41,12 +41,12 @@
     Buttons=@( [new CustomButton { Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
 </CustomModal>
 
-<FileEncryptionModal/>
-<HlsConvertationModal/>
+<FileEncryptionModal />
+<HlsConvertationModal />
 
 @code {
-    [Parameter] public string TopicName { get; set; } = string.Empty;
     [Parameter] public string MyUsername { get; set; } = string.Empty;
+    [Parameter] public string TopicName { get; set; } = string.Empty;
 
     private CustomModal? TooLargeFileModal { get; set; }
 
@@ -83,16 +83,21 @@
         }
     }
 
-    private async Task OnKeyDown(KeyboardEventArgs e)
+    private void UpdateMessageInput(ChangeEventArgs e)
+    {
+        MessageInput = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
             await SendMessage();
-            return;
         }
-
-        await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName)
-            .ConfigureAwait(false);
+        else
+        {
+            await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName).ConfigureAwait(false);
+        }
     }
 
     private async Task OnFileInput(InputFileChangeEventArgs e)
@@ -114,11 +119,11 @@
         if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
         {
             var playlist = await PostVideoToHlsapiAsync(browserFile);
-
+        
             if (playlist is not null)
             {
                 CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-
+        
                 await MessageService.SendMessage(new ClientMessage
                 {
                     Id = Guid.NewGuid(),
@@ -174,7 +179,7 @@
 
                 if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
                     return null;
-
+            
                 return new HlsPlaylist
                 {
                     Name = browserFile.Name,
@@ -228,5 +233,4 @@
             await JsModule.DisposeAsync();
         }
     }
-
 }

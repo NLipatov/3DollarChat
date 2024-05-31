@@ -70,14 +70,14 @@ html, body {
 
 .loading-progress circle {
     fill: none;
-    stroke: #e0e0e0;
+    stroke: #686868;
     stroke-width: 0.6rem;
     transform-origin: 50% 50%;
     transform: rotate(-90deg);
 }
 
 .loading-progress circle:last-child {
-    stroke: #1b6ec2;
+    stroke: #ffffff;
     stroke-dasharray: calc(3.141 * var(--blazor-load-percentage, 0%) * 0.8), 500%;
     transition: stroke-dasharray 0.05s ease-in-out;
 }
@@ -87,6 +87,7 @@ html, body {
     text-align: center;
     font-weight: bold;
     inset: calc(20dvh + 3.25rem) 0 auto 0.2rem;
+    color: var(--app-font-color);
 }
 
 .loading-progress-text:after {

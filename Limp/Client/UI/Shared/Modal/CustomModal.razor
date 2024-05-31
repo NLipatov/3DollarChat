@@ -11,16 +11,19 @@
             <div class="modal-body">
                 @foreach (var line in BodyLines)
                 {
-                    <span>@line</span>
+                    <p>@line</p>
                 }
-                
-                @foreach (var btn in Buttons)
+            </div>
+
+            <div class="modal-footer">
+                @foreach (var btn in Buttons.OrderBy(x=>x.ButtonType))
                 {
                     <CustomButton
                         Title=@btn.Title
                         ButtonType=@btn.ButtonType
                         OnPress=@btn.OnPress
-                        OnPressAsync=@btn.OnPressAsync/>
+                        OnPressAsync=@btn.OnPressAsync
+                        ClassString="modal-button"/>
                 }
             </div>
         </div>
@@ -29,8 +32,8 @@
 
 @code {
     [Parameter] public string Title { get; set; } = string.Empty;
-    [Parameter] public string[] BodyLines { get; set; } = [];
-    [Parameter] public CustomButton[] Buttons { get; set; } = [];
+    [Parameter] public string[] BodyLines { get; set; } = Array.Empty<string>();
+    [Parameter] public CustomButton[] Buttons { get; set; } = Array.Empty<CustomButton>();
     private bool ShouldBeShown { get; set; }
 
     public void Show()

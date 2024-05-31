@@ -11,6 +11,7 @@
     --app-blue: skyblue;
     --app-red: #ff0000;
     --app-ribbon-width: 0.25rem;
+    --app-sidebar-width: 15rem;
 }
 
 html, body {

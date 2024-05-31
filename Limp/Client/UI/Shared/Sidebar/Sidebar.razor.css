@@ -1,6 +1,6 @@
 .sidebar {
     background-color: rgba(18, 23, 17, 255);
-    width: 15rem;
+    width: var(--app-sidebar-width);
     height: 100dvh;
     position: sticky;
     top: 0;

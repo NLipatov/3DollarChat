@@ -2,7 +2,7 @@
 @using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
 
 <div class="editable-list-container">
-    <div class="editable-list-header">
+    <div class="editable-list-header" style=@(!string.IsNullOrWhiteSpace(ListHeader) ? "" : "justify-content: end;")>
         @if (!string.IsNullOrWhiteSpace(ListHeader))
         {
             <h1>@ListHeader</h1>
@@ -39,7 +39,7 @@
 @code {
     [Parameter] public string? IconClass { get; set; } = string.Empty;
 
-    [Parameter] public string ListHeader { get; set; } = "Items";
+    [Parameter] public string ListHeader { get; set; } = string.Empty;
 
     [Parameter] public bool EditionMode { get; set; }
 

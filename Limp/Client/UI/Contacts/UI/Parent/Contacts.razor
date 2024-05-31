@@ -34,33 +34,20 @@
             <div style="display: flex;
                     flex-direction: column;
                     gap: 10px;">
-                <SearchForContact 
-                    OnNewContactSearch="OnAddContactAttempt" />
+                <SearchForContact
+                    OnNewContactSearch="OnAddContactAttempt"/>
 
-                @if(ContactsList.Any())
+                @if (ContactsList.Any())
                 {
-                    <EditableList 
-                        ItemCollection=@(ContactsList
-                            .Select(x=> new ItemModel
-                            {
-                                IsEncryptionSettedUp = x.IsKeyReady, 
-                                ItemName = x.Username,
-                                Icons = [x.IsTrusted ? new CustomIcon{Name="shield", Color="green"} : new CustomIcon{Name="shield", Color="red"}],
-                                BadgeModel = GetContactBadge(x),
-                                ShowBadge = x.UnreadedMessagesCount > 0,
-                                AvatarOnlineIndicator = new AvatarOnlineIndicator
-                                    {
-                                        PartnerUsername = x.Username
-                                    }, 
-                                    })
-                            .ToList())
+                    <EditableList
+                        ItemCollection=@(ContactsList.Select(x => new ItemModel { IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username, Icons = [x.IsTrusted ? new CustomIcon { Name = "shield", Color = "green" } : new CustomIcon { Name = "shield", Color = "red" }], BadgeModel = GetContactBadge(x), ShowBadge = x.UnreadedMessagesCount > 0, AvatarOnlineIndicator = new AvatarOnlineIndicator { PartnerUsername = x.Username }, }).ToList())
                         OnItemClicked="NavigateToChatWithContact"
                         OnItemRemoved="RemoveContact"
                         IconClass="bi bi-person-fill"/>
                 }
                 else
                 {
-                    <CustomCallout 
+                    <CustomCallout
                         CalloutType="CalloutType.Idea"
                         CalloutBody="Add someone and start a new chat!"
                         CalloutTitle="Your contact book is empty"/>
@@ -70,7 +57,7 @@
 
         @if (contactAdditionModal is not null)
         {
-            <ConfirmContactAdditionModal 
+            <ConfirmContactAdditionModal
                 @ref="contactAdditionModal"
                 OnContactAddition="HandleContactAddition"/>
         }
@@ -91,7 +78,7 @@
 
     private void ToggleEditContactsMode() => contactEditionMode = !contactEditionMode;
 
-    public void NavigateToChatWithContact(ItemModel itemModel) 
+    public void NavigateToChatWithContact(ItemModel itemModel)
         => _navigationManager.NavigateTo($"{itemModel.ItemName}");
 
     private BadgeModel GetContactBadge(Contact contact)
@@ -108,10 +95,10 @@
         //Get contact out of client's browser local storage
         await _contactsProvider.RemoveContact(itemModel.ItemName, _jSRuntime);
 
-        ContactsList = ContactsList.Where(x=>x.Username != itemModel.ItemName).ToList();
+        ContactsList = ContactsList.Where(x => x.Username != itemModel.ItemName).ToList();
 
         //If there is no one in contact book left, toggle change mode back to false automatically
-        if(!(await _contactsProvider.GetContacts(_jSRuntime)).Any())
+        if (!(await _contactsProvider.GetContacts(_jSRuntime)).Any())
         {
             ToggleEditContactsMode();
         }
@@ -128,10 +115,10 @@
     private async Task HandleExistingUserAdditionToContacts(IsUserExistDto isUserExistDTO)
     {
         ContactAdditionModalDTO modalDTO = new()
-            {
-                IsUserExists = isUserExistDTO.IsExist,
-                NewContactUsername = isUserExistDTO.Username
-            };
+        {
+            IsUserExists = isUserExistDTO.IsExist,
+            NewContactUsername = isUserExistDTO.Username
+        };
 
         await contactAdditionModal!.ShowModalWithBodyTextAsync(modalDTO);
     }
@@ -150,9 +137,9 @@
     {
         if (!await AuthenticationHandler.IsSetToUseAsync())
             return;
-        
+
         contactAdditionModal = new();
-        
+
         //This id will be needed on dispose stage
         //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
@@ -177,7 +164,7 @@
         foreach (var contact in ContactsList)
         {
             contact.IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username);
-            contact.LastMessage = _messageBox.Messages.MaxBy(x=>x.DateSent)?.DateSent ?? DateTime.UtcNow;
+            contact.LastMessage = _messageBox.Messages.MaxBy(x => x.DateSent)?.DateSent ?? DateTime.UtcNow;
             contact.IsKeyReady = await new LocalStorageKeyStorage(_jSRuntime).GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Count(x => x.Sender == contact.Username && !x.IsSeen);
         }
@@ -204,4 +191,5 @@
             _usersOnlineMessage = usersOnlineMessage;
         }
     }
+
 }

@@ -1,34 +1,20 @@
-﻿@using ButtonType = Ethachat.Client.UI.Shared.Button.ButtonType
-
-<div style="
-        background-color: whitesmoke;">
-    <div class="input-group">
-        <div class="input-group-prepend">
-            <span
-                style="height: 2.5rem;"
-                class="input-group-text" id="basic-addon1">@("@")</span>
-        </div>
-        <input type="text"
-               style="
-               height: 2.5rem; 
-               box-shadow: none;"
-               class="form-control"
-               placeholder="Type username here"
-               aria-label="Username"
-               aria-describedby="basic-addon1"
-               @bind="NewContactUsername"
-               @bind:event="oninput"
-               @onkeydown="((e) => HandleKeyDown(e))">
-
-        <CustomButton
-            StyleString="height: 2.5rem; box-shadow: none;"
-            Title="Search"
-            ButtonType="ButtonType.Primary"
-            OnPressAsync="() => OnNewContactSearch.InvokeAsync(NewContactUsername)">
-            <ChildContext>
-            </ChildContext>
-        </CustomButton>
+﻿<div class="input-group">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">
+            <CustomIcon
+                Color="white"
+                Name="magnifying-glass"
+                Type="CustomIconType.Solid"/>
+        </span>
     </div>
+    <input type="text"
+           class="form-control"
+           placeholder="Search"
+           aria-label="Search"
+           aria-describedby="basic-addon1"
+           @bind="NewContactUsername"
+           @bind:event="oninput"
+           @onkeydown="((e) => HandleKeyDown(e))">
 </div>
 
 @code {
@@ -43,5 +29,4 @@
             await OnNewContactSearch.InvokeAsync(NewContactUsername);
         }
     }
-
 }

@@ -13,8 +13,7 @@
 }
 
 .outcoming {
-    /*same as send button background color*/
-    background-color: #28a745;
+    background-color: #24481c;
     align-self: flex-end;
 }
 
@@ -33,7 +32,7 @@
     margin: 4px 8px;
     font-size: 12px;
     line-height: 16px;
-    color: #606060;
+    color: var(--app-font-subcolor);
 }
 
 .fa-check,

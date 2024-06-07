@@ -1,0 +1,25 @@
+.input-group {
+    align-items: center;
+    background-color: var(--app-background-mat-color);
+    border-radius: var(--app-border-radius);
+}
+
+.input-group-prepend .input-group-text {
+    background-color: transparent;
+    border: none;
+    color: white;
+}
+
+.form-control {
+    background-color: var(--app-background-mat-color);
+    color: white;
+    border: none;
+    outline: none;
+    box-shadow: none;
+    padding-left: 10px;
+    border-radius: var(--app-border-radius);
+}
+
+.form-control::placeholder {
+    color: #bbb;
+}

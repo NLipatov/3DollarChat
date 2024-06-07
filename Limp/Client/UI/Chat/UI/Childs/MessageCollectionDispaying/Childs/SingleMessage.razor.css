@@ -8,12 +8,12 @@
 }
 
 .incoming {
-    background-color: deepskyblue;
+    background-color: #273429;
     align-self: flex-start;
 }
 
 .outcoming {
-    background-color: #DCF8C6;
+    background-color: #24481c;
     align-self: flex-end;
 }
 
@@ -21,7 +21,7 @@
     padding: 8px;
     font-size: 16px;
     line-height: 24px;
-    color: #000000;
+    color: var(--app-font-color);
     overflow-wrap: break-word;
 }
 
@@ -32,7 +32,7 @@
     margin: 4px 8px;
     font-size: 12px;
     line-height: 16px;
-    color: #606060;
+    color: var(--app-font-subcolor);
 }
 
 .fa-check,

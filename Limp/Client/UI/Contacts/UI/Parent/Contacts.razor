@@ -114,13 +114,14 @@
 
     private async Task HandleExistingUserAdditionToContacts(IsUserExistDto isUserExistDTO)
     {
-        ContactAdditionModalDTO modalDTO = new()
+        NewContactModel modalDTO = new()
         {
-            IsUserExists = isUserExistDTO.IsExist,
-            NewContactUsername = isUserExistDTO.Username
+            Exists = isUserExistDTO.IsExist,
+            Username = isUserExistDTO.Username
         };
 
-        await contactAdditionModal!.ShowModalWithBodyTextAsync(modalDTO);
+        if (contactAdditionModal is not null)
+            await contactAdditionModal.ShowModalWithBodyTextAsync(modalDTO);
     }
 
     private async Task HandleContactAddition(string username)

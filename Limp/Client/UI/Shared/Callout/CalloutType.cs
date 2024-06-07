@@ -6,5 +6,8 @@ public enum CalloutType
     Idea,
     Warning,
     Danger,
-    Error
+    Error,
+    Success,
+    Neutral,
+    Positive
 }

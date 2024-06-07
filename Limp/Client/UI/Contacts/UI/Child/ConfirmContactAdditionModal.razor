@@ -6,52 +6,55 @@
 
 <CustomModal
     @ref="modal"
-    Title="Add user to contacts"
-    BodyLines=@BodyLines
-    Buttons=@GetModalButtons()/>
+    Title=@Title
+    Buttons=@Buttons/>
 
 @code {
     [Parameter] public EventCallback<string> OnContactAddition { get; set; }
 
     //reference to a modal-component
-    private CustomModal? modal = default!;
+    private CustomModal? modal = default;
 
     public void ShowModal() => modal?.Show();
     public void HideModal() => modal?.Hide();
 
-    private string[] BodyLines { get; set; } = [];
-    private bool _isUserExists = true;
-    private string _newContactUsername = string.Empty;
-    private Contact? Existing { get; set; }
+    private string Title { get; set; } = string.Empty;
+    private CustomButton[] Buttons { get; set; } = [];
 
-    public async Task ShowModalWithBodyTextAsync(ContactAdditionModalDTO modalDto)
+    public async Task ShowModalWithBodyTextAsync(NewContactModel modalDto)
     {
-        Existing = await ContactsProvider.GetContact(_newContactUsername, JsRuntime);
-        _newContactUsername = modalDto.NewContactUsername;
-        _isUserExists = modalDto.IsUserExists;
-        BodyLines = GetModalBodyText();
+        var duplicate = await ContactsProvider.GetContact(modalDto.Username, JsRuntime) is not null;
+        var username = modalDto.Username;
+        var exists = modalDto.Exists;
+        
+        Title = GetTitleText(username: username, existing: exists, duplicate: duplicate);
+        Buttons = GetModalButtons(username: username, existing: exists, duplicate: duplicate);
+        StateHasChanged();
 
         ShowModal();
     }
 
-    private string[] GetModalBodyText()
+    private string GetTitleText(string username, bool existing, bool duplicate)
     {
-        if (Existing is not null)
-            return [$"{_newContactUsername} is already in your contact book"];
-
-        if (_isUserExists)
-            return [$"Confirm adding '{_newContactUsername}' as new contact"];
+        if (!existing)
+            return "No such user!";
         
-        return ["There is no user with such username"];
+        if (duplicate)
+            return "Duplicate contact!";
+        
+        if (!string.IsNullOrWhiteSpace(username))
+            return $"Add '{username}' as contact?";
+
+        return "Confirm new contact addition";
     }
 
-    private CustomButton[] GetModalButtons()
+    private CustomButton[] GetModalButtons(string username, bool existing, bool duplicate)
     {
-        if (_isUserExists && Existing is null)
+        if (existing && !duplicate)
         {
             return
             [
-                new CustomButton { ButtonType = ButtonType.Success, Title = "Confirm", OnPressAsync = () => OnContactAddition.InvokeAsync(_newContactUsername) },
+                new CustomButton { ButtonType = ButtonType.Success, Title = "Add", OnPressAsync = () => OnContactAddition.InvokeAsync(username) },
                 new CustomButton { ButtonType = ButtonType.Secondary, Title = "Cancel", OnPress = HideModal }
             ];
         }

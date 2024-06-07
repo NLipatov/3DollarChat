@@ -1,10 +1,9 @@
 <div class="callout @CalloutType.ToString().ToLower()">
     <div class="callout-header">
         <CustomIcon Type="CustomIconType.Solid" Name=@ResolveIconByType()/>
-        <span>@CalloutType.ToString()</span>
+        <span>@CalloutTitle</span>
     </div>
-    <h3>@CalloutTitle</h3>
-    <div>
+    <div class="callout-body">
         <span>
             @CalloutBody
         </span>
@@ -21,13 +20,15 @@
     {
         return CalloutType switch
         {
-            CalloutType.Info => "circle-info",
+            CalloutType.Info => "info-circle",
             CalloutType.Idea => "lightbulb",
-            CalloutType.Warning => "triangle-exclamation",
-            CalloutType.Danger => "circle-exclamation",
+            CalloutType.Warning => "exclamation-triangle",
+            CalloutType.Danger => "exclamation-circle",
             CalloutType.Error => "bug",
+            CalloutType.Success => "check-circle",
+            CalloutType.Neutral => "minus-circle",
+            CalloutType.Positive => "smile",
             _ => throw new ArgumentException("Unsupported callout type")
         };
     }
-
 }

@@ -1,29 +1,61 @@
-﻿.user-card {
-    padding: 1.25rem;
-    margin-bottom: 10px;
-    border-left: 0.25rem solid rgba(0, 10, 0, 1);
-    background-color: rgba(83 89 89 / 9%);
-    border-radius: var(--app-border-radius);
-    border-left: var(--app-ribbon-width) solid black !important;
-}
-
-.active {
-    border-left: var(--app-ribbon-width) solid var(--app-green) !important;
-}
-
-.user-card a.username {
-    text-decoration: none;
-    color: white;
-    font-size: 20px;
-}
-
-.header {
+﻿.user-card-container {
     display: flex;
     align-items: center;
-    gap: 10px;
+    padding: 0.75rem;
+    cursor: pointer;
+    background-color: #1d1d1d;
+    border-radius: var(--app-border-radius);
+    color: var(--app-font-color);
+    gap: 1rem;
 }
 
-.person-icon,
+.user-card {
+    display: flex;
+    align-items: center;
+    flex: 1;
+    gap: 0.5rem;
+}
+
+.profile-picture {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-img {
+    width: 3rem; /* Adjust size as needed */
+    height: 3rem; /* Adjust size as needed */
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.contact-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+}
+
+.username {
+    font-size: 1.25rem;
+    font-weight: bold;
+    color: white;
+}
+
+.status {
+    font-size: 0.875rem;
+    color: grey; /* Adjust color as needed */
+}
+
+.key-info {
+    display: flex;
+    align-items: center;
+}
+
 .key-icon {
-    font-size: 20px;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.active .key-icon {
+    color: var(--app-green); /* Change to green when active */
 }

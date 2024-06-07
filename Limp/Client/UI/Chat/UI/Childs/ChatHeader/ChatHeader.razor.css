@@ -2,9 +2,10 @@
     display: flex;
     align-items: center;
     padding: 10px;
-    background-color: #f1f1f1;
+    background-color: var(--app-background-mat-color);
     height: var(--sidebar-header-height);
-    background-color: rgba(41, 56, 41, 0.1);
+    border-bottom-left-radius: var(--app-border-radius);
+    border-bottom-right-radius: var(--app-border-radius);
 }
 
 .name {

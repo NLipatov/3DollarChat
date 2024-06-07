@@ -3,38 +3,41 @@
 @using EthachatShared.Models.ConnectedUsersManaging
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
-<div style="cursor: pointer; @Style" @onclick="()=>OnClickCallback()">
+<div class="user-card-container" @onclick="() => OnClickCallback()">
     <div class="user-card @(IsOnline ? "active" : "")">
-        <div class="header">
-            <div class="profile-picture">
-                <i class="bi bi-person-fill person-icon"></i>
-            </div>
-            <div class="contact-info">
-                <a href="/@Username" class="username">@Username</a>
-            </div>
+        <div class="profile-picture">
+            <!-- Replace this with an actual image if available -->
+            <img
+                src="/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg"
+                alt="@Username"
+                class="profile-img"/>
+        </div>
+        <div class="contact-info">
+            <span class="username">@Username</span>
+            <span class="status">
+                @{
+                    <text>@(IsOnline ? "Online" : "Offline")</text>
+                }
+            </span>
+        </div>
+        <div class="key-info">
             @if (IsKeyReady)
             {
-                <div class="key-info">
-                    <i class="bi bi-key-fill key-icon" data-bs-toggle="tooltip" title="AES key for secure communication"></i>
-                </div>
+                <i class="bi bi-key-fill key-icon" data-bs-toggle="tooltip" title="AES key for secure communication"></i>
             }
         </div>
     </div>
 </div>
 
 @code {
-    [Parameter]
-    public string Username { get; set; }
+    [Parameter] public string Username { get; set; }
 
-    [Parameter]
-    public Action OnClickCallback { get; set; }
+    [Parameter] public Action OnClickCallback { get; set; }
 
-    [Parameter]
-    public string Style { get; set; } = string.Empty;
+    [Parameter] public string Style { get; set; } = string.Empty;
 
-    [Parameter]
-    public bool IsKeyReady { get; set; } = false;
-    
+    [Parameter] public bool IsKeyReady { get; set; } = false;
+
     private UserConnectionsReport UsersOnlineMessage { get; set; } = new();
 
     private bool IsOnline => UsersOnlineMessage.UserConnections.FirstOrDefault(x => x.Username == Username)?.ConnectionIds.Any() ?? false;
@@ -50,7 +53,6 @@
         HubServiceSubscriptionManager.AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
         base.SubscribeToHubEvents();
     }
-    
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
@@ -60,4 +62,5 @@
             StateHasChanged();
         }
     }
+
 }

@@ -1,52 +1,99 @@
 .callout {
     display: flex;
     flex-direction: column;
-    padding: var(--app-padding);
-    border-bottom-style: hidden;
+    padding: 1rem;
     margin-bottom: 1rem;
     border-radius: var(--app-border-radius);
-}
-
-.info {
-    border-left: var(--app-ribbon-width) solid var(--app-blue);
-}
-
-.info svg {
-    color: var(--app-blue);
-}
-
-.idea {
-    border-left: var(--app-ribbon-width) solid var(--app-blue);
-}
-
-.idea svg {
-    color: var(--app-blue);
-}
-
-.danger {
-    border-left: var(--app-ribbon-width) solid var(--app-red);
-}
-
-.danger svg {
-    color: var(--app-red);
-}
-
-.warning {
-    border-left: var(--app-ribbon-width) solid #ffe11b;
-}
-
-.warning svg {
-    color: #ffe11b;
-}
-
-.error {
-    border-left: var(--app-ribbon-width) solid #233525;
-}
-
-.error svg {
-    color: #233525;
+    background-color: #f8f9fa;
+    color: #212529;
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
 }
 
 .callout-header {
-    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    font-size: 1.25rem;
+    font-weight: bold;
+    gap: 0.5rem;
+}
+
+.callout-header svg {
+    margin-right: 0.5rem;
+}
+
+.callout-body {
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.info svg {
+    color: #0c5460;
+}
+
+.idea {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.idea svg {
+    color: #0c5460;
+}
+
+.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.danger svg {
+    color: #721c24;
+}
+
+.warning {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
+.warning svg {
+    color: #856404;
+}
+
+.error {
+    background-color: #f5c6cb;
+    color: #721c24;
+}
+
+.error svg {
+    color: #721c24;
+}
+
+.success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.success svg {
+    color: #155724;
+}
+
+.neutral {
+    background-color: #e2e3e5;
+    color: #383d41;
+}
+
+.neutral svg {
+    color: #383d41;
+}
+
+.positive {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.positive svg {
+    color: #155724;
 }

@@ -21,8 +21,8 @@
             @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
             {
                 <CustomCallout
-                    CalloutType="CalloutType.Info"
-                    CalloutBody="Looks like everyone is offline now."/>
+                    CalloutTitle="Looks like everyone is offline now"
+                    CalloutType="CalloutType.Info"/>
             }
             else if (string.IsNullOrWhiteSpace(myUsername))
             {

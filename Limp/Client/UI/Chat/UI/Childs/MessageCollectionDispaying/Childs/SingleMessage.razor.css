@@ -8,12 +8,13 @@
 }
 
 .incoming {
-    background-color: deepskyblue;
+    background-color: #273429;
     align-self: flex-start;
 }
 
 .outcoming {
-    background-color: #DCF8C6;
+    /*same as send button background color*/
+    background-color: #28a745;
     align-self: flex-end;
 }
 
@@ -21,7 +22,7 @@
     padding: 8px;
     font-size: 16px;
     line-height: 24px;
-    color: #000000;
+    color: var(--app-font-color);
     overflow-wrap: break-word;
 }
 

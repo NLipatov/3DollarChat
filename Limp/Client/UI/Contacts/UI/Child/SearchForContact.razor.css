@@ -1,8 +1,7 @@
 .input-group {
     align-items: center;
     background-color: #333;
-    border-radius: 20px;
-    padding: 5px 10px;
+    border-radius: var(--app-border-radius);
 }
 
 .input-group-prepend .input-group-text {

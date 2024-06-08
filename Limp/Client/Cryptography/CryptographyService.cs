@@ -1,5 +1,4 @@
 ﻿using Client.Application.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
@@ -80,24 +79,23 @@ namespace Ethachat.Client.Cryptography
             };
         }
 
-        public async Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, string? contact = null)
+        public async Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, Key key)
             where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Decrypt(cryptogram, contact);
+            return await cryptoHandler.Decrypt(cryptogram, key);
         }
 
-        public async Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, string? contact = null,
-            string? publicKeyToEncryptWith = null) where T : ICryptoHandler
+        public async Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, Key key) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _jSRuntime);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(cryptogram, contact, publicKeyToEncryptWith);
+            return await cryptoHandler.Encrypt(cryptogram, key);
         }
     }
 }

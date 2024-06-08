@@ -4,6 +4,7 @@ using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
+using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
@@ -45,7 +46,7 @@ public class AesOfferSender : IAesOfferSender
             .EncryptAsync<RsaHandler>
             (new Cryptogram { Cyphertext = JsonSerializer.Serialize(offer) },
                 //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                publicKeyToEncryptWith: partnersPublicKey)).Cyphertext;
+                InMemoryKeyStorage.RSAKeyStorage[partnersUsername])).Cyphertext;
 
         Message messageWithAesOffer = new()
         {

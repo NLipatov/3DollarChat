@@ -3,6 +3,7 @@ using Ethachat.Client.Cryptography;
 using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
+using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
@@ -74,7 +75,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 Cyphertext = offerMessage.Cryptogramm?.Cyphertext,
                 KeyId = offerMessage.Cryptogramm!.KeyId
-            });
+            }, InMemoryKeyStorage.MyRSAPrivate ?? throw new ApplicationException("Missing key"));
 
             AesOffer? offer = JsonSerializer.Deserialize<AesOffer>(decryptedCryptogram.Cyphertext ?? string.Empty);
 

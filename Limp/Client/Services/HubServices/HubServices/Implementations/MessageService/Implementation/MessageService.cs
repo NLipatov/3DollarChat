@@ -469,13 +469,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data) where T: IIdentifiable, IDestinationResolvable
         {
+            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
                 .EncryptAsync<AesHandler>(new Cryptogram
                 {
                     Cyphertext = serializedData,
-                }, contact: data.Target);
+                }, await localKeyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ?? throw new ApplicationException("missing key"));
 
             var transferData = new EncryptedDataTransfer
             {
@@ -494,13 +495,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data, string target) where T: IIdentifiable
         {
+            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
+            var key = await localKeyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
+                      throw new ApplicationException("Missing key");
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
                 .EncryptAsync<AesHandler>(new Cryptogram
                 {
                     Cyphertext = serializedData,
-                }, contact: target);
+                }, key);
 
             var transferData = new EncryptedDataTransfer
             {
@@ -522,9 +526,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 var lastAcceptedAsync = await KeyStorageService.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
                 if (lastAcceptedAsync is null)
                     await NegotiateOnAESAsync(dataTransfer.Sender);
-
+                
                 var cryptogram = await _cryptographyService
-                    .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, dataTransfer.Sender);
+                    .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, lastAcceptedAsync);
 
                 var json = cryptogram.Cyphertext ?? string.Empty;
                 return JsonSerializer.Deserialize<T>(json);

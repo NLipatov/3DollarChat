@@ -1,16 +1,15 @@
 ﻿@inject IUsersService usersService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using EthachatShared.Models.ConnectedUsersManaging
+@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 <div class="user-card-container" @onclick="() => OnClickCallback()">
     <div class="user-card @(IsOnline ? "active" : "")">
         <div class="profile-picture">
-            <!-- Replace this with an actual image if available -->
-            <img
-                src="/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg"
-                alt="@Username"
-                class="profile-img"/>
+            <AvatarOnlineIndicator
+                PartnerUsername=@Username
+                AvatarLink="/assets/jpg/profile-user-icon-isolated-on-white-background-eps10-free-vector.jpg"/>
         </div>
         <div class="contact-info">
             <span class="username">@Username</span>

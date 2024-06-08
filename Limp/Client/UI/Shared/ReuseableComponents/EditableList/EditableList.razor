@@ -30,7 +30,8 @@
                     OnItemClickedAction=@((_) => OnItemClicked.InvokeAsync(item))
                     ItemModel="item"
                     IconClass=@IconClass
-                    Style="width: 100%;"/>
+                    Style="width: 100%;"
+                    ListItemType=@ListItemType/>
             </div>
         </Virtualize>
     </div>
@@ -48,6 +49,8 @@
     [Parameter] public EventCallback<ItemModel> OnItemRemoved { get; set; }
 
     [Parameter] public EventCallback<ItemModel> OnItemClicked { get; set; }
+    
+    [Parameter] public EditableListItemType ListItemType { get; set; }
 
     private void ToggleContactEditionMode()
     {

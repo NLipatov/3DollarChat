@@ -1,5 +1,4 @@
 .editable-list-container {
-    padding: 1rem;
     color: var(--app-font-color);
 }
 
@@ -18,7 +17,6 @@
 .editable-list-item {
     display: flex;
     align-items: center;
-    padding: 1rem;
     background-color: rgba(83 89 89 / 9%);
     border-radius: var(--app-border-radius);
     transition: background-color 0.3s ease;

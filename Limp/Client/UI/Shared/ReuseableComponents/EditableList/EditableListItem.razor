@@ -1,18 +1,19 @@
 ﻿@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
-@using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
+@using Ethachat.Client.UI.CommonComponents.ContactItem
 
 <div class="editable-list-item-content" style="@Style" @onclick="HandleClick">
-    <div class="avatar-indicator">
-        @if (ItemModel.AvatarOnlineIndicator is not null)
-        {
-            <AvatarOnlineIndicator
-                PartnerUsername=@ItemModel.ItemName
-                AvatarLink=@ItemModel.AvatarOnlineIndicator.AvatarLink/>
-        }
-    </div>
-    <div class="item-details">
-        <span class="item-name">@ItemModel.ItemName</span>
-    </div>
+    @if (ListItemType is EditableListItemType.Contact)
+    {
+        <ContactBar
+            Username=@ItemModel.ItemName
+            OnClickCallback=@HandleClick/>
+    }
+    else
+    {
+        <div class="item-details">
+            <span class="item-name">@ItemModel.ItemName</span>
+        </div>
+    }
 </div>
 
 @code {
@@ -23,6 +24,8 @@
     [Parameter] public Action<string>? OnItemClickedAction { get; set; }
 
     [Parameter] public string Style { get; set; } = string.Empty;
+    
+    [Parameter] public EditableListItemType ListItemType { get; set; }
 
     private void HandleClick()
     {

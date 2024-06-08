@@ -5,10 +5,6 @@
     cursor: pointer;
 }
 
-.avatar-indicator {
-    flex-shrink: 0;
-}
-
 .item-details {
     display: flex;
     flex-direction: column;

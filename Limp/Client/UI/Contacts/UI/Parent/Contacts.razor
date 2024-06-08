@@ -43,7 +43,8 @@
                         ItemCollection=@(ContactsList.Select(x => new ItemModel { IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username, Icons = [x.IsTrusted ? new CustomIcon { Name = "shield", Color = "green" } : new CustomIcon { Name = "shield", Color = "red" }], BadgeModel = GetContactBadge(x), ShowBadge = x.UnreadedMessagesCount > 0, AvatarOnlineIndicator = new AvatarOnlineIndicator { PartnerUsername = x.Username }, }).ToList())
                         OnItemClicked="NavigateToChatWithContact"
                         OnItemRemoved="RemoveContact"
-                        IconClass="bi bi-person-fill"/>
+                        IconClass="bi bi-person-fill"
+                        ListItemType=@EditableListItemType.Contact/>
                 }
                 else
                 {

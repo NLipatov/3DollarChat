@@ -12,5 +12,6 @@ namespace Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
         public bool ShowBadge { get; set; }
         public CustomIcon[] Icons { get; set; } = [];
         public AvatarOnlineIndicator? AvatarOnlineIndicator { get; set; }
+        public EditableListItemType Type { get; set; }
     }
 }

@@ -9,6 +9,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethachat.Client", "Limp\Cli
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "EthachatShared\EthachatShared\EthachatShared.csproj", "{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure", "Client.Infrastructure", "{CA2CD098-7413-495A-8F8A-14978663C9A5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Application", "Client.Application", "{C67BC61A-0FA0-432E-8BC6-71C5F6966F62}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,11 +35,23 @@ Global
 		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {4B3DCEE8-F57F-4C1D-AAF7-96E517B365C4}
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0} = {CA2CD098-7413-495A-8F8A-14978663C9A5}
+		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D} = {C67BC61A-0FA0-432E-8BC6-71C5F6966F62}
 	EndGlobalSection
 EndGlobal

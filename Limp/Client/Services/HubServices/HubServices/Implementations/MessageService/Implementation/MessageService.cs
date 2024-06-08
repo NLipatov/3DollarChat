@@ -33,7 +33,7 @@ using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using InMemoryKeyStorage = Ethachat.Client.Cryptography.KeyStorage.InMemoryKeyStorage;
+using InMemoryKeyStorage = Ethachat.Client.Services.KeyStorageService.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {

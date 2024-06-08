@@ -1,4 +1,5 @@
-﻿using Ethachat.Client.Cryptography.Exceptions;
+﻿using Client.Application.Cryptography;
+using Ethachat.Client.Cryptography.Exceptions;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;

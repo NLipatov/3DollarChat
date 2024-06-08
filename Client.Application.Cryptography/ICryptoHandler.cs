@@ -1,6 +1,6 @@
 ﻿using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Cryptography.CryptoHandlers;
+namespace Client.Application.Cryptography;
 
 public interface ICryptoHandler
 {

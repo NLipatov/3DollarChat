@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
-using Ethachat.Client.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
+using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using Ethachat.Client.Services.UserIdentityService;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;

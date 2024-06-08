@@ -1,6 +1,7 @@
-﻿using Ethachat.Client.Cryptography.CryptoHandlers;
-using Ethachat.Client.Cryptography.KeyStorage;
+﻿using Client.Application.Cryptography;
+using Ethachat.Client.Cryptography.CryptoHandlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;

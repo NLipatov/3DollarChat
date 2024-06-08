@@ -1,9 +1,7 @@
-﻿using Client.Application.Cryptography;
-using Ethachat.Client.Cryptography.CryptoHandlers;
-using EthachatShared.Encryption;
+﻿using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Cryptography
+namespace Client.Application.Cryptography
 {
     public interface ICryptographyService
     {

@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Crypt
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Presentation", "Client.Presentation", "{BF400104-D998-4F45-BC3F-D18770D741B9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -53,5 +55,6 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0} = {CA2CD098-7413-495A-8F8A-14978663C9A5}
 		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D} = {C67BC61A-0FA0-432E-8BC6-71C5F6966F62}
+		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8} = {BF400104-D998-4F45-BC3F-D18770D741B9}
 	EndGlobalSection
 EndGlobal

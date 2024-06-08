@@ -17,7 +17,7 @@ namespace Ethachat.Client.Cryptography
         {
             _jSRuntime = jSRuntime;
             _authenticationHandler = authenticationHandler;
-            _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+            GenerateRsaKeyPairAsync();
         }
 
         [JSInvokable]
@@ -60,8 +60,27 @@ namespace Ethachat.Client.Cryptography
 
         public async Task GenerateRsaKeyPairAsync()
         {
-            if (InMemoryKeyStorage.MyRSAPublic == null && InMemoryKeyStorage.MyRSAPrivate == null)
-                await _jSRuntime.InvokeVoidAsync("GenerateRSAOAEPKeyPair");
+            if ((InMemoryKeyStorage.MyRSAPublic?.Value?.ToString() ?? string.Empty).Length > 0 ||
+                (InMemoryKeyStorage.MyRSAPrivate?.Value?.ToString() ?? string.Empty).Length > 0 )
+                return;
+            
+            var keyPair = await _jSRuntime.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync");
+            var publicRsa = new Key
+            {
+                Value = keyPair[0],
+                Format = KeyFormat.PemSpki,
+                Type = KeyType.RsaPublic,
+                Contact = null
+            };
+            var privateRsa = new Key
+            {
+                Value = keyPair[1],
+                Format = KeyFormat.PemSpki,
+                Type = KeyType.RsaPrivate,
+                Contact = null
+            };
+            InMemoryKeyStorage.MyRSAPrivate = privateRsa;
+            InMemoryKeyStorage.MyRSAPublic = publicRsa;
         }
 
         public async Task<Key> GenerateAesKeyAsync(string contact)

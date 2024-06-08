@@ -1,23 +1,27 @@
-﻿function GenerateRSAOAEPKeyPair()
-{
-    window.crypto.subtle.generateKey
-    (
-        {
-            name: "RSA-OAEP",
-            modulusLength: 4096,
-            publicExponent: new Uint8Array([1, 0, 1]),
-            hash: "SHA-256",
-        },
-        true,
-        ["encrypt", "decrypt"]
-    ).then(async(keyPair) =>
-    {
-        await exportPublicKeyToDotnet(keyPair.publicKey);
-        await exportPrivateKeyToDotnet(keyPair.privateKey);
-    });
+﻿async function GenerateRSAOAEPKeyPairAsync() {
+    try {
+        const keyPair = await window.crypto.subtle.generateKey(
+            {
+                name: "RSA-OAEP",
+                modulusLength: 4096,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: "SHA-256",
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+        
+        const publicKeyPem = await publicToPemAsync(keyPair.publicKey);
+        const privateKeyPem = await privateToPemAsync(keyPair.privateKey);
+
+        return [publicKeyPem, privateKeyPem];
+    } catch (error) {
+        console.error('Error generating RSA-OAEP key pair:', error);
+        throw error;
+    }
 }
 
-const exportPublicKeyToDotnet = async (key) =>
+const publicToPemAsync = async (key) =>
 {
     const exported = await window.crypto.subtle.exportKey(
         "spki",
@@ -26,14 +30,11 @@ const exportPublicKeyToDotnet = async (key) =>
     const exportedAsString = ab2str(exported);
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 2, 1, null);
+    
+    return pemExported;
 }
 
-/*
-Export the given key and write it into the "exported-key" space.
-*/
-const exportPrivateKeyToDotnet = async (key) =>
+const privateToPemAsync = async (key) =>
 {
     const exported = await window.crypto.subtle.exportKey(
         "pkcs8",
@@ -43,7 +44,7 @@ const exportPrivateKeyToDotnet = async (key) =>
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PRIVATE KEY-----\n${exportedAsBase64}\n-----END PRIVATE KEY-----`;
 
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 1, 2, null);
+    return pemExported;
 }
 
 /*

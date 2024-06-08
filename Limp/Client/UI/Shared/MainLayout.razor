@@ -58,14 +58,10 @@ else
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
-
-        await _cryptographyService.GenerateRsaKeyPairAsync();
-        KeysGeneratedHandler.SubscribeToRsaKeysGeneratedEvent(() =>
-        {
-            isRSAGenerated = true;
-            StateHasChanged();
-            isConnectedToHubs = true;
-        });
+        
+        isRSAGenerated = true;
+        StateHasChanged();
+        isConnectedToHubs = true;
     }
 
     private async void ShowMessageToast()

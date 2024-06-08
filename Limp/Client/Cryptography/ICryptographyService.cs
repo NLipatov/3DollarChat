@@ -9,6 +9,5 @@ namespace Ethachat.Client.Cryptography
         Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, Key key) where T : ICryptoHandler;
         Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, Key key) where T : ICryptoHandler;
         Task<Key> GenerateAesKeyAsync(string contact);
-        Task GenerateRsaKeyPairAsync();
     }
 }

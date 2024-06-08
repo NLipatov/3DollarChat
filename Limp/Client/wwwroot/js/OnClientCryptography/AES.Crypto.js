@@ -52,17 +52,6 @@ function GenerateIVForHLS(videoId) {
     return ab2hexstr(iv);
 }
 
-const exportAESKeyToDotnet = async (key, contactName) => {
-    const exported = await window.crypto.subtle.exportKey(
-        "raw",
-        key
-    );
-    const exportedKeyBuffer = new Uint8Array(exported);
-    const exportedKeyBufferString = ab2str(exportedKeyBuffer);
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
-}
-
 function importSecretKey(ArrayBufferKeyString) {
     return window.crypto.subtle.importKey(
         "raw",

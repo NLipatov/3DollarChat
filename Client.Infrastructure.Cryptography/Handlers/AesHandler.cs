@@ -3,7 +3,7 @@ using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Cryptography.CryptoHandlers.Handlers
+namespace Client.Infrastructure.Cryptography.Handlers
 {
     public class AesHandler : ICryptoHandler
     {

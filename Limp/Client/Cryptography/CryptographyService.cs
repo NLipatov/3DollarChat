@@ -20,44 +20,6 @@ namespace Ethachat.Client.Cryptography
             GenerateRsaKeyPairAsync();
         }
 
-        [JSInvokable]
-        public static async void OnKeyExtracted(string key, int format = 0, int type = 0, string? contact = null)
-        {
-            Key cryptoKey = new Key()
-            {
-                Value = key,
-                Format = (KeyFormat)format,
-                Type = (KeyType)type,
-                Contact = contact
-            };
-
-            switch (cryptoKey.Type)
-            {
-                case (KeyType.RsaPublic):
-                    InMemoryKeyStorage.MyRSAPublic = cryptoKey;
-                    break;
-                case (KeyType.RsaPrivate):
-                    InMemoryKeyStorage.MyRSAPrivate = cryptoKey;
-                    break;
-                case (KeyType.Aes):
-                    InMemoryKeyStorage.AESKeyStorage.TryAdd(contact!, cryptoKey);
-                    if (OnAesGeneratedCallback != null)
-                    {
-                        OnAesGeneratedCallback(cryptoKey.Value.ToString() 
-                                               ?? throw new ArgumentException
-                                                   ("Cryptography key was not well formed."));
-                        OnAesGeneratedCallback = null;
-                    }
-
-                    break;
-                default:
-                    throw new ApplicationException($"Unknown key type passed in: {nameof(cryptoKey.Type)}");
-            }
-
-            if (InMemoryKeyStorage.MyRSAPublic?.Value != null && InMemoryKeyStorage.MyRSAPrivate?.Value != null)
-                KeysGeneratedHandler.CallOnKeysGenerated();
-        }
-
         public async Task GenerateRsaKeyPairAsync()
         {
             if ((InMemoryKeyStorage.MyRSAPublic?.Value?.ToString() ?? string.Empty).Length > 0 ||

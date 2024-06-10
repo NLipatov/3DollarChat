@@ -6,7 +6,7 @@ using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Cryptography
+namespace Ethachat.Client.Services.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {

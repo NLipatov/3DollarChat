@@ -1,10 +1,9 @@
 using System.Diagnostics.CodeAnalysis;
 using Client.Application.Cryptography;
-using Microsoft.JSInterop;
 
 namespace Client.Infrastructure.Cryptography;
 
-public class RuntimeCryptographyExecutor(IJSRuntime jsRuntime) : IRuntimeCryptographyExecutor
+public class RuntimeCryptographyExecutor(IPlatformRuntime runtime) : IRuntimeCryptographyExecutor
 {
     public async ValueTask<TValue> InvokeAsync<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
@@ -13,7 +12,7 @@ public class RuntimeCryptographyExecutor(IJSRuntime jsRuntime) : IRuntimeCryptog
         TValue>(
         string identifier,
         object?[]? args) =>
-        await ExecuteWithExceptionHandling(() => jsRuntime.InvokeAsync<TValue>(identifier, args));
+        await ExecuteWithExceptionHandling(() => runtime.InvokeAsync<TValue>(identifier, args));
 
     public async ValueTask<TValue> InvokeAsync<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |
@@ -23,23 +22,19 @@ public class RuntimeCryptographyExecutor(IJSRuntime jsRuntime) : IRuntimeCryptog
         string identifier,
         CancellationToken cancellationToken,
         object?[]? args) => await ExecuteWithExceptionHandling(() =>
-        jsRuntime.InvokeAsync<TValue>(identifier, cancellationToken, args));
+        runtime.InvokeAsync<TValue>(identifier, cancellationToken, args));
 
     public async ValueTask InvokeVoidAsync(string identifier, object?[]? args) =>
-        await ExecuteWithExceptionHandling(() => jsRuntime.InvokeVoidAsync(identifier, args));
+        await ExecuteWithExceptionHandling(() => runtime.InvokeVoidAsync(identifier, args));
 
     public async ValueTask InvokeVoidAsync(string identifier, CancellationToken cancellationToken, object?[]? args) =>
-        await ExecuteWithExceptionHandling(() => jsRuntime.InvokeVoidAsync(identifier, cancellationToken, args));
+        await ExecuteWithExceptionHandling(() => runtime.InvokeVoidAsync(identifier, cancellationToken, args));
 
     private async ValueTask<T> ExecuteWithExceptionHandling<T>(Func<ValueTask<T>> func)
     {
         try
         {
             return await func();
-        }
-        catch (JSException jsEx)
-        {
-            throw new ApplicationException($"JavaScript exception: {jsEx.Message}", jsEx);
         }
         catch (Exception ex)
         {
@@ -52,10 +47,6 @@ public class RuntimeCryptographyExecutor(IJSRuntime jsRuntime) : IRuntimeCryptog
         try
         {
             await func();
-        }
-        catch (JSException jsEx)
-        {
-            throw new ApplicationException($"JavaScript exception: {jsEx.Message}", jsEx);
         }
         catch (Exception ex)
         {

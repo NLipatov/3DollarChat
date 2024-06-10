@@ -1,81 +1,44 @@
 ﻿using Client.Application.Cryptography;
+using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
-using Microsoft.JSInterop;
 
 namespace Client.Infrastructure.Cryptography.Handlers
 {
-    public class AesHandler : ICryptoHandler
+    public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
     {
-        private readonly IJSRuntime _jSRuntime;
-
-        public AesHandler(IJSRuntime jSRuntime)
-        {
-            _jSRuntime = jSRuntime;
-        }
-
         public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, Key key)
         {
-            try
+            EncryptionResult result = await runtimeCryptographyExecutor.InvokeAsync<EncryptionResult>("AESDecryptText",
+            [
+                cryptogram.Cyphertext ?? string.Empty,
+                key.Value?.ToString() ?? throw new ApplicationException("Missing key"),
+                cryptogram.Iv
+            ]);
+
+            return new()
             {
-                string decryptedMessage = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
-                {
-                    await _jSRuntime.InvokeVoidAsync("ImportIV", cryptogram.Iv, cryptogram.Cyphertext);
-                    await _jSRuntime.InvokeVoidAsync("importSecretKey",
-                        (key.Value ?? throw new ApplicationException("Missing key")).ToString());
-                    decryptedMessage = await _jSRuntime
-                        .InvokeAsync<string>("AESDecryptText", cryptogram.Cyphertext, key.Value.ToString());
-                }
-
-                var result = new Cryptogram()
-                {
-                    Cyphertext = decryptedMessage,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext)
-                };
-
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw new ApplicationException(ex.Message, ex);
-            }
+                Cyphertext = result.Ciphertext,
+                Iv = result.Iv,
+                KeyId = key.Id
+            };
         }
 
         public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
         {
-            try
+            EncryptionResult result = await runtimeCryptographyExecutor
+                .InvokeAsync<EncryptionResult>("AESEncryptText",
+                [
+                    cryptogram.Cyphertext ?? string.Empty,
+                    key.Value?.ToString() ?? throw new ApplicationException("Missing key")
+                ]);
+
+            return new()
             {
-                // var localKeyStorageService = new LocalStorageKeyStorage(_jSRuntime);
-                // Key key = await localKeyStorageService.GetLastAcceptedAsync(contact, KeyType.Aes);
-                //
-                // if (key is null)
-                //     throw new ApplicationException("Could not resolve a AES key for encryption.");
-
-                string encryptedText = string.Empty;
-                if (!string.IsNullOrWhiteSpace(cryptogram.Cyphertext))
-                {
-                    encryptedText = await _jSRuntime
-                        .InvokeAsync<string>("AESEncryptText", cryptogram.Cyphertext, key.Value!.ToString());
-                }
-
-                var result = new Cryptogram
-                {
-                    Cyphertext = encryptedText,
-                    Iv = await _jSRuntime.InvokeAsync<string>("ExportIV", cryptogram.Cyphertext),
-                    KeyId = key.Id,
-                };
-
-                await _jSRuntime.InvokeVoidAsync("DeleteIv", cryptogram.Cyphertext);
-
-                return result;
-            }
-            catch (Exception ex)
-            {
-                throw new ApplicationException(ex.Message, ex);
-            }
+                Cyphertext = result.Ciphertext,
+                Iv = result.Iv,
+                KeyId = key.Id,
+            };
         }
     }
 }

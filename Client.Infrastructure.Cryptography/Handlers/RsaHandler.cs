@@ -1,44 +1,33 @@
 ﻿using Client.Application.Cryptography;
+using Client.Infrastructure.Cryptography.Handlers.Exceptions;
+using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
-namespace Client.Infrastructure.Cryptography.Handlers
+namespace Client.Infrastructure.Cryptography.Handlers;
+
+public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
 {
-    public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
+    public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
     {
-        public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
+        EncryptionResult result = await runtimeCryptographyExecutor
+            .InvokeAsync<EncryptionResult>("EncryptWithRSAPublicKey", [cryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
+
+        return new()
         {
-            string encryptedMessage = await runtimeCryptographyExecutor
-                .InvokeAsync<string>("EncryptWithRSAPublicKey", [cryptogram.Cyphertext, key.Value]);
+            Cyphertext = result.Ciphertext
+        };
+    }
 
-            if (string.IsNullOrWhiteSpace(encryptedMessage))
-                throw new ApplicationException("Could not encrypt text.");
+    public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, Key key)
+    {
+        EncryptionResult result = await runtimeCryptographyExecutor
+            .InvokeAsync<EncryptionResult>("DecryptWithRSAPrivateKey",
+                [cryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
 
-            var result = new Cryptogram
-            {
-                Cyphertext = encryptedMessage,
-                Iv = await runtimeCryptographyExecutor.InvokeAsync<string>("ExportIV", [cryptogram.Cyphertext]),
-            };
-
-            await runtimeCryptographyExecutor.InvokeVoidAsync("DeleteIv", [cryptogram.Cyphertext]);
-
-            return result;
-        }
-
-        public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, Key key)
+        return new()
         {
-            string decryptedMessage = await runtimeCryptographyExecutor
-                .InvokeAsync<string>("DecryptWithRSAPrivateKey", [cryptogram.Cyphertext, key.Value]);
-
-            var result = new Cryptogram()
-            {
-                Cyphertext = decryptedMessage,
-                Iv = await runtimeCryptographyExecutor.InvokeAsync<string>("ExportIV", [cryptogram.Cyphertext]),
-            };
-
-            await runtimeCryptographyExecutor.InvokeVoidAsync("DeleteIv", [cryptogram.Cyphertext]);
-
-            return result;
-        }
+            Cyphertext = result.Ciphertext
+        };
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Client.Application.Cryptography;
+using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
@@ -12,7 +13,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         EncryptionResult result = await runtimeCryptographyExecutor.InvokeAsync<EncryptionResult>("AESDecryptText",
         [
             cryptogram.Cyphertext ?? string.Empty,
-            key.Value?.ToString() ?? throw new ApplicationException("Missing key"),
+            key.Value?.ToString() ?? throw new MissingKeyException(),
             cryptogram.Iv
         ]);
 
@@ -30,7 +31,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
             .InvokeAsync<EncryptionResult>("AESEncryptText",
             [
                 cryptogram.Cyphertext ?? string.Empty,
-                key.Value?.ToString() ?? throw new ApplicationException("Missing key")
+                key.Value?.ToString() ?? throw new MissingKeyException()
             ]);
 
         return new()

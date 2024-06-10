@@ -14,7 +14,7 @@
     );
     const exportedKeyBuffer = new Uint8Array(exportedKey);
     const exportedKeyBufferString = ab2str(exportedKeyBuffer);
-    
+
     return exportedKeyBufferString;
 }
 

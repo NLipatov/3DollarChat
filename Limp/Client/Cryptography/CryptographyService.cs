@@ -10,13 +10,13 @@ namespace Ethachat.Client.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {
-        private readonly IRuntimeCryptographyExecutor CryptographyExecutor;
+        private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private static Action<string>? OnAesGeneratedCallback { get; set; }
 
         public CryptographyService(IJSRuntime jSRuntime, IAuthenticationHandler authenticationHandler)
         {
-            CryptographyExecutor = new RuntimeCryptographyExecutor(jSRuntime);
+            _cryptographyExecutor = new RuntimeCryptographyExecutor(jSRuntime);
             _authenticationHandler = authenticationHandler;
             GenerateRsaKeyPairAsync();
         }
@@ -27,7 +27,7 @@ namespace Ethachat.Client.Cryptography
                 (InMemoryKeyStorage.MyRSAPrivate?.Value?.ToString() ?? string.Empty).Length > 0 )
                 return;
             
-            var keyPair = await CryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
+            var keyPair = await _cryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
             var publicRsa = new Key
             {
                 Value = keyPair[0],
@@ -48,7 +48,7 @@ namespace Ethachat.Client.Cryptography
 
         public async Task<Key> GenerateAesKeyAsync(string contact)
         {
-            var key = await CryptographyExecutor.InvokeAsync<string>("GenerateAESKeyAsync", []);
+            var key = await _cryptographyExecutor.InvokeAsync<string>("GenerateAESKeyAsync", []);
             return new Key
             {
                 Value = key,
@@ -64,7 +64,7 @@ namespace Ethachat.Client.Cryptography
         public async Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, Key key)
             where T : ICryptoHandler
         {
-            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), CryptographyExecutor);
+            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _cryptographyExecutor);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
@@ -73,7 +73,7 @@ namespace Ethachat.Client.Cryptography
 
         public async Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, Key key) where T : ICryptoHandler
         {
-            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), CryptographyExecutor);
+            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _cryptographyExecutor);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 

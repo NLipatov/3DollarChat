@@ -7,7 +7,6 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
-using Ethachat.Client.Cryptography.Exceptions;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
@@ -535,7 +534,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception e)
             {
-                if (e.InnerException is EncryptionKeyNotFoundException keyNotFoundException)
+                if (e.InnerException is ApplicationException keyNotFoundException)
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
                     {

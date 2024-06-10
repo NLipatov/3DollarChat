@@ -4,7 +4,6 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
-using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.Cryptography
 {
@@ -13,9 +12,9 @@ namespace Ethachat.Client.Services.Cryptography
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
 
-        public CryptographyService(IJSRuntime jSRuntime, IAuthenticationHandler authenticationHandler)
+        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler)
         {
-            _cryptographyExecutor = new RuntimeCryptographyExecutor(jSRuntime);
+            _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
             _authenticationHandler = authenticationHandler;
             _ = GenerateRsaKeyPairAsync();
         }

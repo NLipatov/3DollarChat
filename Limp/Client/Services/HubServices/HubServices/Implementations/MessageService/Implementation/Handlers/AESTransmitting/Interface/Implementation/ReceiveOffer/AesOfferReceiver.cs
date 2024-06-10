@@ -1,6 +1,6 @@
 ﻿using System.Text.Json;
+using Client.Application.Cryptography;
 using Client.Infrastructure.Cryptography.Handlers;
-using Ethachat.Client.Cryptography;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.KeyStorageService.Implementations;
 using Ethachat.Client.Services.KeyStorageService.KeyStorage;

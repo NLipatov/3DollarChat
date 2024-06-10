@@ -1,7 +1,6 @@
 ﻿@using Ethachat.Client.ClientOnlyModels
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
-@using Ethachat.Client.Cryptography
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
@@ -10,6 +9,7 @@
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
+@using global::Client.Application.Cryptography
 @inject IMessageBuilder MessageBuilder
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox

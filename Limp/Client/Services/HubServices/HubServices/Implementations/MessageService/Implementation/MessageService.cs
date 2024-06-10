@@ -1,8 +1,8 @@
 ﻿using System.Reflection;
 using System.Text.Json;
+using Client.Application.Cryptography;
 using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Cryptography;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;

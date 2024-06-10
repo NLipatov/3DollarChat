@@ -1,7 +1,6 @@
 using Blazored.Toast;
 using Client.Application.Cryptography;
 using Client.Infrastructure.Cryptography;
-using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client;
 using Ethachat.Client.Cryptography;
 using Ethachat.Client.Services.AuthenticationService;
@@ -44,7 +43,6 @@ using Ethachat.Client.UI.AccountManagement.LogicHandlers;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using ICryptographyService = Ethachat.Client.Cryptography.ICryptographyService;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");

@@ -5,7 +5,7 @@ internal class MissingKeyException : Exception
     public MissingKeyException() : base()
     {
     }
-    
+
     public MissingKeyException(string message) : base(message)
     {
     }

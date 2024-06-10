@@ -11,7 +11,8 @@ public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
     public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
     {
         EncryptionResult result = await runtimeCryptographyExecutor
-            .InvokeAsync<EncryptionResult>("EncryptWithRSAPublicKey", [cryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
+            .InvokeAsync<EncryptionResult>("EncryptWithRSAPublicKey",
+                [cryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
 
         return new()
         {

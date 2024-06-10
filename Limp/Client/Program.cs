@@ -1,6 +1,7 @@
 using Blazored.Toast;
+using Client.Application.Cryptography;
+using Client.Infrastructure.Cryptography;
 using Ethachat.Client;
-using Ethachat.Client.Cryptography;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
@@ -9,6 +10,7 @@ using Ethachat.Client.Services.ConcurrentCollectionManager;
 using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.ContactsProvider.Implementations;
+using Ethachat.Client.Services.Cryptography;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -73,6 +75,7 @@ builder.Services.AddTransient<ILoggingService, LoggingService>();
 builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>();
 builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
+builder.Services.AddTransient<IRuntimeCryptographyExecutor, RuntimeCryptographyExecutor>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

@@ -22,6 +22,7 @@
     <Content Remove="wwwroot\dist\ffmpeg-core.wasm" />
     <Content Remove="wwwroot\blazorFfmpeg.js" />
     <None Include="wwwroot\js\Clipboard\ClipboardInteractor.js" />
+    <Compile Remove="Cryptography\KeyStorage\KeyStorageProvider.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -42,6 +43,8 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+    <ProjectReference Include="..\..\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
     <ProjectReference Include="..\..\EthachatShared\EthachatShared\EthachatShared.csproj" />
   </ItemGroup>
 

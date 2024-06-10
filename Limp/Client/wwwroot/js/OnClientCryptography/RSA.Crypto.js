@@ -1,24 +1,27 @@
-﻿function GenerateRSAOAEPKeyPair()
-{
-    window.crypto.subtle.generateKey
-    (
-        {
-            name: "RSA-OAEP",
-            modulusLength: 4096,
-            publicExponent: new Uint8Array([1, 0, 1]),
-            hash: "SHA-256",
-        },
-        true,
-        ["encrypt", "decrypt"]
-    ).then(async(keyPair) =>
-    {
-        await exportPublicKeyToDotnet(keyPair.publicKey);
-        await exportPrivateKeyToDotnet(keyPair.privateKey);
-    });
+﻿async function GenerateRSAOAEPKeyPairAsync() {
+    try {
+        const keyPair = await window.crypto.subtle.generateKey(
+            {
+                name: "RSA-OAEP",
+                modulusLength: 4096,
+                publicExponent: new Uint8Array([1, 0, 1]),
+                hash: "SHA-256",
+            },
+            true,
+            ["encrypt", "decrypt"]
+        );
+
+        const publicKeyPem = await publicToPemAsync(keyPair.publicKey);
+        const privateKeyPem = await privateToPemAsync(keyPair.privateKey);
+
+        return [publicKeyPem, privateKeyPem];
+    } catch (error) {
+        console.error('Error generating RSA-OAEP key pair:', error);
+        throw error;
+    }
 }
 
-const exportPublicKeyToDotnet = async (key) =>
-{
+const publicToPemAsync = async (key) => {
     const exported = await window.crypto.subtle.exportKey(
         "spki",
         key
@@ -27,14 +30,10 @@ const exportPublicKeyToDotnet = async (key) =>
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PUBLIC KEY-----\n${exportedAsBase64}\n-----END PUBLIC KEY-----`;
 
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 2, 1, null);
+    return pemExported;
 }
 
-/*
-Export the given key and write it into the "exported-key" space.
-*/
-const exportPrivateKeyToDotnet = async (key) =>
-{
+const privateToPemAsync = async (key) => {
     const exported = await window.crypto.subtle.exportKey(
         "pkcs8",
         key
@@ -43,20 +42,15 @@ const exportPrivateKeyToDotnet = async (key) =>
     const exportedAsBase64 = window.btoa(exportedAsString);
     const pemExported = `-----BEGIN PRIVATE KEY-----\n${exportedAsBase64}\n-----END PRIVATE KEY-----`;
 
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", pemExported, 1, 2, null);
+    return pemExported;
 }
 
-/*
-The unwrapped signing key.
-*/
-let encryptionKey;
 /*
 Import a PEM encoded RSA public key, to use for RSA-OAEP encryption.
 Takes a string containing the PEM encoded key, and returns a Promise
 that will resolve to a CryptoKey representing the public key.
 */
-function importPublicKey(pem)
-{
+function importPublicKey(pem) {
     // fetch the part of the PEM string between header and footer
     const pemHeader = "-----BEGIN PUBLIC KEY-----";
     const pemFooter = "-----END PUBLIC KEY-----";
@@ -78,8 +72,7 @@ function importPublicKey(pem)
     );
 }
 
-async function importPrivateKey(pkcs8Pem)
-{
+async function importPrivateKey(pkcs8Pem) {
     return await window.crypto.subtle.importKey(
         "pkcs8",
         getPkcs8Der(pkcs8Pem),
@@ -92,8 +85,7 @@ async function importPrivateKey(pkcs8Pem)
     );
 }
 
-function getPkcs8Der(pkcs8Pem)
-{
+function getPkcs8Der(pkcs8Pem) {
     const pemHeader = "-----BEGIN PRIVATE KEY-----";
     const pemFooter = "-----END PRIVATE KEY-----";
     var pemContents = pkcs8Pem.substring(pemHeader.length, pkcs8Pem.length - pemFooter.length);
@@ -101,10 +93,20 @@ function getPkcs8Der(pkcs8Pem)
     return str2ab(binaryDerString);
 }
 
-/*
-Get the encoded message, encrypt it and display a representation
-of the ciphertext in the "Ciphertext" element.
-*/
+async function EncryptWithRSAPublicKey(message, RSApublicKey) {
+    return {
+        ciphertext: await encryptMessage(message, await importPublicKey(RSApublicKey)),
+        iv: '',
+    };
+}
+
+async function DecryptWithRSAPrivateKey(ciphertext, privateKey) {
+    return {
+        ciphertext: await decryptMessage(ciphertext, await importPrivateKey(privateKey)),
+        iv: '',
+    };
+}
+
 async function encryptMessage(message, key) {
     const encoded = new TextEncoder().encode(message);
     const ciphertext = await window.crypto.subtle.encrypt(
@@ -115,7 +117,6 @@ async function encryptMessage(message, key) {
         encoded
     );
 
-    console.log(ciphertext);
     return ab2str(ciphertext);
 }
 
@@ -128,14 +129,4 @@ async function decryptMessage(ciphertext, key) {
         await str2ab(ciphertext)
     );
     return new TextDecoder().decode(decrypted);
-}
-
-async function EncryptWithRSAPublicKey(message, RSApublicKey) {
-    encryptionKey = await importPublicKey(RSApublicKey);
-    return await encryptMessage(message, encryptionKey);
-}
-
-async function DecryptWithRSAPrivateKey(ciphertext, privateKey) {
-    decryptionKey = await importPrivateKey(privateKey);
-    return await decryptMessage(ciphertext, decryptionKey);
 }

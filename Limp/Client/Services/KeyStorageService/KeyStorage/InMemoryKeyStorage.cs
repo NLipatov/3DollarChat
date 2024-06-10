@@ -1,7 +1,7 @@
-﻿using EthachatShared.Encryption;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
+using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Cryptography.KeyStorage;
+namespace Ethachat.Client.Services.KeyStorageService.KeyStorage;
 
 public static class InMemoryKeyStorage
 {

@@ -1,6 +1,4 @@
-﻿let iv;
-
-async function GenerateAESKeyAsync() {
+﻿async function GenerateAESKeyAsync() {
     let key = await window.crypto.subtle.generateKey
     (
         {
@@ -16,7 +14,7 @@ async function GenerateAESKeyAsync() {
     );
     const exportedKeyBuffer = new Uint8Array(exportedKey);
     const exportedKeyBufferString = ab2str(exportedKeyBuffer);
-    
+
     return exportedKeyBufferString;
 }
 
@@ -52,32 +50,10 @@ function GenerateIVForHLS(videoId) {
     return ab2hexstr(iv);
 }
 
-const exportAESKeyToDotnet = async (key, contactName) => {
-    const exported = await window.crypto.subtle.exportKey(
-        "raw",
-        key
-    );
-    const exportedKeyBuffer = new Uint8Array(exported);
-    const exportedKeyBufferString = ab2str(exportedKeyBuffer);
-
-    DotNet.invokeMethodAsync("Ethachat.Client", "OnKeyExtracted", exportedKeyBufferString, 3, 3, contactName);
-}
-
-function importSecretKey(ArrayBufferKeyString) {
-    return window.crypto.subtle.importKey(
-        "raw",
-        str2ab(ArrayBufferKeyString),
-        "AES-GCM",
-        true,
-        ["encrypt", "decrypt"]
-    );
-}
-
 async function AESEncryptText(message, key) {
     const encoded = new TextEncoder().encode(message);
     // The iv must never be reused with a given key.
     iv = window.crypto.getRandomValues(new Uint8Array(12));
-    ivDictionary[message] = iv;
     const ciphertext = await window.crypto.subtle.encrypt(
         {
             name: "AES-GCM",
@@ -87,18 +63,27 @@ async function AESEncryptText(message, key) {
         encoded
     );
 
-    return ab2str(ciphertext);
+    return {
+        ciphertext: ab2str(ciphertext),
+        iv: ab2str(iv)
+    };
 }
 
-async function AESDecryptText(message, key) {
-    return new TextDecoder().decode(await window.crypto.subtle.decrypt(
+//message, iv, key are a strings
+async function AESDecryptText(message, key, iv) {
+    const cypherText = new TextDecoder().decode(await window.crypto.subtle.decrypt(
         {
             name: "AES-GCM",
-            iv: ivDictionary[message]
+            iv: str2ab(iv)
         },
         await importSecretKey(key),
         str2ab(message))
     )
+
+    return {
+        ciphertext: cypherText,
+        iv: iv
+    };
 }
 
 async function AESEncryptData(base64String, key) {
@@ -138,15 +123,12 @@ async function AESDecryptData(encryptedBase64String, key) {
     return decryptedBase64String;
 }
 
-let ivDictionary = {};
-function ImportIV(ivArrayBufferAsString, key) {
-    ivDictionary[key] = str2ab(ivArrayBufferAsString);
-}
-
-function ExportIV(key) {
-    return ab2str(ivDictionary[key]);
-}
-
-function DeleteIv(key) {
-    delete ivDictionary[key];
+function importSecretKey(ArrayBufferKeyString) {
+    return window.crypto.subtle.importKey(
+        "raw",
+        str2ab(ArrayBufferKeyString),
+        "AES-GCM",
+        true,
+        ["encrypt", "decrypt"]
+    );
 }

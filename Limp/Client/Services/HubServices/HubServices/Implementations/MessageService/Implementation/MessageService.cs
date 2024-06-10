@@ -1,13 +1,12 @@
 ﻿using System.Reflection;
 using System.Text.Json;
+using Client.Application.Cryptography;
+using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Cryptography;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
-using Ethachat.Client.Cryptography.CryptoHandlers.Handlers;
-using Ethachat.Client.Cryptography.Exceptions;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
@@ -33,7 +32,7 @@ using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using InMemoryKeyStorage = Ethachat.Client.Cryptography.KeyStorage.InMemoryKeyStorage;
+using InMemoryKeyStorage = Ethachat.Client.Services.KeyStorageService.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -469,13 +468,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data) where T: IIdentifiable, IDestinationResolvable
         {
+            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
                 .EncryptAsync<AesHandler>(new Cryptogram
                 {
                     Cyphertext = serializedData,
-                }, contact: data.Target);
+                }, await localKeyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ?? throw new ApplicationException("missing key"));
 
             var transferData = new EncryptedDataTransfer
             {
@@ -494,13 +494,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data, string target) where T: IIdentifiable
         {
+            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
+            var key = await localKeyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
+                      throw new ApplicationException("Missing key");
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
                 .EncryptAsync<AesHandler>(new Cryptogram
                 {
                     Cyphertext = serializedData,
-                }, contact: target);
+                }, key);
 
             var transferData = new EncryptedDataTransfer
             {
@@ -522,16 +525,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 var lastAcceptedAsync = await KeyStorageService.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
                 if (lastAcceptedAsync is null)
                     await NegotiateOnAESAsync(dataTransfer.Sender);
-
+                
                 var cryptogram = await _cryptographyService
-                    .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, dataTransfer.Sender);
+                    .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, lastAcceptedAsync);
 
                 var json = cryptogram.Cyphertext ?? string.Empty;
                 return JsonSerializer.Deserialize<T>(json);
             }
             catch (Exception e)
             {
-                if (e.InnerException is EncryptionKeyNotFoundException keyNotFoundException)
+                if (e.InnerException is ApplicationException keyNotFoundException)
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
                     {

@@ -12,16 +12,15 @@ namespace Ethachat.Client.Cryptography
     {
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
-        private static Action<string>? OnAesGeneratedCallback { get; set; }
 
         public CryptographyService(IJSRuntime jSRuntime, IAuthenticationHandler authenticationHandler)
         {
             _cryptographyExecutor = new RuntimeCryptographyExecutor(jSRuntime);
             _authenticationHandler = authenticationHandler;
-            GenerateRsaKeyPairAsync();
+            _ = GenerateRsaKeyPairAsync();
         }
 
-        public async Task GenerateRsaKeyPairAsync()
+        private async Task GenerateRsaKeyPairAsync()
         {
             if ((InMemoryKeyStorage.MyRSAPublic?.Value?.ToString() ?? string.Empty).Length > 0 ||
                 (InMemoryKeyStorage.MyRSAPrivate?.Value?.ToString() ?? string.Empty).Length > 0 )

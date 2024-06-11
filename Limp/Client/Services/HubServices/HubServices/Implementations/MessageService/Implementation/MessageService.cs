@@ -270,11 +270,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     if (message.Type is MessageType.RsaPubKey)
                     {
                         var aesKey = await _keyStorage.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
-                        InMemoryKeyStorage.RSAKeyStorage.TryGetValue(message.Sender, out var rsaKey);
-                        if (rsaKey?.Value?.ToString() == message.Cryptogramm?.Cyphertext &&
-                            !string.IsNullOrWhiteSpace(rsaKey?.Value?.ToString()) &&
-                            aesKey is not null)
-                            return;
 
                         //Storing Public Key in our in-memory storage
                         InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key

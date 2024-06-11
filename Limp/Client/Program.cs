@@ -1,6 +1,8 @@
 using Blazored.Toast;
 using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography;
+using Client.Infrastructure.Cryptography.KeyStorage;
 using Ethachat.Client;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
@@ -43,7 +45,6 @@ using Ethachat.Client.UI.AccountManagement.LogicHandlers;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Microsoft.JSInterop;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -51,6 +52,7 @@ builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
+builder.Services.AddTransient<IKeyStorage, KeyStorage>();
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();
 builder.Services.AddSingleton<IMessageBox, MessageBox>();
 builder.Services.AddTransient<IAesOfferReceiver, AesOfferReceiver>();

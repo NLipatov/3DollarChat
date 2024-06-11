@@ -1,18 +1,11 @@
 using System.Text.Json;
+using Client.Application.Cryptography.KeyStorage;
 using EthachatShared.Encryption;
-using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.KeyStorageService.Implementations;
+namespace Client.Infrastructure.Cryptography.KeyStorage;
 
-public class LocalStorageKeyStorage : IKeyStorage
+public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
 {
-    private readonly IJSRuntime _jsRuntime;
-
-    public LocalStorageKeyStorage(IJSRuntime jsRuntime)
-    {
-        _jsRuntime = jsRuntime;
-    }
-
     public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
         var keys = await GetAsync(accessor, type);
@@ -30,7 +23,7 @@ public class LocalStorageKeyStorage : IKeyStorage
         existingCollection.Add(key);
 
         var serializedKeys = JsonSerializer.Serialize(existingCollection);
-        await _jsRuntime.InvokeAsync<string?>("localStorage.setItem", $"key-{key.Contact}-{key.Type}", serializedKeys);
+        await runtime.InvokeAsync<string?>("localStorage.setItem", [$"key-{key.Contact}-{key.Type}", serializedKeys]);
     }
 
     public async Task DeleteAsync(Key key)
@@ -39,13 +32,13 @@ public class LocalStorageKeyStorage : IKeyStorage
         var updatedKeys = storedKeys.Where(x => x.CreationDate != key.CreationDate).ToArray();
 
         var serializedKeys = JsonSerializer.Serialize(updatedKeys);
-        await _jsRuntime.InvokeAsync<string?>("localStorage.setItem", $"key-{key.Contact}-{key.Type}", serializedKeys);
+        await runtime.InvokeAsync<string?>("localStorage.setItem", [$"key-{key.Contact}-{key.Type}", serializedKeys]);
     }
 
     public async Task<List<Key>> GetAsync(string accessor, KeyType type)
     {
         var serializedKeyCollection =
-            await _jsRuntime.InvokeAsync<string?>("localStorage.getItem", $"key-{accessor}-{type}");
+            await runtime.InvokeAsync<string?>("localStorage.getItem", [$"key-{accessor}-{type}"]);
 
         if (serializedKeyCollection is null)
             return [];

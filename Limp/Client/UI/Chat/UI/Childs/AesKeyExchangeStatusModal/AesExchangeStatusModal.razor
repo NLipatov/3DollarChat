@@ -1,8 +1,9 @@
 @using EthachatShared.Models.ConnectedUsersManaging
-@using Ethachat.Client.Services.KeyStorageService.Implementations
 @using EthachatShared.Encryption
+@using global::Client.Application.Cryptography.KeyStorage
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 @inject IJSRuntime jSRuntime
+@inject IKeyStorage KeyStorage
 
 @if (!KeyExist)
 {
@@ -40,7 +41,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
+        KeyExist = await KeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         await base.OnInitializedAsync();
     }
 
@@ -53,7 +54,7 @@
 
     private async Task OnAESUpdated(string _)
     {
-        KeyExist = await new LocalStorageKeyStorage(jSRuntime).GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
+        KeyExist = await KeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes) != null;
         StateHasChanged();
     }
 }

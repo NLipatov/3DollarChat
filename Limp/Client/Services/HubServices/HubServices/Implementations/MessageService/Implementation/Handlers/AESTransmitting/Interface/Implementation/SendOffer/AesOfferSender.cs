@@ -1,9 +1,9 @@
 using System.Text.Json;
 using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.ContactsProvider;
-using Ethachat.Client.Services.KeyStorageService.Implementations;
 using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
@@ -19,14 +19,16 @@ public class AesOfferSender : IAesOfferSender
     private readonly IAuthenticationHandler _authenticationHandler;
     private readonly IContactsProvider _contactsProvider;
     private readonly IJSRuntime _jsRuntime;
+    private readonly IKeyStorage _keyStorage;
 
     public AesOfferSender(ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler,
-        IContactsProvider contactsProvider, IJSRuntime jsRuntime)
+        IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage keyStorage)
     {
         _cryptographyService = cryptographyService;
         _authenticationHandler = authenticationHandler;
         _contactsProvider = contactsProvider;
         _jsRuntime = jsRuntime;
+        _keyStorage = keyStorage;
     }
 
     public async Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
@@ -61,8 +63,7 @@ public class AesOfferSender : IAesOfferSender
             }
         };
         
-        var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
-        await keyStorage.StoreAsync(new Key
+        await _keyStorage.StoreAsync(new Key
         {
             Id = aesKey.Id,
             Value = aesKey.Value,

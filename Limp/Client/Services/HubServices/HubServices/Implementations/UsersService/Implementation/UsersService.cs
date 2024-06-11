@@ -209,7 +209,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 var hubConnection = await GetHubConnectionAsync();
                 await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, null, credentials);
             }
-            InMemoryKeyStorage.isPublicKeySet = true;
         }
 
         public async Task ActualizeConnectedUsersAsync()

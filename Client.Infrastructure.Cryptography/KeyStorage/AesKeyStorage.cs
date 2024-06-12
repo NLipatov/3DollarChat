@@ -1,10 +1,11 @@
 using System.Text.Json;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Infrastructure.Cryptography.Handlers;
 using EthachatShared.Encryption;
 
 namespace Client.Infrastructure.Cryptography.KeyStorage;
 
-public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
+public class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage<AesHandler>
 {
     public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {

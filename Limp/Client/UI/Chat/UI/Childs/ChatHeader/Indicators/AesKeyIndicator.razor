@@ -1,9 +1,10 @@
 @using EthachatShared.Encryption
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using global::Client.Application.Cryptography.KeyStorage
+@using global::Client.Infrastructure.Cryptography.Handlers
 @inject IMessageService MessageService
 @inject IJSRuntime jSRuntime 
-@inject IKeyStorage KeyStorage
+@inject IKeyStorage<AesHandler> AesKeyStorage
 @inherits Ethachat.Client.UI.CommonComponents.BaseComponents.BaseEventListeningComponent
 
 @if (AesKey is not null)
@@ -26,7 +27,7 @@
 
     private async Task UpdateAesKey()
     {
-        AesKey = await KeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
+        AesKey = await AesKeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         if (AesKey is null)
             await MessageService.NegotiateOnAESAsync(PartnerUsername);
     }
@@ -39,14 +40,14 @@
 
     private async Task OnAesKeyReady(string partnerName)
     {
-        AesKey = await KeyStorage.GetLastAcceptedAsync(partnerName, KeyType.Aes);
+        AesKey = await AesKeyStorage.GetLastAcceptedAsync(partnerName, KeyType.Aes);
 
         StateHasChanged();
     }
 
     private async Task OnAesUpdated(string _)
     {
-        AesKey = await KeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
+        AesKey = await AesKeyStorage.GetLastAcceptedAsync(PartnerUsername, KeyType.Aes);
         
         StateHasChanged();
     }

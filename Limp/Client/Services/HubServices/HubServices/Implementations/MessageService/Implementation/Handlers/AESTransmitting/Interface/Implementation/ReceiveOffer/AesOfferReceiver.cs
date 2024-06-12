@@ -17,15 +17,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly ICryptographyService _cryptographyService;
         private readonly IContactsProvider _contactsProvider;
         private readonly IJSRuntime _jsRuntime;
-        private readonly IKeyStorage _keyStorage;
+        private readonly IKeyStorage<AesHandler> _aesKeyStorage;
 
         public AesOfferReceiver(ICryptographyService cryptographyService,
-            IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage keyStorage)
+            IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage<AesHandler> aesKeyStorage)
         {
             _cryptographyService = cryptographyService;
             _contactsProvider = contactsProvider;
             _jsRuntime = jsRuntime;
-            _keyStorage = keyStorage;
+            _aesKeyStorage = aesKeyStorage;
         }
 
         public async Task<Message> ReceiveAesOfferAsync(Message offerMessage)
@@ -45,7 +45,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 };
             }
 
-            await _keyStorage.StoreAsync(new Key
+            await _aesKeyStorage.StoreAsync(new Key
             {
                 Id = aesKey.Id,
                 Value = aesKey.Value,

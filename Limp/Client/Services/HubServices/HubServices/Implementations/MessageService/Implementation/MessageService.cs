@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Runtime.Intrinsics.Arm;
 using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
@@ -51,7 +52,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IJSRuntime _jsRuntime;
         private readonly IAesTransmissionManager _aesTransmissionManager;
         private readonly IContactsProvider _contactsProvider;
-        private readonly IKeyStorage _keyStorage;
+        private readonly IKeyStorage<AesHandler> _aesKeyStorage;
+        private readonly IKeyStorage<RsaHandler> _rsaKeyStorage;
         private bool _isConnectionClosedCallbackSet = false;
         private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? HubConnection { get; set; }
@@ -71,7 +73,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IAesTransmissionManager aesTransmissionManager,
             IContactsProvider contactsProvider,
             IHubServiceSubscriptionManager hubServiceSubscriptionManager,
-            IKeyStorage keyStorage)
+            IKeyStorage<AesHandler> aesKeyStorage,
+            IKeyStorage<RsaHandler> rsaKeyStorage)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -86,7 +89,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _jsRuntime = jsRuntime;
             _aesTransmissionManager = aesTransmissionManager;
             _contactsProvider = contactsProvider;
-            _keyStorage = keyStorage;
+            _aesKeyStorage = aesKeyStorage;
+            _rsaKeyStorage = rsaKeyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
 
@@ -269,7 +273,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (message.Type is MessageType.RsaPubKey)
                     {
-                        var aesKey = await _keyStorage.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
+                        var aesKey = await _aesKeyStorage.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
 
                         //Storing Public Key in our in-memory storage
                         InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
@@ -332,7 +336,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task MarkKeyAsAccepted(Guid keyId, string contact)
         {
-            var keys = await _keyStorage.GetAsync(contact, KeyType.Aes);
+            var keys = await _aesKeyStorage.GetAsync(contact, KeyType.Aes);
             var acceptedKeyId = keyId;
 
             var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
@@ -340,7 +344,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return;
 
             acceptedKey.IsAccepted = true;
-            await _keyStorage.UpdateAsync(acceptedKey);
+            await _aesKeyStorage.UpdateAsync(acceptedKey);
         }
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
@@ -471,7 +475,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         Cyphertext = serializedData,
                     },
-                    await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
+                    await _aesKeyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
                     throw new ApplicationException("missing key"));
 
             var transferData = new EncryptedDataTransfer
@@ -490,7 +494,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data, string target) where T : IIdentifiable
         {
-            var key = await _keyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
+            var key = await _aesKeyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
                       throw new ApplicationException("Missing key");
             var serializedData = JsonSerializer.Serialize(data);
 
@@ -517,7 +521,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             try
             {
-                var lastAcceptedAsync = await _keyStorage.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
+                var lastAcceptedAsync = await _aesKeyStorage.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
                 if (lastAcceptedAsync is null)
                     await NegotiateOnAESAsync(dataTransfer.Sender);
 

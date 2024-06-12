@@ -13,7 +13,7 @@
 @inject IUsersService _usersService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IJSRuntime _jSRuntime;
-@inject IKeyStorage KeyStorage
+@inject IKeyStorage<AesHandler> AesKeyStorage
 @inject IMessageBox _messageBox
 @inject IAuthenticationHandler AuthenticationHandler
 @using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList;
@@ -23,6 +23,7 @@
 @using Ethachat.Client.UI.Shared.Callout
 @using EthachatShared.Encryption
 @using global::Client.Application.Cryptography.KeyStorage
+@using global::Client.Infrastructure.Cryptography.Handlers
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
 @implements IDisposable
 
@@ -168,7 +169,7 @@
         {
             contact.IsOnline = _usersOnlineMessage.UserConnections.Any(x => x.Username == x.Username);
             contact.LastMessage = _messageBox.Messages.MaxBy(x => x.DateSent)?.DateSent ?? DateTime.UtcNow;
-            contact.IsKeyReady = await KeyStorage.GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
+            contact.IsKeyReady = await AesKeyStorage.GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Count(x => x.Sender == contact.Username && !x.IsSeen);
         }
 
@@ -181,7 +182,7 @@
         Contact? contact = ContactsList.FirstOrDefault(x => x.Username == contactUsername);
         if (contact is not null)
         {
-            contact.IsKeyReady = await KeyStorage.GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
+            contact.IsKeyReady = await AesKeyStorage.GetLastAcceptedAsync(contact.Username, KeyType.Aes) != null;
             contact.UnreadedMessagesCount = _messageBox.Messages.Where(x => x.Sender == contactUsername && !x.IsSeen).Count();
             StateHasChanged();
         }

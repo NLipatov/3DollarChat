@@ -16,17 +16,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly ICryptographyService _cryptographyService;
         private readonly IContactsProvider _contactsProvider;
         private readonly IJSRuntime _jsRuntime;
-        private readonly IKeyStorage<AesHandler> _aesKeyStorage;
-        private readonly IKeyStorage<RsaHandler> _rsaKeyStorage;
+        private readonly IKeyStorage _keyStorage;
 
         public AesOfferReceiver(ICryptographyService cryptographyService,
-            IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage<AesHandler> aesKeyStorage, IKeyStorage<RsaHandler> rsaKeyStorage)
+            IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage keyStorage)
         {
             _cryptographyService = cryptographyService;
             _contactsProvider = contactsProvider;
             _jsRuntime = jsRuntime;
-            _aesKeyStorage = aesKeyStorage;
-            _rsaKeyStorage = rsaKeyStorage;
+            _keyStorage = keyStorage;
         }
 
         public async Task<Message> ReceiveAesOfferAsync(Message offerMessage)
@@ -46,7 +44,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 };
             }
 
-            await _aesKeyStorage.StoreAsync(new Key
+            await _keyStorage.StoreAsync(new Key
             {
                 Id = aesKey.Id,
                 Value = aesKey.Value,
@@ -72,7 +70,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task<Key> GetAesKey(Message offerMessage)
         {
-            var myRsaKeys = await _rsaKeyStorage.GetAsync(string.Empty, KeyType.RsaPrivate);
+            var myRsaKeys = await _keyStorage.GetAsync(string.Empty, KeyType.RsaPrivate);
             var decryptedCryptogram = await _cryptographyService.DecryptAsync<RsaHandler>
             (new Cryptogram
             {

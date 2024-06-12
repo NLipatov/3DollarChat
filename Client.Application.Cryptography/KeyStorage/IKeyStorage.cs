@@ -2,7 +2,7 @@ using EthachatShared.Encryption;
 
 namespace Client.Application.Cryptography.KeyStorage;
 
-public interface IKeyStorage<T> where T : ICryptoHandler
+public interface IKeyStorage
 {
     public Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type);
     public Task StoreAsync(Key key);

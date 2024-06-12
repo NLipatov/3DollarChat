@@ -1,7 +1,6 @@
 ﻿using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography;
-using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
@@ -12,13 +11,13 @@ namespace Ethachat.Client.Services.Cryptography
     {
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
-        private readonly IKeyStorage<RsaHandler> _rsaKeyStorage;
+        private readonly IKeyStorage _keyStorage;
 
-        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler, IKeyStorage<RsaHandler> rsaKeyStorage)
+        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler, IKeyStorage keyStorage)
         {
             _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
             _authenticationHandler = authenticationHandler;
-            _rsaKeyStorage = rsaKeyStorage;
+            _keyStorage = keyStorage;
             _ = GenerateRsaKeyPairAsync();
         }
 
@@ -39,8 +38,8 @@ namespace Ethachat.Client.Services.Cryptography
                 Type = KeyType.RsaPrivate,
                 Contact = string.Empty
             };
-            await _rsaKeyStorage.StoreAsync(privateRsa);
-            await _rsaKeyStorage.StoreAsync(publicRsa);
+            await _keyStorage.StoreAsync(privateRsa);
+            await _keyStorage.StoreAsync(publicRsa);
         }
 
         public async Task<Key> GenerateAesKeyAsync(string contact)

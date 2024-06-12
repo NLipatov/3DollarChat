@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Cryptography.KeyStorage;
-using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
@@ -23,7 +22,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
-        private readonly IKeyStorage<RsaHandler> _rsaKeyStorage;
+        private readonly IKeyStorage KeyStorage;
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
 
@@ -35,13 +34,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
-            IKeyStorage<RsaHandler> rsaKeyStorage)
+            IKeyStorage keyStorage)
         {
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            _rsaKeyStorage = rsaKeyStorage;
+            KeyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -82,7 +81,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
 
                 await GetHubConnectionAsync();
 
-                var rsaPublicKeys = await _rsaKeyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
+                var rsaPublicKeys = await KeyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
                 await HubConnectionInstance.SendAsync("PostAnRSAPublic", username,
                     rsaPublicKeys.First().Value);
             });

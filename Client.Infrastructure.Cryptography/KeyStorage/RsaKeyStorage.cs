@@ -1,15 +1,15 @@
 using System.Collections.Concurrent;
 using Client.Application.Cryptography.KeyStorage;
-using Client.Infrastructure.Cryptography.Handlers;
 using EthachatShared.Encryption;
 
 namespace Client.Infrastructure.Cryptography.KeyStorage;
 
-public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
+internal class RsaKeyStorage : IKeyStorage
 {
     private static Key? MyRsaPublic { get; set; }
     private static Key? MyRsaPrivate { get; set; }
     private static ConcurrentDictionary<string, Key> RSAKeyStorage { get; set; } = new();
+
     public Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
         if (string.IsNullOrWhiteSpace(accessor))
@@ -38,6 +38,7 @@ public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
                 MyRsaPrivate = key;
                 return Task.CompletedTask;
             }
+
             throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
         }
 
@@ -88,6 +89,7 @@ public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
             if (string.IsNullOrWhiteSpace(accessor))
                 return Task.FromResult<List<Key>>(MyRsaPrivate is not null ? [MyRsaPrivate] : []);
         }
+
         throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
     }
 
@@ -97,7 +99,7 @@ public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
             MyRsaPrivate = updatedKey;
         if (updatedKey.Type is KeyType.RsaPublic)
             MyRsaPublic = updatedKey;
-        
+
         return Task.CompletedTask;
     }
 }

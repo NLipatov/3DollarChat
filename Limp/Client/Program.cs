@@ -12,7 +12,6 @@ using Ethachat.Client.Services.ConcurrentCollectionManager;
 using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.ContactsProvider.Implementations;
-using Ethachat.Client.Services.Cryptography;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;

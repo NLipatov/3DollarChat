@@ -22,7 +22,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
-        private readonly IKeyStorage KeyStorage;
+        private readonly IKeyStorage _keyStorage;
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
 
@@ -40,7 +40,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            KeyStorage = keyStorage;
+            _keyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -81,7 +81,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
 
                 await GetHubConnectionAsync();
 
-                var rsaPublicKeys = await KeyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
+                var rsaPublicKeys = await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
                 await HubConnectionInstance.SendAsync("PostAnRSAPublic", username,
                     rsaPublicKeys.First().Value);
             });

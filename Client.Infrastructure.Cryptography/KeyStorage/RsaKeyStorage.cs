@@ -6,23 +6,23 @@ namespace Client.Infrastructure.Cryptography.KeyStorage;
 
 internal class RsaKeyStorage : IKeyStorage
 {
-    private static Key? MyRsaPublic { get; set; }
-    private static Key? MyRsaPrivate { get; set; }
-    private static ConcurrentDictionary<string, Key> RSAKeyStorage { get; set; } = new();
+    private static Key? RsaPublic { get; set; }
+    private static Key? RsaPrivate { get; set; }
+    private static ConcurrentDictionary<string, Key> Storage { get; } = [];
 
     public Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
         if (string.IsNullOrWhiteSpace(accessor))
         {
             if (type is KeyType.RsaPrivate)
-                return Task.FromResult(MyRsaPrivate);
+                return Task.FromResult(RsaPrivate);
             if (type is KeyType.RsaPublic)
-                return Task.FromResult(MyRsaPublic);
+                return Task.FromResult(RsaPublic);
         }
 
         if (type is KeyType.RsaPublic)
         {
-            RSAKeyStorage.TryGetValue(accessor, out var key);
+            Storage.TryGetValue(accessor, out var key);
             return Task.FromResult(key);
         }
 
@@ -35,7 +35,7 @@ internal class RsaKeyStorage : IKeyStorage
         {
             if (string.IsNullOrWhiteSpace(key.Contact))
             {
-                MyRsaPrivate = key;
+                RsaPrivate = key;
                 return Task.CompletedTask;
             }
 
@@ -45,10 +45,10 @@ internal class RsaKeyStorage : IKeyStorage
         if (key.Type is KeyType.RsaPublic)
         {
             if (string.IsNullOrWhiteSpace(key.Contact))
-                MyRsaPublic = key;
+                RsaPublic = key;
             else
             {
-                RSAKeyStorage.AddOrUpdate(key.Contact,
+                Storage.AddOrUpdate(key.Contact,
                     _ => key,
                     (_, existingKey) =>
                     {
@@ -64,9 +64,9 @@ internal class RsaKeyStorage : IKeyStorage
     public Task DeleteAsync(Key key)
     {
         if (key.Type is KeyType.RsaPrivate)
-            MyRsaPrivate = null;
+            RsaPrivate = null;
         if (key.Type is KeyType.RsaPublic)
-            MyRsaPublic = null;
+            RsaPublic = null;
 
         return Task.CompletedTask;
     }
@@ -77,17 +77,17 @@ internal class RsaKeyStorage : IKeyStorage
         {
             if (string.IsNullOrWhiteSpace(accessor))
             {
-                return Task.FromResult<List<Key>>(MyRsaPublic is not null ? [MyRsaPublic] : []);
+                return Task.FromResult<List<Key>>(RsaPublic is not null ? [RsaPublic] : []);
             }
 
-            RSAKeyStorage.TryGetValue(accessor, out var partnerKey);
+            Storage.TryGetValue(accessor, out var partnerKey);
             return Task.FromResult<List<Key>>(partnerKey is not null ? [partnerKey] : []);
         }
 
         if (type is KeyType.RsaPrivate)
         {
             if (string.IsNullOrWhiteSpace(accessor))
-                return Task.FromResult<List<Key>>(MyRsaPrivate is not null ? [MyRsaPrivate] : []);
+                return Task.FromResult<List<Key>>(RsaPrivate is not null ? [RsaPrivate] : []);
         }
 
         throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
@@ -96,9 +96,9 @@ internal class RsaKeyStorage : IKeyStorage
     public Task UpdateAsync(Key updatedKey)
     {
         if (updatedKey.Type is KeyType.RsaPrivate)
-            MyRsaPrivate = updatedKey;
+            RsaPrivate = updatedKey;
         if (updatedKey.Type is KeyType.RsaPublic)
-            MyRsaPublic = updatedKey;
+            RsaPublic = updatedKey;
 
         return Task.CompletedTask;
     }

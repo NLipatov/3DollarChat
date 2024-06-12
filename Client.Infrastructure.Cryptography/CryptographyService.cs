@@ -1,22 +1,18 @@
 ﻿using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
-using Client.Infrastructure.Cryptography;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Services.Cryptography
+namespace Client.Infrastructure.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
-        private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IKeyStorage _keyStorage;
 
-        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler, IKeyStorage keyStorage)
+        public CryptographyService(IPlatformRuntime platformRuntime, IKeyStorage keyStorage)
         {
             _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
-            _authenticationHandler = authenticationHandler;
             _keyStorage = keyStorage;
             _ = GenerateRsaKeyPairAsync();
         }
@@ -50,7 +46,6 @@ namespace Ethachat.Client.Services.Cryptography
                 Value = key,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,
-                Author = await _authenticationHandler.GetUsernameAsync(),
                 Contact = contact,
                 CreationDate = DateTime.UtcNow,
                 IsAccepted = false

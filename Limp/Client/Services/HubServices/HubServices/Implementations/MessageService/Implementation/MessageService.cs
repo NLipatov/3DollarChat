@@ -373,6 +373,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             string partnersPublicKey)
         {
             var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
+            aesKey.Author = await _authenticationHandler.GetUsernameAsync();
 
             var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKey);
             var connection = await GetHubConnectionAsync();

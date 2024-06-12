@@ -15,7 +15,8 @@ internal class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task StoreAsync(Key key)
     {
-        var existingCollection = await GetAsync(key.Contact, key.Type ?? KeyType.Unspecified);
+        var existingCollection =
+            await GetAsync(key.Contact ?? throw new ArgumentException(), key.Type ?? KeyType.Unspecified);
 
         if (existingCollection.Any(x => x.Id == key.Id))
             return;
@@ -28,7 +29,7 @@ internal class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task DeleteAsync(Key key)
     {
-        var storedKeys = await GetAsync(key.Contact, key.Type ?? KeyType.Unspecified);
+        var storedKeys = await GetAsync(key.Contact ?? throw new ArgumentException(), key.Type ?? KeyType.Unspecified);
         var updatedKeys = storedKeys.Where(x => x.CreationDate != key.CreationDate).ToArray();
 
         var serializedKeys = JsonSerializer.Serialize(updatedKeys);
@@ -50,7 +51,8 @@ internal class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task UpdateAsync(Key updatedKey)
     {
-        var keys = await GetAsync(updatedKey.Contact, updatedKey.Type ?? KeyType.Unspecified);
+        var keys = await GetAsync(updatedKey.Contact ?? throw new ArgumentException(),
+            updatedKey.Type ?? KeyType.Unspecified);
         var targetKey = keys.FirstOrDefault(x => x.Id == updatedKey.Id);
 
         if (targetKey is null)

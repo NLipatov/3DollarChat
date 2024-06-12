@@ -4,6 +4,7 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography;
 using Client.Infrastructure.Cryptography.KeyStorage;
 using Ethachat.Client;
+using Ethachat.Client.PlatformRuntime;
 using Ethachat.Client.Services.AuthenticationService;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;

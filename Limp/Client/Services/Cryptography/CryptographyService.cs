@@ -1,7 +1,8 @@
 ﻿using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography;
+using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
@@ -11,37 +12,35 @@ namespace Ethachat.Client.Services.Cryptography
     {
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
+        private readonly IKeyStorage<RsaHandler> _rsaKeyStorage;
 
-        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler)
+        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler, IKeyStorage<RsaHandler> rsaKeyStorage)
         {
             _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
             _authenticationHandler = authenticationHandler;
+            _rsaKeyStorage = rsaKeyStorage;
             _ = GenerateRsaKeyPairAsync();
         }
 
         private async Task GenerateRsaKeyPairAsync()
         {
-            if ((InMemoryKeyStorage.MyRSAPublic?.Value?.ToString() ?? string.Empty).Length > 0 ||
-                (InMemoryKeyStorage.MyRSAPrivate?.Value?.ToString() ?? string.Empty).Length > 0 )
-                return;
-            
             var keyPair = await _cryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
             var publicRsa = new Key
             {
                 Value = keyPair[0],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPublic,
-                Contact = null
+                Contact = string.Empty
             };
             var privateRsa = new Key
             {
                 Value = keyPair[1],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPrivate,
-                Contact = null
+                Contact = string.Empty
             };
-            InMemoryKeyStorage.MyRSAPrivate = privateRsa;
-            InMemoryKeyStorage.MyRSAPublic = publicRsa;
+            await _rsaKeyStorage.StoreAsync(privateRsa);
+            await _rsaKeyStorage.StoreAsync(publicRsa);
         }
 
         public async Task<Key> GenerateAesKeyAsync(string contact)

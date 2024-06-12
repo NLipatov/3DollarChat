@@ -34,7 +34,10 @@ public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
         if (key.Type is KeyType.RsaPrivate)
         {
             if (string.IsNullOrWhiteSpace(key.Contact))
+            {
                 MyRsaPrivate = key;
+                return Task.CompletedTask;
+            }
             throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
         }
 
@@ -69,7 +72,23 @@ public class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage<RsaHandler>
 
     public Task<List<Key>> GetAsync(string accessor, KeyType type)
     {
-        return Task.FromResult<List<Key>>(MyRsaPublic is not null ? [MyRsaPublic] : []);
+        if (type is KeyType.RsaPublic)
+        {
+            if (string.IsNullOrWhiteSpace(accessor))
+            {
+                return Task.FromResult<List<Key>>(MyRsaPublic is not null ? [MyRsaPublic] : []);
+            }
+
+            RSAKeyStorage.TryGetValue(accessor, out var partnerKey);
+            return Task.FromResult<List<Key>>(partnerKey is not null ? [partnerKey] : []);
+        }
+
+        if (type is KeyType.RsaPrivate)
+        {
+            if (string.IsNullOrWhiteSpace(accessor))
+                return Task.FromResult<List<Key>>(MyRsaPrivate is not null ? [MyRsaPrivate] : []);
+        }
+        throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
     }
 
     public Task UpdateAsync(Key updatedKey)

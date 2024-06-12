@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Runtime.Intrinsics.Arm;
 using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
@@ -33,7 +32,6 @@ using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using InMemoryKeyStorage = Ethachat.Client.Services.KeyStorageService.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -273,16 +271,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (message.Type is MessageType.RsaPubKey)
                     {
-                        var aesKey = await _aesKeyStorage.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
-
-                        //Storing Public Key in our in-memory storage
-                        InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
+                        await _rsaKeyStorage.StoreAsync(new Key
                         {
                             Type = KeyType.RsaPublic,
                             Contact = message.Sender,
                             Format = KeyFormat.PemSpki,
                             Value = message.Cryptogramm!.Cyphertext
                         });
+                        
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
 
@@ -319,12 +315,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                var rsaPublicKey = await _rsaKeyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
+                if (string.IsNullOrWhiteSpace(rsaPublicKey.First().Value?.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
+                await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
             });
 
             HubConnection.On<Guid>("OnFileTransfered",

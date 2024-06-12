@@ -1,10 +1,9 @@
 using System.Text.Json;
 using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.ContactsProvider;
-using Ethachat.Client.Services.KeyStorageService.Implementations;
-using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
@@ -19,14 +18,16 @@ public class AesOfferSender : IAesOfferSender
     private readonly IAuthenticationHandler _authenticationHandler;
     private readonly IContactsProvider _contactsProvider;
     private readonly IJSRuntime _jsRuntime;
+    private readonly IKeyStorage _keyStorage;
 
     public AesOfferSender(ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler,
-        IContactsProvider contactsProvider, IJSRuntime jsRuntime)
+        IContactsProvider contactsProvider, IJSRuntime jsRuntime, IKeyStorage keyStorage)
     {
         _cryptographyService = cryptographyService;
         _authenticationHandler = authenticationHandler;
         _contactsProvider = contactsProvider;
         _jsRuntime = jsRuntime;
+        _keyStorage = keyStorage;
     }
 
     public async Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
@@ -42,11 +43,16 @@ public class AesOfferSender : IAesOfferSender
             PassPhrase = contact?.TrustedPassphrase ?? string.Empty
         };
 
+        var partnerPublicRsaKey = await _keyStorage.GetAsync(partnersUsername, KeyType.RsaPublic);
         string? encryptedOffer = (await _cryptographyService
-            .EncryptAsync<RsaHandler>
-            (new Cryptogram { Cyphertext = JsonSerializer.Serialize(offer) },
-                //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                InMemoryKeyStorage.RSAKeyStorage[partnersUsername])).Cyphertext;
+                .EncryptAsync<RsaHandler>
+                (new Cryptogram
+                    {
+                        Cyphertext = JsonSerializer.Serialize(offer)
+                    },
+                    //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
+                    partnerPublicRsaKey.First()))
+            .Cyphertext;
 
         Message messageWithAesOffer = new()
         {
@@ -60,9 +66,8 @@ public class AesOfferSender : IAesOfferSender
                 KeyId = aesKey.Id
             }
         };
-        
-        var keyStorage = new LocalStorageKeyStorage(_jsRuntime);
-        await keyStorage.StoreAsync(new Key
+
+        await _keyStorage.StoreAsync(new Key
         {
             Id = aesKey.Id,
             Value = aesKey.Value,

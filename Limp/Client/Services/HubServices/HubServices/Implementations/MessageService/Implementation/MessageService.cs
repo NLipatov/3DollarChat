@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using System.Text.Json;
 using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
@@ -17,7 +18,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
-using Ethachat.Client.Services.KeyStorageService.Implementations;
 using Ethachat.Client.Services.UndecryptedMessagesService;
 using Ethachat.Client.Services.UndecryptedMessagesService.Models;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
@@ -32,7 +32,6 @@ using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
-using InMemoryKeyStorage = Ethachat.Client.Services.KeyStorageService.KeyStorage.InMemoryKeyStorage;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -51,10 +50,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IJSRuntime _jsRuntime;
         private readonly IAesTransmissionManager _aesTransmissionManager;
         private readonly IContactsProvider _contactsProvider;
+        private readonly IKeyStorage _keyStorage;
         private bool _isConnectionClosedCallbackSet = false;
         private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? HubConnection { get; set; }
-        private LocalStorageKeyStorage KeyStorageService => new (_jsRuntime);
 
         public MessageService
         (IMessageBox messageBox,
@@ -69,8 +68,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
             IAesTransmissionManager aesTransmissionManager,
-            IContactsProvider contactsProvider, 
-            IHubServiceSubscriptionManager hubServiceSubscriptionManager)
+            IContactsProvider contactsProvider,
+            IHubServiceSubscriptionManager hubServiceSubscriptionManager,
+            IKeyStorage keyStorage)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -85,6 +85,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _jsRuntime = jsRuntime;
             _aesTransmissionManager = aesTransmissionManager;
             _contactsProvider = contactsProvider;
+            _keyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
 
@@ -94,7 +95,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task<HubConnection> GetHubConnectionAsync()
         {
             //Shortcut connection is alive and ready to be used
-            if (HubConnection?.State is HubConnectionState.Connected 
+            if (HubConnection?.State is HubConnectionState.Connected
                 && !string.IsNullOrWhiteSpace(await _authenticationHandler.GetUsernameAsync()))
                 return HubConnection;
 
@@ -161,7 +162,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     var connection = await GetHubConnectionAsync();
                     await connection.SendAsync("OnTransferAcked", edt);
                 }
-                
+
                 var decryptionMethodName = nameof(DecryptTransferAsync);
                 MethodInfo? method = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
                     .FirstOrDefault(m => m.Name == decryptionMethodName && m.IsGenericMethod);
@@ -197,21 +198,25 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                     if (message?.Type is MessageType.TextMessage)
                                         await SendText(message);
                                 }
-                                
+
                                 if (clientMessage.Type == MessageType.MessageReceivedConfirmation)
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id, "OnReceiverMarkedMessageAsReceived"); 
-                                
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
+                                        "OnReceiverMarkedMessageAsReceived");
+
                                 if (clientMessage.Type == MessageType.MessageReadConfirmation)
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id, "OnReceiverMarkedMessageAsRead");
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
+                                        "OnReceiverMarkedMessageAsRead");
 
                                 if (clientMessage.Type == MessageType.HLSPlaylist)
                                 {
                                     _messageBox.AddMessage(clientMessage);
                                 }
 
-                                if (clientMessage.Type is MessageType.Metadata || clientMessage.Type is MessageType.DataPackage)
+                                if (clientMessage.Type is MessageType.Metadata ||
+                                    clientMessage.Type is MessageType.DataPackage)
                                 {
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender, "OnBinaryTransmitting");
+                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
+                                        "OnBinaryTransmitting");
 
                                     (bool isTransmissionCompleted, Guid fileId) progressStatus =
                                         await _binaryReceivingManager.StoreAsync(clientMessage);
@@ -219,10 +224,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                     if (progressStatus.isTransmissionCompleted)
                                     {
                                         await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
-                                            clientMessage.Sender ?? throw new ArgumentException($"Invalid {clientMessage.Sender}"));
+                                            clientMessage.Sender ??
+                                            throw new ArgumentException($"Invalid {clientMessage.Sender}"));
                                     }
                                 }
-                                
+
                                 if (clientMessage.Type is MessageType.ConversationDeletionRequest)
                                 {
                                     _messageBox.Delete(clientMessage.Sender);
@@ -240,10 +246,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 });
 
             HubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
-                messageId =>
-                {
-                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
-                });
+                messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"); });
 
             HubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
                 _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
@@ -265,21 +268,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (message.Type is MessageType.RsaPubKey)
                     {
-                        var aesKey = await KeyStorageService.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
-                        InMemoryKeyStorage.RSAKeyStorage.TryGetValue(message.Sender, out var rsaKey);
-                        if (rsaKey?.Value?.ToString() == message.Cryptogramm?.Cyphertext &&
-                            !string.IsNullOrWhiteSpace(rsaKey?.Value?.ToString()) &&
-                            aesKey is not null)
-                            return;
-
-                        //Storing Public Key in our in-memory storage
-                        InMemoryKeyStorage.RSAKeyStorage.TryAdd(message.Sender, new Key
+                        await _keyStorage.StoreAsync(new Key
                         {
                             Type = KeyType.RsaPublic,
                             Contact = message.Sender,
                             Format = KeyFormat.PemSpki,
                             Value = message.Cryptogramm!.Cyphertext
                         });
+                        
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
 
@@ -316,12 +312,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     return;
                 }
 
-                if (string.IsNullOrWhiteSpace(InMemoryKeyStorage.MyRSAPublic?.Value?.ToString()))
+                var rsaPublicKey = await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
+                if (string.IsNullOrWhiteSpace(rsaPublicKey.First().Value?.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(InMemoryKeyStorage.MyRSAPublic);
+                await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
             });
 
             HubConnection.On<Guid>("OnFileTransfered",
@@ -333,7 +330,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task MarkKeyAsAccepted(Guid keyId, string contact)
         {
-            var keys = await KeyStorageService.GetAsync(contact, KeyType.Aes);
+            var keys = await _keyStorage.GetAsync(contact, KeyType.Aes);
             var acceptedKeyId = keyId;
 
             var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
@@ -341,7 +338,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return;
 
             acceptedKey.IsAccepted = true;
-            await KeyStorageService.UpdateAsync(acceptedKey);
+            await _keyStorage.UpdateAsync(acceptedKey);
         }
 
         private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
@@ -367,10 +364,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
         {
-            if (!InMemoryKeyStorage.isPublicKeySet)
-            {
-                await _usersService.SetRSAPublicKey(RSAPublicKey);
-            }
+            await _usersService.SetRSAPublicKey(RSAPublicKey);
         }
 
         private async Task RegenerateAESAsync
@@ -379,6 +373,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             string partnersPublicKey)
         {
             var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
+            aesKey.Author = await _authenticationHandler.GetUsernameAsync();
 
             var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKey);
             var connection = await GetHubConnectionAsync();
@@ -466,16 +461,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await TransferAsync(dataPartMessage);
         }
 
-        private async Task TransferAsync<T>(T data) where T: IIdentifiable, IDestinationResolvable
+        private async Task TransferAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable
         {
-            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
             var serializedData = JsonSerializer.Serialize(data);
 
             var cryptogram = await _cryptographyService
                 .EncryptAsync<AesHandler>(new Cryptogram
-                {
-                    Cyphertext = serializedData,
-                }, await localKeyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ?? throw new ApplicationException("missing key"));
+                    {
+                        Cyphertext = serializedData,
+                    },
+                    await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
+                    throw new ApplicationException("missing key"));
 
             var transferData = new EncryptedDataTransfer
             {
@@ -489,13 +485,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var connection = await GetHubConnectionAsync();
             await connection.SendAsync("TransferAsync", transferData);
         }
-        
-        
 
-        private async Task TransferAsync<T>(T data, string target) where T: IIdentifiable
+
+        private async Task TransferAsync<T>(T data, string target) where T : IIdentifiable
         {
-            var localKeyStorage = new LocalStorageKeyStorage(_jsRuntime);
-            var key = await localKeyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
+            var key = await _keyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
                       throw new ApplicationException("Missing key");
             var serializedData = JsonSerializer.Serialize(data);
 
@@ -522,10 +516,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             try
             {
-                var lastAcceptedAsync = await KeyStorageService.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
+                var lastAcceptedAsync = await _keyStorage.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
                 if (lastAcceptedAsync is null)
                     await NegotiateOnAESAsync(dataTransfer.Sender);
-                
+
                 var cryptogram = await _cryptographyService
                     .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, lastAcceptedAsync);
 
@@ -541,8 +535,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         Id = dataTransfer.Id,
                         Sender = dataTransfer.Sender,
                         Target = dataTransfer.Target
-                    },"OnDecryptionFailure");
+                    }, "OnDecryptionFailure");
                 }
+
                 Console.WriteLine(e);
                 throw;
             }
@@ -580,25 +575,25 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return;
 
             await TransferAsync(new ClientMessage()
-                {
-                    Id = messageId,
-                    Sender = myUsername,
-                    Target = messageSender,
-                    Type = MessageType.MessageReceivedConfirmation
-                });
+            {
+                Id = messageId,
+                Sender = myUsername,
+                Target = messageSender,
+                Type = MessageType.MessageReceivedConfirmation
+            });
         }
 
         public async Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername)
         {
             if (messageSender == myUsername)
                 return;
-            
+
             await TransferAsync(new ClientMessage
             {
                 Type = MessageType.MessageReadConfirmation,
                 Target = messageSender,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
-                Id = messageId  
+                Id = messageId
             });
         }
 

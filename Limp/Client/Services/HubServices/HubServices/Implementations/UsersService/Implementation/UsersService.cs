@@ -1,8 +1,8 @@
 ﻿using System.Collections.Concurrent;
+using Client.Application.Cryptography.KeyStorage;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
-using Ethachat.Client.Services.KeyStorageService.KeyStorage;
 using Ethachat.Client.Services.UserIdentityService;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -22,6 +22,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
+        private readonly IKeyStorage _keyStorage;
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnectionInstance { get; set; }
 
@@ -32,12 +33,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         (NavigationManager navigationManager,
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            IKeyStorage keyStorage)
         {
             NavigationManager = navigationManager;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
+            _keyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
         }
@@ -78,8 +81,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
 
                 await GetHubConnectionAsync();
 
+                var rsaPublicKeys = await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
                 await HubConnectionInstance.SendAsync("PostAnRSAPublic", username,
-                    InMemoryKeyStorage.MyRSAPublic.Value);
+                    rsaPublicKeys.First().Value);
             });
 
             HubConnectionInstance.On<UserConnection>("IsUserOnlineResponse",
@@ -209,7 +213,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 var hubConnection = await GetHubConnectionAsync();
                 await hubConnection.SendAsync("SetRSAPublicKey", RSAPublicKey, null, credentials);
             }
-            InMemoryKeyStorage.isPublicKeySet = true;
         }
 
         public async Task ActualizeConnectedUsersAsync()

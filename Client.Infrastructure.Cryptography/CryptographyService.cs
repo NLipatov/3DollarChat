@@ -1,47 +1,41 @@
 ﻿using Client.Application.Cryptography;
-using Client.Infrastructure.Cryptography;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.KeyStorageService.KeyStorage;
+using Client.Application.Cryptography.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Services.Cryptography
+namespace Client.Infrastructure.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {
         private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
-        private readonly IAuthenticationHandler _authenticationHandler;
+        private readonly IKeyStorage _keyStorage;
 
-        public CryptographyService(IPlatformRuntime platformRuntime, IAuthenticationHandler authenticationHandler)
+        public CryptographyService(IPlatformRuntime platformRuntime, IKeyStorage keyStorage)
         {
             _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
-            _authenticationHandler = authenticationHandler;
+            _keyStorage = keyStorage;
             _ = GenerateRsaKeyPairAsync();
         }
 
         private async Task GenerateRsaKeyPairAsync()
         {
-            if ((InMemoryKeyStorage.MyRSAPublic?.Value?.ToString() ?? string.Empty).Length > 0 ||
-                (InMemoryKeyStorage.MyRSAPrivate?.Value?.ToString() ?? string.Empty).Length > 0 )
-                return;
-            
             var keyPair = await _cryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
             var publicRsa = new Key
             {
                 Value = keyPair[0],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPublic,
-                Contact = null
+                Contact = string.Empty
             };
             var privateRsa = new Key
             {
                 Value = keyPair[1],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPrivate,
-                Contact = null
+                Contact = string.Empty
             };
-            InMemoryKeyStorage.MyRSAPrivate = privateRsa;
-            InMemoryKeyStorage.MyRSAPublic = publicRsa;
+            await _keyStorage.StoreAsync(privateRsa);
+            await _keyStorage.StoreAsync(publicRsa);
         }
 
         public async Task<Key> GenerateAesKeyAsync(string contact)
@@ -52,7 +46,6 @@ namespace Ethachat.Client.Services.Cryptography
                 Value = key,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,
-                Author = await _authenticationHandler.GetUsernameAsync(),
                 Contact = contact,
                 CreationDate = DateTime.UtcNow,
                 IsAccepted = false

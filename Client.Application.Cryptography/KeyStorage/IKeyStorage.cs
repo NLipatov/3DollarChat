@@ -1,6 +1,6 @@
 using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Services.KeyStorageService;
+namespace Client.Application.Cryptography.KeyStorage;
 
 public interface IKeyStorage
 {

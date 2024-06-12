@@ -2,7 +2,7 @@ using System.Diagnostics.CodeAnalysis;
 using Client.Infrastructure.Cryptography;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.Cryptography;
+namespace Ethachat.Client.PlatformRuntime;
 
 public class JsPlatformRuntime(IJSRuntime jsRuntime) : IPlatformRuntime
 {

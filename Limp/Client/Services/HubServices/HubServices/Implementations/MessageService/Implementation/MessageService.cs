@@ -107,6 +107,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             transferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(),
                 new MessageReceivedConfirmationHandler(callbackExecutor));
             transferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(), new ResendRequestHandler(messageBox, this));
+            transferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(), new HlsPlaylistHandler(messageBox));
             _messageProcessor = new(transferHandlerFactory);
         }
 
@@ -210,15 +211,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 if (clientMessage.Type is MessageType.ConversationDeletionRequest ||
                                     clientMessage.Type is MessageType.MessageReadConfirmation ||
                                     clientMessage.Type is MessageType.MessageReceivedConfirmation ||
-                                    clientMessage.Type is MessageType.ResendRequest)
+                                    clientMessage.Type is MessageType.ResendRequest || 
+                                    clientMessage.Type is MessageType.HLSPlaylist)
                                 {
                                     await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
                                         decryptedData ?? throw new ArgumentException());
-                                }
-
-                                if (clientMessage.Type == MessageType.HLSPlaylist)
-                                {
-                                    _messageBox.AddMessage(clientMessage);
                                 }
 
                                 if (clientMessage.Type is MessageType.Metadata ||

@@ -21,7 +21,8 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
+    .Handlers;
 using Ethachat.Client.Services.UndecryptedMessagesService;
 using Ethachat.Client.Services.UndecryptedMessagesService.Models;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
@@ -95,12 +96,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             RegisterHubEventHandlers();
 
             _ = new UndecryptedMessagesStorageService(hubServiceSubscriptionManager, this, authenticationHandler);
-            
+
             var transferHandlerFactory = new TransferHandlerFactory();
-            transferHandlerFactory.RegisterHandler(nameof(TextMessage), new TextMessageHandler(messageBox, authenticationHandler, this));
-            transferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(), new ConversationDeletionRequestHandler(messageBox));
-            transferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(), new MessageReadHandler(callbackExecutor));
-            transferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(), new MessageReceivedConfirmationHandler(callbackExecutor));
+            transferHandlerFactory.RegisterHandler(nameof(TextMessage),
+                new TextMessageHandler(messageBox, authenticationHandler, this));
+            transferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(),
+                new ConversationDeletionRequestHandler(messageBox));
+            transferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(),
+                new MessageReadHandler(callbackExecutor));
+            transferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(),
+                new MessageReceivedConfirmationHandler(callbackExecutor));
+            transferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(), new ResendRequestHandler(messageBox, this));
             _messageProcessor = new(transferHandlerFactory);
         }
 
@@ -201,15 +207,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 if (clientMessage is null)
                                     throw new ArgumentException("Could not convert data transfer to target type");
 
-                                if (clientMessage.Type is MessageType.ResendRequest)
+                                if (clientMessage.Type is MessageType.ConversationDeletionRequest ||
+                                    clientMessage.Type is MessageType.MessageReadConfirmation ||
+                                    clientMessage.Type is MessageType.MessageReceivedConfirmation ||
+                                    clientMessage.Type is MessageType.ResendRequest)
                                 {
-                                    var message = _messageBox.Messages.FirstOrDefault(x => x.Id == clientMessage.Id);
-                                    if (message?.Type is MessageType.TextMessage)
-                                        await SendText(message);
-                                }
-                                
-                                await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
+                                    await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
                                         decryptedData ?? throw new ArgumentException());
+                                }
 
                                 if (clientMessage.Type == MessageType.HLSPlaylist)
                                 {
@@ -519,17 +524,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception e)
             {
-                if (e.InnerException is ApplicationException keyNotFoundException)
+                _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
-                    {
-                        Id = dataTransfer.Id,
-                        Sender = dataTransfer.Sender,
-                        Target = dataTransfer.Target
-                    }, "OnDecryptionFailure");
-                }
-
-                Console.WriteLine(e);
+                    Id = dataTransfer.Id,
+                    Sender = dataTransfer.Sender,
+                    Target = dataTransfer.Target
+                }, "OnDecryptionFailure");
                 throw;
             }
         }

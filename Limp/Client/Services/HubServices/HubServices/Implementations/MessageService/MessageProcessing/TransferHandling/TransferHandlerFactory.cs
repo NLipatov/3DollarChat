@@ -1,16 +1,16 @@
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling;
 
-public class TransferHandlerFactory : ITransferHandlerFactory
+public class TransferHandlerFactory<T> : ITransferHandlerFactory<T>
 {
-    private Dictionary<string, ITransferHandler> _handlers = [];
+    private Dictionary<string, ITransferHandler<T>> _handlers = [];
 
-    public void RegisterHandler(string eventType, ITransferHandler handler)
+    public void RegisterHandler(string eventType, ITransferHandler<T> handler)
     {
         _handlers.Add(eventType, handler);
     }
 
-    public ITransferHandler GetMessageHandler(string eventType)
+    public ITransferHandler<T> GetMessageHandler(string eventType)
     {
         _handlers.TryGetValue(eventType, out var handler);
 

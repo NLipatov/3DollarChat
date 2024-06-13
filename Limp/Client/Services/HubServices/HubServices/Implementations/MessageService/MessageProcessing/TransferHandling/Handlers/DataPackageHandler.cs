@@ -9,11 +9,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class DataPackageHandler(
     ICallbackExecutor callbackExecutor,
     IBinaryReceivingManager binaryReceivingManager,
-    IMessageService messageService) : ITransferHandler
+    IMessageService messageService) : ITransferHandler<ClientMessage>
 {
-    public async Task HandleAsync(object transfer)
+    public async Task HandleAsync(ClientMessage clientMessage)
     {
-        var clientMessage = (ClientMessage)transfer;
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
             "OnBinaryTransmitting");
 

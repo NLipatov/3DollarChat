@@ -11,18 +11,17 @@ public class TextMessageHandler(
     IMessageBox messageBox,
     IAuthenticationHandler authenticationHandler,
     IMessageService messageService)
-    : ITransferHandler
+    : ITransferHandler<TextMessage>
 {
-    public async Task HandleAsync(object data)
+    public async Task HandleAsync(TextMessage clientMessage)
     {
-        var textMessage = (TextMessage)data;
-        if (textMessage.Total == 1 &&
-            messageBox.Contains(new Message { Id = textMessage.Id })) //not a composite message, duplicate
+        if (clientMessage.Total == 1 &&
+            messageBox.Contains(new Message { Id = clientMessage.Id })) //not a composite message, duplicate
             return;
 
-        await SendReceivedConfirmation(textMessage.Id, textMessage.Sender);
+        await SendReceivedConfirmation(clientMessage.Id, clientMessage.Sender);
 
-        messageBox.AddMessage(textMessage);
+        messageBox.AddMessage(clientMessage);
     }
 
     private async Task SendReceivedConfirmation(Guid messageId, string messageSender)

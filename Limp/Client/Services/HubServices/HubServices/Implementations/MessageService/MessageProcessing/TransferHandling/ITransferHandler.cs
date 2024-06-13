@@ -1,6 +1,6 @@
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
 
-public interface ITransferHandler
+public interface ITransferHandler<T>
 {
-    Task HandleAsync(object transfer);
+    Task HandleAsync(T clientMessage);
 }

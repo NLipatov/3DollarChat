@@ -4,11 +4,10 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 
-public class ResendRequestHandler(IMessageBox messageBox, IMessageService messageService) : ITransferHandler
+public class ResendRequestHandler(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<ClientMessage>
 {
-    public async Task HandleAsync(object transfer)
+    public async Task HandleAsync(ClientMessage clientMessage)
     {
-        var clientMessage = (ClientMessage)transfer;
         var message = messageBox.Messages.FirstOrDefault(x => x.Id == clientMessage.Id);
         if (message?.Type is MessageType.TextMessage)
         {

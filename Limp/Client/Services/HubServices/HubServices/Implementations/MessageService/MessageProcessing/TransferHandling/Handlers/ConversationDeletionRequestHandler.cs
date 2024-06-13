@@ -3,11 +3,10 @@ using Ethachat.Client.Services.InboxService;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 
-public class ConversationDeletionRequestHandler(IMessageBox messageBox) : ITransferHandler
+public class ConversationDeletionRequestHandler(IMessageBox messageBox) : ITransferHandler<ClientMessage>
 {
-    public Task HandleAsync(object transfer)
+    public Task HandleAsync(ClientMessage clientMessage)
     {
-        var clientMessage = (ClientMessage)transfer;
         messageBox.Delete(clientMessage.Sender);
         return Task.CompletedTask;
     }

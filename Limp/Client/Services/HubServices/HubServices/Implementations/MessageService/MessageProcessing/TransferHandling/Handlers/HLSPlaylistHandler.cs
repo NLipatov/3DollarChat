@@ -3,11 +3,11 @@ using Ethachat.Client.Services.InboxService;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 
-public class HlsPlaylistHandler(IMessageBox messageBox) : ITransferHandler
+public class HlsPlaylistHandler(IMessageBox messageBox) : ITransferHandler<ClientMessage>
 {
-    public Task HandleAsync(object transfer)
+    public Task HandleAsync(ClientMessage clientMessage)
     {
-        messageBox.AddMessage(transfer as ClientMessage ?? throw new ArgumentException());
+        messageBox.AddMessage(clientMessage);
         return Task.CompletedTask;
     }
 }

@@ -3,11 +3,10 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 
-public class MessageReceivedConfirmationHandler(ICallbackExecutor callbackExecutor) : ITransferHandler
+public class MessageReceivedConfirmationHandler(ICallbackExecutor callbackExecutor) : ITransferHandler<ClientMessage>
 {
-    public Task HandleAsync(object transfer)
+    public Task HandleAsync(ClientMessage clientMessage)
     {
-        var clientMessage = (ClientMessage)transfer;
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
             "OnReceiverMarkedMessageAsReceived");
         return Task.CompletedTask;

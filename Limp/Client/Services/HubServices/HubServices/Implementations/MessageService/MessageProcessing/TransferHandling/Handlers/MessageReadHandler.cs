@@ -4,11 +4,10 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Handlers;
 
-public class MessageReadHandler(ICallbackExecutor callbackExecutor) : ITransferHandler
+public class MessageReadHandler(ICallbackExecutor callbackExecutor) : ITransferHandler<ClientMessage>
 {
-    public Task HandleAsync(object decryptedData)
+    public Task HandleAsync(ClientMessage clientMessage)
     {
-        var clientMessage = (ClientMessage)decryptedData;
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
             "OnReceiverMarkedMessageAsRead");
 

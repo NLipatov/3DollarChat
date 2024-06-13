@@ -386,6 +386,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.DataTransferConfirmation:
                     await TransferAsync(message);
                     break;
+                case MessageType.MessageReadConfirmation:
+                    await TransferAsync(message);
+                    break;
                 default:
                     throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
             }
@@ -519,20 +522,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 Text = plainText
             });
             _messageBox.AddMessage(message);
-        }
-
-        public async Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername)
-        {
-            if (messageSender == myUsername)
-                return;
-
-            await TransferAsync(new ClientMessage
-            {
-                Type = MessageType.MessageReadConfirmation,
-                Target = messageSender,
-                Sender = await _authenticationHandler.GetUsernameAsync(),
-                Id = messageId
-            });
         }
 
 

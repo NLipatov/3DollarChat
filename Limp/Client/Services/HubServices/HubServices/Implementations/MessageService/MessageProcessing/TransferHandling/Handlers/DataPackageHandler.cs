@@ -2,6 +2,7 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
+using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Handlers;
@@ -21,9 +22,13 @@ public class DataPackageHandler(
 
         if (progressStatus.isTransmissionCompleted)
         {
-            await messageService.NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
-                clientMessage.Sender ??
-                throw new ArgumentException($"Invalid {clientMessage.Sender}"));
+            await messageService.SendMessage(new ClientMessage
+            {
+                Target = clientMessage.Sender,
+                Sender = clientMessage.Target,
+                Id = progressStatus.fileId,
+                Type = MessageType.DataTransferConfirmation
+            });
         }
     }
 }

@@ -217,22 +217,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task OnDataTranferSuccess(Guid fileId, string fileSender)
-        {
-            try
-            {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == fileSender))
-                {
-                    await Clients.Group(fileSender).SendAsync("OnFileTransfered", fileId);
-                }
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException(
-                    $"{nameof(MessageHub)}.{nameof(OnDataTranferSuccess)}: could not dispatch a data: {e.Message}");
-            }
-        }
-
         public async Task OnTransferAcked(EncryptedDataTransfer edt)
         {
             _reliableTransferDataSender.OnAck(edt);

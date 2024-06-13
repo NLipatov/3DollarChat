@@ -117,6 +117,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new MetadataHandler(callbackExecutor, binaryReceivingManager, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
                 new DataPackageHandler(callbackExecutor, binaryReceivingManager, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(callbackExecutor));
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
         }
@@ -308,9 +309,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
             });
 
-            HubConnection.On<Guid>("OnFileTransfered",
-                messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived"); });
-
             HubConnection.On<string>("OnTyping",
                 (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
         }
@@ -326,12 +324,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             acceptedKey.IsAccepted = true;
             await _keyStorage.UpdateAsync(acceptedKey);
-        }
-
-        public async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
-        {
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
         }
 
         public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
@@ -389,6 +381,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await TransferAsync(message);
                     break;
                 case MessageType.ConversationDeletionRequest:
+                    await TransferAsync(message);
+                    break;
+                case MessageType.DataTransferConfirmation:
                     await TransferAsync(message);
                     break;
                 default:

@@ -8,6 +8,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task SendTypingEventToPartnerAsync(string sender, string receiver);
         Task SendMessage(ClientMessage message);
         Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername);
-        Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender);
     }
 }

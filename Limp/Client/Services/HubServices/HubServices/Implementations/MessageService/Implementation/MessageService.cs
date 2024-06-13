@@ -118,6 +118,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
                 new DataPackageHandler(callbackExecutor, binaryReceivingManager, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(callbackExecutor));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.TypingEvent.ToString(), new TypingEventHandler(callbackExecutor));
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
         }
@@ -308,9 +309,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                 await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
             });
-
-            HubConnection.On<string>("OnTyping",
-                (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
         }
 
         private async Task MarkKeyAsAccepted(Guid keyId, string contact)
@@ -352,12 +350,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await _authenticationHandler.GetUsernameAsync());
         }
 
-        public async Task SendTypingEventToPartnerAsync(string sender, string receiver)
-        {
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("OnTyping", sender, receiver);
-        }
-
         public async Task SendMessage(ClientMessage message)
         {
             switch (message.Type)
@@ -374,23 +366,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.BrowserFileMessage:
                     await SendBrowserFile(message);
                     break;
-                case MessageType.ResendRequest:
-                    await TransferAsync(message);
-                    break;
-                case MessageType.MessageReceivedConfirmation:
-                    await TransferAsync(message);
-                    break;
-                case MessageType.ConversationDeletionRequest:
-                    await TransferAsync(message);
-                    break;
-                case MessageType.DataTransferConfirmation:
-                    await TransferAsync(message);
-                    break;
-                case MessageType.MessageReadConfirmation:
-                    await TransferAsync(message);
-                    break;
                 default:
-                    throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
+                    await TransferAsync(message);
+                    break;
             }
         }
 

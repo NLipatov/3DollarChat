@@ -233,10 +233,5 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var message = new Message { Target = requesterUsername, Sender = username, Type = MessageType.RsaPubKey, Cryptogramm = new Cryptogram { Cyphertext = pubKey } };
             await Dispatch(message);
         }
-
-        public async Task OnTyping(string sender, string receiver)
-        {
-            await Clients.Group(receiver).SendAsync("OnTyping", sender);
-        }
     }
 }

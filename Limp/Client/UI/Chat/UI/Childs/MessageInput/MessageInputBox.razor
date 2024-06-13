@@ -96,7 +96,7 @@
         }
         else
         {
-            await MessageService.SendTypingEventToPartnerAsync(MyUsername, TopicName).ConfigureAwait(false);
+            await MessageService.SendMessage(new ClientMessage{Sender = MyUsername, Target = TopicName, Type = MessageType.TypingEvent});
         }
     }
 

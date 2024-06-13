@@ -108,6 +108,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new MessageReceivedConfirmationHandler(callbackExecutor));
             transferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(), new ResendRequestHandler(messageBox, this));
             transferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(), new HlsPlaylistHandler(messageBox));
+            transferHandlerFactory.RegisterHandler(MessageType.Metadata.ToString(), new MetadataHandler(callbackExecutor, binaryReceivingManager, this));
+            transferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(), new DataPackageHandler(callbackExecutor, binaryReceivingManager, this));
             _messageProcessor = new(transferHandlerFactory);
         }
 
@@ -212,27 +214,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                     clientMessage.Type is MessageType.MessageReadConfirmation ||
                                     clientMessage.Type is MessageType.MessageReceivedConfirmation ||
                                     clientMessage.Type is MessageType.ResendRequest || 
-                                    clientMessage.Type is MessageType.HLSPlaylist)
+                                    clientMessage.Type is MessageType.HLSPlaylist ||
+                                    clientMessage.Type is MessageType.Metadata ||
+                                    clientMessage.Type is MessageType.DataPackage)
                                 {
                                     await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
                                         decryptedData ?? throw new ArgumentException());
-                                }
-
-                                if (clientMessage.Type is MessageType.Metadata ||
-                                    clientMessage.Type is MessageType.DataPackage)
-                                {
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
-                                        "OnBinaryTransmitting");
-
-                                    (bool isTransmissionCompleted, Guid fileId) progressStatus =
-                                        await _binaryReceivingManager.StoreAsync(clientMessage);
-
-                                    if (progressStatus.isTransmissionCompleted)
-                                    {
-                                        await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
-                                            clientMessage.Sender ??
-                                            throw new ArgumentException($"Invalid {clientMessage.Sender}"));
-                                    }
                                 }
                             }
                         }
@@ -342,25 +329,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await _keyStorage.UpdateAsync(acceptedKey);
         }
 
-        private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
+        public async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
         {
-            if (HubConnection != null && HubConnection.State is HubConnectionState.Connected)
-            {
-                try
-                {
-                    await HubConnection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
-                }
-                catch (Exception e)
-                {
-                    throw new ApplicationException
-                        ($"{nameof(MessageService)}.{nameof(SendMessage)}: {e.Message}.");
-                }
-            }
-            else
-            {
-                await GetHubConnectionAsync();
-                await NotifyAboutSuccessfullDataTransfer(dataFileId, sender);
-            }
+            var connection = await GetHubConnectionAsync();
+            await connection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
         }
 
         public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)

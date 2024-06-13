@@ -100,6 +100,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             transferHandlerFactory.RegisterHandler(nameof(TextMessage), new TextMessageHandler(messageBox, authenticationHandler, this));
             transferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(), new ConversationDeletionRequestHandler(messageBox));
             transferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(), new MessageReadHandler(callbackExecutor));
+            transferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(), new MessageReceivedConfirmationHandler(callbackExecutor));
             _messageProcessor = new(transferHandlerFactory);
         }
 
@@ -206,16 +207,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                     if (message?.Type is MessageType.TextMessage)
                                         await SendText(message);
                                 }
-
-                                if (clientMessage.Type == MessageType.MessageReceivedConfirmation)
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
-                                        "OnReceiverMarkedMessageAsReceived");
-
-                                if (clientMessage.Type == MessageType.MessageReadConfirmation)
-                                {
-                                    await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
+                                
+                                await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
                                         decryptedData ?? throw new ArgumentException());
-                                }
 
                                 if (clientMessage.Type == MessageType.HLSPlaylist)
                                 {
@@ -237,12 +231,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                             clientMessage.Sender ??
                                             throw new ArgumentException($"Invalid {clientMessage.Sender}"));
                                     }
-                                }
-
-                                if (clientMessage.Type is MessageType.ConversationDeletionRequest)
-                                {
-                                    await _messageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
-                                        decryptedData ?? throw new ArgumentException());
                                 }
                             }
                         }

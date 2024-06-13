@@ -15,7 +15,7 @@ public class TransferHandlerFactory : ITransferHandlerFactory
         _handlers.TryGetValue(eventType, out var handler);
 
         if (handler is null)
-            throw new ArgumentException($"No textMessageHandler found for message type {eventType}");
+            throw new ArgumentException($"No handler found for message type {eventType}");
 
         return handler;
     }

@@ -1,10 +1,15 @@
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    BinaryReceiving;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
+    TransferHandling.Handlers;
 
-public class MetadataHandler(ICallbackExecutor callbackExecutor, IBinaryReceivingManager binaryReceivingManager, IMessageService messageService) : ITransferHandler
+public class MetadataHandler(
+    ICallbackExecutor callbackExecutor,
+    IBinaryReceivingManager binaryReceivingManager,
+    IMessageService messageService) : ITransferHandler
 {
     public async Task HandleAsync(object transfer)
     {

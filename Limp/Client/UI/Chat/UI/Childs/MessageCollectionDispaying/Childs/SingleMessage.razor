@@ -109,8 +109,8 @@
                 </span>
             }
         </div>
-        <OnObservedTrigger 
-            Callback=@(async () => await MessageService.NotifySenderThatMessageWasRead(Message.Id, Message.Sender!, MyUsername!))/>
+        <OnObservedTrigger
+            Callback=@(async () => await MessageService.SendMessage(new ClientMessage { Type = MessageType.MessageReadConfirmation, Target = Message.Sender, Sender = MyUsername, Id = Message.Id }))/>
     </div>
 }
 
@@ -134,7 +134,7 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
+
         ComponentId = Guid.NewGuid();
 
         SubscribeToHubEvents();
@@ -173,10 +173,7 @@
             StateHasChanged();
         }, "OnReceiverMarkedMessageAsReceived", ComponentId);
 
-        HubServiceSubscriptionManager.AddCallback<Guid>(id =>
-        {
-            StateHasChanged();
-        }, "TextMessageUpdate", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<Guid>(id => { StateHasChanged(); }, "TextMessageUpdate", ComponentId);
     }
 
     protected override async Task OnParametersSetAsync()

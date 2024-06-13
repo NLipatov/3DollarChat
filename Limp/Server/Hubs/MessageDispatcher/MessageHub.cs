@@ -217,22 +217,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task OnDataTranferSuccess(Guid fileId, string fileSender)
-        {
-            try
-            {
-                if (InMemoryHubConnectionStorage.MessageDispatcherHubConnections.Any(x => x.Key == fileSender))
-                {
-                    await Clients.Group(fileSender).SendAsync("OnFileTransfered", fileId);
-                }
-            }
-            catch (Exception e)
-            {
-                throw new ApplicationException(
-                    $"{nameof(MessageHub)}.{nameof(OnDataTranferSuccess)}: could not dispatch a data: {e.Message}");
-            }
-        }
-
         public async Task OnTransferAcked(EncryptedDataTransfer edt)
         {
             _reliableTransferDataSender.OnAck(edt);
@@ -248,11 +232,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
             var message = new Message { Target = requesterUsername, Sender = username, Type = MessageType.RsaPubKey, Cryptogramm = new Cryptogram { Cyphertext = pubKey } };
             await Dispatch(message);
-        }
-
-        public async Task OnTyping(string sender, string receiver)
-        {
-            await Clients.Group(receiver).SendAsync("OnTyping", sender);
         }
     }
 }

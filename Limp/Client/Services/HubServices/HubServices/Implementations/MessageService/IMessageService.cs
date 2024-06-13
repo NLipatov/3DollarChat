@@ -5,8 +5,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     public interface IMessageService : IHubService
     {
         Task NegotiateOnAESAsync(string partnerUsername);
-        Task SendTypingEventToPartnerAsync(string sender, string receiver);
         Task SendMessage(ClientMessage message);
-        Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername);
     }
 }

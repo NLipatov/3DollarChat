@@ -18,6 +18,11 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
+using
+    Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
+    .Handlers;
 using Ethachat.Client.Services.UndecryptedMessagesService;
 using Ethachat.Client.Services.UndecryptedMessagesService.Models;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
@@ -54,6 +59,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private bool _isConnectionClosedCallbackSet = false;
         private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? HubConnection { get; set; }
+        private MessageProcessor<ClientMessage> _clientMessageProcessor;
+        private MessageProcessor<TextMessage> _textMessageProcessor;
 
         public MessageService
         (IMessageBox messageBox,
@@ -90,6 +97,30 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             RegisterHubEventHandlers();
 
             _ = new UndecryptedMessagesStorageService(hubServiceSubscriptionManager, this, authenticationHandler);
+
+            var textMessageHandlerFactory = new TransferHandlerFactory<TextMessage>();
+            var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
+            
+            textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
+                new TextMessageHandler(messageBox, authenticationHandler, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(),
+                new ConversationDeletionRequestHandler(messageBox));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(),
+                new MessageReadHandler(callbackExecutor));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(),
+                new MessageReceivedConfirmationHandler(callbackExecutor));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(),
+                new ResendRequestHandler(messageBox, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
+                new HlsPlaylistHandler(messageBox));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.Metadata.ToString(),
+                new MetadataHandler(callbackExecutor, binaryReceivingManager, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
+                new DataPackageHandler(callbackExecutor, binaryReceivingManager, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(callbackExecutor));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.TypingEvent.ToString(), new TypingEventHandler(callbackExecutor));
+            _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
+            _textMessageProcessor = new(textMessageHandlerFactory);
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
@@ -155,12 +186,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             if (HubConnection is null)
                 throw new NullReferenceException("Could not register event handlers - hub was null.");
 
-            HubConnection.On<EncryptedDataTransfer>("OnTransfer", async edt =>
+            HubConnection.On<EncryptedDataTransfer>("OnTransfer", async transfer =>
             {
-                if (edt.Sender != await _authenticationHandler.GetUsernameAsync())
+                if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
                     var connection = await GetHubConnectionAsync();
-                    await connection.SendAsync("OnTransferAcked", edt);
+                    await connection.SendAsync("OnTransferAcked", transfer);
                 }
 
                 var decryptionMethodName = nameof(DecryptTransferAsync);
@@ -168,71 +199,29 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     .FirstOrDefault(m => m.Name == decryptionMethodName && m.IsGenericMethod);
                 if (method != null)
                 {
-                    MethodInfo genericMethod = method.MakeGenericMethod(edt.DataType);
-                    Task? task = (Task?)genericMethod.Invoke(this, [edt]);
+                    MethodInfo genericMethod = method.MakeGenericMethod(transfer.DataType);
+                    Task? task = (Task?)genericMethod.Invoke(this, [transfer]);
                     if (task != null)
                     {
                         await task;
                         PropertyInfo? dataTypeProperty = task.GetType().GetProperty("Result");
                         if (dataTypeProperty != null)
                         {
-                            var dataType = dataTypeProperty.GetValue(task, null);
-                            if (edt.DataType == typeof(TextMessage))
+                            var decryptedData = dataTypeProperty.GetValue(task, null);
+                            if (transfer.DataType == typeof(TextMessage))
                             {
-                                var textMessage = (TextMessage?)dataType;
-                                if (textMessage is null)
-                                    throw new ArgumentException("Could not convert data transfer to target type");
-
-                                await OnTextMessageReceived(textMessage);
+                                await _textMessageProcessor.ProcessTransferAsync(nameof(TextMessage),
+                                    decryptedData as TextMessage ?? throw new ArgumentException());
                             }
 
-                            if (edt.DataType == typeof(ClientMessage))
+                            if (transfer.DataType == typeof(ClientMessage))
                             {
-                                var clientMessage = (ClientMessage?)dataType;
+                                var clientMessage = (ClientMessage?)decryptedData;
                                 if (clientMessage is null)
                                     throw new ArgumentException("Could not convert data transfer to target type");
 
-                                if (clientMessage.Type is MessageType.ResendRequest)
-                                {
-                                    var message = _messageBox.Messages.FirstOrDefault(x => x.Id == clientMessage.Id);
-                                    if (message?.Type is MessageType.TextMessage)
-                                        await SendText(message);
-                                }
-
-                                if (clientMessage.Type == MessageType.MessageReceivedConfirmation)
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
-                                        "OnReceiverMarkedMessageAsReceived");
-
-                                if (clientMessage.Type == MessageType.MessageReadConfirmation)
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Id,
-                                        "OnReceiverMarkedMessageAsRead");
-
-                                if (clientMessage.Type == MessageType.HLSPlaylist)
-                                {
-                                    _messageBox.AddMessage(clientMessage);
-                                }
-
-                                if (clientMessage.Type is MessageType.Metadata ||
-                                    clientMessage.Type is MessageType.DataPackage)
-                                {
-                                    _callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
-                                        "OnBinaryTransmitting");
-
-                                    (bool isTransmissionCompleted, Guid fileId) progressStatus =
-                                        await _binaryReceivingManager.StoreAsync(clientMessage);
-
-                                    if (progressStatus.isTransmissionCompleted)
-                                    {
-                                        await NotifyAboutSuccessfullDataTransfer(progressStatus.fileId,
-                                            clientMessage.Sender ??
-                                            throw new ArgumentException($"Invalid {clientMessage.Sender}"));
-                                    }
-                                }
-
-                                if (clientMessage.Type is MessageType.ConversationDeletionRequest)
-                                {
-                                    _messageBox.Delete(clientMessage.Sender);
-                                }
+                                await _clientMessageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
+                                    clientMessage);
                             }
                         }
                     }
@@ -275,7 +264,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Format = KeyFormat.PemSpki,
                             Value = message.Cryptogramm!.Cyphertext
                         });
-                        
+
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
 
@@ -320,12 +309,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                 await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
             });
-
-            HubConnection.On<Guid>("OnFileTransfered",
-                messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "OnFileReceived"); });
-
-            HubConnection.On<string>("OnTyping",
-                (partnerName) => { _callbackExecutor.ExecuteSubscriptionsByName(partnerName, "OnTyping"); });
         }
 
         private async Task MarkKeyAsAccepted(Guid keyId, string contact)
@@ -339,27 +322,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             acceptedKey.IsAccepted = true;
             await _keyStorage.UpdateAsync(acceptedKey);
-        }
-
-        private async Task NotifyAboutSuccessfullDataTransfer(Guid dataFileId, string sender)
-        {
-            if (HubConnection != null && HubConnection.State is HubConnectionState.Connected)
-            {
-                try
-                {
-                    await HubConnection.SendAsync("OnDataTranferSuccess", dataFileId, sender);
-                }
-                catch (Exception e)
-                {
-                    throw new ApplicationException
-                        ($"{nameof(MessageService)}.{nameof(SendMessage)}: {e.Message}.");
-                }
-            }
-            else
-            {
-                await GetHubConnectionAsync();
-                await NotifyAboutSuccessfullDataTransfer(dataFileId, sender);
-            }
         }
 
         public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
@@ -388,12 +350,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await _authenticationHandler.GetUsernameAsync());
         }
 
-        public async Task SendTypingEventToPartnerAsync(string sender, string receiver)
-        {
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("OnTyping", sender, receiver);
-        }
-
         public async Task SendMessage(ClientMessage message)
         {
             switch (message.Type)
@@ -410,14 +366,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.BrowserFileMessage:
                     await SendBrowserFile(message);
                     break;
-                case MessageType.ResendRequest:
-                    await TransferAsync(message);
-                    break;
-                case MessageType.ConversationDeletionRequest:
-                    await TransferAsync(message);
-                    break;
                 default:
-                    throw new ArgumentException($"Unhandled message type passed: {message.Type}.");
+                    await TransferAsync(message);
+                    break;
             }
         }
 
@@ -434,17 +385,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 Type = MessageType.HLSPlaylist,
                 Sender = await _authenticationHandler.GetUsernameAsync()
             });
-        }
-
-        private async Task OnTextMessageReceived(TextMessage textMessage)
-        {
-            if (textMessage.Total == 1 &&
-                _messageBox.Contains(new Message { Id = textMessage.Id })) //not a composite message, duplicate
-                return;
-
-            await SendReceivedConfirmation(textMessage.Id, textMessage.Sender);
-
-            _messageBox.AddMessage(textMessage);
         }
 
         private async Task SendText(ClientMessage message)
@@ -528,17 +468,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception e)
             {
-                if (e.InnerException is ApplicationException keyNotFoundException)
+                _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
-                    {
-                        Id = dataTransfer.Id,
-                        Sender = dataTransfer.Sender,
-                        Target = dataTransfer.Target
-                    }, "OnDecryptionFailure");
-                }
-
-                Console.WriteLine(e);
+                    Id = dataTransfer.Id,
+                    Sender = dataTransfer.Sender,
+                    Target = dataTransfer.Target
+                }, "OnDecryptionFailure");
                 throw;
             }
         }
@@ -565,36 +500,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 Text = plainText
             });
             _messageBox.AddMessage(message);
-        }
-
-        public async Task SendReceivedConfirmation(Guid messageId, string messageSender)
-        {
-            var myUsername = await _authenticationHandler.GetUsernameAsync();
-
-            if (messageSender == myUsername)
-                return;
-
-            await TransferAsync(new ClientMessage()
-            {
-                Id = messageId,
-                Sender = myUsername,
-                Target = messageSender,
-                Type = MessageType.MessageReceivedConfirmation
-            });
-        }
-
-        public async Task NotifySenderThatMessageWasRead(Guid messageId, string messageSender, string myUsername)
-        {
-            if (messageSender == myUsername)
-                return;
-
-            await TransferAsync(new ClientMessage
-            {
-                Type = MessageType.MessageReadConfirmation,
-                Target = messageSender,
-                Sender = await _authenticationHandler.GetUsernameAsync(),
-                Id = messageId
-            });
         }
 
 

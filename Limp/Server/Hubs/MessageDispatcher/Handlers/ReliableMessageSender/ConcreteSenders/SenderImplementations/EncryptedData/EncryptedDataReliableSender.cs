@@ -61,7 +61,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
             foreach (var item in pendingItems)
             {
-                Console.WriteLine($"Sending: {item.Item.Id}");
                 await SendAsync(item);
             }
         }
@@ -115,7 +114,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
         private void Remove(Guid messageId)
         {
-            Console.WriteLine($"Removed: {messageId}");
             _unsentItems.TryRemove(messageId, out _);
             _acked.TryRemove(messageId, out _);
         }

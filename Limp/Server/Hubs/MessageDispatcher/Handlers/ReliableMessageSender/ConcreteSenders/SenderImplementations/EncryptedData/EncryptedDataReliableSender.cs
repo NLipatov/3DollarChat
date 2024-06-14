@@ -1,94 +1,123 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
+using
+    Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Models;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
-    EncryptedData;
-
-public class EncryptedDataReliableSender : IReliableMessageSender<EncryptedDataTransfer>
+    EncryptedData
 {
-    private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermStorageService;
-    private readonly IMessageGateway<EncryptedDataTransfer> _gateway;
-    private ConcurrentDictionary<Guid, EncryptedDataTransfer> _unsentItems = new();
-    private ConcurrentDictionary<Guid, bool> _acked = new();
-    private volatile bool _isSending;
-
-    public EncryptedDataReliableSender(IMessageGateway<EncryptedDataTransfer> gateway,
-        ILongTermStorageService<EncryptedDataTransfer> longTermStorageService)
+    public class EncryptedDataReliableSender : IReliableMessageSender<EncryptedDataTransfer>
     {
-        _longTermStorageService = longTermStorageService;
-        _gateway = gateway;
-    }
+        private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermStorageService;
+        private readonly IMessageGateway<EncryptedDataTransfer> _gateway;
+        private readonly ConcurrentQueue<UnsentItem<EncryptedDataTransfer>> _messageQueue = new();
+        private readonly ConcurrentDictionary<Guid, bool> _acked = new();
+        private readonly ConcurrentDictionary<Guid, EncryptedDataTransfer> _unsentItems = new();
+        private TaskCompletionSource<bool> _queueSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public async Task EnqueueAsync(EncryptedDataTransfer data)
-    {
-        _unsentItems.TryAdd(data.Id, data);
-
-        await Deliver(data);
-    }
-
-    private async Task Deliver(EncryptedDataTransfer data, TimeSpan? backoff = null)
-    {
-        if (_unsentItems.ContainsKey(data.Id))
+        public EncryptedDataReliableSender(IMessageGateway<EncryptedDataTransfer> gateway,
+            ILongTermStorageService<EncryptedDataTransfer> longTermStorageService)
         {
-            if (!HasActiveConnections(data.Target))
+            _longTermStorageService = longTermStorageService;
+            _gateway = gateway;
+            Task.Run(async () => await ProcessQueueAsync());
+        }
+
+        public Task EnqueueAsync(EncryptedDataTransfer data)
+        {
+            if (_unsentItems.TryAdd(data.Id, data))
             {
-                await PassToLongTermSender(data.Id);
-                Remove(data.Id);
+                _messageQueue.Enqueue(new UnsentItem<EncryptedDataTransfer>
+                {
+                    Item = data,
+                    Backoff = TimeSpan.FromSeconds(3)
+                });
+                _queueSignal.TrySetResult(true); // Signal that a new item is available
+            }
+
+            return Task.CompletedTask;
+        }
+
+        private async Task ProcessQueueAsync()
+        {
+            await _queueSignal.Task; // Wait for signal
+            _queueSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            var pendingItems = new List<UnsentItem<EncryptedDataTransfer>>();
+            while (_messageQueue.TryDequeue(out var unsentItem))
+            {
+                if (unsentItem.SendAfter <= DateTime.UtcNow)
+                {
+                    pendingItems.Add(unsentItem);
+                }
+                else
+                {
+                    _messageQueue.Enqueue(unsentItem);
+                }
+            }
+
+            foreach (var item in pendingItems)
+            {
+                Console.WriteLine($"Sending: {item.Item.Id}");
+                await SendAsync(item);
+            }
+        }
+
+        private async Task SendAsync(UnsentItem<EncryptedDataTransfer> unsentItem)
+        {
+            if (!HasActiveConnections(unsentItem.Item.Target))
+            {
+                await PassToLongTermSender(unsentItem.Item.Id);
+                Remove(unsentItem.Item.Id);
                 return;
             }
 
-            _acked.TryGetValue(data.Id, out var isAcked);
-            if (isAcked)
+            if (_acked.TryGetValue(unsentItem.Item.Id, out var isAcked) && isAcked)
             {
-                Remove(data.Id);
+                Remove(unsentItem.Item.Id);
                 return;
             }
 
-            await _gateway.TransferAsync(data);
-            backoff = IncreaseBackoff(backoff);
-            await Task.Delay(backoff.Value);
-            await Deliver(data, backoff);
+            await _gateway.TransferAsync(unsentItem.Item);
+
+            unsentItem.Backoff = IncreaseBackoff(unsentItem.Backoff);
+            unsentItem.SendAfter = DateTime.UtcNow.Add(unsentItem.Backoff);
+            _messageQueue.Enqueue(unsentItem);
         }
-    }
 
-
-    private async Task PassToLongTermSender(Guid messageId)
-    {
-        _unsentItems.TryRemove(messageId, out var unsentItem);
-
-        if (unsentItem is not null)
+        private async Task PassToLongTermSender(Guid messageId)
         {
-            await _longTermStorageService.SaveAsync(unsentItem);
+            if (_unsentItems.TryRemove(messageId, out var unsentItem))
+            {
+                await _longTermStorageService.SaveAsync(unsentItem);
+            }
         }
-    }
 
-    private bool HasActiveConnections(string username)
-        => InMemoryHubConnectionStorage.MessageDispatcherHubConnections
-            .Where(x => x.Key == username)
-            .SelectMany(x => x.Value).Any();
+        private bool HasActiveConnections(string username)
+            => InMemoryHubConnectionStorage.MessageDispatcherHubConnections
+                .Where(x => x.Key == username)
+                .SelectMany(x => x.Value).Any();
 
-    public void OnAck(EncryptedDataTransfer data)
-    {
-        _acked.TryAdd(data.Id, true);
-    }
-
-    private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)
-    {
-        if (backoff.HasValue)
+        public void OnAck(EncryptedDataTransfer data)
         {
-            if (backoff.Value < TimeSpan.FromSeconds(5))
-                backoff.Value.Multiply(1.5);
+            _acked[data.Id] = true;
+            Remove(data.Id);
         }
 
-        return TimeSpan.FromSeconds(3);
-    }
+        private TimeSpan IncreaseBackoff(TimeSpan backoff)
+        {
+            var newBackoff = TimeSpan.FromTicks((long)(backoff.Ticks * 1.5));
+            return newBackoff < TimeSpan.FromSeconds(5) ? newBackoff : TimeSpan.FromSeconds(5);
+        }
 
-    private void Remove(Guid messageId)
-    {
-        _unsentItems.TryRemove(messageId, out _);
-        _acked.TryRemove(messageId, out _);
+        private void Remove(Guid messageId)
+        {
+            Console.WriteLine($"Removed: {messageId}");
+            _unsentItems.TryRemove(messageId, out _);
+            _acked.TryRemove(messageId, out _);
+        }
     }
 }

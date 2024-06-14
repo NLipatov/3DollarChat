@@ -174,7 +174,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         {
             await Clients.Caller.SendAsync("MessageRegisteredByHub", dataTransfer.Id);
             if (IsClientConnectedToHub(dataTransfer.Target))
-                _reliableTransferDataSender.EnqueueAsync(dataTransfer);
+                await _reliableTransferDataSender.EnqueueAsync(dataTransfer);
             else
             {
                 _longTermTransferStorageService.SaveAsync(dataTransfer);

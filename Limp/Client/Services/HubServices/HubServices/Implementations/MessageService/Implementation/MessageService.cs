@@ -23,8 +23,6 @@ using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Handlers;
-using Ethachat.Client.Services.UndecryptedMessagesService;
-using Ethachat.Client.Services.UndecryptedMessagesService.Models;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -95,8 +93,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _keyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
-
-            _ = new UndecryptedMessagesStorageService(hubServiceSubscriptionManager, this, authenticationHandler);
 
             var textMessageHandlerFactory = new TransferHandlerFactory<TextMessage>();
             var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
@@ -194,37 +190,50 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await connection.SendAsync("OnTransferAcked", transfer);
                 }
 
-                var decryptionMethodName = nameof(DecryptTransferAsync);
-                MethodInfo? method = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
-                    .FirstOrDefault(m => m.Name == decryptionMethodName && m.IsGenericMethod);
-                if (method != null)
+                try
                 {
-                    MethodInfo genericMethod = method.MakeGenericMethod(transfer.DataType);
-                    Task? task = (Task?)genericMethod.Invoke(this, [transfer]);
-                    if (task != null)
+                    var decryptionMethodName = nameof(DecryptTransferAsync);
+                    MethodInfo? method = GetType().GetMethods(BindingFlags.NonPublic | BindingFlags.Instance)
+                        .FirstOrDefault(m => m.Name == decryptionMethodName && m.IsGenericMethod);
+                    if (method != null)
                     {
-                        await task;
-                        PropertyInfo? dataTypeProperty = task.GetType().GetProperty("Result");
-                        if (dataTypeProperty != null)
+                        MethodInfo genericMethod = method.MakeGenericMethod(transfer.DataType);
+                        Task? task = (Task?)genericMethod.Invoke(this, [transfer]);
+                        if (task != null)
                         {
-                            var decryptedData = dataTypeProperty.GetValue(task, null);
-                            if (transfer.DataType == typeof(TextMessage))
+                            await task;
+                            PropertyInfo? dataTypeProperty = task.GetType().GetProperty("Result");
+                            if (dataTypeProperty != null)
                             {
-                                await _textMessageProcessor.ProcessTransferAsync(nameof(TextMessage),
-                                    decryptedData as TextMessage ?? throw new ArgumentException());
-                            }
+                                var decryptedData = dataTypeProperty.GetValue(task, null);
+                                if (transfer.DataType == typeof(TextMessage))
+                                {
+                                    await _textMessageProcessor.ProcessTransferAsync(nameof(TextMessage),
+                                        decryptedData as TextMessage ?? throw new ArgumentException());
+                                }
 
-                            if (transfer.DataType == typeof(ClientMessage))
-                            {
-                                var clientMessage = (ClientMessage?)decryptedData;
-                                if (clientMessage is null)
-                                    throw new ArgumentException("Could not convert data transfer to target type");
+                                if (transfer.DataType == typeof(ClientMessage))
+                                {
+                                    var clientMessage = (ClientMessage?)decryptedData;
+                                    if (clientMessage is null)
+                                        throw new ArgumentException("Could not convert data transfer to target type");
 
-                                await _clientMessageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
-                                    clientMessage);
+                                    await _clientMessageProcessor.ProcessTransferAsync(clientMessage.Type.ToString(),
+                                        clientMessage);
+                                }
                             }
                         }
                     }
+                }
+                catch (Exception e)
+                {
+                    await SendMessage(new ClientMessage
+                    {
+                        Sender = await _authenticationHandler.GetUsernameAsync(),
+                        Target = transfer.Sender,
+                        Id = transfer.Id,
+                        Type = MessageType.ResendRequest
+                    });
                 }
             });
 
@@ -468,12 +477,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception e)
             {
-                _callbackExecutor.ExecuteSubscriptionsByName(new UndecryptedItem
+                await SendMessage(new ClientMessage
                 {
+                    Sender = await _authenticationHandler.GetUsernameAsync(),
+                    Target = dataTransfer.Sender,
                     Id = dataTransfer.Id,
-                    Sender = dataTransfer.Sender,
-                    Target = dataTransfer.Target
-                }, "OnDecryptionFailure");
+                    Type = MessageType.ResendRequest
+                });
                 throw;
             }
         }

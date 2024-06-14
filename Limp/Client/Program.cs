@@ -28,10 +28,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation.ReceiveOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation.SendOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation;
 using Ethachat.Client.Services.InboxService;
@@ -64,7 +61,6 @@ builder.Services.AddTransient<IContactsProvider, ContactsProvider>();
 builder.Services.AddTransient<IConcurrentCollectionManager, ConcurrentCollectionManager>();
 builder.Services.AddSingleton<IAuthService, AuthService>();
 builder.Services.AddSingleton<IUsersService, UsersService>();
-builder.Services.AddSingleton<IBinarySendingManager, BinarySendingManager>();
 builder.Services.AddSingleton<IMessageService, MessageService>();
 builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscriptionManager>();
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();

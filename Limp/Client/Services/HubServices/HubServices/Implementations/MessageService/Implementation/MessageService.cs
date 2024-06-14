@@ -9,7 +9,6 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.ContactsProvider;
-using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -18,6 +17,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
@@ -69,13 +69,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IMessageBuilder messageBuilder,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
-            IBinarySendingManager binarySendingManager,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
             IAesTransmissionManager aesTransmissionManager,
             IContactsProvider contactsProvider,
-            IHubServiceSubscriptionManager hubServiceSubscriptionManager,
-            IKeyStorage keyStorage)
+            IKeyStorage keyStorage,
+            IPackageMultiplexerService packageMultiplexerService)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -85,7 +84,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _messageBuilder = messageBuilder;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            _binarySendingManager = binarySendingManager;
+            _binarySendingManager = new BinarySendingManager(jsRuntime, messageBox, callbackExecutor, packageMultiplexerService);
             _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
             _aesTransmissionManager = aesTransmissionManager;
@@ -93,28 +92,33 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _keyStorage = keyStorage;
             InitializeHubConnection();
             RegisterHubEventHandlers();
+            RegisterTransferHandlers();
+        }
 
+        private void RegisterTransferHandlers()
+        {
             var textMessageHandlerFactory = new TransferHandlerFactory<TextMessage>();
             var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
             
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
-                new TextMessageHandler(messageBox, authenticationHandler, this));
+                new TextMessageHandler(_messageBox, _authenticationHandler, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(),
-                new ConversationDeletionRequestHandler(messageBox));
+                new ConversationDeletionRequestHandler(_messageBox));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(),
-                new MessageReadHandler(callbackExecutor));
+                new MessageReadHandler(_callbackExecutor));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(),
-                new MessageReceivedConfirmationHandler(callbackExecutor));
+                new MessageReceivedConfirmationHandler(_callbackExecutor));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(),
-                new ResendRequestHandler(messageBox, this));
+                new ResendRequestHandler(_messageBox, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
-                new HlsPlaylistHandler(messageBox));
+                new HlsPlaylistHandler(_messageBox));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.Metadata.ToString(),
-                new MetadataHandler(callbackExecutor, binaryReceivingManager, this));
+                new MetadataHandler(_callbackExecutor, _binaryReceivingManager, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
-                new DataPackageHandler(callbackExecutor, binaryReceivingManager, this));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(callbackExecutor));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.TypingEvent.ToString(), new TypingEventHandler(callbackExecutor));
+                new DataPackageHandler(_callbackExecutor, _binaryReceivingManager, this));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(_callbackExecutor));
+            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.TypingEvent.ToString(), new TypingEventHandler(_callbackExecutor));
+            
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
         }
@@ -370,11 +374,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await SendText(message);
                     break;
                 case MessageType.Metadata:
-                    await _binarySendingManager.SendMetadata(message, GetHubConnectionAsync);
+                    await TransferAsync(message);
                     break;
                 case MessageType.BrowserFileMessage:
-                    await SendBrowserFile(message);
+                {
+                    await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
+                        await TransferAsync(dataPartMessage);
                     break;
+                }
                 default:
                     await TransferAsync(message);
                     break;
@@ -406,7 +413,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task SendBrowserFile(ClientMessage message)
         {
-            await foreach (var dataPartMessage in _binarySendingManager.SendFile(message))
+            await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
                 await TransferAsync(dataPartMessage);
         }
 

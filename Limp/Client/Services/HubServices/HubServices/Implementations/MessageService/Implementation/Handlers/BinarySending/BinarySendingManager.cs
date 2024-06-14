@@ -1,78 +1,37 @@
 using System.Collections.Concurrent;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    PackageForming;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components.Forms;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
 
-public class BinarySendingManager : IBinarySendingManager
+public class BinarySendingManager(
+    IJSRuntime jsRuntime,
+    IMessageBox messageBox,
+    ICallbackExecutor callbackExecutor,
+    IPackageMultiplexerService packageMultiplexerService)
+    : IBinarySendingManager
 {
-    private ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> FileIdUploadProgress = new();
-    private readonly IJSRuntime _jsRuntime;
-    private readonly IMessageBox _messageBox;
-    private readonly ICallbackExecutor _callbackExecutor;
-    private readonly IPackageMultiplexerService _packageMultiplexerService;
+    private ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> _fileIdUploadProgress = new();
 
-    public BinarySendingManager
-    (IJSRuntime jsRuntime,
-        IMessageBox messageBox,
-        ICallbackExecutor callbackExecutor,
-        IPackageMultiplexerService packageMultiplexerService)
-    {
-        _jsRuntime = jsRuntime;
-        _messageBox = messageBox;
-        _callbackExecutor = callbackExecutor;
-        _packageMultiplexerService = packageMultiplexerService;
-    }
-
-    public void StoreMetadata(Message metadataMessage)
-    {
-        if (metadataMessage.Metadata is null)
-            throw new ArgumentException(
-                $"Exception:{nameof(BinarySendingManager)}.{nameof(StoreMetadata)}: Invalid metadata message.");
-
-        _messageBox.Messages.Add(new ClientMessage
-        {
-            Type = MessageType.Metadata,
-            Metadata = new Metadata()
-            {
-                Filename = metadataMessage.Metadata.Filename,
-                ChunksCount = metadataMessage.Metadata.ChunksCount,
-                ContentType = metadataMessage.Metadata.ContentType,
-                DataFileId = metadataMessage.Metadata.DataFileId
-            }
-        });
-    }
-
-    public async Task SendMetadata(Message message, Func<Task<HubConnection>> getHubConnection)
-    {
-        if (message.Metadata is null)
-            throw new ArgumentException(
-                $"Exception:{nameof(BinarySendingManager)}.{nameof(SendMetadata)}: Invalid metadata.");
-
-        var connection = await getHubConnection();
-
-        await connection.SendAsync("Dispatch", message);
-    }
-
-    public async IAsyncEnumerable<ClientMessage> SendFile(ClientMessage message)
+    public async IAsyncEnumerable<ClientMessage> GetChunksToSendAsync(ClientMessage message)
     {
         var fileDataId = Guid.NewGuid();
-        var chunkableBinary = await _packageMultiplexerService.SplitAsync(message.BrowserFile);
+        var chunkableBinary = await packageMultiplexerService.SplitAsync(message.BrowserFile);
         int totalChunks = chunkableBinary.Count;
-        FileIdUploadProgress.TryAdd(fileDataId, (0, totalChunks));
+        _fileIdUploadProgress.TryAdd(fileDataId, (0, totalChunks));
         var metadataMessage = GenerateMetadataMessage(fileDataId, message, totalChunks);
 
-        _messageBox.AddMessage(metadataMessage);
+        messageBox.AddMessage(metadataMessage);
 
-        yield return new ClientMessage()
+        yield return new ClientMessage
         {
             Type = MessageType.Metadata,
             Sender = metadataMessage.Sender,
@@ -87,7 +46,7 @@ public class BinarySendingManager : IBinarySendingManager
         int chunksCounter = 0;
         await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
         {
-            var package = new Package()
+            var package = new Package
             {
                 Index = chunksCounter,
                 Total = totalChunks,
@@ -108,7 +67,7 @@ public class BinarySendingManager : IBinarySendingManager
 
             chunksCounter++;
             decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
-            _callbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
+            callbackExecutor.ExecuteSubscriptionsByName(progress, "OnFileEncryptionProgressChanged");
         }
     }
 
@@ -138,8 +97,8 @@ public class BinarySendingManager : IBinarySendingManager
             var memoryStream = new MemoryStream();
             await fileStream.CopyToAsync(memoryStream);
             var blobUrl = await BytesToBlobUrl(memoryStream.ToArray(), metadata.ContentType);
-            
-            _messageBox.AddMessage(new ClientMessage()
+
+            messageBox.AddMessage(new ClientMessage
             {
                 BlobLink = blobUrl,
                 Id = metadata.DataFileId,
@@ -153,31 +112,24 @@ public class BinarySendingManager : IBinarySendingManager
     }
 
     private async Task<string> BytesToBlobUrl(byte[] bytes, string contentType)
-    {            
-        return await _jsRuntime.InvokeAsync<string>("createBlobUrl", bytes, contentType);
-    }
-
-    private async Task SendViaHubConnectionAsync(Message message, Func<Task<HubConnection>> getHubConnection)
     {
-        var connection = await getHubConnection();
-
-        await connection.SendAsync("Dispatch", message);
+        return await jsRuntime.InvokeAsync<string>("createBlobUrl", bytes, contentType);
     }
 
     public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)
     {
-        _callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
-        
-        FileIdUploadProgress.TryGetValue(fileId, out var currentProgress);
-        
-        FileIdUploadProgress
+        callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
+
+        _fileIdUploadProgress.TryGetValue(fileId, out var currentProgress);
+
+        _fileIdUploadProgress
             .TryUpdate(fileId, (currentProgress.chunksLoaded + 1, currentProgress.chunksTotal),
                 (currentProgress.chunksLoaded, currentProgress.chunksTotal));
 
-        if (FileIdUploadProgress[fileId].chunksLoaded == FileIdUploadProgress[fileId].chunksTotal)
+        if (_fileIdUploadProgress[fileId].chunksLoaded == _fileIdUploadProgress[fileId].chunksTotal)
         {
-            _callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
-            FileIdUploadProgress.TryRemove(fileId, out _);
+            callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
+            _fileIdUploadProgress.TryRemove(fileId, out _);
         }
     }
 }

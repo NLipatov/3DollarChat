@@ -6,7 +6,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public interface IBinarySendingManager
 {
-    Task SendMetadata(Message message, Func<Task<HubConnection>> getHubConnection);
-    IAsyncEnumerable<ClientMessage> SendFile(ClientMessage message);
+    IAsyncEnumerable<ClientMessage> GetChunksToSendAsync(ClientMessage message);
     void HandlePackageRegisteredByHub(Guid fileId, int packageIndex);
 }

@@ -76,7 +76,6 @@ app.MapControllers();
 app.MapHub<AuthHub>(HubRelativeAddresses.AuthHubRelativeAddress);
 app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
 app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
-app.MapHub<LoggingHub>(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress);
 app.MapFallbackToFile("index.html");
 
 #if DEBUG

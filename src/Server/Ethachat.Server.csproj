@@ -35,11 +35,6 @@
 
 
   <ItemGroup>
-    <Folder Include="Services\LogService\Implementations\" />
-  </ItemGroup>
-
-
-  <ItemGroup>
     <ProjectReference Include="..\Client\Presentation\Ethachat.Client.csproj" />
     <ProjectReference Include="..\Shared\EthachatShared\EthachatShared.csproj" />
   </ItemGroup>

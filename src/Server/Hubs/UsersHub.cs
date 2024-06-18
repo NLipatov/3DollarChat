@@ -1,7 +1,6 @@
 ﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
-using Ethachat.Server.Services.LogService;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Encryption;
@@ -23,20 +22,17 @@ namespace Ethachat.Server.Hubs
         private readonly IUserConnectedHandler<UsersHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
         private readonly IUsernameResolverService _usernameResolverService;
-        private readonly ILogService _logService;
 
         public UsersHub
         (IServerHttpClient serverHttpClient,
             IUserConnectedHandler<UsersHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
-            IUsernameResolverService usernameResolverService,
-            ILogService logService)
+            IUsernameResolverService usernameResolverService)
         {
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
             _usernameResolverService = usernameResolverService;
-            _logService = logService;
         }
 
         public override async Task OnConnectedAsync()
@@ -142,7 +138,6 @@ namespace Ethachat.Server.Hubs
             }
             catch (Exception e)
             {
-                await _logService.LogAsync(e);
                 throw;
             }
 

@@ -72,7 +72,7 @@ namespace Ethachat.Client.Services.InboxService.Implementation
                     Type = MessageType.TextMessage,
                     Sender = message.Sender,
                     DateReceived = DateTime.UtcNow,
-                    Target = message.Receiver,
+                    Target = message.Target,
                 };
                 clientMessage.AddChunk(new TextChunk
                 {

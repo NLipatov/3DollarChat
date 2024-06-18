@@ -27,7 +27,7 @@ public class MessageBuilder : IMessageBuilder
             {
                 Id = message.Id,
                 Total = messagesCount,
-                Receiver = message.Target ?? throw new ArgumentException("Missing message target"),
+                Target = message.Target ?? throw new ArgumentException("Missing message target"),
                 Sender = currentUserUsername,
                 Index = i,
                 Text = textChunk,

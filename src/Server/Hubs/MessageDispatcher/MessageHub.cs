@@ -212,7 +212,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var isReceiverOnline = IsClientConnectedToHub(message.Target);
             if (!isReceiverOnline)
             {
-                await _webPushSender.SendPush($"You've got a new {message.ItemDescription()} from {message.Sender}",
+                await _webPushSender.SendPush($"You've got a new {message.Description} from {message.Sender}",
                     $"/{message.Sender}", message.Target);
             }
         }

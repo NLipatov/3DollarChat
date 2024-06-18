@@ -407,8 +407,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             await AddToMessageBox(message.PlainText, message.Target, message.Id);
             await foreach (var tMessage in _messageBuilder.BuildTextMessage(message))
-                await TransferAsync(tMessage, tMessage.Receiver
-                                              ?? throw new ArgumentException("Target is a required parameter"));
+                await TransferAsync(tMessage);
         }
 
         private async Task SendBrowserFile(ClientMessage message)
@@ -419,33 +418,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable
         {
-            var serializedData = JsonSerializer.Serialize(data);
-
-            var cryptogram = await _cryptographyService
-                .EncryptAsync<AesHandler>(new Cryptogram
-                    {
-                        Cyphertext = serializedData,
-                    },
-                    await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
-                    throw new ApplicationException("missing key"));
-
-            var transferData = new EncryptedDataTransfer
-            {
-                Id = data.Id,
-                Cryptogram = cryptogram,
-                Target = data.Target,
-                Sender = await _authenticationHandler.GetUsernameAsync(),
-                DataType = typeof(T)
-            };
-
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("TransferAsync", transferData);
-        }
-
-
-        private async Task TransferAsync<T>(T data, string target) where T : IIdentifiable
-        {
-            var key = await _keyStorage.GetLastAcceptedAsync(target, KeyType.Aes) ??
+            var key = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
                       throw new ApplicationException("Missing key");
             var serializedData = JsonSerializer.Serialize(data);
 
@@ -459,7 +432,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 Id = data.Id,
                 Cryptogram = cryptogram,
-                Target = target,
+                Target = data.Target,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
                 DataType = typeof(T)
             };

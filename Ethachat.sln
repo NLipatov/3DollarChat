@@ -3,10 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33103.184
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure", "Client.Infrastructure", "{CA2CD098-7413-495A-8F8A-14978663C9A5}"
-EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Application", "Client.Application", "{C67BC61A-0FA0-432E-8BC6-71C5F6966F62}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Presentation", "Client.Presentation", "{BF400104-D998-4F45-BC3F-D18770D741B9}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Client", "src\Client\Presentation\Ethachat.Client.csproj", "{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}"
@@ -16,6 +12,16 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Cryptography\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "src\Shared\EthachatShared\EthachatShared.csproj", "{43063D95-7AFB-4720-8B5C-86EF09B36082}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Server", "src\Server\Ethachat.Server.csproj", "{D96747EB-5585-429A-A697-0E27FACD4649}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Cryptography", "Client.Cryptography", "{04967310-B99F-49CB-A597-30C5D14CC669}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{116A1E2F-851E-46CA-B657-7C8E8DADD14D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{F4C10991-76B3-49C4-9601-3F8BCB9D439D}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{1F014D03-3C8D-42D5-A231-1EFE8865E8B0}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +45,10 @@ Global
 		{43063D95-7AFB-4720-8B5C-86EF09B36082}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{43063D95-7AFB-4720-8B5C-86EF09B36082}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{43063D95-7AFB-4720-8B5C-86EF09B36082}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D96747EB-5585-429A-A697-0E27FACD4649}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D96747EB-5585-429A-A697-0E27FACD4649}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D96747EB-5585-429A-A697-0E27FACD4649}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D96747EB-5585-429A-A697-0E27FACD4649}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -48,7 +58,11 @@ Global
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3} = {BF400104-D998-4F45-BC3F-D18770D741B9}
-		{A2E3B78F-17C9-4C24-9333-15909BBC0855} = {CA2CD098-7413-495A-8F8A-14978663C9A5}
-		{686395DF-8997-4E92-930A-A79BB368668B} = {C67BC61A-0FA0-432E-8BC6-71C5F6966F62}
+		{686395DF-8997-4E92-930A-A79BB368668B} = {04967310-B99F-49CB-A597-30C5D14CC669}
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855} = {04967310-B99F-49CB-A597-30C5D14CC669}
+		{04967310-B99F-49CB-A597-30C5D14CC669} = {116A1E2F-851E-46CA-B657-7C8E8DADD14D}
+		{BF400104-D998-4F45-BC3F-D18770D741B9} = {116A1E2F-851E-46CA-B657-7C8E8DADD14D}
+		{D96747EB-5585-429A-A697-0E27FACD4649} = {F4C10991-76B3-49C4-9601-3F8BCB9D439D}
+		{43063D95-7AFB-4720-8B5C-86EF09B36082} = {1F014D03-3C8D-42D5-A231-1EFE8865E8B0}
 	EndGlobalSection
 EndGlobal

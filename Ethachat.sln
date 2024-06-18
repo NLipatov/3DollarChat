@@ -3,21 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.4.33103.184
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethachat.Server", "Limp\Server\Ethachat.Server.csproj", "{917E4BB6-4A10-4D55-BB7F-359EB00C7608}"
-EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Ethachat.Client", "Limp\Client\Ethachat.Client.csproj", "{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "EthachatShared\EthachatShared\EthachatShared.csproj", "{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure", "Client.Infrastructure", "{CA2CD098-7413-495A-8F8A-14978663C9A5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Application", "Client.Application", "{C67BC61A-0FA0-432E-8BC6-71C5F6966F62}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Presentation", "Client.Presentation", "{BF400104-D998-4F45-BC3F-D18770D741B9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Client", "src\Client\Presentation\Ethachat.Client.csproj", "{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "src\Client\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{A2E3B78F-17C9-4C24-9333-15909BBC0855}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Cryptography\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "src\Shared\EthachatShared\EthachatShared\EthachatShared.csproj", "{C280F653-3797-4320-96E0-839D8E31F4A1}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -25,26 +23,22 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{917E4BB6-4A10-4D55-BB7F-359EB00C7608}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{917E4BB6-4A10-4D55-BB7F-359EB00C7608}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{917E4BB6-4A10-4D55-BB7F-359EB00C7608}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{917E4BB6-4A10-4D55-BB7F-359EB00C7608}.Release|Any CPU.Build.0 = Release|Any CPU
-		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8}.Release|Any CPU.Build.0 = Release|Any CPU
-		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{21B59E9E-9B0D-48AA-BAF1-F0BF9CCDE845}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0}.Release|Any CPU.Build.0 = Release|Any CPU
-		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855}.Release|Any CPU.Build.0 = Release|Any CPU
+		{686395DF-8997-4E92-930A-A79BB368668B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{686395DF-8997-4E92-930A-A79BB368668B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{686395DF-8997-4E92-930A-A79BB368668B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{686395DF-8997-4E92-930A-A79BB368668B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C280F653-3797-4320-96E0-839D8E31F4A1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C280F653-3797-4320-96E0-839D8E31F4A1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C280F653-3797-4320-96E0-839D8E31F4A1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C280F653-3797-4320-96E0-839D8E31F4A1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -53,8 +47,8 @@ Global
 		SolutionGuid = {4B3DCEE8-F57F-4C1D-AAF7-96E517B365C4}
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{3C6C22BD-DD0E-48CC-9403-A24BFB1184A0} = {CA2CD098-7413-495A-8F8A-14978663C9A5}
-		{02E0A9B0-8A3B-42E2-A63B-E5C390AF6C0D} = {C67BC61A-0FA0-432E-8BC6-71C5F6966F62}
-		{D2D6C2EC-DDCB-4C74-A8A4-818F9CEBF4F8} = {BF400104-D998-4F45-BC3F-D18770D741B9}
+		{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3} = {BF400104-D998-4F45-BC3F-D18770D741B9}
+		{A2E3B78F-17C9-4C24-9333-15909BBC0855} = {CA2CD098-7413-495A-8F8A-14978663C9A5}
+		{686395DF-8997-4E92-930A-A79BB368668B} = {C67BC61A-0FA0-432E-8BC6-71C5F6966F62}
 	EndGlobalSection
 EndGlobal

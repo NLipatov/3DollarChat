@@ -1,3 +1,6 @@
 [submodule "EthachatShared"]
 	path = EthachatShared
 	url = https://github.com/NLipatov/EthachatShared.git
+[submodule "src/Shared"]
+	path = src/Shared
+	url = https://github.com/NLipatov/EthachatShared.git

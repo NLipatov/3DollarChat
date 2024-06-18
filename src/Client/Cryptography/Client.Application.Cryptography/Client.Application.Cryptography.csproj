@@ -7,6 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
       <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared\EthachatShared.csproj" />
     </ItemGroup>
 

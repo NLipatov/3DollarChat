@@ -43,6 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\Shared\EthachatShared\EthachatShared.csproj" />
     <ProjectReference Include="..\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
   </ItemGroup>
 

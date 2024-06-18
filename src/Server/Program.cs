@@ -44,7 +44,7 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
-builder.Services.AddTransient<IWebPushSender, FirebasePushSender>();
+builder.Services.AddSingleton<IWebPushSender, FirebasePushSender>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddSingleton<ILongTermStorageService<Message>, InMemoryLongTermStorage>();
 builder.Services.AddSingleton<ILongTermStorageService<EncryptedDataTransfer>, InMemoryLongTermTransferStorage>();

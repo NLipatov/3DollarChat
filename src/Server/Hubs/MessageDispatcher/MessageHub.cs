@@ -1,7 +1,8 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.EncryptedData;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
+    EncryptedData;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
@@ -55,11 +56,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 _reliableMessageSender =
                     new ReliableMessageSender(new SignalRGateway<Message>(_context), _longTermStorageService);
             }
-            
+
             if (_reliableTransferDataSender is null)
             {
                 _reliableTransferDataSender =
-                    new EncryptedDataReliableSender(new SignalRGateway<EncryptedDataTransfer>(_context), _longTermTransferStorageService);
+                    new EncryptedDataReliableSender(new SignalRGateway<EncryptedDataTransfer>(_context),
+                        _longTermTransferStorageService);
             }
         }
 
@@ -136,6 +138,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             {
                 await TransferAsync(data);
             }
+
             var storedMessages = await _longTermStorageService.GetSaved(usernameFromToken);
             foreach (var m in storedMessages.OrderBy(x => x.DateSent))
             {
@@ -165,8 +168,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             else
             {
                 _longTermStorageService.SaveAsync(message);
-                if (message.Type is MessageType.Metadata or MessageType.TextMessage)
-                    SendNotificationAsync(message);
             }
         }
 
@@ -180,6 +181,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 _longTermTransferStorageService.SaveAsync(dataTransfer);
                 SendNotificationAsync(dataTransfer);
             }
+
             await _context.Clients.Group(dataTransfer.Target).SendAsync("OnTransfer", dataTransfer);
         }
 
@@ -207,12 +209,13 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        private async Task SendNotificationAsync<T>(T message) where T : IDescribeable, IDestinationResolvable, ISourceResolvable
+        private async Task SendNotificationAsync<T>(T itemToNotifyAbout)
+            where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable
         {
-            var isReceiverOnline = IsClientConnectedToHub(message.Target);
+            var isReceiverOnline = IsClientConnectedToHub(itemToNotifyAbout.Target);
             if (!isReceiverOnline)
             {
-                await _webPushNotificationService.SendAsync(message);
+                await _webPushNotificationService.SendAsync(itemToNotifyAbout);
             }
         }
 
@@ -229,7 +232,11 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task GetAnRSAPublic(string username, string requesterUsername)
         {
             string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
-            var message = new Message { Target = requesterUsername, Sender = username, Type = MessageType.RsaPubKey, Cryptogramm = new Cryptogram { Cyphertext = pubKey } };
+            var message = new Message
+            {
+                Target = requesterUsername, Sender = username, Type = MessageType.RsaPubKey,
+                Cryptogramm = new Cryptogram { Cyphertext = pubKey }
+            };
             await Dispatch(message);
         }
     }

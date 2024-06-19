@@ -1,21 +1,18 @@
-using System.Net.Mime;
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration;
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Strategies;
 using Ethachat.Server.Utilities.HttpMessaging;
-using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.Interfaces;
 using EthachatShared.Models.WebPushNotification;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
-using Message = FirebaseAdmin.Messaging.Message;
 
 namespace Ethachat.Server.Services.Notifications.WebPush;
 
 public class FirebasePushNotificationService : IWebPushNotificationService
 {
-    private string configuration { get; } = string.Empty;
+    private string Configuration { get; }
 
     private readonly IServerHttpClient _serverHttpClient;
     private readonly IPushMessageFactory _pushMessageFactory;
@@ -24,20 +21,23 @@ public class FirebasePushNotificationService : IWebPushNotificationService
     {
         _serverHttpClient = serverHttpClient;
         
-        var rawFcmCongifJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
-        var fcmConfigJson = Uri.UnescapeDataString(rawFcmCongifJson);
-        configuration = fcmConfigJson;
+        var rawFcmConfigurationJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
+        var fcmConfigJson = Uri.UnescapeDataString(rawFcmConfigurationJson);
+        Configuration = fcmConfigJson;
 
         _pushMessageFactory = new PushMessageFactory();
         _pushMessageFactory.RegisterStrategy<TextMessage>(new TextMessageStrategy());
     }
 
-    public async Task SendAsync<T>(T itemToNotifyAbout) where T : ISourceResolvable, IDestinationResolvable
+    public async Task SendAsync<T>(T itemToNotifyAbout) where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable
     {
+        if (string.IsNullOrWhiteSpace(Configuration))
+            return;
+        
         try
         {
-            var pushMessageStrategy = _pushMessageFactory.GetItemStrategy((itemToNotifyAbout as EncryptedDataTransfer).DataType);
-            var pushMessageCommand = pushMessageStrategy.Process(itemToNotifyAbout);
+            var pushMessageStrategy = _pushMessageFactory.GetItemStrategy(itemToNotifyAbout.DataType);
+            var pushMessageCommand = pushMessageStrategy.CreateCommand(itemToNotifyAbout);
             if (!pushMessageCommand.IsSendRequired)
                 return;
             
@@ -77,9 +77,9 @@ public class FirebasePushNotificationService : IWebPushNotificationService
 
                 if (FirebaseApp.DefaultInstance == null)
                 {
-                    var options = new AppOptions()
+                    var options = new AppOptions
                     {
-                        Credential = GoogleCredential.FromJson(configuration)
+                        Credential = GoogleCredential.FromJson(Configuration)
                     };
 
                     FirebaseApp.Create(options);

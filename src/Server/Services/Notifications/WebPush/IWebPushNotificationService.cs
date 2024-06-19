@@ -4,7 +4,6 @@ namespace Ethachat.Server.Services.Notifications.WebPush
 {
     public interface IWebPushNotificationService
     {
-        Task SendAsync<T>(T itemToNotifyAbout)
-            where T : ISourceResolvable, IDestinationResolvable;
+        Task SendAsync<T>(T itemToNotifyAbout) where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable;
     }
 }

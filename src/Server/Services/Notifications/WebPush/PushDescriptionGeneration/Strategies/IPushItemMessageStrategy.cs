@@ -5,5 +5,5 @@ namespace Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGenerati
 
 public interface IPushItemMessageStrategy
 {
-    SendNotificationCommand Process<T>(T clientMessage) where T : IDestinationResolvable, ISourceResolvable;
+    SendNotificationCommand CreateCommand<T>(T clientMessage) where T : IDestinationResolvable, ISourceResolvable;
 }

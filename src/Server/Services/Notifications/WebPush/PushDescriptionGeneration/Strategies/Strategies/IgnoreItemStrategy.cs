@@ -5,7 +5,7 @@ namespace Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGenerati
 
 public class IgnoreItemStrategy : IPushItemMessageStrategy
 {
-    public SendNotificationCommand Process<T>(T clientMessage) where T : IDestinationResolvable, ISourceResolvable
+    public SendNotificationCommand CreateCommand<T>(T clientMessage) where T : IDestinationResolvable, ISourceResolvable
     {
         return new SendNotificationCommand
         {

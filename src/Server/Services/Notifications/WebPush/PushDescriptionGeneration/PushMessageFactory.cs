@@ -16,9 +16,6 @@ public class PushMessageFactory : IPushMessageFactory
     {
         _messageStrategies.TryGetValue(type, out var strategy);
 
-        if (strategy is null)
-            return new IgnoreItemStrategy();
-
-        return strategy;
+        return strategy ?? new IgnoreItemStrategy();
     }
 }

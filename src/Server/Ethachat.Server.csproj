@@ -39,4 +39,9 @@
     <ProjectReference Include="..\Shared\EthachatShared\EthachatShared.csproj" />
   </ItemGroup>
 
+
+  <ItemGroup>
+    <Folder Include="Services\Notifications\" />
+  </ItemGroup>
+
 </Project>

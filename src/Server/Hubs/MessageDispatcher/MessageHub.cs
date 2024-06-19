@@ -6,9 +6,9 @@ using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Impl
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Services.Notifications.WebPush;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
-using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
@@ -23,7 +23,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly IServerHttpClient _serverHttpClient;
         private readonly IUserConnectedHandler<MessageHub> _userConnectedHandler;
         private readonly IOnlineUsersManager _onlineUsersManager;
-        private readonly IWebPushSender _webPushSender;
+        private readonly IWebPushNotificationService _webPushNotificationService;
         private readonly ILongTermStorageService<Message> _longTermStorageService;
         private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermTransferStorageService;
         private readonly IUsernameResolverService _usernameResolverService;
@@ -35,7 +35,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         (IServerHttpClient serverHttpClient,
             IUserConnectedHandler<MessageHub> userConnectedHandler,
             IOnlineUsersManager onlineUsersManager,
-            IWebPushSender webPushSender,
+            IWebPushNotificationService webPushNotificationService,
             ILongTermStorageService<Message> longTermStorageService,
             ILongTermStorageService<EncryptedDataTransfer> longTermTransferStorageService,
             IUsernameResolverService usernameResolverService,
@@ -45,7 +45,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _serverHttpClient = serverHttpClient;
             _userConnectedHandler = userConnectedHandler;
             _onlineUsersManager = onlineUsersManager;
-            _webPushSender = webPushSender;
+            _webPushNotificationService = webPushNotificationService;
             _longTermStorageService = longTermStorageService;
             _longTermTransferStorageService = longTermTransferStorageService;
             _usernameResolverService = usernameResolverService;
@@ -212,8 +212,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             var isReceiverOnline = IsClientConnectedToHub(message.Target);
             if (!isReceiverOnline)
             {
-                await _webPushSender.SendPush($"You've got a new {message.ItemDescription()} from {message.Sender}",
-                    $"/{message.Sender}", message.Target);
+                await _webPushNotificationService.SendAsync(message);
             }
         }
 

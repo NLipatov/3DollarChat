@@ -8,9 +8,9 @@ using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Conc
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.Handlers;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
+using Ethachat.Server.Services.Notifications.WebPush;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
-using Ethachat.Server.WebPushNotifications;
 using EthachatShared.Constants;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Http.Features;
@@ -44,7 +44,7 @@ builder.Services.Configure<FormOptions>(options =>
 builder.Services.AddScoped<IUserConnectedHandler<UsersHub>, UConnectionHandler>();
 builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandler>();
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
-builder.Services.AddSingleton<IWebPushSender, FirebasePushSender>();
+builder.Services.AddSingleton<IWebPushNotificationService, FirebasePushNotificationService>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddSingleton<ILongTermStorageService<Message>, InMemoryLongTermStorage>();
 builder.Services.AddSingleton<ILongTermStorageService<EncryptedDataTransfer>, InMemoryLongTermTransferStorage>();

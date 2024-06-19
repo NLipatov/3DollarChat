@@ -1,37 +1,53 @@
+using System.Net.Mime;
+using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration;
+using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Strategies;
 using Ethachat.Server.Utilities.HttpMessaging;
+using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
+using EthachatShared.Models.Message.Interfaces;
 using EthachatShared.Models.WebPushNotification;
 using FirebaseAdmin;
 using FirebaseAdmin.Messaging;
 using Google.Apis.Auth.OAuth2;
+using Message = FirebaseAdmin.Messaging.Message;
 
-namespace Ethachat.Server.WebPushNotifications;
+namespace Ethachat.Server.Services.Notifications.WebPush;
 
-public class FirebasePushSender : IWebPushSender
+public class FirebasePushNotificationService : IWebPushNotificationService
 {
     private string configuration { get; } = string.Empty;
 
     private readonly IServerHttpClient _serverHttpClient;
+    private readonly IPushMessageFactory _pushMessageFactory;
 
-    public FirebasePushSender(IServerHttpClient serverHttpClient)
+    public FirebasePushNotificationService(IServerHttpClient serverHttpClient)
     {
         _serverHttpClient = serverHttpClient;
         
         var rawFcmCongifJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
         var fcmConfigJson = Uri.UnescapeDataString(rawFcmCongifJson);
         configuration = fcmConfigJson;
+
+        _pushMessageFactory = new PushMessageFactory();
+        _pushMessageFactory.RegisterStrategy<TextMessage>(new TextMessageStrategy());
     }
 
-    public async Task SendPush(string pushBodyText, string pushLink, string receiverUsername)
+    public async Task SendAsync<T>(T itemToNotifyAbout) where T : ISourceResolvable, IDestinationResolvable
     {
         try
         {
+            var pushMessageStrategy = _pushMessageFactory.GetItemStrategy((itemToNotifyAbout as EncryptedDataTransfer).DataType);
+            var pushMessageCommand = pushMessageStrategy.Process(itemToNotifyAbout);
+            if (!pushMessageCommand.IsSendRequired)
+                return;
+            
             var subscriptions = await _serverHttpClient
-                .GetUserWebPushSubscriptionsByAccessToken(receiverUsername);
+                .GetUserWebPushSubscriptionsByAccessToken(itemToNotifyAbout.Target);
 
             if (!subscriptions.Any())
                 return;
 
-            var sendPushesWorkload = CreateSendPushesWorkload(subscriptions, pushBodyText);
+            var sendPushesWorkload = CreateSendPushesWorkload(subscriptions, pushMessageCommand.PushMessage);
             await Task.WhenAll(sendPushesWorkload);
         }
         catch (Exception e)

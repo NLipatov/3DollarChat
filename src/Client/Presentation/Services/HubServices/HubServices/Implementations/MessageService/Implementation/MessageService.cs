@@ -17,7 +17,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
@@ -31,6 +30,7 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
+using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
@@ -61,6 +61,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private MessageProcessor<ClientMessage> _clientMessageProcessor;
         private MessageProcessor<TextMessage> _textMessageProcessor;
         private MessageProcessor<EventMessage> _eventMessageProcessor;
+        private MessageProcessor<Package> _packageProcessor;
 
         public MessageService
         (IMessageBox messageBox,
@@ -75,8 +76,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IJSRuntime jsRuntime,
             IAesTransmissionManager aesTransmissionManager,
             IContactsProvider contactsProvider,
-            IKeyStorage keyStorage,
-            IPackageMultiplexerService packageMultiplexerService)
+            IKeyStorage keyStorage)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -86,7 +86,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _messageBuilder = messageBuilder;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
-            _binarySendingManager = new BinarySendingManager(jsRuntime, messageBox, callbackExecutor, packageMultiplexerService);
+            _binarySendingManager =
+                new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _binaryReceivingManager = binaryReceivingManager;
             _jsRuntime = jsRuntime;
             _aesTransmissionManager = aesTransmissionManager;
@@ -102,7 +103,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var textMessageHandlerFactory = new TransferHandlerFactory<TextMessage>();
             var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
             var eventMessageTransferHandlerFactory = new TransferHandlerFactory<EventMessage>();
-            
+            var packageTransferHandlerFactory = new TransferHandlerFactory<Package>();
+
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
                 new TextMessageHandler(_messageBox, _authenticationHandler, this));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.ConversationDeletion.ToString(),
@@ -115,16 +117,19 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new ResendRequestHandler(_messageBox, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
                 new HlsPlaylistHandler(_messageBox));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.Metadata.ToString(),
-                new MetadataHandler(_callbackExecutor, _binaryReceivingManager, this));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
+
+            packageTransferHandlerFactory.RegisterHandler(nameof(Package),
                 new DataPackageHandler(_callbackExecutor, _binaryReceivingManager, this));
-            eventMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(_callbackExecutor));
-            eventMessageTransferHandlerFactory.RegisterHandler(EventType.OnTyping.ToString(), new TypingEventHandler(_callbackExecutor));
-            
+
+            eventMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(),
+                new OnFileTransferedHandler(_callbackExecutor));
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.OnTyping.ToString(),
+                new TypingEventHandler(_callbackExecutor));
+
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
             _eventMessageProcessor = new(eventMessageTransferHandlerFactory);
+            _packageProcessor = new(packageTransferHandlerFactory);
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
@@ -214,12 +219,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (dataTypeProperty != null)
                             {
                                 var decryptedData = dataTypeProperty.GetValue(task, null);
+                                if (transfer.DataType == typeof(Package))
+                                {
+                                    var packageMessage = decryptedData as Package;
+                                    await _packageProcessor.ProcessTransferAsync(nameof(Package),
+                                        packageMessage as Package ?? throw new ArgumentException());
+                                }
+
                                 if (transfer.DataType == typeof(EventMessage))
                                 {
                                     var eventMessage = decryptedData as EventMessage;
                                     await _eventMessageProcessor.ProcessTransferAsync(eventMessage.Type.ToString(),
-                                        decryptedData as EventMessage ?? throw new ArgumentException());
+                                        eventMessage ?? throw new ArgumentException());
                                 }
+
                                 if (transfer.DataType == typeof(TextMessage))
                                 {
                                     await _textMessageProcessor.ProcessTransferAsync(nameof(TextMessage),
@@ -373,6 +386,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await _authenticationHandler.GetUsernameAsync());
         }
 
+        public async Task SendMessage(Package message)
+        {
+            await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
+                await TransferAsync(dataPartMessage);
+        }
+
         public async Task SendMessage(EventMessage message)
         {
             await TransferAsync(message);
@@ -393,8 +412,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     break;
                 case MessageType.BrowserFileMessage:
                 {
-                    await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
-                        await TransferAsync(dataPartMessage);
                     break;
                 }
                 default:
@@ -423,12 +440,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await AddToMessageBox(message.PlainText, message.Target, message.Id);
             await foreach (var tMessage in _messageBuilder.BuildTextMessage(message))
                 await TransferAsync(tMessage);
-        }
-
-        private async Task SendBrowserFile(ClientMessage message)
-        {
-            await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
-                await TransferAsync(dataPartMessage);
         }
 
         private async Task TransferAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable

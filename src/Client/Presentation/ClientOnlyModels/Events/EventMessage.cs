@@ -1,4 +1,3 @@
-using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 

@@ -3,7 +3,6 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message;
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
@@ -12,7 +11,6 @@
 @inject IMessageService MessageService
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime JsRuntime
-@inject IPackageMultiplexerService PackageMultiplexerService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @using Ethachat.Client.UI.Shared.ReuseableComponents
 @implements IDisposable
@@ -111,7 +109,7 @@
             }
         </div>
         <OnObservedTrigger
-            Callback=@(async () => await MessageService.SendMessage(new EventMessage { Type = EventType.MessageRead, Target = Message.Sender, Sender = MyUsername, Id = Message.Id }))/>
+            Callback=@(async () => { if (Message.Sender != MyUsername) { await MessageService.SendMessage(new EventMessage { Type = EventType.MessageRead, Target = Message.Sender, Sender = Message.Target, Id = Message.Id }); } })/>
     </div>
 }
 

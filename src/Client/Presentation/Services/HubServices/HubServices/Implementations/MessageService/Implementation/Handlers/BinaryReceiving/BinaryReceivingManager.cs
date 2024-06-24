@@ -21,20 +21,9 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         _messageBox = messageBox;
     }
 
-    public async Task<(bool, Guid)> StoreAsync(ClientMessage message)
+    public async Task<(bool, Guid)> StoreAsync(Package message)
     {
-        (bool isLoadingCompleted, Guid fileId) progressStatus = message.Type switch
-        {
-            MessageType.Metadata => Store(message.Metadata ?? throw new ArgumentException("Invalid metadata")),
-            MessageType.DataPackage => Store(new Package()
-        {
-            Index = message.Package.Index,
-            Total = message.Package.Total,
-            Data = message.Package.Data,
-            FileDataid = message.Package.FileDataid
-        }),
-            _ => throw new ArgumentException($"Unhandled type passed in - {message.Type}")
-        };
+        (bool isLoadingCompleted, Guid fileId) progressStatus = Store(message);
 
         if (progressStatus.isLoadingCompleted)
             await AddToMessageBoxAsync(message);
@@ -69,35 +58,38 @@ public class BinaryReceivingManager : IBinaryReceivingManager
 
     private bool IsLoadingCompleted(Guid fileId)
     {
-        FileIdToMetadata.TryGetValue(fileId, out var metadata);
-
         FileIdToPackages.TryGetValue(fileId, out var packages);
         
-        var packagesCount = packages?.Count(x => x is not null) ?? 0;
-        var totalCount = metadata?.ChunksCount ?? 0;
+        if (packages?.FirstOrDefault()?.Total == packages?.Where(x=>x is not null).Count())
+            return true;
 
-        return packagesCount == totalCount && packagesCount > 0;
+        return false;
     }
 
-    private async Task AddToMessageBoxAsync(Message message)
+    private async Task AddToMessageBoxAsync(Package package)
     {
-        var metadata = PopMetadata(message.Package.FileDataid);
-        var packages = PopData(message.Package.FileDataid);
+        var packages = PopData(package.FileDataid);
+        var metadata = new Metadata
+        {
+            Filename = package.Filename,
+            ChunksCount = package.Total,
+            ContentType = package.ContentType,
+            DataFileId = package.FileDataid
+        };
         var data = packages
             .SelectMany(x => x.Data)
             .ToArray();
 
         var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
 
-        _messageBox.AddMessage(new ClientMessage()
+        _messageBox.AddMessage(new ClientMessage
         {
             BlobLink = blobUrl,
             Id = metadata.DataFileId,
             Type = MessageType.BlobLink,
-            Target = message.Target,
-            Sender = message.Sender,
-            Metadata = metadata,
-            DateSent = message.DateSent
+            Target = package.Target,
+            Sender = package.Sender,
+            Metadata = metadata
         });
     }
 
@@ -106,7 +98,7 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         FileIdToPackages.TryGetValue(fileId, out var data);
         FileIdToPackages.TryRemove(fileId, out var _);
 
-        return data ?? Array.Empty<Package>();
+        return data ?? [];
     }
 
     public Metadata PopMetadata(Guid fileId)

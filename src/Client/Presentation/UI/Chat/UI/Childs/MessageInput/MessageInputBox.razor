@@ -1,25 +1,27 @@
 ﻿@using Ethachat.Client.ClientOnlyModels
+@using Ethachat.Client.ClientOnlyModels.Events
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
+@using EthachatShared.Models.Message.DataTransfer
 @using global::Client.Application.Cryptography
+@using global::Client.Application.Cryptography.KeyStorage
 @inject IMessageBuilder MessageBuilder
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime
-@inject IPackageMultiplexerService PackageMultiplexerService
 @inject ICallbackExecutor CallbackExecutor
 @inject ICryptographyService CryptographyService
 @inject IBinaryReceivingManager BinaryReceivingManager
 @inject IHlsStreamingService HlsStreamingService
 @inject NavigationManager NavigationManager
+@inject IKeyStorage KeyStorage
 @implements IAsyncDisposable
 
 <div class="message-input-box">
@@ -96,7 +98,7 @@
         }
         else
         {
-            await MessageService.SendMessage(new ClientMessage{Sender = MyUsername, Target = TopicName, Type = MessageType.TypingEvent});
+            await MessageService.SendMessage(new EventMessage{Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping});
         }
     }
 
@@ -138,12 +140,22 @@
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        await MessageService.SendMessage(new()
+        
+        byte[] fileBytes;
+        await using (var fileStream = browserFile.OpenReadStream(long.MaxValue))
         {
-            BrowserFile = browserFile,
-            Type = MessageType.BrowserFileMessage,
+            var memoryStream = new MemoryStream();
+            await fileStream.CopyToAsync(memoryStream);
+            fileBytes = memoryStream.ToArray();
+        }
+        
+        await MessageService.SendMessage(new Package
+        {
+            Data = fileBytes,
+            ContentType = browserFile.ContentType,
+            Filename = browserFile.Name,
             Target = TopicName,
-            Sender = MyUsername
+            Sender = MyUsername,
         });
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }

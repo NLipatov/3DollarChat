@@ -86,41 +86,48 @@ async function AESDecryptText(message, key, iv) {
     };
 }
 
-async function AESEncryptData(base64String, key) {
-    const binaryData = atob(base64String);
-    const encodedData = new TextEncoder().encode(binaryData);
-
+async function AESEncryptData(data, key) {
+    const initializationVector = crypto.getRandomValues(new Uint8Array(12));
+    
     const encryptedDataArrayBuffer = await crypto.subtle.encrypt(
         {
             name: 'AES-GCM',
-            iv: iv,
+            iv: initializationVector,
         },
         await importSecretKey(key),
-        encodedData
+        data
     );
 
     const encryptedData = new Uint8Array(encryptedDataArrayBuffer);
-    const encryptedBase64String = btoa(String.fromCharCode.apply(null, encryptedData));
 
-    return encryptedBase64String;
+    // Create a new Uint8Array to hold IV length, IV and encrypted data
+    const resultArray = new Uint8Array(1 + initializationVector.length + encryptedData.length);
+
+    // Set IV length as the first byte
+    resultArray[0] = initializationVector.length;
+
+    // Set IV after the first byte
+    resultArray.set(initializationVector, 1);
+
+    // Set encrypted data after the IV
+    resultArray.set(encryptedData, 1 + initializationVector.length);
+
+    return resultArray;
 }
 
-async function AESDecryptData(encryptedBase64String, key) {
-    const encryptedData = new Uint8Array(Array.from(atob(encryptedBase64String)).map(char => char.charCodeAt(0)));
-
+async function AESDecryptData(data, key, iv) {
     const decryptedDataArrayBuffer = await crypto.subtle.decrypt(
         {
             name: 'AES-GCM',
             iv: iv,
         },
         await importSecretKey(key),
-        encryptedData
+        data
     );
 
     const decryptedData = new Uint8Array(decryptedDataArrayBuffer);
-    const decryptedBase64String = btoa(String.fromCharCode.apply(null, decryptedData));
 
-    return decryptedBase64String;
+    return decryptedData;
 }
 
 function importSecretKey(ArrayBufferKeyString) {

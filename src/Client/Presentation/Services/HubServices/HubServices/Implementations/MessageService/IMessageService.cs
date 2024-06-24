@@ -1,4 +1,6 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels.Events;
+using EthachatShared.Models.Message.DataTransfer;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 {
@@ -6,5 +8,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     {
         Task NegotiateOnAESAsync(string partnerUsername);
         Task SendMessage(ClientMessage message);
+        Task SendMessage(EventMessage message);
+        Task SendMessage(Package message);
     }
 }

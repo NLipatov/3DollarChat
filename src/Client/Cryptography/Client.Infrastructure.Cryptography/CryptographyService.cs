@@ -70,5 +70,24 @@ namespace Client.Infrastructure.Cryptography
 
             return await cryptoHandler.Encrypt(cryptogram, key);
         }
+
+        public async Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
+            where T : ICryptoHandler
+        {
+            ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _cryptographyExecutor);
+            if (cryptoHandler is null)
+                throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
+
+            return await cryptoHandler.Decrypt(cryptogram, key);
+        }
+
+        public async Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key) where TCryptoHandler : ICryptoHandler
+        {
+            ICryptoHandler? cryptoHandler = (TCryptoHandler?)Activator.CreateInstance(typeof(TCryptoHandler), _cryptographyExecutor);
+            if (cryptoHandler is null)
+                throw new ApplicationException($"Could not create a proper {typeof(TCryptoHandler)} instance.");
+
+            return await cryptoHandler.Encrypt(data, key);
+        }
     }
 }

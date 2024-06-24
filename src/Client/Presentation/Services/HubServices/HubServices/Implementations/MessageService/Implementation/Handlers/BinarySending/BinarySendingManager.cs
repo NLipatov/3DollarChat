@@ -1,12 +1,10 @@
 using System.Collections.Concurrent;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    PackageForming;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming.Models.TransmittedBinaryFileModels;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
-using Microsoft.AspNetCore.Components.Forms;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -15,55 +13,40 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class BinarySendingManager(
     IJSRuntime jsRuntime,
     IMessageBox messageBox,
-    ICallbackExecutor callbackExecutor,
-    IPackageMultiplexerService packageMultiplexerService)
+    ICallbackExecutor callbackExecutor)
     : IBinarySendingManager
 {
     private ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> _fileIdUploadProgress = new();
 
-    public async IAsyncEnumerable<ClientMessage> GetChunksToSendAsync(ClientMessage message)
+    public async IAsyncEnumerable<Package> GetChunksToSendAsync(Package message)
     {
         var fileDataId = Guid.NewGuid();
-        var chunkableBinary = await packageMultiplexerService.SplitAsync(message.BrowserFile);
+        var chunkableBinary = new ChunkableBinary(message.Data);
         int totalChunks = chunkableBinary.Count;
         _fileIdUploadProgress.TryAdd(fileDataId, (0, totalChunks));
         var metadataMessage = GenerateMetadataMessage(fileDataId, message, totalChunks);
 
         messageBox.AddMessage(metadataMessage);
 
-        yield return new ClientMessage
-        {
-            Type = MessageType.Metadata,
-            Sender = metadataMessage.Sender,
-            Target = metadataMessage.Target,
-            Metadata = metadataMessage.Metadata,
-            DateSent = DateTime.UtcNow
-        };
-
-        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.BrowserFile, message.Sender,
+        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.Data, message.Sender,
             message.Target);
 
         int chunksCounter = 0;
-        await foreach (var chunk in chunkableBinary.GenerateChunksAsync())
+        foreach (var chunk in chunkableBinary.GetChunk())
         {
             var package = new Package
             {
+                Sender = message.Sender,
+                Target = message.Target,
                 Index = chunksCounter,
                 Total = totalChunks,
                 Data = chunk,
-                FileDataid = fileDataId
+                FileDataid = fileDataId,
+                Filename = message.Filename,
+                ContentType = message.ContentType,
             };
 
-            var packageMessage = new ClientMessage
-            {
-                Package = package,
-                Sender = message.Sender,
-                Target = message.Target,
-                Type = MessageType.DataPackage,
-                DateSent = DateTime.UtcNow,
-            };
-
-            yield return packageMessage;
+            yield return package;
 
             chunksCounter++;
             decimal progress = Math.Round(chunksCounter / (decimal)totalChunks * 100);
@@ -71,7 +54,7 @@ public class BinarySendingManager(
         }
     }
 
-    private ClientMessage GenerateMetadataMessage(Guid fileDataId, ClientMessage message, int totalChunks)
+    private ClientMessage GenerateMetadataMessage(Guid fileDataId, Package message, int totalChunks)
     {
         var metadataMessage = new ClientMessage
         {
@@ -79,8 +62,8 @@ public class BinarySendingManager(
             Metadata = new()
             {
                 DataFileId = fileDataId,
-                ContentType = message.BrowserFile.ContentType,
-                Filename = message.BrowserFile.Name,
+                ContentType = message.ContentType,
+                Filename = message.Filename,
                 ChunksCount = totalChunks
             },
             Sender = message.Sender,
@@ -90,25 +73,20 @@ public class BinarySendingManager(
         return metadataMessage;
     }
 
-    private async Task AddBinaryAsBlobToMessageBox(Metadata metadata, IBrowserFile file, string sender, string receiver)
+    private async Task AddBinaryAsBlobToMessageBox(Metadata metadata, byte[] fileData, string sender, string receiver)
     {
-        await using (var fileStream = file.OpenReadStream(long.MaxValue))
-        {
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            var blobUrl = await BytesToBlobUrl(memoryStream.ToArray(), metadata.ContentType);
+        var blobUrl = await BytesToBlobUrl(fileData, metadata.ContentType);
 
-            messageBox.AddMessage(new ClientMessage
-            {
-                BlobLink = blobUrl,
-                Id = metadata.DataFileId,
-                Type = MessageType.BlobLink,
-                Target = receiver,
-                Sender = sender,
-                Metadata = metadata,
-                DateSent = DateTime.UtcNow
-            });
-        }
+        messageBox.AddMessage(new ClientMessage
+        {
+            BlobLink = blobUrl,
+            Id = metadata.DataFileId,
+            Type = MessageType.BlobLink,
+            Target = receiver,
+            Sender = sender,
+            Metadata = metadata,
+            DateSent = DateTime.UtcNow
+        });
     }
 
     private async Task<string> BytesToBlobUrl(byte[] bytes, string contentType)

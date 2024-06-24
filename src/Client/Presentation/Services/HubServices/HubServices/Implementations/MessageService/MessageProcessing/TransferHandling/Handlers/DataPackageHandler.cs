@@ -3,6 +3,7 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.DataTransfer;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Handlers;
@@ -10,9 +11,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class DataPackageHandler(
     ICallbackExecutor callbackExecutor,
     IBinaryReceivingManager binaryReceivingManager,
-    IMessageService messageService) : ITransferHandler<ClientMessage>
+    IMessageService messageService) : ITransferHandler<Package>
 {
-    public async Task HandleAsync(ClientMessage clientMessage)
+    public async Task HandleAsync(Package clientMessage)
     {
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
             "OnBinaryTransmitting");

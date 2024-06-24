@@ -1,4 +1,4 @@
-﻿@using Ethachat.Client.ClientOnlyModels
+﻿@using Ethachat.Client.ClientOnlyModels.Events
 @using Ethachat.Client.Services.AuthenticationService.Handlers
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService
@@ -86,9 +86,9 @@
 
     private async Task DeleteConversationAsync()
     {
-        await _messageService.SendMessage(new ClientMessage
+        await _messageService.SendMessage(new EventMessage
         {
-            Type = MessageType.ConversationDeletionRequest,
+            Type = EventType.ConversationDeletion,
             Target = PartnerName,
             Sender = await AuthenticationHandler.GetUsernameAsync()
         });

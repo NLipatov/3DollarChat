@@ -8,6 +8,16 @@ namespace Client.Infrastructure.Cryptography.Handlers;
 
 public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
 {
+    public Task<BinaryCryptogram> Encrypt<T>(T data, Key key)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<BinaryCryptogram> Decrypt(BinaryCryptogram cryptogram, Key key)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
     {
         EncryptionResult result = await runtimeCryptographyExecutor

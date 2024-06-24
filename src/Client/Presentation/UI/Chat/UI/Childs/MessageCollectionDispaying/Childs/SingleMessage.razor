@@ -1,4 +1,5 @@
 ﻿@using Ethachat.Client.ClientOnlyModels;
+@using Ethachat.Client.ClientOnlyModels.Events
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
@@ -110,7 +111,7 @@
             }
         </div>
         <OnObservedTrigger
-            Callback=@(async () => await MessageService.SendMessage(new ClientMessage { Type = MessageType.MessageReadConfirmation, Target = Message.Sender, Sender = MyUsername, Id = Message.Id }))/>
+            Callback=@(async () => await MessageService.SendMessage(new EventMessage { Type = EventType.MessageRead, Target = Message.Sender, Sender = MyUsername, Id = Message.Id }))/>
     </div>
 }
 

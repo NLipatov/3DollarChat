@@ -1,4 +1,5 @@
 ﻿using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels.Events;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 {
@@ -6,5 +7,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     {
         Task NegotiateOnAESAsync(string partnerUsername);
         Task SendMessage(ClientMessage message);
+        Task SendMessage(EventMessage message);
     }
 }

@@ -1,4 +1,4 @@
-using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
@@ -31,12 +31,12 @@ public class TextMessageHandler(
         if (messageSender == myUsername)
             return;
 
-        await messageService.SendMessage(new ClientMessage
+        await messageService.SendMessage(new EventMessage
         {
             Id = messageId,
             Sender = myUsername,
             Target = messageSender,
-            Type = MessageType.MessageReceivedConfirmation
+            Type = EventType.MessageReceived
         });
     }
 }

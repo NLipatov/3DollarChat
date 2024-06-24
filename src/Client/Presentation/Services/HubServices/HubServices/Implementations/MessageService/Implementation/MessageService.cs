@@ -1,9 +1,9 @@
 ﻿using System.Reflection;
-using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
@@ -32,6 +32,7 @@ using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.Interfaces;
+using MessagePack;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
@@ -59,6 +60,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private HubConnection? HubConnection { get; set; }
         private MessageProcessor<ClientMessage> _clientMessageProcessor;
         private MessageProcessor<TextMessage> _textMessageProcessor;
+        private MessageProcessor<EventMessage> _eventMessageProcessor;
 
         public MessageService
         (IMessageBox messageBox,
@@ -99,16 +101,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             var textMessageHandlerFactory = new TransferHandlerFactory<TextMessage>();
             var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
+            var eventMessageTransferHandlerFactory = new TransferHandlerFactory<EventMessage>();
             
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
                 new TextMessageHandler(_messageBox, _authenticationHandler, this));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ConversationDeletionRequest.ToString(),
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.ConversationDeletion.ToString(),
                 new ConversationDeletionRequestHandler(_messageBox));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReadConfirmation.ToString(),
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.MessageRead.ToString(),
                 new MessageReadHandler(_callbackExecutor));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.MessageReceivedConfirmation.ToString(),
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.MessageReceived.ToString(),
                 new MessageReceivedConfirmationHandler(_callbackExecutor));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.ResendRequest.ToString(),
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.ResendRequest.ToString(),
                 new ResendRequestHandler(_messageBox, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
                 new HlsPlaylistHandler(_messageBox));
@@ -116,11 +119,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new MetadataHandler(_callbackExecutor, _binaryReceivingManager, this));
             clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataPackage.ToString(),
                 new DataPackageHandler(_callbackExecutor, _binaryReceivingManager, this));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(_callbackExecutor));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.TypingEvent.ToString(), new TypingEventHandler(_callbackExecutor));
+            eventMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(), new OnFileTransferedHandler(_callbackExecutor));
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.OnTyping.ToString(), new TypingEventHandler(_callbackExecutor));
             
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
+            _eventMessageProcessor = new(eventMessageTransferHandlerFactory);
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
@@ -210,6 +214,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (dataTypeProperty != null)
                             {
                                 var decryptedData = dataTypeProperty.GetValue(task, null);
+                                if (transfer.DataType == typeof(EventMessage))
+                                {
+                                    var eventMessage = decryptedData as EventMessage;
+                                    await _eventMessageProcessor.ProcessTransferAsync(eventMessage.Type.ToString(),
+                                        decryptedData as EventMessage ?? throw new ArgumentException());
+                                }
                                 if (transfer.DataType == typeof(TextMessage))
                                 {
                                     await _textMessageProcessor.ProcessTransferAsync(nameof(TextMessage),
@@ -231,12 +241,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
                 catch (Exception e)
                 {
-                    await SendMessage(new ClientMessage
+                    await SendMessage(new EventMessage
                     {
                         Sender = await _authenticationHandler.GetUsernameAsync(),
                         Target = transfer.Sender,
                         Id = transfer.Id,
-                        Type = MessageType.ResendRequest
+                        Type = EventType.ResendRequest
                     });
                 }
             });
@@ -363,6 +373,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await _authenticationHandler.GetUsernameAsync());
         }
 
+        public async Task SendMessage(EventMessage message)
+        {
+            await TransferAsync(message);
+        }
+
         public async Task SendMessage(ClientMessage message)
         {
             switch (message.Type)
@@ -420,21 +435,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             var key = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
                       throw new ApplicationException("Missing key");
-            var serializedData = JsonSerializer.Serialize(data);
 
-            var cryptogram = await _cryptographyService
-                .EncryptAsync<AesHandler>(new Cryptogram
-                {
-                    Cyphertext = serializedData,
-                }, key);
+            var binaryCryptogram = await _cryptographyService.EncryptAsync<AesHandler, T>(data, key);
 
             var transferData = new EncryptedDataTransfer
             {
                 Id = data.Id,
-                Cryptogram = cryptogram,
+                BinaryCryptogram = binaryCryptogram,
                 Target = data.Target,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
-                DataType = typeof(T)
+                DataType = typeof(T),
             };
 
             var connection = await GetHubConnectionAsync();
@@ -450,19 +460,19 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     await NegotiateOnAESAsync(dataTransfer.Sender);
 
                 var cryptogram = await _cryptographyService
-                    .DecryptAsync<AesHandler>(dataTransfer.Cryptogram, lastAcceptedAsync);
+                    .DecryptAsync<AesHandler>(dataTransfer.BinaryCryptogram, lastAcceptedAsync);
 
-                var json = cryptogram.Cyphertext ?? string.Empty;
-                return JsonSerializer.Deserialize<T>(json);
+                var result = MessagePackSerializer.Deserialize<T>(cryptogram.Cypher);
+                return result;
             }
             catch (Exception e)
             {
-                await SendMessage(new ClientMessage
+                await SendMessage(new EventMessage()
                 {
                     Sender = await _authenticationHandler.GetUsernameAsync(),
                     Target = dataTransfer.Sender,
                     Id = dataTransfer.Id,
-                    Type = MessageType.ResendRequest
+                    Type = EventType.ResendRequest
                 });
                 throw;
             }

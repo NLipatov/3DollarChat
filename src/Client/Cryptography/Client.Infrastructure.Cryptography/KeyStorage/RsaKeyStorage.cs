@@ -1,105 +1,83 @@
-using System.Collections.Concurrent;
+using System.Text.Json;
 using Client.Application.Cryptography.KeyStorage;
 using EthachatShared.Encryption;
 
 namespace Client.Infrastructure.Cryptography.KeyStorage;
 
-internal class RsaKeyStorage : IKeyStorage
+internal class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage
 {
     private static Key? RsaPublic { get; set; }
     private static Key? RsaPrivate { get; set; }
-    private static ConcurrentDictionary<string, Key> Storage { get; } = [];
 
-    public Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
+    public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
         if (string.IsNullOrWhiteSpace(accessor))
         {
-            if (type is KeyType.RsaPrivate)
-                return Task.FromResult(RsaPrivate);
-            if (type is KeyType.RsaPublic)
-                return Task.FromResult(RsaPublic);
-        }
-
-        if (type is KeyType.RsaPublic)
-        {
-            Storage.TryGetValue(accessor, out var key);
-            return Task.FromResult(key);
-        }
-
-        throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
-    }
-
-    public Task StoreAsync(Key key)
-    {
-        if (key.Type is KeyType.RsaPrivate)
-        {
-            if (string.IsNullOrWhiteSpace(key.Contact))
+            return type switch
             {
-                RsaPrivate = key;
-                return Task.CompletedTask;
-            }
-
-            throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
+                KeyType.RsaPrivate => RsaPrivate,
+                KeyType.RsaPublic => RsaPublic,
+                _ => throw new ArgumentException($"Unexpected {nameof(KeyType)}")
+            };
         }
 
-        if (key.Type is KeyType.RsaPublic)
+        return type switch
         {
-            if (string.IsNullOrWhiteSpace(key.Contact))
-                RsaPublic = key;
-            else
-            {
-                Storage.AddOrUpdate(key.Contact,
-                    _ => key,
-                    (_, existingKey) =>
-                    {
-                        existingKey = key;
-                        return existingKey;
-                    });
-            }
-        }
-
-        return Task.CompletedTask;
+            KeyType.RsaPrivate or KeyType.RsaPublic => (await GetAsync(accessor, type)).MaxBy(x => x.CreationDate),
+            _ => throw new ArgumentException($"Unexpected {nameof(KeyType)}")
+        };
     }
 
-    public Task DeleteAsync(Key key)
+    public async Task StoreAsync(Key key)
     {
-        if (key.Type is KeyType.RsaPrivate)
-            RsaPrivate = null;
-        if (key.Type is KeyType.RsaPublic)
-            RsaPublic = null;
+        var existingCollection =
+            await GetAsync(key.Contact ?? throw new ArgumentException($"Unexpected {nameof(key.Contact)} value"),
+                key.Type ?? KeyType.Unspecified);
 
-        return Task.CompletedTask;
+        if (existingCollection.Any(x => x.Id == key.Id))
+            return;
+
+        existingCollection.Add(key);
+
+        var serializedKeys = JsonSerializer.Serialize(existingCollection);
+        await runtime.InvokeAsync<string?>("localStorage.setItem", [$"key-{key.Contact}-{key.Type}", serializedKeys]);
     }
 
-    public Task<List<Key>> GetAsync(string accessor, KeyType type)
+    public async Task DeleteAsync(Key key)
     {
-        if (type is KeyType.RsaPublic)
-        {
-            if (string.IsNullOrWhiteSpace(accessor))
-            {
-                return Task.FromResult<List<Key>>(RsaPublic is not null ? [RsaPublic] : []);
-            }
+        var storedKeys = await GetAsync(key.Contact ?? throw new ArgumentException(), key.Type ?? KeyType.Unspecified);
+        var updatedKeys = storedKeys.Where(x => x.CreationDate != key.CreationDate).ToArray();
 
-            Storage.TryGetValue(accessor, out var partnerKey);
-            return Task.FromResult<List<Key>>(partnerKey is not null ? [partnerKey] : []);
-        }
-
-        if (type is KeyType.RsaPrivate)
-        {
-            if (string.IsNullOrWhiteSpace(accessor))
-                return Task.FromResult<List<Key>>(RsaPrivate is not null ? [RsaPrivate] : []);
-        }
-
-        throw new ApplicationException($"Unexpected {nameof(Key.Type)} passed in");
+        var serializedKeys = JsonSerializer.Serialize(updatedKeys);
+        await runtime.InvokeAsync<string?>("localStorage.setItem", [$"key-{key.Contact}-{key.Type}", serializedKeys]);
     }
 
-    public Task UpdateAsync(Key updatedKey)
+    public async Task<List<Key>> GetAsync(string accessor, KeyType type)
     {
-        if (updatedKey.Type is KeyType.RsaPrivate)
-            RsaPrivate = updatedKey;
-        if (updatedKey.Type is KeyType.RsaPublic)
-            RsaPublic = updatedKey;
+        var serializedKeyCollection =
+            await runtime.InvokeAsync<string?>("localStorage.getItem", [$"key-{accessor}-{type}"]);
 
-        return Task.CompletedTask;
+        if (serializedKeyCollection is null)
+            return [];
+
+        var keyCollection = JsonSerializer.Deserialize<List<Key>>(serializedKeyCollection);
+
+        return keyCollection ?? [];
+    }
+
+    public async Task UpdateAsync(Key updatedKey)
+    {
+        var keys = await GetAsync(updatedKey.Contact ?? throw new ArgumentException(),
+            updatedKey.Type ?? KeyType.Unspecified);
+        var targetKey = keys.FirstOrDefault(x => x.Id == updatedKey.Id);
+
+        if (targetKey is null)
+        {
+            await StoreAsync(updatedKey);
+            return;
+        }
+
+        await DeleteAsync(targetKey);
+        await StoreAsync(updatedKey);
     }
 }

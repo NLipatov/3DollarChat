@@ -202,6 +202,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
 
         public async Task SetRSAPublicKey(Key RSAPublicKey)
         {
+            var rsaPublicKey = RSAPublicKey.Value?.ToString() ?? throw new ArgumentException("Invalid key");
             var credentials = await _authenticationHandler.GetCredentials();
             if (credentials is WebAuthnPair)
             {

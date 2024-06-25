@@ -9,8 +9,11 @@ internal class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage
     public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
         var keys = await GetAsync(accessor, type);
-        var acceptedKeys = keys.Where(x => x.IsAccepted);
-        return acceptedKeys.MaxBy(x => x.CreationDate);
+        var acceptedKeys = keys.Where(x => x.IsAccepted).ToArray();
+        if (acceptedKeys.Any())
+            return acceptedKeys.MaxBy(x => x.CreationDate);
+
+        return null;
     }
 
     public async Task StoreAsync(Key key)

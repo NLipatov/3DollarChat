@@ -7,5 +7,6 @@ public enum EventType
     MessageReceived,
     MessageRead,
     ResendRequest,
-    ConversationDeletion
+    ConversationDeletion,
+    AesOfferAccepted
 }

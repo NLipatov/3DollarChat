@@ -42,7 +42,8 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         return new BinaryCryptogram
         {
             Iv = iv,
-            Cypher = encryptedData
+            Cypher = encryptedData,
+            EncryptionKeyType = KeyType.Aes
         };
     }
 

@@ -1,4 +1,5 @@
 ﻿using System.Reflection;
+using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
@@ -32,6 +33,7 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
+using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.SignalR.Client;
@@ -62,6 +64,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private MessageProcessor<TextMessage> _textMessageProcessor;
         private MessageProcessor<EventMessage> _eventMessageProcessor;
         private MessageProcessor<Package> _packageProcessor;
+        private MessageProcessor<AesOffer> _aesOfferProcessor;
+        private MessageProcessor<KeyMessage> _keyMessageProcessor;
 
         public MessageService
         (IMessageBox messageBox,
@@ -104,6 +108,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var clientMessageTransferHandlerFactory = new TransferHandlerFactory<ClientMessage>();
             var eventMessageTransferHandlerFactory = new TransferHandlerFactory<EventMessage>();
             var packageTransferHandlerFactory = new TransferHandlerFactory<Package>();
+            var aesOfferTransferHandlerFactory = new TransferHandlerFactory<AesOffer>();
+            var keyMessageTransferHandlerFactory = new TransferHandlerFactory<KeyMessage>();
 
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
                 new TextMessageHandler(_messageBox, _authenticationHandler, this));
@@ -125,11 +131,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new OnFileTransferedHandler(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.OnTyping.ToString(),
                 new TypingEventHandler(_callbackExecutor));
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.AesOfferAccepted.ToString(),
+                new AesOfferAcceptHandler(_callbackExecutor, _keyStorage));
+
+            aesOfferTransferHandlerFactory.RegisterHandler(nameof(AesOffer), new AesOfferHandler(_keyStorage, this, _callbackExecutor));
+
+            keyMessageTransferHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
+                new RsaPubKeyTextMessageHandler(_keyStorage));
 
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
             _eventMessageProcessor = new(eventMessageTransferHandlerFactory);
             _packageProcessor = new(packageTransferHandlerFactory);
+            _aesOfferProcessor = new(aesOfferTransferHandlerFactory);
+            _keyMessageProcessor = new(keyMessageTransferHandlerFactory);
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
@@ -219,6 +234,22 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (dataTypeProperty != null)
                             {
                                 var decryptedData = dataTypeProperty.GetValue(task, null);
+
+                                if (transfer.DataType == typeof(KeyMessage))
+                                {
+                                    var keyMessage = decryptedData as KeyMessage;
+                                    await _keyMessageProcessor.ProcessTransferAsync(
+                                        keyMessage?.Key.Type.ToString() ?? throw new ArgumentException(),
+                                        keyMessage);
+                                }
+
+                                if (transfer.DataType == typeof(AesOffer))
+                                {
+                                    var aesOffer = decryptedData as AesOffer;
+                                    await _aesOfferProcessor.ProcessTransferAsync(nameof(AesOffer),
+                                        aesOffer ?? throw new ArgumentException());
+                                }
+
                                 if (transfer.DataType == typeof(Package))
                                 {
                                     var packageMessage = decryptedData as Package;
@@ -303,29 +334,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
-
-                    if (message.Type == MessageType.AesOfferAccept)
-                    {
-                        if (string.IsNullOrWhiteSpace(message.Sender)
-                            || message.Cryptogramm?.KeyId == Guid.Empty
-                            || message.Cryptogramm?.KeyId == null)
-                            throw new ArgumentException("Invalid offer accept message");
-
-                        await MarkKeyAsAccepted(message.Cryptogramm.KeyId, message.Sender);
-
-                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
-                        _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "AESUpdated");
-                        await MarkContactAsTrusted(message.Sender!);
-                    }
-                    else if (message.Type == MessageType.AesOffer)
-                    {
-                        var offerResponse = await _aesTransmissionManager.GenerateOfferResponse(message);
-                        await MarkContactAsTrusted(message.Sender!);
-                        await HubConnection.SendAsync("Dispatch", offerResponse);
-
-                        if (offerResponse.Type is MessageType.AesOfferAccept)
-                            _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "AESUpdated");
-                    }
                 }
             });
 
@@ -337,13 +345,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     return;
                 }
 
-                var rsaPublicKey = await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
-                if (string.IsNullOrWhiteSpace(rsaPublicKey.First().Value?.ToString()))
+                var rsaPublicKey = (await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic))
+                    .OrderBy(x => x.CreationDate).First();
+                if (string.IsNullOrWhiteSpace(rsaPublicKey.Value?.ToString()))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
 
-                await UpdateRSAPublicKeyAsync(rsaPublicKey.First());
+                await UpdateRSAPublicKeyAsync(rsaPublicKey);
             });
         }
 
@@ -373,9 +382,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
             aesKey.Author = await _authenticationHandler.GetUsernameAsync();
 
-            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, partnersPublicKey, aesKey);
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("Dispatch", offer);
+            var offer = await _aesTransmissionManager.GenerateOffer(partnersUsername, aesKey);
+            await TransferAsync(offer);
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
@@ -444,10 +452,22 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task TransferAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable
         {
-            var key = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes) ??
-                      throw new ApplicationException("Missing key");
+            var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);
 
-            var binaryCryptogram = await _cryptographyService.EncryptAsync<AesHandler, T>(data, key);
+            BinaryCryptogram binaryCryptogram;
+            if (aesKey is not null &&
+                (data as EventMessage)?.Type != EventType.AesOfferAccepted) //encrypt with aes key if possible
+            {
+                binaryCryptogram = await _cryptographyService.EncryptAsync<AesHandler, T>(data, aesKey);
+            }
+            else //encrypt with target's public key
+            {
+                Console.WriteLine("encrypting with rsa");
+                var rsaKey = (await _keyStorage.GetAsync(data.Target, KeyType.RsaPublic)).OrderBy(x => x.CreationDate)
+                    .First();
+                Console.WriteLine($"rsa: {JsonSerializer.Serialize(rsaKey)}");
+                binaryCryptogram = await _cryptographyService.EncryptAsync<RsaHandler, T>(data, rsaKey);
+            }
 
             var transferData = new EncryptedDataTransfer
             {
@@ -466,15 +486,35 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             try
             {
-                var lastAcceptedAsync = await _keyStorage.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
-                if (lastAcceptedAsync is null)
-                    await NegotiateOnAESAsync(dataTransfer.Sender);
+                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.RsaPublic)
+                {
+                    var rsaPrivateKey = (await _keyStorage.GetAsync(string.Empty, KeyType.RsaPrivate))
+                        .OrderBy(x => x.CreationDate).FirstOrDefault();
 
-                var cryptogram = await _cryptographyService
-                    .DecryptAsync<AesHandler>(dataTransfer.BinaryCryptogram, lastAcceptedAsync);
+                    var decryptedRsa =
+                        await _cryptographyService.DecryptAsync<RsaHandler>(dataTransfer.BinaryCryptogram,
+                            rsaPrivateKey);
+                    var result = MessagePackSerializer.Deserialize<T>(decryptedRsa.Cypher);
+                    return result;
+                }
 
-                var result = MessagePackSerializer.Deserialize<T>(cryptogram.Cypher);
-                return result;
+                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.Aes)
+                {
+                    var lastAcceptedAsync = await _keyStorage.GetLastAcceptedAsync(dataTransfer.Sender, KeyType.Aes);
+                    if (lastAcceptedAsync is null)
+                    {
+                        await NegotiateOnAESAsync(dataTransfer.Sender);
+                        throw new ApplicationException("Missing key");
+                    }
+
+                    var cryptogram = await _cryptographyService
+                        .DecryptAsync<AesHandler>(dataTransfer.BinaryCryptogram, lastAcceptedAsync);
+
+                    var result = MessagePackSerializer.Deserialize<T>(cryptogram.Cypher);
+                    return result;
+                }
+
+                throw new ArgumentException();
             }
             catch (Exception e)
             {

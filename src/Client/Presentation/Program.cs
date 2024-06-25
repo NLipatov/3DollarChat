@@ -25,7 +25,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation.ReceiveOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation.SendOffer;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
@@ -53,7 +52,6 @@ builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddTransient<IKeyStorage, KeyStorage>();
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();
 builder.Services.AddSingleton<IMessageBox, MessageBox>();
-builder.Services.AddTransient<IAesOfferReceiver, AesOfferReceiver>();
 builder.Services.AddTransient<IAesOfferSender, AesOfferSender>();
 builder.Services.AddTransient<IAesTransmissionManager, AesTransmissionManager>();
 builder.Services.AddTransient<IContactsProvider, ContactsProvider>();

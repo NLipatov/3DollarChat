@@ -17,9 +17,14 @@ public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task StoreAsync(Key key)
     {
-        if (key.Type is KeyType.RsaPublic || key.Type is KeyType.RsaPrivate)
-            await _rsaKeyStorage.StoreAsync(key);
-        await _aesKeyStorage.StoreAsync(key);
+        var storeTask = key.Type switch
+        {
+            KeyType.RsaPublic or KeyType.RsaPrivate => _rsaKeyStorage.StoreAsync(key),
+            KeyType.Aes => _aesKeyStorage.StoreAsync(key),
+            _ => Task.FromException(new ArgumentException($"Unexpected {nameof(key.Type)}"))
+        };
+
+        await storeTask;
     }
 
     public async Task DeleteAsync(Key key)

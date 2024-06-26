@@ -126,14 +126,12 @@
             {
                 CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
         
-                await MessageService.SendMessage(new ClientMessage
+                await MessageService.SendMessage(new HlsPlaylistMessage
                 {
                     Id = Guid.NewGuid(),
-                    HlsPlaylist = playlist,
-                    Type = MessageType.HLSPlaylist,
+                    Playlist = playlist.M3U8Content,
                     Target = TopicName,
                     Sender = MyUsername,
-                    DateSent = DateTime.UtcNow
                 });
                 return;
             }

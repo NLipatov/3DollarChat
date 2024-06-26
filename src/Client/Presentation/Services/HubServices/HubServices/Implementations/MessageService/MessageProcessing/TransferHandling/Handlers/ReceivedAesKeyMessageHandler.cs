@@ -10,9 +10,6 @@ public class ReceivedAesKeyMessageHandler(IKeyStorage keyStorage, IMessageServic
     public async Task HandleAsync(KeyMessage clientMessage)
     {
         var aesKey = clientMessage.Key;
-        aesKey.Contact = clientMessage.Sender;
-        aesKey.Author = clientMessage.Sender;
-        await keyStorage.StoreAsync(aesKey);
 
         await messageService.SendMessage(new EventMessage
         {
@@ -21,6 +18,11 @@ public class ReceivedAesKeyMessageHandler(IKeyStorage keyStorage, IMessageServic
             Target = clientMessage.Sender,
             Id = aesKey.Id
         });
+
+        aesKey.Contact = clientMessage.Sender;
+        aesKey.Author = clientMessage.Sender;
+        aesKey.IsAccepted = true;
+        await keyStorage.StoreAsync(aesKey);
 
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender, "AESUpdated");

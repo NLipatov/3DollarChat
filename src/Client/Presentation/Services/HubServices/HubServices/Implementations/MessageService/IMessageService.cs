@@ -11,5 +11,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task SendMessage(EventMessage message);
         Task SendMessage(Package message);
         Task SendMessage(KeyMessage message);
+        Task SendMessage(HlsPlaylistMessage message);
     }
 }

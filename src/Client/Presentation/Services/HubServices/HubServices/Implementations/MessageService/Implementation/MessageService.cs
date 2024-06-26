@@ -1,5 +1,4 @@
 ﻿using System.Reflection;
-using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
@@ -66,6 +65,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private MessageProcessor<Package> _packageProcessor;
         private MessageProcessor<AesOffer> _aesOfferProcessor;
         private MessageProcessor<KeyMessage> _keyMessageProcessor;
+        private MessageProcessor<HlsPlaylistMessage> _hlsPlaylistMessageProcessor;
 
         public MessageService
         (IMessageBox messageBox,
@@ -110,6 +110,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var packageTransferHandlerFactory = new TransferHandlerFactory<Package>();
             var aesOfferTransferHandlerFactory = new TransferHandlerFactory<AesOffer>();
             var keyMessageTransferHandlerFactory = new TransferHandlerFactory<KeyMessage>();
+            var hlsPlaylistMessageTransferHandlerFactory = new TransferHandlerFactory<HlsPlaylistMessage>();
 
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
                 new TextMessageHandler(_messageBox, _authenticationHandler, this));
@@ -121,8 +122,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new MessageReceivedConfirmationHandler(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.ResendRequest.ToString(),
                 new ResendRequestHandler(_messageBox, this));
-            clientMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
-                new HlsPlaylistHandler(_messageBox));
 
             packageTransferHandlerFactory.RegisterHandler(nameof(Package),
                 new DataPackageHandler(_callbackExecutor, _binaryReceivingManager, this));
@@ -136,12 +135,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.RsaPubKeyRequest.ToString(),
                 new RsaPubKeyRequestHandler(_keyStorage, this));
 
-            aesOfferTransferHandlerFactory.RegisterHandler(nameof(AesOffer), new AesOfferHandler(_keyStorage, this, _callbackExecutor));
+            aesOfferTransferHandlerFactory.RegisterHandler(nameof(AesOffer),
+                new AesOfferHandler(_keyStorage, this, _callbackExecutor));
 
             keyMessageTransferHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
                 new ReceivedRsaPubKeyMessageHandler(_keyStorage, _cryptographyService, _authenticationHandler, this));
             keyMessageTransferHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
                 new ReceivedAesKeyMessageHandler(_keyStorage, this, _callbackExecutor));
+            
+            hlsPlaylistMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
+                new HlsPlaylistHandler(_messageBox));
 
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
@@ -149,6 +152,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _packageProcessor = new(packageTransferHandlerFactory);
             _aesOfferProcessor = new(aesOfferTransferHandlerFactory);
             _keyMessageProcessor = new(keyMessageTransferHandlerFactory);
+            _hlsPlaylistMessageProcessor = new(hlsPlaylistMessageTransferHandlerFactory);
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()
@@ -238,6 +242,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             if (dataTypeProperty != null)
                             {
                                 var decryptedData = dataTypeProperty.GetValue(task, null);
+
+                                if (transfer.DataType == typeof(HlsPlaylistMessage))
+                                {
+                                    var hlsPlaylistMessage = decryptedData as HlsPlaylistMessage;
+                                    await _hlsPlaylistMessageProcessor.ProcessTransferAsync(
+                                        MessageType.HLSPlaylist.ToString(), hlsPlaylistMessage ?? throw new ArgumentException());
+                                }
 
                                 if (transfer.DataType == typeof(KeyMessage))
                                 {
@@ -335,7 +346,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Format = KeyFormat.PemSpki,
                             Value = message.Cryptogramm!.Cyphertext
                         });
-                        
+
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
                 }
@@ -407,6 +418,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await TransferAsync(message);
         }
 
+        public async Task SendMessage(HlsPlaylistMessage message)
+        {
+            await TransferAsync(message);
+        }
+
         public async Task SendMessage(EventMessage message)
         {
             await TransferAsync(message);
@@ -461,25 +477,16 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);
 
-            BinaryCryptogram binaryCryptogram;
-            if (aesKey is not null &&
-                (data as EventMessage)?.Type != EventType.AesOfferAccepted) //encrypt with aes key if possible
+            var encryptionTask = (aesKey is null) switch
             {
-                binaryCryptogram = await _cryptographyService.EncryptAsync<AesHandler, T>(data, aesKey);
-            }
-            else //encrypt with target's public key
-            {
-                Console.WriteLine("encrypting with rsa");
-                var rsaKey = (await _keyStorage.GetAsync(data.Target, KeyType.RsaPublic)).OrderBy(x => x.CreationDate)
-                    .First();
-                Console.WriteLine($"rsa: {JsonSerializer.Serialize(rsaKey)}");
-                binaryCryptogram = await _cryptographyService.EncryptAsync<RsaHandler, T>(data, rsaKey);
-            }
-
+                true => RsaEncryptAsync(data),
+                false => AesEncryptAsync(data)
+            };
+            
             var transferData = new EncryptedDataTransfer
             {
                 Id = data.Id,
-                BinaryCryptogram = binaryCryptogram,
+                BinaryCryptogram = await encryptionTask,
                 Target = data.Target,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
                 DataType = typeof(T),
@@ -487,6 +494,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             var connection = await GetHubConnectionAsync();
             await connection.SendAsync("TransferAsync", transferData);
+        }
+
+        private async Task<BinaryCryptogram> AesEncryptAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable
+        {
+            var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);
+
+            return await _cryptographyService.EncryptAsync<AesHandler, T>(data,
+                aesKey ?? throw new ApplicationException("Missing key"));
+        }
+
+        private async Task<BinaryCryptogram> RsaEncryptAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable
+        {
+            var rsaKey =
+                (await _keyStorage.GetAsync(data.Target, KeyType.RsaPublic)).MaxBy(x => x.CreationDate);
+
+            return await _cryptographyService.EncryptAsync<RsaHandler, T>(data,
+                rsaKey ?? throw new ApplicationException("Missing key"));
         }
 
         private async Task<T?> DecryptTransferAsync<T>(EncryptedDataTransfer dataTransfer)

@@ -9,10 +9,6 @@ public class AesOfferHandler(IKeyStorage keyStorage, IMessageService messageServ
 {
     public async Task HandleAsync(AesOffer offer)
     {
-        offer.key.IsAccepted = true;
-        offer.key.Contact = offer.key.Author;
-        await keyStorage.StoreAsync(offer.key);
-        
         await messageService.SendMessage(new EventMessage
         {
             Id = offer.key.Id,
@@ -20,6 +16,10 @@ public class AesOfferHandler(IKeyStorage keyStorage, IMessageService messageServ
             Target = offer.Sender,
             Type = EventType.AesOfferAccepted
         });
+        
+        offer.key.IsAccepted = true; 
+        offer.key.Contact = offer.key.Author;
+        await keyStorage.StoreAsync(offer.key);
 
         callbackExecutor.ExecuteSubscriptionsByName(offer.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(offer.Sender, "AESUpdated");

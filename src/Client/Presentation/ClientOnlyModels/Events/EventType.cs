@@ -8,5 +8,6 @@ public enum EventType
     MessageRead,
     ResendRequest,
     ConversationDeletion,
-    AesOfferAccepted
+    AesOfferAccepted,
+    RsaPubKeyRequest
 }

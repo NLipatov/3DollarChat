@@ -133,11 +133,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new TypingEventHandler(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.AesOfferAccepted.ToString(),
                 new AesOfferAcceptHandler(_callbackExecutor, _keyStorage));
+            eventMessageTransferHandlerFactory.RegisterHandler(EventType.RsaPubKeyRequest.ToString(),
+                new RsaPubKeyRequestHandler(_keyStorage, this));
 
             aesOfferTransferHandlerFactory.RegisterHandler(nameof(AesOffer), new AesOfferHandler(_keyStorage, this, _callbackExecutor));
 
             keyMessageTransferHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-                new RsaPubKeyTextMessageHandler(_keyStorage));
+                new ReceivedRsaPubKeyMessageHandler(_keyStorage, _cryptographyService, _authenticationHandler, this));
+            keyMessageTransferHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
+                new ReceivedAesKeyMessageHandler(_keyStorage, this, _callbackExecutor));
 
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);
@@ -331,7 +335,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             Format = KeyFormat.PemSpki,
                             Value = message.Cryptogramm!.Cyphertext
                         });
-
+                        
                         await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
                     }
                 }
@@ -388,9 +392,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            var connection = await GetHubConnectionAsync();
-
-            await connection.SendAsync("GetAnRSAPublic", partnerUsername,
+            await (await GetHubConnectionAsync()).SendAsync("GetAnRSAPublic", partnerUsername,
                 await _authenticationHandler.GetUsernameAsync());
         }
 
@@ -398,6 +400,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             await foreach (var dataPartMessage in _binarySendingManager.GetChunksToSendAsync(message))
                 await TransferAsync(dataPartMessage);
+        }
+
+        public async Task SendMessage(KeyMessage message)
+        {
+            await TransferAsync(message);
         }
 
         public async Task SendMessage(EventMessage message)

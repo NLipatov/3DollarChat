@@ -88,6 +88,22 @@ namespace Ethachat.Client.Services.InboxService.Implementation
             }
         }
 
+        public void AddMessage(HlsPlaylistMessage playlistMessage)
+        {
+            AddMessage(new ClientMessage
+            {
+                Id = playlistMessage.Id,
+                Sender = playlistMessage.Sender,
+                Target = playlistMessage.Target,
+                Type = MessageType.HLSPlaylist,
+                HlsPlaylist = new HlsPlaylist
+                {
+                    M3U8Content = playlistMessage.Playlist,
+                    Name = "video"
+                }
+            });
+        }
+
         public void AddMessage(ClientMessage message)
         {
             if (Contains(message)) //duplicate

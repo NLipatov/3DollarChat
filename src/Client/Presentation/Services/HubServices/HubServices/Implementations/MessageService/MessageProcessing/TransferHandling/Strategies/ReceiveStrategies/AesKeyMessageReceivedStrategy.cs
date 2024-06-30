@@ -3,9 +3,9 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class ReceivedAesKeyMessageHandler(IKeyStorage keyStorage, IMessageService messageService, ICallbackExecutor callbackExecutor) : ITransferHandler<KeyMessage>
+public class AesKeyMessageReceivedStrategy(IKeyStorage keyStorage, IMessageService messageService, ICallbackExecutor callbackExecutor) : ITransferHandler<KeyMessage>
 {
     public async Task HandleAsync(KeyMessage clientMessage)
     {

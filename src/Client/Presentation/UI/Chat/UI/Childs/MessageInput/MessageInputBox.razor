@@ -125,14 +125,18 @@
             if (playlist is not null)
             {
                 CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-        
-                await MessageService.SendMessage(new HlsPlaylistMessage
+
+                var playlistMessage = new HlsPlaylistMessage
                 {
                     Id = Guid.NewGuid(),
                     Playlist = playlist.M3U8Content,
                     Target = TopicName,
                     Sender = MyUsername,
-                });
+                };
+
+                MessageBox.AddMessage(playlistMessage);
+        
+                await MessageService.SendMessage(playlistMessage);
                 return;
             }
         }
@@ -167,7 +171,7 @@
         var progressStreamContent = new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
         progressStreamContent.ProgressChanged += (bytes, currBytes, totalBytes) =>
         {
-            var ratio = (double)currBytes / (double)totalBytes;
+            var ratio = currBytes / (double)totalBytes;
             var percentage = Math.Round(ratio * 100, 1);
             CallbackExecutor.ExecuteSubscriptionsByName(percentage, "OnVideoUploadProgressChanged");
         };

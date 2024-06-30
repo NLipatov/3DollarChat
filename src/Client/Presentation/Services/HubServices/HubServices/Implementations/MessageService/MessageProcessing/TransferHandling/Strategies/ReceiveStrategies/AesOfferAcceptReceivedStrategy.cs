@@ -3,14 +3,14 @@ using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
-    TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class AesOfferAcceptHandler(ICallbackExecutor callbackExecutor, IKeyStorage keyStorage)
+public class AesOfferAcceptReceivedStrategy(ICallbackExecutor callbackExecutor, IKeyStorage keyStorage)
     : ITransferHandler<EventMessage>
 {
     public async Task HandleAsync(EventMessage accept)
     {
+        Console.WriteLine($"Accept: {accept.Id}");
         var keys = await keyStorage.GetAsync(accept.Sender, KeyType.Aes);
         var acceptedKey = keys.FirstOrDefault(x => x.Id == accept.Id) ?? throw new ArgumentException("Missing key");
         acceptedKey.IsAccepted = true;

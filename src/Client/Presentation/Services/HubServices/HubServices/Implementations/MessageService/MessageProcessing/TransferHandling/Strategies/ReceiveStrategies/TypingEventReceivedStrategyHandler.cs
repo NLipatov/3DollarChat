@@ -1,9 +1,9 @@
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class TypingEventHandler(ICallbackExecutor callbackExecutor) : ITransferHandler<EventMessage>
+public class TypingEventReceivedStrategyHandler(ICallbackExecutor callbackExecutor) : ITransferHandler<EventMessage>
 {
     public Task HandleAsync(EventMessage clientMessage)
     {

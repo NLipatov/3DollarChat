@@ -20,8 +20,8 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
-    .Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
@@ -113,38 +113,38 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var hlsPlaylistMessageTransferHandlerFactory = new TransferHandlerFactory<HlsPlaylistMessage>();
 
             textMessageHandlerFactory.RegisterHandler(nameof(TextMessage),
-                new TextMessageHandler(_messageBox, _authenticationHandler, this));
+                new TextMessageReceivedStrategy(_messageBox, _authenticationHandler, this));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.ConversationDeletion.ToString(),
-                new ConversationDeletionRequestHandler(_messageBox));
+                new ConversationDeletionRequestedStrategy(_messageBox));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.MessageRead.ToString(),
-                new MessageReadHandler(_callbackExecutor));
+                new MessageReadEventMessageReceivedStrategy(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.MessageReceived.ToString(),
-                new MessageReceivedConfirmationHandler(_callbackExecutor));
+                new MessageReceivedStrategy(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.ResendRequest.ToString(),
-                new ResendRequestHandler(_messageBox, this));
+                new ResendRequestReceivedStrategy(_messageBox, this));
 
             packageTransferHandlerFactory.RegisterHandler(nameof(Package),
-                new DataPackageHandler(_callbackExecutor, _binaryReceivingManager, this));
+                new DataPackageReceivedStrategy(_callbackExecutor, _binaryReceivingManager, this));
 
             eventMessageTransferHandlerFactory.RegisterHandler(MessageType.DataTransferConfirmation.ToString(),
-                new OnFileTransferedHandler(_callbackExecutor));
+                new CompositeFileTransferedEventMessageReceivedStrategy(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.OnTyping.ToString(),
-                new TypingEventHandler(_callbackExecutor));
+                new TypingEventReceivedStrategyHandler(_callbackExecutor));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.AesOfferAccepted.ToString(),
-                new AesOfferAcceptHandler(_callbackExecutor, _keyStorage));
+                new AesOfferAcceptReceivedStrategy(_callbackExecutor, _keyStorage));
             eventMessageTransferHandlerFactory.RegisterHandler(EventType.RsaPubKeyRequest.ToString(),
-                new RsaPubKeyRequestHandler(_keyStorage, this));
+                new RsaPubKeyRequestReceivedStrategy(_keyStorage, this));
 
             aesOfferTransferHandlerFactory.RegisterHandler(nameof(AesOffer),
-                new AesOfferHandler(_keyStorage, this, _callbackExecutor));
+                new AesOfferReceivedStrategy(_keyStorage, this, _callbackExecutor));
 
             keyMessageTransferHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-                new ReceivedRsaPubKeyMessageHandler(_keyStorage, _cryptographyService, _authenticationHandler, this));
+                new RsaPubKeyMessageRequestReceivedStrategy(_keyStorage, _cryptographyService, _authenticationHandler, this));
             keyMessageTransferHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-                new ReceivedAesKeyMessageHandler(_keyStorage, this, _callbackExecutor));
+                new AesKeyMessageReceivedStrategy(_keyStorage, this, _callbackExecutor));
             
             hlsPlaylistMessageTransferHandlerFactory.RegisterHandler(MessageType.HLSPlaylist.ToString(),
-                new HlsPlaylistHandler(_messageBox));
+                new HlsPlaylistReceivedStrategy(_messageBox));
 
             _clientMessageProcessor = new(clientMessageTransferHandlerFactory);
             _textMessageProcessor = new(textMessageHandlerFactory);

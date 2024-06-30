@@ -1,14 +1,12 @@
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    BinaryReceiving;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
-    TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class DataPackageHandler(
+public class DataPackageReceivedStrategy(
     ICallbackExecutor callbackExecutor,
     IBinaryReceivingManager binaryReceivingManager,
     IMessageService messageService) : ITransferHandler<Package>

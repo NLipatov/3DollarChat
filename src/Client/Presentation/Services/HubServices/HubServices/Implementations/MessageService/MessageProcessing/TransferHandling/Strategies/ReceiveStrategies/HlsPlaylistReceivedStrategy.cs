@@ -2,9 +2,9 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class HlsPlaylistHandler(IMessageBox messageBox) : ITransferHandler<HlsPlaylistMessage>
+public class HlsPlaylistReceivedStrategy(IMessageBox messageBox) : ITransferHandler<HlsPlaylistMessage>
 {
     public Task HandleAsync(HlsPlaylistMessage playlistMessage)
     {

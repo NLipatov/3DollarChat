@@ -4,10 +4,9 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
-    TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class TextMessageHandler(
+public class TextMessageReceivedStrategy(
     IMessageBox messageBox,
     IAuthenticationHandler authenticationHandler,
     IMessageService messageService)

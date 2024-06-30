@@ -3,9 +3,9 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using EthachatShared.Encryption;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class RsaPubKeyRequestHandler(IKeyStorage keyStorage, IMessageService messageService) : ITransferHandler<EventMessage>
+public class RsaPubKeyRequestReceivedStrategy(IKeyStorage keyStorage, IMessageService messageService) : ITransferHandler<EventMessage>
 {
     public async Task HandleAsync(EventMessage eventMessage)
     {

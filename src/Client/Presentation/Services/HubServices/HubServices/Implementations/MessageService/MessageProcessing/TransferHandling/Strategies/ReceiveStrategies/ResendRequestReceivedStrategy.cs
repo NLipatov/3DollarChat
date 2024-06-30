@@ -2,9 +2,9 @@ using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class ResendRequestHandler(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<EventMessage>
+public class ResendRequestReceivedStrategy(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<EventMessage>
 {
     public async Task HandleAsync(EventMessage clientMessage)
     {

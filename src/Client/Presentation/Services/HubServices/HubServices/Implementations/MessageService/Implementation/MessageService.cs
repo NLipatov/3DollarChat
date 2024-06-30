@@ -203,59 +203,44 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                             {
                                 var decryptedData = dataTypeProperty.GetValue(task, null);
 
-                                if (transfer.DataType == typeof(KeyMessage))
-                                {
-                                    var keyMessage = decryptedData as KeyMessage;
-                                    await _keyMessageProcessor.ProcessTransferAsync(
-                                        keyMessage?.Key.Type.ToString() ?? throw new ArgumentException(),
-                                        keyMessage);
-                                }
+                                MethodInfo? eventNameMethod = typeof(ITransferProcessorResolver)
+                                    .GetMethod(nameof(ITransferProcessorResolver.GetEventName))?
+                                    .MakeGenericMethod(transfer.DataType);
 
-                                if (transfer.DataType == typeof(Package) ||
-                                    transfer.DataType == typeof(HlsPlaylistMessage) ||
-                                    transfer.DataType == typeof(TextMessage) ||
-                                    transfer.DataType == typeof(AesOffer) ||
-                                    transfer.DataType == typeof(EventMessage))
-                                {
-                                    MethodInfo? eventNameMethod = typeof(ITransferProcessorResolver)
-                                        .GetMethod(nameof(ITransferProcessorResolver.GetEventName))?
-                                        .MakeGenericMethod(transfer.DataType);
+                                if (eventNameMethod == null)
+                                    throw new ApplicationException("Could not resolve target method to invoke");
 
-                                    if (eventNameMethod == null)
-                                        throw new ApplicationException("Could not resolve target method to invoke");
+                                var eventName = (string?)eventNameMethod.Invoke(_transferProcessorResolver,
+                                    new object[] { TransferDirection.Incoming });
 
-                                    var eventName = (string?)eventNameMethod.Invoke(_transferProcessorResolver,
-                                        new object[] { TransferDirection.Incoming });
+                                if (eventName == null)
+                                    throw new ApplicationException("Event name is null");
 
-                                    if (eventName == null)
-                                        throw new ApplicationException("Event name is null");
+                                MethodInfo? getProcessorMethod = typeof(ITransferProcessorResolver)
+                                    .GetMethod(nameof(ITransferProcessorResolver.GetProcessor))?
+                                    .MakeGenericMethod(transfer.DataType);
 
-                                    MethodInfo? getProcessorMethod = typeof(ITransferProcessorResolver)
-                                        .GetMethod(nameof(ITransferProcessorResolver.GetProcessor))?
-                                        .MakeGenericMethod(transfer.DataType);
+                                if (getProcessorMethod == null)
+                                    throw new ApplicationException("Could not resolve GetProcessor method");
 
-                                    if (getProcessorMethod == null)
-                                        throw new ApplicationException("Could not resolve GetProcessor method");
+                                var processor = getProcessorMethod.Invoke(_transferProcessorResolver, null);
 
-                                    var processor = getProcessorMethod.Invoke(_transferProcessorResolver, null);
+                                if (processor == null)
+                                    throw new ApplicationException("Processor is null");
 
-                                    if (processor == null)
-                                        throw new ApplicationException("Processor is null");
+                                MethodInfo? processTransferMethod =
+                                    processor.GetType().GetMethod("ProcessTransferAsync");
 
-                                    MethodInfo? processTransferMethod =
-                                        processor.GetType().GetMethod("ProcessTransferAsync");
+                                if (processTransferMethod == null)
+                                    throw new ApplicationException("Could not resolve ProcessTransferAsync method");
 
-                                    if (processTransferMethod == null)
-                                        throw new ApplicationException("Could not resolve ProcessTransferAsync method");
+                                Task processTransferTask = (Task)processTransferMethod.Invoke(processor,
+                                    new object[] { eventName, decryptedData });
 
-                                    Task processTransferTask = (Task)processTransferMethod.Invoke(processor,
-                                        new object[] { eventName, decryptedData });
+                                if (processTransferTask is null)
+                                    throw new ApplicationException("Could not resolve task to await");
 
-                                    if (processTransferTask is null)
-                                        throw new ApplicationException("Could not resolve task to await");
-
-                                    await processTransferTask;
-                                }
+                                await processTransferTask;
                             }
                         }
                     }

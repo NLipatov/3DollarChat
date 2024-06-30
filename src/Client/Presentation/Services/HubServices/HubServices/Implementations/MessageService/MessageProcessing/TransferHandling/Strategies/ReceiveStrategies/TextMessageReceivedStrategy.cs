@@ -12,15 +12,15 @@ public class TextMessageReceivedStrategy(
     IMessageService messageService)
     : ITransferHandler<TextMessage>
 {
-    public async Task HandleAsync(TextMessage clientMessage)
+    public async Task HandleAsync(TextMessage eventMessage)
     {
-        if (clientMessage.Total == 1 &&
-            messageBox.Contains(new Message { Id = clientMessage.Id })) //not a composite message, duplicate
+        if (eventMessage.Total == 1 &&
+            messageBox.Contains(new Message { Id = eventMessage.Id })) //not a composite message, duplicate
             return;
 
-        await SendReceivedConfirmation(clientMessage.Id, clientMessage.Sender);
+        await SendReceivedConfirmation(eventMessage.Id, eventMessage.Sender);
 
-        messageBox.AddMessage(clientMessage);
+        messageBox.AddMessage(eventMessage);
     }
 
     private async Task SendReceivedConfirmation(Guid messageId, string messageSender)

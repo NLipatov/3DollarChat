@@ -5,6 +5,7 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.Logic.MessageBuilder
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
@@ -150,6 +151,15 @@
             await fileStream.CopyToAsync(memoryStream);
             fileBytes = memoryStream.ToArray();
         }
+
+        var package = new Package
+        {
+            Data = fileBytes,
+            ContentType = browserFile.ContentType,
+            Filename = browserFile.Name,
+            Target = TopicName,
+            Sender = MyUsername,
+        };
         
         await MessageService.SendMessage(new Package
         {

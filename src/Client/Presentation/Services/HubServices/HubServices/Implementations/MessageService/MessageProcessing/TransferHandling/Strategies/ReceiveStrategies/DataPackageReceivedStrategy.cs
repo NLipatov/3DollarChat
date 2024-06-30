@@ -1,4 +1,5 @@
 using Ethachat.Client.ClientOnlyModels;
+using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using EthachatShared.Models.Message;
@@ -11,22 +12,22 @@ public class DataPackageReceivedStrategy(
     IBinaryReceivingManager binaryReceivingManager,
     IMessageService messageService) : ITransferHandler<Package>
 {
-    public async Task HandleAsync(Package clientMessage)
+    public async Task HandleAsync(Package eventMessage)
     {
-        callbackExecutor.ExecuteSubscriptionsByName(clientMessage.Sender,
+        callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender,
             "OnBinaryTransmitting");
 
         (bool isTransmissionCompleted, Guid fileId) progressStatus =
-            await binaryReceivingManager.StoreAsync(clientMessage);
+            await binaryReceivingManager.StoreAsync(eventMessage);
 
         if (progressStatus.isTransmissionCompleted)
         {
-            await messageService.SendMessage(new ClientMessage
+            await messageService.SendMessage(new EventMessage
             {
-                Target = clientMessage.Sender,
-                Sender = clientMessage.Target,
+                Target = eventMessage.Sender,
+                Sender = eventMessage.Target,
                 Id = progressStatus.fileId,
-                Type = MessageType.DataTransferConfirmation
+                Type = EventType.DataTransferConfirmation
             });
         }
     }

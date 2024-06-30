@@ -1,4 +1,5 @@
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
+using
+    Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 
@@ -6,7 +7,9 @@ public class MessageProcessor<T>(ITransferHandlerFactory<T> transferHandlerFacto
 {
     public async Task ProcessTransferAsync(string eventType, T decryptedData)
     {
-        var handler = transferHandlerFactory.GetMessageHandler(eventType);
+        var handler = transferHandlerFactory.GetMessageHandler(eventType) ??
+                      throw new ArgumentException($"No handler registered for {eventType}");
+        
         await handler.HandleAsync(decryptedData);
     }
 }

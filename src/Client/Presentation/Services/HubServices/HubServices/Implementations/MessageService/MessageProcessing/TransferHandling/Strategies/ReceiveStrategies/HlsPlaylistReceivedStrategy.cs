@@ -6,17 +6,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public class HlsPlaylistReceivedStrategy(IMessageBox messageBox) : ITransferHandler<HlsPlaylistMessage>
 {
-    public Task HandleAsync(HlsPlaylistMessage playlistMessage)
+    public Task HandleAsync(HlsPlaylistMessage eventMessage)
     {
         messageBox.AddMessage(new ClientMessage
         {
-            Id = playlistMessage.Id,
-            Sender = playlistMessage.Sender,
-            Target = playlistMessage.Target,
+            Id = eventMessage.Id,
+            Sender = eventMessage.Sender,
+            Target = eventMessage.Target,
             Type = MessageType.HLSPlaylist,
             HlsPlaylist = new HlsPlaylist
             {
-                M3U8Content = playlistMessage.Playlist,
+                M3U8Content = eventMessage.Playlist,
                 Name = "video"
             }
         });

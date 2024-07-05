@@ -137,7 +137,7 @@
 
                 MessageBox.AddMessage(playlistMessage);
         
-                await MessageService.SendMessage(playlistMessage);
+                await MessageService.TransferAsync(playlistMessage);
                 return;
             }
         }

@@ -12,6 +12,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task SendMessage(EventMessage message);
         Task SendMessage<T>(T message) where T : IDestinationResolvable;
         Task SendMessage(KeyMessage message);
-        Task SendMessage(HlsPlaylistMessage message);
     }
 }

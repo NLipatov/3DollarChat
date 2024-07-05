@@ -46,7 +46,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Incoming),
             new DataPackageReceivedStrategy(callbackExecutor, binaryReceivingManager, messageService));
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Outcoming),
-            new SendFileStrategy(messageService, binarySendingManager));
+            new PackageSendStrategy(messageService, binarySendingManager));
 
         hlsPlaylistMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<HlsPlaylistMessage>(TransferDirection.Incoming),
@@ -56,13 +56,16 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new TextMessageReceivedStrategy(messageBox, authenticationHandler, messageService));
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Outcoming),
-            new SendTextStrategy(messageService, authenticationHandler, messageBox));
+            new TextMessageSendStrategy(messageService, authenticationHandler, messageBox));
 
         aesOfferTransferReceivedHandlerFactory.RegisterHandler(GetEventName<AesOffer>(TransferDirection.Incoming),
             new AesOfferReceivedStrategy(keyStorage, messageService, callbackExecutor));
         
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Incoming),
             new EventMessageReceivedStrategy(messageBox, callbackExecutor, messageService, keyStorage));
+        
+        eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Outcoming),
+            new EventMessageSendStrategy(messageService));
 
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
             new RsaPubKeyMessageRequestReceivedStrategy(keyStorage, cryptographyService, authenticationHandler,

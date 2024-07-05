@@ -15,19 +15,19 @@ public class EventMessageReceivedStrategy(
     IMessageService messageService,
     IKeyStorage keyStorage) : ITransferHandler<EventMessage>
 {
-    public async Task HandleAsync(EventMessage eventMessage)
+    public async Task HandleAsync(EventMessage message)
     {
-        var handleTask = eventMessage.Type switch
+        var handleTask = message.Type switch
         {
-            EventType.ConversationDeletion => HandleConversationDeletionAsync(eventMessage),
-            EventType.MessageRead => HandleMessageReadAsync(eventMessage),
-            EventType.MessageReceived => HandleMessageReceivedAsync(eventMessage),
-            EventType.ResendRequest => HandleResendRequestAsync(eventMessage),
-            EventType.DataTransferConfirmation => HandleDataTransferConfirmationAsync(eventMessage),
-            EventType.OnTyping => HandleOnTypingAsync(eventMessage),
-            EventType.AesOfferAccepted => HandleAesOfferAcceptedAsync(eventMessage),
-            EventType.RsaPubKeyRequest => HandleRsaPubKeyRequestAsync(eventMessage),
-            _ => throw new ArgumentException($"Unexpected {nameof(eventMessage.Type)} - {eventMessage.Type}")
+            EventType.ConversationDeletion => HandleConversationDeletionAsync(message),
+            EventType.MessageRead => HandleMessageReadAsync(message),
+            EventType.MessageReceived => HandleMessageReceivedAsync(message),
+            EventType.ResendRequest => HandleResendRequestAsync(message),
+            EventType.DataTransferConfirmation => HandleDataTransferConfirmationAsync(message),
+            EventType.OnTyping => HandleOnTypingAsync(message),
+            EventType.AesOfferAccepted => HandleAesOfferAcceptedAsync(message),
+            EventType.RsaPubKeyRequest => HandleRsaPubKeyRequestAsync(message),
+            _ => throw new ArgumentException($"Unexpected {nameof(message.Type)} - {message.Type}")
         };
 
         await handleTask;

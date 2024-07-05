@@ -8,9 +8,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class SendFileStrategy(IMessageService messageService, IBinarySendingManager binarySendingManager)
     : ITransferHandler<Package>
 {
-    public async Task HandleAsync(Package eventMessage)
+    public async Task HandleAsync(Package message)
     {
-        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(eventMessage))
+        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(message))
             await messageService.TransferAsync(dataPartMessage);
     }
 }

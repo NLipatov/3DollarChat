@@ -5,15 +5,13 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending
 @using Ethachat.Client.Services.VideoStreamingService
-@using Ethachat.Client.UI.Chat.Logic.MessageBuilder
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
+@using EthachatShared.Models.Message.ClientToClientTransferData
 @using EthachatShared.Models.Message.DataTransfer
 @using global::Client.Application.Cryptography
 @using global::Client.Application.Cryptography.KeyStorage
-@inject IMessageBuilder MessageBuilder
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime
@@ -231,18 +229,14 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            var message = new ClientMessage
+            await MessageService.SendMessage(new TextMessage
             {
+                Sender = MyUsername,
                 Target = TopicName,
-                Type = MessageType.TextMessage
-            };
-            message.AddChunk(new()
-            {
                 Text = MessageInput,
                 Index = 0,
                 Total = 1
             });
-            await MessageService.SendMessage(message);
         }
 
         MessageInput = string.Empty;

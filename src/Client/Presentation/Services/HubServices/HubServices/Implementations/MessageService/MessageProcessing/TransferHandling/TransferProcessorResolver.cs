@@ -14,7 +14,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
     .Strategies.SendStrategies;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.KeyTransmition;
@@ -55,6 +54,9 @@ public class TransferProcessorResolver : ITransferProcessorResolver
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Incoming),
             new TextMessageReceivedStrategy(messageBox, authenticationHandler, messageService));
+
+        textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Outcoming),
+            new SendTextStrategy(messageService, authenticationHandler, messageBox));
 
         aesOfferTransferReceivedHandlerFactory.RegisterHandler(GetEventName<AesOffer>(TransferDirection.Incoming),
             new AesOfferReceivedStrategy(keyStorage, messageService, callbackExecutor));

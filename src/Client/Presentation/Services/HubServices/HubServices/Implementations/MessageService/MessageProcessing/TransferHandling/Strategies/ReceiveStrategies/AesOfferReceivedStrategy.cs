@@ -7,21 +7,21 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public class AesOfferReceivedStrategy(IKeyStorage keyStorage, IMessageService messageService, ICallbackExecutor callbackExecutor) : ITransferHandler<AesOffer>
 {
-    public async Task HandleAsync(AesOffer eventMessage)
+    public async Task HandleAsync(AesOffer aesOfferMessage)
     {
         await messageService.SendMessage(new EventMessage
         {
-            Id = eventMessage.key.Id,
-            Sender = eventMessage.Target,
-            Target = eventMessage.Sender,
+            Id = aesOfferMessage.key.Id,
+            Sender = aesOfferMessage.Target,
+            Target = aesOfferMessage.Sender,
             Type = EventType.AesOfferAccepted
         });
         
-        eventMessage.key.IsAccepted = true; 
-        eventMessage.key.Contact = eventMessage.key.Author;
-        await keyStorage.StoreAsync(eventMessage.key);
+        aesOfferMessage.key.IsAccepted = true; 
+        aesOfferMessage.key.Contact = aesOfferMessage.key.Author;
+        await keyStorage.StoreAsync(aesOfferMessage.key);
 
-        callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnPartnerAESKeyReady");
-        callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "AESUpdated");
+        callbackExecutor.ExecuteSubscriptionsByName(aesOfferMessage.Sender, "OnPartnerAESKeyReady");
+        callbackExecutor.ExecuteSubscriptionsByName(aesOfferMessage.Sender, "AESUpdated");
     }
 }

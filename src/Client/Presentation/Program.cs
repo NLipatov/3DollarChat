@@ -39,7 +39,6 @@ using Ethachat.Client.Services.UserAgent.Implementation;
 using Ethachat.Client.Services.VersioningService;
 using Ethachat.Client.Services.VideoStreamingService;
 using Ethachat.Client.UI.AccountManagement.LogicHandlers;
-using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -61,7 +60,6 @@ builder.Services.AddSingleton<IUsersService, UsersService>();
 builder.Services.AddSingleton<IMessageService, MessageService>();
 builder.Services.AddSingleton<IHubServiceSubscriptionManager, HubServiceSubscriptionManager>();
 builder.Services.AddTransient<ICallbackExecutor, CallbackExecutor>();
-builder.Services.AddTransient<IMessageBuilder, MessageBuilder>();
 builder.Services.AddTransient<ILoginHandler, LoginHandler>();
 builder.Services.AddTransient<IWebPushService, WebPushService>();
 builder.Services.AddTransient<ILocalStorageService, LocalStorageService>();

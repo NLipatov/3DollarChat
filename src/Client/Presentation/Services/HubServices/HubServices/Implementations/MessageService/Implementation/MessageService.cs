@@ -22,15 +22,12 @@ using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Strategies.ReceiveStrategies;
-using Ethachat.Client.UI.Chat.Logic.MessageBuilder;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.ClientToClientTransferData;
-using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
@@ -47,7 +44,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly ICryptographyService _cryptographyService;
         private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
-        private readonly IMessageBuilder _messageBuilder;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
@@ -67,7 +63,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             ICryptographyService cryptographyService,
             IUsersService usersService,
             ICallbackExecutor callbackExecutor,
-            IMessageBuilder messageBuilder,
             IAuthenticationHandler authenticationHandler,
             IConfiguration configuration,
             IBinaryReceivingManager binaryReceivingManager,
@@ -81,7 +76,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _cryptographyService = cryptographyService;
             _usersService = usersService;
             _callbackExecutor = callbackExecutor;
-            _messageBuilder = messageBuilder;
             _authenticationHandler = authenticationHandler;
             _configuration = configuration;
             _binarySendingManager =
@@ -379,20 +373,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             switch (message.Type)
             {
-                case MessageType.TextMessage:
-                    await SendText(message);
-                    break;
                 default:
                     await TransferAsync(message);
                     break;
             }
-        }
-
-        private async Task SendText(ClientMessage message)
-        {
-            await AddToMessageBox(message.PlainText, message.Target, message.Id);
-            await foreach (var tMessage in _messageBuilder.BuildTextMessage(message))
-                await TransferAsync(tMessage);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

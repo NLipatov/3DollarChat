@@ -6,9 +6,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public class ResendRequestReceivedStrategy(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<EventMessage>
 {
-    public async Task HandleAsync(EventMessage eventMessage)
+    public async Task HandleAsync(EventMessage textMessage)
     {
-        var message = messageBox.Messages.FirstOrDefault(x => x.Id == eventMessage.Id);
+        var message = messageBox.Messages.FirstOrDefault(x => x.Id == textMessage.Id);
         if (message?.Type is MessageType.TextMessage)
         {
             await messageService.SendMessage(message);

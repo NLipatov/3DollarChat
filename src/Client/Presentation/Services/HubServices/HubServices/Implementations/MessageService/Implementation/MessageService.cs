@@ -382,10 +382,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 case MessageType.TextMessage:
                     await SendText(message);
                     break;
-                case MessageType.BrowserFileMessage:
-                {
-                    break;
-                }
                 default:
                     await TransferAsync(message);
                     break;

@@ -370,11 +370,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await TransferAsync(message);
         }
 
-        public async Task SendMessage(HlsPlaylistMessage message)
-        {
-            await TransferAsync(message);
-        }
-
         public async Task SendMessage(EventMessage message)
         {
             await TransferAsync(message);

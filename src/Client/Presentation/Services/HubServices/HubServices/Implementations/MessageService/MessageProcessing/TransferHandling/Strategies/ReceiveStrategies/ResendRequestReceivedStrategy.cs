@@ -11,7 +11,7 @@ public class ResendRequestReceivedStrategy(IMessageBox messageBox, IMessageServi
         var message = messageBox.Messages.FirstOrDefault(x => x.Id == textMessage.Id);
         if (message?.Type is MessageType.TextMessage)
         {
-            await messageService.SendMessage(message);
+            await messageService.TransferAsync(message);
         }
     }
 }

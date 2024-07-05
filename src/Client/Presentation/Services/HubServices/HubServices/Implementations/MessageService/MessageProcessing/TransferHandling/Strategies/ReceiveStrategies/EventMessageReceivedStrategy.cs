@@ -55,7 +55,7 @@ public class EventMessageReceivedStrategy(
         var message = messageBox.Messages.FirstOrDefault(x => x.Id == eventMessage.Id);
         if (message?.Type is MessageType.TextMessage)
         {
-            await messageService.SendMessage(message);
+            await messageService.TransferAsync(message);
         }
     }
 

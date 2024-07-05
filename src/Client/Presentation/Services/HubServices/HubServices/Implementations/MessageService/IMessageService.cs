@@ -8,7 +8,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     {
         Task NegotiateOnAESAsync(string partnerUsername);
         Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
-        Task SendMessage(ClientMessage message);
         Task SendMessage(EventMessage message);
         Task SendMessage<T>(T message) where T : IDestinationResolvable;
         Task SendMessage(KeyMessage message);

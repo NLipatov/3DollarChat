@@ -369,16 +369,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await TransferAsync(message);
         }
 
-        public async Task SendMessage(ClientMessage message)
-        {
-            switch (message.Type)
-            {
-                default:
-                    await TransferAsync(message);
-                    break;
-            }
-        }
-
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
         {
             var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);

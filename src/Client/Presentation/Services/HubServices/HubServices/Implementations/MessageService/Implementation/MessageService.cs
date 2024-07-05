@@ -379,14 +379,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             switch (message.Type)
             {
-                case MessageType.HLSPlaylist:
-                    await SendHlsPlaylist(message);
-                    break;
                 case MessageType.TextMessage:
                     await SendText(message);
-                    break;
-                case MessageType.Metadata:
-                    await TransferAsync(message);
                     break;
                 case MessageType.BrowserFileMessage:
                 {

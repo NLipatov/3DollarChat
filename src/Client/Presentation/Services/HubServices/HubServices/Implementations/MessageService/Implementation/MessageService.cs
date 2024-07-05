@@ -388,21 +388,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
         }
 
-        private async Task SendHlsPlaylist(ClientMessage message)
-        {
-            AddToMessageBox(message);
-
-            await TransferAsync(new ClientMessage
-            {
-                Id = message.Id,
-                HlsPlaylist = message.HlsPlaylist,
-                Target = message.Target,
-                DateSent = DateTime.UtcNow,
-                Type = MessageType.HLSPlaylist,
-                Sender = await _authenticationHandler.GetUsernameAsync()
-            });
-        }
-
         private async Task SendText(ClientMessage message)
         {
             await AddToMessageBox(message.PlainText, message.Target, message.Id);

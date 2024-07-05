@@ -4,24 +4,23 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
-    TransferHandling.Handlers;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class TextMessageHandler(
+public class TextMessageReceivedStrategy(
     IMessageBox messageBox,
     IAuthenticationHandler authenticationHandler,
     IMessageService messageService)
     : ITransferHandler<TextMessage>
 {
-    public async Task HandleAsync(TextMessage clientMessage)
+    public async Task HandleAsync(TextMessage textMessage)
     {
-        if (clientMessage.Total == 1 &&
-            messageBox.Contains(new Message { Id = clientMessage.Id })) //not a composite message, duplicate
+        if (textMessage.Total == 1 &&
+            messageBox.Contains(new Message { Id = textMessage.Id })) //not a composite message, duplicate
             return;
 
-        await SendReceivedConfirmation(clientMessage.Id, clientMessage.Sender);
+        await SendReceivedConfirmation(textMessage.Id, textMessage.Sender);
 
-        messageBox.AddMessage(clientMessage);
+        messageBox.AddMessage(textMessage);
     }
 
     private async Task SendReceivedConfirmation(Guid messageId, string messageSender)

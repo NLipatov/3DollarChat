@@ -6,7 +6,7 @@ namespace Client.Infrastructure.Cryptography.KeyStorage;
 public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
 {
     private readonly AesKeyStorage _aesKeyStorage = new(runtime);
-    private readonly RsaKeyStorage _rsaKeyStorage = new();
+    private readonly RsaKeyStorage _rsaKeyStorage = new(runtime);
 
     public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
@@ -17,9 +17,14 @@ public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task StoreAsync(Key key)
     {
-        if (key.Type is KeyType.RsaPublic || key.Type is KeyType.RsaPrivate)
-            await _rsaKeyStorage.StoreAsync(key);
-        await _aesKeyStorage.StoreAsync(key);
+        var storeTask = key.Type switch
+        {
+            KeyType.RsaPublic or KeyType.RsaPrivate => _rsaKeyStorage.StoreAsync(key),
+            KeyType.Aes => _aesKeyStorage.StoreAsync(key),
+            _ => Task.FromException(new ArgumentException($"Unexpected {nameof(key.Type)}"))
+        };
+
+        await storeTask;
     }
 
     public async Task DeleteAsync(Key key)
@@ -31,9 +36,11 @@ public class KeyStorage(IPlatformRuntime runtime) : IKeyStorage
 
     public async Task<List<Key>> GetAsync(string accessor, KeyType type)
     {
-        if (type is KeyType.RsaPublic || type is KeyType.RsaPrivate)
-            return await _rsaKeyStorage.GetAsync(accessor, type);
-        return await _aesKeyStorage.GetAsync(accessor, type);
+        return type switch
+        {
+            KeyType.RsaPublic or KeyType.RsaPrivate => await _rsaKeyStorage.GetAsync(accessor, type),
+            _ => await _aesKeyStorage.GetAsync(accessor, type)
+        };
     }
 
     public async Task UpdateAsync(Key updatedKey)

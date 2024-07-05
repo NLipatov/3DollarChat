@@ -22,6 +22,7 @@ namespace Ethachat.Client.Services.InboxService
         /// </summary>
         void AddMessage(ClientMessage message);
         void AddMessage(TextMessage message);
+        void AddMessage(HlsPlaylistMessage playlistMessage);
 
         /// <summary>
         /// Marks message as seen

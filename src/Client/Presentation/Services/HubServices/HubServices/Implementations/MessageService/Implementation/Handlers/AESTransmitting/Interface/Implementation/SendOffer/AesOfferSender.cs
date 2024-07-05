@@ -1,11 +1,8 @@
-using System.Text.Json;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
-using Client.Infrastructure.Cryptography.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.ContactsProvider;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.KeyTransmition;
 using Microsoft.JSInterop;
 
@@ -30,7 +27,7 @@ public class AesOfferSender : IAesOfferSender
         _keyStorage = keyStorage;
     }
 
-    public async Task<Message> GenerateAesOfferAsync(string partnersUsername, string partnersPublicKey, Key aesKey)
+    public async Task<AesOffer> GenerateAesOfferAsync(string partnersUsername, Key aesKey)
     {
         if (string.IsNullOrWhiteSpace(aesKey.Value?.ToString()))
             throw new ApplicationException("Could not properly generated an AES Key for conversation");
@@ -39,47 +36,24 @@ public class AesOfferSender : IAesOfferSender
 
         AesOffer offer = new()
         {
-            key = aesKey,
-            PassPhrase = contact?.TrustedPassphrase ?? string.Empty
-        };
-
-        var partnerPublicRsaKey = await _keyStorage.GetAsync(partnersUsername, KeyType.RsaPublic);
-        string? encryptedOffer = (await _cryptographyService
-                .EncryptAsync<RsaHandler>
-                (new Cryptogram
-                    {
-                        Cyphertext = JsonSerializer.Serialize(offer)
-                    },
-                    //We will encrypt it with partners Public Key, so he will be able to decrypt it with his Private Key
-                    partnerPublicRsaKey.First()))
-            .Cyphertext;
-
-        Message messageWithAesOffer = new()
-        {
-            Type = MessageType.AesOffer,
-            DateSent = DateTime.UtcNow,
             Sender = await _authenticationHandler.GetUsernameAsync(),
             Target = partnersUsername,
-            Cryptogramm = new()
-            {
-                Cyphertext = encryptedOffer,
-                KeyId = aesKey.Id
-            }
+            key = aesKey,
+            PassPhrase = contact?.TrustedPassphrase ?? string.Empty
         };
 
         await _keyStorage.StoreAsync(new Key
         {
             Id = aesKey.Id,
             Value = aesKey.Value,
-            Contact = messageWithAesOffer.Target,
+            Contact = partnersUsername,
             Format = KeyFormat.Raw,
             Type = KeyType.Aes,
-            Author = messageWithAesOffer.Sender,
+            Author = await _authenticationHandler.GetUsernameAsync(),
             IsAccepted = false,
-            OfferMessageId = messageWithAesOffer.Id,
             CreationDate = aesKey.CreationDate
         });
 
-        return messageWithAesOffer;
+        return offer;
     }
 }

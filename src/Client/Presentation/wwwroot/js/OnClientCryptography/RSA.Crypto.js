@@ -1,4 +1,17 @@
-﻿async function GenerateRSAOAEPKeyPairAsync() {
+﻿function convertPemToBinary(pem) {
+    const lines = pem.split('\n');
+    let encoded = '';
+    for (let i = 0; i < lines.length; i++) {
+        if (lines[i].trim().length > 0 && !lines[i].includes('-----BEGIN') && !lines[i].includes('-----END')) {
+            encoded += lines[i].trim();
+        }
+    }
+    const binary = new Uint8Array(window.atob(encoded).split("").map(char => char.charCodeAt(0)));
+    return binary.buffer;
+}
+
+// Key generation and conversion functions
+async function GenerateRSAOAEPKeyPairAsync() {
     try {
         const keyPair = await window.crypto.subtle.generateKey(
             {
@@ -45,21 +58,9 @@ const privateToPemAsync = async (key) => {
     return pemExported;
 }
 
-/*
-Import a PEM encoded RSA public key, to use for RSA-OAEP encryption.
-Takes a string containing the PEM encoded key, and returns a Promise
-that will resolve to a CryptoKey representing the public key.
-*/
-function importPublicKey(pem) {
-    // fetch the part of the PEM string between header and footer
-    const pemHeader = "-----BEGIN PUBLIC KEY-----";
-    const pemFooter = "-----END PUBLIC KEY-----";
-    const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    // base64 decode the string to get the binary data
-    const binaryDerString = window.atob(pemContents);
-    // convert from a binary string to an ArrayBuffer
-    const binaryDer = str2ab(binaryDerString);
-
+// Import PEM encoded keys
+async function importPublicKey(pem) {
+    const binaryDer = convertPemToBinary(pem);
     return window.crypto.subtle.importKey(
         "spki",
         binaryDer,
@@ -72,10 +73,11 @@ function importPublicKey(pem) {
     );
 }
 
-async function importPrivateKey(pkcs8Pem) {
-    return await window.crypto.subtle.importKey(
+async function importPrivateKey(pem) {
+    const binaryDer = convertPemToBinary(pem);
+    return window.crypto.subtle.importKey(
         "pkcs8",
-        getPkcs8Der(pkcs8Pem),
+        binaryDer,
         {
             name: "RSA-OAEP",
             hash: "SHA-256",
@@ -85,48 +87,64 @@ async function importPrivateKey(pkcs8Pem) {
     );
 }
 
-function getPkcs8Der(pkcs8Pem) {
-    const pemHeader = "-----BEGIN PRIVATE KEY-----";
-    const pemFooter = "-----END PRIVATE KEY-----";
-    var pemContents = pkcs8Pem.substring(pemHeader.length, pkcs8Pem.length - pemFooter.length);
-    var binaryDerString = window.atob(pemContents);
-    return str2ab(binaryDerString);
-}
-
+// Encryption and Decryption functions
 async function EncryptWithRSAPublicKey(message, RSApublicKey) {
-    return {
-        ciphertext: await encryptMessage(message, await importPublicKey(RSApublicKey)),
-        iv: '',
-    };
-}
-
-async function DecryptWithRSAPrivateKey(ciphertext, privateKey) {
-    return {
-        ciphertext: await decryptMessage(ciphertext, await importPrivateKey(privateKey)),
-        iv: '',
-    };
-}
-
-async function encryptMessage(message, key) {
-    const encoded = new TextEncoder().encode(message);
+    const encodedMessage = new TextEncoder().encode(message);
+    const key = await importPublicKey(RSApublicKey);
     const ciphertext = await window.crypto.subtle.encrypt(
         {
             name: "RSA-OAEP"
         },
         key,
-        encoded
+        encodedMessage
     );
-
-    return ab2str(ciphertext);
+    return new Uint8Array(ciphertext);
 }
 
-async function decryptMessage(ciphertext, key) {
-    let decrypted = await window.crypto.subtle.decrypt(
+async function DecryptWithRSAPrivateKey(ciphertext, privateKey) {
+    const key = await importPrivateKey(privateKey);
+    const decryptedData = await window.crypto.subtle.decrypt(
         {
             name: "RSA-OAEP"
         },
         key,
-        await str2ab(ciphertext)
+        ciphertext
     );
-    return new TextDecoder().decode(decrypted);
+    return new TextDecoder().decode(decryptedData);
+}
+
+// New function to encrypt Uint8Array data
+async function EncryptDataWithRSAPublicKey(data, RSApublicKey) {
+    try {
+        const key = await importPublicKey(RSApublicKey);
+        const ciphertext = await window.crypto.subtle.encrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            key,
+            data
+        );
+        return new Uint8Array(ciphertext);
+    } catch (error) {
+        console.error('An error occurred:', error.message);
+        throw new Error('Failed to import public key. Please ensure the correct key is provided.');
+    }
+}
+
+// New function to decrypt Uint8Array data
+async function DecryptDataWithRSAPrivateKey(ciphertext, RSAprivateKey) {
+    try {
+        const key = await importPrivateKey(RSAprivateKey);
+        const decryptedData = await window.crypto.subtle.decrypt(
+            {
+                name: "RSA-OAEP"
+            },
+            key,
+            ciphertext
+        );
+        return new Uint8Array(decryptedData);
+    } catch (error) {
+        console.error('An error occurred:', error.message);
+        throw new Error('Failed to import private key. Please ensure the correct key is provided.');
+    }
 }

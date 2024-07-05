@@ -6,13 +6,12 @@
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
 @using Ethachat.Client.Services.VideoStreamingService
-@using Ethachat.Client.UI.Chat.Logic.MessageBuilder
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
+@using EthachatShared.Models.Message.ClientToClientTransferData
 @using EthachatShared.Models.Message.DataTransfer
 @using global::Client.Application.Cryptography
 @using global::Client.Application.Cryptography.KeyStorage
-@inject IMessageBuilder MessageBuilder
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime
@@ -125,16 +124,18 @@
             if (playlist is not null)
             {
                 CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-        
-                await MessageService.SendMessage(new ClientMessage
+
+                var playlistMessage = new HlsPlaylistMessage
                 {
                     Id = Guid.NewGuid(),
-                    HlsPlaylist = playlist,
-                    Type = MessageType.HLSPlaylist,
+                    Playlist = playlist.M3U8Content,
                     Target = TopicName,
                     Sender = MyUsername,
-                    DateSent = DateTime.UtcNow
-                });
+                };
+
+                MessageBox.AddMessage(playlistMessage);
+        
+                await MessageService.TransferAsync(playlistMessage);
                 return;
             }
         }
@@ -148,6 +149,15 @@
             await fileStream.CopyToAsync(memoryStream);
             fileBytes = memoryStream.ToArray();
         }
+
+        var package = new Package
+        {
+            Data = fileBytes,
+            ContentType = browserFile.ContentType,
+            Filename = browserFile.Name,
+            Target = TopicName,
+            Sender = MyUsername,
+        };
         
         await MessageService.SendMessage(new Package
         {
@@ -169,7 +179,7 @@
         var progressStreamContent = new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
         progressStreamContent.ProgressChanged += (bytes, currBytes, totalBytes) =>
         {
-            var ratio = (double)currBytes / (double)totalBytes;
+            var ratio = currBytes / (double)totalBytes;
             var percentage = Math.Round(ratio * 100, 1);
             CallbackExecutor.ExecuteSubscriptionsByName(percentage, "OnVideoUploadProgressChanged");
         };
@@ -219,18 +229,14 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            var message = new ClientMessage
+            await MessageService.SendMessage(new TextMessage
             {
+                Sender = MyUsername,
                 Target = TopicName,
-                Type = MessageType.TextMessage
-            };
-            message.AddChunk(new()
-            {
                 Text = MessageInput,
                 Index = 0,
                 Total = 1
             });
-            await MessageService.SendMessage(message);
         }
 
         MessageInput = string.Empty;

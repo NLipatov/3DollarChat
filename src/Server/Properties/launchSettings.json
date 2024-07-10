@@ -1,19 +1,13 @@
 {
   "profiles": {
-    "IIS Express": {
-      "commandName": "IISExpress",
+    "Kestrel": {
+      "commandName": "Project",
       "launchBrowser": true,
+      "applicationUrl": "http://localhost:8000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "inspectUri": "{wsProtocol}://{url.hostname}:{url.port}/_framework/debug/ws-proxy?browser={browserInspectUri}"
-    }
-  },
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:8000"
     }
   }
 }

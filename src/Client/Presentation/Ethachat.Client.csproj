@@ -23,6 +23,7 @@
     <Content Remove="wwwroot\blazorFfmpeg.js" />
     <None Include="wwwroot\js\Clipboard\ClipboardInteractor.js" />
     <Compile Remove="Cryptography\KeyStorage\KeyStorageProvider.cs" />
+    <None Remove="Properties\launchSettings.json" />
   </ItemGroup>
 
   <ItemGroup>
@@ -52,6 +53,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Properties\" />
     <Folder Include="Services\AuthenticationService\Handlers\Implementations\" />
     <Folder Include="UI\CommonComponents\" />
     <Folder Include="UI\Shared\Card\" />

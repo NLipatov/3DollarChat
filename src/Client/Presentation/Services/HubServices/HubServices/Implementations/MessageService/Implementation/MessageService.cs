@@ -26,6 +26,7 @@ using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.Interfaces;
@@ -56,6 +57,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private HubConnection? HubConnection { get; set; }
         private MessageProcessor<KeyMessage> _keyMessageProcessor;
         private ITransferProcessorResolver _transferProcessorResolver;
+        private static HashSet<string> receivedRsaKeys = new();
 
         public MessageService
         (IMessageBox messageBox,
@@ -277,18 +279,25 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (_messageBox.Contains(message))
                         return;
-
+                    
                     if (message.Type is MessageType.RsaPubKey)
                     {
+                        var rsaKey = (message.Cryptogramm?.Cyphertext ?? throw new NullReferenceException()).ToString();
+                        
+                        if (receivedRsaKeys.Contains(rsaKey))
+                            return;
+                        
                         await _keyStorage.StoreAsync(new Key
                         {
                             Type = KeyType.RsaPublic,
                             Contact = message.Sender,
                             Format = KeyFormat.PemSpki,
-                            Value = message.Cryptogramm!.Cyphertext
+                            Value = message.Cryptogramm!.Cyphertext ?? throw new NullReferenceException()
                         });
 
-                        await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
+                        await RegenerateAESAsync(_cryptographyService, message.Sender);
+
+                        receivedRsaKeys.Add(rsaKey);
                     }
                 }
             });
@@ -332,8 +341,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task RegenerateAESAsync
         (ICryptographyService cryptographyService,
-            string partnersUsername,
-            string partnersPublicKey)
+            string partnersUsername)
         {
             var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
             aesKey.Author = await _authenticationHandler.GetUsernameAsync();
@@ -362,6 +370,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task SendMessage(KeyMessage message)
         {
             await TransferAsync(message);
+        }
+
+        public void RemoveFromReceived(string rsaKey)
+        {
+            Console.WriteLine("Removing rsa...");
+            receivedRsaKeys.Remove(rsaKey);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

@@ -1,6 +1,7 @@
 ﻿using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using EthachatShared.Encryption;
+using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
 
 namespace Client.Infrastructure.Cryptography
@@ -52,23 +53,23 @@ namespace Client.Infrastructure.Cryptography
             };
         }
 
-        public async Task<Cryptogram> DecryptAsync<T>(Cryptogram cryptogram, Key key)
+        public async Task<TextCryptogram> DecryptAsync<T>(TextCryptogram textCryptogram, Key key)
             where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _cryptographyExecutor);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Decrypt(cryptogram, key);
+            return await cryptoHandler.Decrypt(textCryptogram, key);
         }
 
-        public async Task<Cryptogram> EncryptAsync<T>(Cryptogram cryptogram, Key key) where T : ICryptoHandler
+        public async Task<TextCryptogram> EncryptAsync<T>(TextCryptogram textCryptogram, Key key) where T : ICryptoHandler
         {
             ICryptoHandler? cryptoHandler = (T?)Activator.CreateInstance(typeof(T), _cryptographyExecutor);
             if (cryptoHandler is null)
                 throw new ApplicationException($"Could not create a proper {typeof(T)} instance.");
 
-            return await cryptoHandler.Encrypt(cryptogram, key);
+            return await cryptoHandler.Encrypt(textCryptogram, key);
         }
 
         public async Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)

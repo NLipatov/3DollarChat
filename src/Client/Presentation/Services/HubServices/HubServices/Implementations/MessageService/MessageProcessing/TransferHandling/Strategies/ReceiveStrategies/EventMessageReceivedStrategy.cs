@@ -79,6 +79,7 @@ public class EventMessageReceivedStrategy(
 
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "AESUpdated");
+        messageService.RemoveFromReceived(((await keyStorage.GetAsync(eventMessage.Sender, KeyType.RsaPublic)).MaxBy(x=>x.CreationDate) ?? throw new NullReferenceException()).Value.ToString());
     }
     
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)

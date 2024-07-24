@@ -2,7 +2,6 @@
 using Client.Application.Cryptography.KeyStorage;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
-using EthachatShared.Models.Message;
 
 namespace Client.Infrastructure.Cryptography
 {

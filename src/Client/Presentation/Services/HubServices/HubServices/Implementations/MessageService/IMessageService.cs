@@ -9,6 +9,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
         Task SendMessage<T>(T message) where T : IDestinationResolvable;
         Task SendMessage(KeyMessage message);
-        void RemoveFromReceived(string rsaKey);
     }
 }

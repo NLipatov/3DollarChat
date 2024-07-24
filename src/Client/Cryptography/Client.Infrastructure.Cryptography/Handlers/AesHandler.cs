@@ -3,7 +3,6 @@ using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
-using EthachatShared.Models.Message;
 using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;

@@ -11,6 +11,7 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -52,12 +53,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IAesTransmissionManager _aesTransmissionManager;
         private readonly IContactsProvider _contactsProvider;
         private readonly IKeyStorage _keyStorage;
+        private readonly IKeyExchangeContextManager _exchangeContextManager;
         private bool _isConnectionClosedCallbackSet = false;
         private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? HubConnection { get; set; }
         private MessageProcessor<KeyMessage> _keyMessageProcessor;
         private ITransferProcessorResolver _transferProcessorResolver;
-        private static HashSet<string> receivedRsaKeys = new();
 
         public MessageService
         (IMessageBox messageBox,
@@ -71,7 +72,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IJSRuntime jsRuntime,
             IAesTransmissionManager aesTransmissionManager,
             IContactsProvider contactsProvider,
-            IKeyStorage keyStorage)
+            IKeyStorage keyStorage,
+            IKeyExchangeContextManager exchangeContextManager)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -86,12 +88,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _aesTransmissionManager = aesTransmissionManager;
             _contactsProvider = contactsProvider;
             _keyStorage = keyStorage;
+            _exchangeContextManager = exchangeContextManager;
             InitializeHubConnection();
             RegisterHubEventHandlers();
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
-                _cryptographyService);
+                _cryptographyService, _exchangeContextManager);
         }
 
         private void RegisterTransferHandlers()
@@ -284,7 +287,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     {
                         var rsaKey = (message.Cryptogramm?.Cyphertext ?? throw new NullReferenceException()).ToString();
                         
-                        if (receivedRsaKeys.Contains(rsaKey))
+                        if (_exchangeContextManager.Contains(message.Sender, rsaKey))
                             return;
                         
                         await _keyStorage.StoreAsync(new Key
@@ -297,7 +300,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                         await RegenerateAESAsync(_cryptographyService, message.Sender);
 
-                        receivedRsaKeys.Add(rsaKey);
+                        _exchangeContextManager.Add(message.Sender, rsaKey);
                     }
                 }
             });
@@ -370,12 +373,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task SendMessage(KeyMessage message)
         {
             await TransferAsync(message);
-        }
-
-        public void RemoveFromReceived(string rsaKey)
-        {
-            Console.WriteLine("Removing rsa...");
-            receivedRsaKeys.Remove(rsaKey);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

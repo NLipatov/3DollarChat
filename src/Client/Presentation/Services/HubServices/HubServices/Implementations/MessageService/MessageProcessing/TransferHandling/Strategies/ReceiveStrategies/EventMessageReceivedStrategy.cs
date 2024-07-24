@@ -2,6 +2,7 @@ using Client.Application.Cryptography.KeyStorage;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message;
@@ -13,7 +14,8 @@ public class EventMessageReceivedStrategy(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,
-    IKeyStorage keyStorage) : ITransferHandler<EventMessage>
+    IKeyStorage keyStorage,
+    IKeyExchangeContextManager keyExchangeContextManager) : ITransferHandler<EventMessage>
 {
     public async Task HandleAsync(EventMessage message)
     {
@@ -79,6 +81,11 @@ public class EventMessageReceivedStrategy(
 
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "AESUpdated");
+
+        var rsaKey =
+            ((await keyStorage.GetAsync(eventMessage.Sender, KeyType.RsaPublic)).MaxBy(x => x.CreationDate) ??
+             throw new NullReferenceException()).Value.ToString();
+        keyExchangeContextManager.Delete(eventMessage.Sender, rsaKey);
     }
     
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)

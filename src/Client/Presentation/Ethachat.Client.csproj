@@ -23,6 +23,7 @@
     <Content Remove="wwwroot\blazorFfmpeg.js" />
     <None Include="wwwroot\js\Clipboard\ClipboardInteractor.js" />
     <Compile Remove="Cryptography\KeyStorage\KeyStorageProvider.cs" />
+    <None Remove="Properties\launchSettings.json" />
   </ItemGroup>
 
   <ItemGroup>

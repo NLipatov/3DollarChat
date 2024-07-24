@@ -2,7 +2,7 @@
 using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Message;
+using EthachatShared.Models.Cryptograms;
 using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;
@@ -47,13 +47,13 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         };
     }
 
-    public async Task<Cryptogram> Decrypt(Cryptogram cryptogram, Key key)
+    public async Task<TextCryptogram> Decrypt(TextCryptogram textCryptogram, Key key)
     {
         EncryptionResult result = await runtimeCryptographyExecutor.InvokeAsync<EncryptionResult>("AESDecryptText",
         [
-            cryptogram.Cyphertext ?? string.Empty,
+            textCryptogram.Cyphertext ?? string.Empty,
             key.Value?.ToString() ?? throw new MissingKeyException(),
-            cryptogram.Iv
+            textCryptogram.Iv
         ]);
 
         return new()
@@ -64,12 +64,12 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         };
     }
 
-    public async Task<Cryptogram> Encrypt(Cryptogram cryptogram, Key key)
+    public async Task<TextCryptogram> Encrypt(TextCryptogram textCryptogram, Key key)
     {
         EncryptionResult result = await runtimeCryptographyExecutor
             .InvokeAsync<EncryptionResult>("AESEncryptText",
             [
-                cryptogram.Cyphertext ?? string.Empty,
+                textCryptogram.Cyphertext ?? string.Empty,
                 key.Value?.ToString() ?? throw new MissingKeyException()
             ]);
 

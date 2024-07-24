@@ -11,6 +11,7 @@ using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Builders;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -26,6 +27,7 @@ using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.Interfaces;
@@ -51,6 +53,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IAesTransmissionManager _aesTransmissionManager;
         private readonly IContactsProvider _contactsProvider;
         private readonly IKeyStorage _keyStorage;
+        private readonly IKeyExchangeContextManager _exchangeContextManager;
         private bool _isConnectionClosedCallbackSet = false;
         private AckMessageBuilder AckMessageBuilder => new();
         private HubConnection? HubConnection { get; set; }
@@ -69,7 +72,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IJSRuntime jsRuntime,
             IAesTransmissionManager aesTransmissionManager,
             IContactsProvider contactsProvider,
-            IKeyStorage keyStorage)
+            IKeyStorage keyStorage,
+            IKeyExchangeContextManager exchangeContextManager)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -84,12 +88,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _aesTransmissionManager = aesTransmissionManager;
             _contactsProvider = contactsProvider;
             _keyStorage = keyStorage;
+            _exchangeContextManager = exchangeContextManager;
             InitializeHubConnection();
             RegisterHubEventHandlers();
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
-                _cryptographyService);
+                _cryptographyService, _exchangeContextManager);
         }
 
         private void RegisterTransferHandlers()
@@ -277,18 +282,25 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                     if (_messageBox.Contains(message))
                         return;
-
+                    
                     if (message.Type is MessageType.RsaPubKey)
                     {
+                        var rsaKey = (message.Cryptogramm?.Cyphertext ?? throw new NullReferenceException()).ToString();
+                        
+                        if (_exchangeContextManager.Contains(message.Sender, rsaKey))
+                            return;
+                        
                         await _keyStorage.StoreAsync(new Key
                         {
                             Type = KeyType.RsaPublic,
                             Contact = message.Sender,
                             Format = KeyFormat.PemSpki,
-                            Value = message.Cryptogramm!.Cyphertext
+                            Value = message.Cryptogramm!.Cyphertext ?? throw new NullReferenceException()
                         });
 
-                        await RegenerateAESAsync(_cryptographyService, message.Sender, message.Cryptogramm.Cyphertext);
+                        await RegenerateAESAsync(_cryptographyService, message.Sender);
+
+                        _exchangeContextManager.Add(message.Sender, rsaKey);
                     }
                 }
             });
@@ -332,8 +344,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task RegenerateAESAsync
         (ICryptographyService cryptographyService,
-            string partnersUsername,
-            string partnersPublicKey)
+            string partnersUsername)
         {
             var aesKey = await cryptographyService.GenerateAesKeyAsync(partnersUsername);
             aesKey.Author = await _authenticationHandler.GetUsernameAsync();

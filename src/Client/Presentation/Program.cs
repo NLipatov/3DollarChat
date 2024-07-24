@@ -23,6 +23,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.Exception
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface.Implementation.SendOffer;
@@ -72,6 +73,7 @@ builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>()
 builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IRuntimeCryptographyExecutor, RuntimeCryptographyExecutor>();
+builder.Services.AddSingleton<IKeyExchangeContextManager, KeyExchangeContextManager>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

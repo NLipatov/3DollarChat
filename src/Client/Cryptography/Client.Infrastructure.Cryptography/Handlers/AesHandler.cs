@@ -15,7 +15,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         var encryptedData =
             await runtimeCryptographyExecutor.InvokeAsync<byte[]>("AESEncryptData", [bytes, key.Value?.ToString()]);
 
-        var cryptogram = EncryptedBytesToCryptogram(encryptedData);
+        var cryptogram = EncryptedBytesToCryptogram(encryptedData, key);
         return cryptogram;
     }
 
@@ -33,7 +33,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         };
     }
 
-    private BinaryCryptogram EncryptedBytesToCryptogram(byte[] bytes)
+    private BinaryCryptogram EncryptedBytesToCryptogram(byte[] bytes, Key key)
     {
         var ivLength = bytes.First();
         var iv = bytes.Skip(1).Take(ivLength).ToArray();
@@ -43,7 +43,8 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
         {
             Iv = iv,
             Cypher = encryptedData,
-            EncryptionKeyType = KeyType.Aes
+            EncryptionKeyType = KeyType.Aes,
+            KeyId = key.Id
         };
     }
 

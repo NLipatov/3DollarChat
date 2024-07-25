@@ -6,7 +6,7 @@ using EthachatShared.Models.Message.ClientToClientTransferData;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class TextMessageReceivedStrategy(
+public class OnReceivedTextMessage(
     IMessageBox messageBox,
     IAuthenticationHandler authenticationHandler,
     IMessageService messageService)

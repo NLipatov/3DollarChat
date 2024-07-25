@@ -10,7 +10,7 @@ using EthachatShared.Models.Message;
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.ReceiveStrategies;
 
-public class EventMessageReceivedStrategy(
+public class OnReceivedEventMessage(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,

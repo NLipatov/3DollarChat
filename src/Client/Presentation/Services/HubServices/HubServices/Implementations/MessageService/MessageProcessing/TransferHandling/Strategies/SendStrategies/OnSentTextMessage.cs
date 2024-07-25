@@ -7,7 +7,7 @@ using EthachatShared.Models.Message.ClientToClientTransferData;
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.SendStrategies;
 
-public class TextMessageSendStrategy(
+public class OnSentTextMessage(
     IMessageService messageService,
     IAuthenticationHandler authenticationHandler,
     IMessageBox messageBox) : ITransferHandler<TextMessage>

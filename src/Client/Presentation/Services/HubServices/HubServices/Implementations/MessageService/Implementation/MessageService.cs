@@ -104,13 +104,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             var keyMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<KeyMessage>();
 
             aesOfferTransferReceivedHandlerFactory.RegisterHandler(nameof(AesOffer),
-                new AesOfferReceivedStrategy(_keyStorage, this, _callbackExecutor));
+                new OnReceivedAesOffer(_keyStorage, this, _callbackExecutor));
 
             keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-                new RsaPubKeyMessageRequestReceivedStrategy(_keyStorage, _cryptographyService, _authenticationHandler,
+                new OnReceivedRsaPubKeyMessageRequest(_keyStorage, _cryptographyService, _authenticationHandler,
                     this));
             keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-                new AesKeyMessageReceivedStrategy(_keyStorage, this, _callbackExecutor));
+                new OnReceivedAesKeyMessage(_keyStorage, this, _callbackExecutor));
 
             _keyMessageProcessor = new(keyMessageTransferReceivedHandlerFactory);
         }

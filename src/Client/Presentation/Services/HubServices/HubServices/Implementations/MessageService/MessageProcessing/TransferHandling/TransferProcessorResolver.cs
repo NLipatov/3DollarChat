@@ -47,34 +47,34 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         var hlsPlaylistMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<HlsPlaylistMessage>();
 
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Incoming),
-            new DataPackageReceivedStrategy(callbackExecutor, binaryReceivingManager, messageService));
+            new OnReceivedDataPackage(callbackExecutor, binaryReceivingManager, messageService));
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Outcoming),
-            new PackageSendStrategy(messageService, binarySendingManager));
+            new OnSentPackage(messageService, binarySendingManager));
 
         hlsPlaylistMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<HlsPlaylistMessage>(TransferDirection.Incoming),
-            new HlsPlaylistReceivedStrategy(messageBox));
+            new OnReceivedHlsPlaylist(messageBox));
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Incoming),
-            new TextMessageReceivedStrategy(messageBox, authenticationHandler, messageService));
+            new OnReceivedTextMessage(messageBox, authenticationHandler, messageService));
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Outcoming),
-            new TextMessageSendStrategy(messageService, authenticationHandler, messageBox));
+            new OnSentTextMessage(messageService, authenticationHandler, messageBox));
 
         aesOfferTransferReceivedHandlerFactory.RegisterHandler(GetEventName<AesOffer>(TransferDirection.Incoming),
-            new AesOfferReceivedStrategy(keyStorage, messageService, callbackExecutor));
+            new OnReceivedAesOffer(keyStorage, messageService, callbackExecutor));
         
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Incoming),
-            new EventMessageReceivedStrategy(messageBox, callbackExecutor, messageService, keyStorage, _keyExchangeContextManager));
+            new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage, _keyExchangeContextManager));
         
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Outcoming),
-            new EventMessageSendStrategy(messageService));
+            new OnSentEventMessage(messageService));
 
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-            new RsaPubKeyMessageRequestReceivedStrategy(keyStorage, cryptographyService, authenticationHandler,
+            new OnReceivedRsaPubKeyMessageRequest(keyStorage, cryptographyService, authenticationHandler,
                 messageService));
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-            new AesKeyMessageReceivedStrategy(keyStorage, messageService, callbackExecutor));
+            new OnReceivedAesKeyMessage(keyStorage, messageService, callbackExecutor));
 
         _textMessageProcessor = new(textMessageReceivedHandlerFactory);
         _eventMessageProcessor = new(eventMessageTransferReceivedHandlerFactory);

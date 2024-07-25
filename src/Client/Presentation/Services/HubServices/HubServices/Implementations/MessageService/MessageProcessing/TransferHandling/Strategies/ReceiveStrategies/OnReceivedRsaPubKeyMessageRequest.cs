@@ -5,7 +5,7 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class RsaPubKeyMessageRequestReceivedStrategy(IKeyStorage keyStorage, ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler, IMessageService messageService) : ITransferHandler<KeyMessage>
+public class OnReceivedRsaPubKeyMessageRequest(IKeyStorage keyStorage, ICryptographyService cryptographyService, IAuthenticationHandler authenticationHandler, IMessageService messageService) : ITransferHandler<KeyMessage>
 {
     public async Task HandleAsync(KeyMessage message)
     {

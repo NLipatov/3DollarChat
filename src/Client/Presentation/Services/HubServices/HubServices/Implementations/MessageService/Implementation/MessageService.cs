@@ -110,7 +110,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new OnReceivedRsaPubKeyMessageRequest(_keyStorage, _cryptographyService, _authenticationHandler,
                     this));
             keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-                new OnReceivedAesKeyMessage(_keyStorage, this, _callbackExecutor));
+                new OnReceivedAesKey(_keyStorage, this, _callbackExecutor));
 
             _keyMessageProcessor = new(keyMessageTransferReceivedHandlerFactory);
         }

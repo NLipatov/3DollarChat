@@ -74,7 +74,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new OnReceivedRsaPubKeyMessageRequest(keyStorage, cryptographyService, authenticationHandler,
                 messageService));
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-            new OnReceivedAesKeyMessage(keyStorage, messageService, callbackExecutor));
+            new OnReceivedAesKey(keyStorage, messageService, callbackExecutor));
 
         _textMessageProcessor = new(textMessageReceivedHandlerFactory);
         _eventMessageProcessor = new(eventMessageTransferReceivedHandlerFactory);

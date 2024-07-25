@@ -9,19 +9,19 @@ public class AesOfferReceivedStrategy(IKeyStorage keyStorage, IMessageService me
 {
     public async Task HandleAsync(AesOffer aesOfferMessage)
     {
-        await messageService.SendMessage(new EventMessage
-        {
-            Id = aesOfferMessage.key.Id,
-            Sender = aesOfferMessage.Target,
-            Target = aesOfferMessage.Sender,
-            Type = EventType.AesOfferAccepted
-        });
-        
         aesOfferMessage.key.IsAccepted = true; 
         aesOfferMessage.key.Contact = aesOfferMessage.key.Author;
         await keyStorage.StoreAsync(aesOfferMessage.key);
 
         callbackExecutor.ExecuteSubscriptionsByName(aesOfferMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(aesOfferMessage.Sender, "AESUpdated");
+        
+        await messageService.TransferAsync(new EventMessage
+        {
+            Id = aesOfferMessage.key.Id,
+            Sender = aesOfferMessage.Target,
+            Target = aesOfferMessage.Sender,
+            Type = EventType.AesOfferAccepted
+        });
     }
 }

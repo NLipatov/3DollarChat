@@ -462,40 +462,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 throw;
             }
         }
-
-        private void AddToMessageBox(ClientMessage message)
-        {
-            _messageBox.AddMessage(message);
-        }
-
-        private async Task AddToMessageBox(string plainText, string target, Guid id)
-        {
-            var message = new ClientMessage
-            {
-                Id = id,
-                Sender = await _authenticationHandler.GetUsernameAsync(),
-                Target = target,
-                DateSent = DateTime.UtcNow,
-                Type = MessageType.TextMessage
-            };
-            message.AddChunk(new()
-            {
-                Index = 0,
-                Total = 1,
-                Text = plainText
-            });
-            _messageBox.AddMessage(message);
-        }
-
-
-        private async Task MarkContactAsTrusted(string contactUsername)
-        {
-            var contact = await _contactsProvider.GetContact(contactUsername, _jsRuntime);
-            if (contact is not null && !string.IsNullOrWhiteSpace(contact.TrustedPassphrase))
-            {
-                contact.IsTrusted = true;
-                await _contactsProvider.UpdateContact(contact, _jsRuntime);
-            }
-        }
     }
 }

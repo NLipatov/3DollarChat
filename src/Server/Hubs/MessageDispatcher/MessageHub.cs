@@ -13,7 +13,6 @@ using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
-using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.SignalR;
@@ -228,17 +227,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task OnAck(Message syncMessage)
         {
             _reliableMessageSender.OnAck(syncMessage);
-        }
-
-        public async Task GetAnRSAPublic(string username, string requesterUsername)
-        {
-            string? pubKey = await _serverHttpClient.GetAnRSAPublicKey(username);
-            var message = new Message
-            {
-                Target = requesterUsername, Sender = username, Type = MessageType.RsaPubKey,
-                Cryptogramm = new TextCryptogram { Cyphertext = pubKey }
-            };
-            await Dispatch(message);
         }
     }
 }

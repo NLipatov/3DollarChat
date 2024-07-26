@@ -3,7 +3,6 @@ using System.Text;
 using System.Text.Json;
 using EthachatShared.Models.Authentication.Enums;
 using EthachatShared.Models.Authentication.Models;
-using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
@@ -139,47 +138,6 @@ namespace Ethachat.Server.Utilities.HttpMessaging
             }
         }
 
-        public async Task<TokenRelatedOperationResult> GetUserNameFromAccessTokenAsync(string accessToken)
-        {
-            using (var client = new HttpClient())
-            {
-                var requestUrl =
-                    $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:GetUserName"]}?accessToken={accessToken}";
-
-                var response = await client.GetAsync(requestUrl);
-
-                TokenRelatedOperationResult result =
-                    JsonSerializer.Deserialize<TokenRelatedOperationResult>(await response.Content.ReadAsStringAsync());
-
-                return result;
-            }
-        }
-
-        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
-        {
-            var requestUrl =
-                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}";
-
-            using (HttpClient client = new())
-            {
-                await client.PostAsJsonAsync(requestUrl,
-                    publicKeyDTO);
-            }
-        }
-
-        public async Task<string?> GetAnRSAPublicKey(string username)
-        {
-            var requestUrl =
-                $"{_configuration["AuthAutority:Address"]}{_configuration["AuthAutority:Endpoints:RSAPublic"]}/{username}";
-
-            using (HttpClient client = new())
-            {
-                var response = await client.GetAsync(requestUrl);
-                var pemEncodedKey = await response.Content.ReadAsStringAsync();
-                return pemEncodedKey;
-            }
-        }
-
         public async Task AddUserWebPushSubscribtion(NotificationSubscriptionDto subscriptionDTO)
         {
             var requestUrl =
@@ -236,15 +194,6 @@ namespace Ethachat.Server.Utilities.HttpMessaging
 
                 return response;
             }
-        }
-
-        public Task<string> GetServerAddress()
-        {
-            string authorityAddressKey = "AuthAutority:Address";
-            return Task.FromResult(_configuration[authorityAddressKey]
-                                   ??
-                                   throw new ArgumentException
-                                       ($"Could not get a value by key {authorityAddressKey} from server configuration."));
         }
 
         public async Task<AuthResult> GetUsernameByCredentials(CredentialsDTO credentials)

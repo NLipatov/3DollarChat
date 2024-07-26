@@ -4,7 +4,7 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class ResendRequestReceivedStrategy(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<EventMessage>
+public class OnReceivedResendRequest(IMessageBox messageBox, IMessageService messageService) : ITransferHandler<EventMessage>
 {
     public async Task HandleAsync(EventMessage textMessage)
     {

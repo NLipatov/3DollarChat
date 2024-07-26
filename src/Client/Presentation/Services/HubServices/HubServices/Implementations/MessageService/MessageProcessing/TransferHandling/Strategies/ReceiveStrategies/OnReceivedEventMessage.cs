@@ -2,15 +2,18 @@ using Client.Application.Cryptography.KeyStorage;
 using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.
+    AesKeyExchange;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
+using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
+using MessagePack;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.ReceiveStrategies;
 
-public class EventMessageReceivedStrategy(
+public class OnReceivedEventMessage(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,
@@ -87,15 +90,32 @@ public class EventMessageReceivedStrategy(
              throw new NullReferenceException()).Value.ToString();
         keyExchangeContextManager.Delete(eventMessage.Sender, rsaKey);
     }
-    
+
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)
     {
-        var myRsaPublicKey = (await keyStorage.GetAsync(string.Empty, KeyType.RsaPublic)).MaxBy(x=>x.CreationDate);
-        messageService.SendMessage(new KeyMessage
+        var rsaPubKeys = await keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
+        var mostRecentRsa = rsaPubKeys.MaxBy(x => x.CreationDate) ??
+                            throw new NullReferenceException("Missing RSA Public Key");
+
+        var keyMessage = new KeyMessage
         {
             Sender = eventMessage.Target,
             Target = eventMessage.Sender,
-            Key = myRsaPublicKey
+            Key = mostRecentRsa
+        };
+        await messageService.UnsafeTransferAsync(new EncryptedDataTransfer
+        {
+            Id = Guid.NewGuid(),
+            Sender = keyMessage.Sender,
+            Target = keyMessage.Target,
+            DataType = typeof(KeyMessage),
+            BinaryCryptogram = new BinaryCryptogram
+            {
+                Cypher = MessagePackSerializer.Serialize(keyMessage),
+                Iv = [],
+                KeyId = keyMessage.Key.Id,
+                EncryptionKeyType = KeyType.None
+            }
         });
     }
 }

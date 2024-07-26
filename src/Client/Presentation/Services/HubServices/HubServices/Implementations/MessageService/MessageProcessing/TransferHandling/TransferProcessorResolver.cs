@@ -4,7 +4,10 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.
+    AesKeyExchange;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
+    AESTransmitting.Interface;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -14,7 +17,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Strategies.SendStrategies;
 using Ethachat.Client.Services.InboxService;
-using EthachatShared.Encryption;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.KeyTransmition;
@@ -36,7 +38,8 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinarySendingManager binarySendingManager, IBinaryReceivingManager
-            binaryReceivingManager, ICryptographyService cryptographyService, IKeyExchangeContextManager keyExchangeContextManager)
+            binaryReceivingManager, ICryptographyService cryptographyService,
+        IKeyExchangeContextManager keyExchangeContextManager, IAesTransmissionManager aesTransmissionManager)
     {
         _keyExchangeContextManager = keyExchangeContextManager;
         var textMessageReceivedHandlerFactory = new TransferHandlerFactory<TextMessage>();
@@ -47,34 +50,34 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         var hlsPlaylistMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<HlsPlaylistMessage>();
 
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Incoming),
-            new DataPackageReceivedStrategy(callbackExecutor, binaryReceivingManager, messageService));
+            new OnReceivedDataPackage(callbackExecutor, binaryReceivingManager, messageService));
         packageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<Package>(TransferDirection.Outcoming),
-            new PackageSendStrategy(messageService, binarySendingManager));
+            new OnSentPackage(messageService, binarySendingManager));
 
         hlsPlaylistMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<HlsPlaylistMessage>(TransferDirection.Incoming),
-            new HlsPlaylistReceivedStrategy(messageBox));
+            new OnReceivedHlsPlaylist(messageBox));
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Incoming),
-            new TextMessageReceivedStrategy(messageBox, authenticationHandler, messageService));
+            new OnReceivedTextMessage(messageBox, authenticationHandler, messageService));
 
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Outcoming),
-            new TextMessageSendStrategy(messageService, authenticationHandler, messageBox));
+            new OnSentTextMessage(messageService, authenticationHandler, messageBox));
 
         aesOfferTransferReceivedHandlerFactory.RegisterHandler(GetEventName<AesOffer>(TransferDirection.Incoming),
-            new AesOfferReceivedStrategy(keyStorage, messageService, callbackExecutor));
-        
-        eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Incoming),
-            new EventMessageReceivedStrategy(messageBox, callbackExecutor, messageService, keyStorage, _keyExchangeContextManager));
-        
-        eventMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<EventMessage>(TransferDirection.Outcoming),
-            new EventMessageSendStrategy(messageService));
+            new OnReceivedAesOffer(keyStorage, messageService, callbackExecutor));
 
-        keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-            new RsaPubKeyMessageRequestReceivedStrategy(keyStorage, cryptographyService, authenticationHandler,
-                messageService));
-        keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-            new AesKeyMessageReceivedStrategy(keyStorage, messageService, callbackExecutor));
+        eventMessageTransferReceivedHandlerFactory.RegisterHandler(
+            GetEventName<EventMessage>(TransferDirection.Incoming),
+            new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage,
+                _keyExchangeContextManager));
+
+        eventMessageTransferReceivedHandlerFactory.RegisterHandler(
+            GetEventName<EventMessage>(TransferDirection.Outcoming),
+            new OnSentEventMessage(messageService));
+
+        keyMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<KeyMessage>(TransferDirection.Incoming),
+            new OnReceivedKeyMessage(keyStorage, messageService, cryptographyService, aesTransmissionManager));
 
         _textMessageProcessor = new(textMessageReceivedHandlerFactory);
         _eventMessageProcessor = new(eventMessageTransferReceivedHandlerFactory);
@@ -93,7 +96,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public string GetEventName<T>(TransferDirection direction)
     {
         string?[] arguments = [direction.ToString(), typeof(T).ToString()];
-        return string.Join('_', arguments.Where(x=>!string.IsNullOrWhiteSpace(x)));
+        return string.Join('_', arguments.Where(x => !string.IsNullOrWhiteSpace(x)));
     }
 
     public MessageProcessor<T> GetProcessor<T>()

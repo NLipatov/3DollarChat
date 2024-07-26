@@ -5,7 +5,6 @@ using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
-using EthachatShared.Models.Authentication.Models.AuthenticatedUserRepresentation.PublicKey;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
@@ -128,13 +127,6 @@ namespace Ethachat.Server.Hubs
                 }
 
                 await Clients.Caller.SendAsync("OnNameResolve", username);
-
-                await _serverHttpClient.PostAnRSAPublic(new PublicKeyDto
-                {
-                    Key = RSAPublicKey.Value!.ToString(),
-                    Username = username,
-                    AuthenticationType = authenticationType,
-                });
             }
             catch (Exception e)
             {
@@ -167,11 +159,6 @@ namespace Ethachat.Server.Hubs
         public async Task PushConId()
         {
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
-        }
-
-        public async Task PostAnRSAPublic(PublicKeyDto publicKeyDTO)
-        {
-            await _serverHttpClient.PostAnRSAPublic(publicKeyDTO);
         }
 
         public async Task IsUserOnline(string username)

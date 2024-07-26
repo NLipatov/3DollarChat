@@ -5,7 +5,7 @@ using EthachatShared.Models.Message.DataTransfer;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class DataPackageReceivedStrategy(
+public class OnReceivedDataPackage(
     ICallbackExecutor callbackExecutor,
     IBinaryReceivingManager binaryReceivingManager,
     IMessageService messageService) : ITransferHandler<Package>

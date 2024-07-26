@@ -4,7 +4,7 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class HlsPlaylistReceivedStrategy(IMessageBox messageBox) : ITransferHandler<HlsPlaylistMessage>
+public class OnReceivedHlsPlaylist(IMessageBox messageBox) : ITransferHandler<HlsPlaylistMessage>
 {
     public Task HandleAsync(HlsPlaylistMessage playtlistMesssage)
     {

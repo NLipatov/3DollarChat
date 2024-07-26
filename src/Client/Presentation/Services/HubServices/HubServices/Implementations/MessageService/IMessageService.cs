@@ -1,4 +1,4 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.Interfaces;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
@@ -6,8 +6,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     public interface IMessageService : IHubService
     {
         Task NegotiateOnAESAsync(string partnerUsername);
+        Task UnsafeTransferAsync(EncryptedDataTransfer data);
         Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
         Task SendMessage<T>(T message) where T : IDestinationResolvable;
-        Task SendMessage(KeyMessage message);
     }
 }

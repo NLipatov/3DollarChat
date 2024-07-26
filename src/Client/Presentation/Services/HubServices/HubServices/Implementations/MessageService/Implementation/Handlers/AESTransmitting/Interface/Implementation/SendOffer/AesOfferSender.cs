@@ -36,6 +36,7 @@ public class AesOfferSender : IAesOfferSender
 
         AesOffer offer = new()
         {
+            Id = aesKey.Id,
             Sender = await _authenticationHandler.GetUsernameAsync(),
             Target = partnersUsername,
             key = aesKey,

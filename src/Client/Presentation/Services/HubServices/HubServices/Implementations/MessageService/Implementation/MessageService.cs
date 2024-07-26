@@ -95,7 +95,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
-                _cryptographyService, _exchangeContextManager);
+                _cryptographyService, _exchangeContextManager, _aesTransmissionManager);
         }
 
         private void RegisterTransferHandlers()
@@ -106,11 +106,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             aesOfferTransferReceivedHandlerFactory.RegisterHandler(nameof(AesOffer),
                 new OnReceivedAesOffer(_keyStorage, this, _callbackExecutor));
 
-            keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.RsaPublic.ToString(),
-                new OnReceivedRsaPubKeyMessageRequest(_keyStorage, _cryptographyService, _authenticationHandler,
-                    this));
-            keyMessageTransferReceivedHandlerFactory.RegisterHandler(KeyType.Aes.ToString(),
-                new OnReceivedAesKey(_keyStorage, this, _callbackExecutor));
+            keyMessageTransferReceivedHandlerFactory.RegisterHandler(nameof(KeyMessage),
+                new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService, _aesTransmissionManager));
 
             _keyMessageProcessor = new(keyMessageTransferReceivedHandlerFactory);
         }
@@ -356,8 +353,24 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            await (await GetHubConnectionAsync()).SendAsync("GetAnRSAPublic", partnerUsername,
-                await _authenticationHandler.GetUsernameAsync());
+            await UnsafeTransferAsync(new EncryptedDataTransfer
+            {
+                Id = Guid.NewGuid(),
+                Sender = await _authenticationHandler.GetUsernameAsync(),
+                Target = partnerUsername,
+                DataType = typeof(EventMessage),
+                BinaryCryptogram = new BinaryCryptogram
+                {
+                    EncryptionKeyType = KeyType.None,
+                    Cypher = MessagePackSerializer.Serialize(new EventMessage
+                    {
+                        Id = Guid.NewGuid(),
+                        Target = partnerUsername,
+                        Sender = await _authenticationHandler.GetUsernameAsync(),
+                        Type = EventType.RsaPubKeyRequest,
+                    })
+                }
+            });
         }
 
         public async Task SendMessage<T>(T message) where T : IDestinationResolvable
@@ -374,6 +387,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         public async Task SendMessage(KeyMessage message)
         {
             await TransferAsync(message);
+        }
+
+        public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
+        {
+            var connection = await GetHubConnectionAsync();
+            await connection.SendAsync("TransferAsync", data);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
@@ -422,6 +441,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             try
             {
+                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.None)
+                {
+                    var result = MessagePackSerializer.Deserialize<T>(dataTransfer.BinaryCryptogram.Cypher);
+                    return result;
+                }
+
                 if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.RsaPublic)
                 {
                     var rsaPrivateKey = (await _keyStorage.GetAsync(string.Empty, KeyType.RsaPrivate))

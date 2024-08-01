@@ -40,7 +40,7 @@ public class OnSentTextMessage(
         messageBox.AddMessage(message);
     }
 
-    public async IAsyncEnumerable<TextMessage> BuildTextMessageAsync(TextMessage message)
+    private async IAsyncEnumerable<TextMessage> BuildTextMessageAsync(TextMessage message)
     {
         var messagesCount = (int)Math.Ceiling(message.Text.Length / (decimal)MaxTextChunkLength);
         for (int i = 0; i * MaxTextChunkLength < message.Text.Length; i++)
@@ -58,6 +58,7 @@ public class OnSentTextMessage(
                 Text = textChunk,
             };
 
+            await Task.Yield();
             yield return messageToSend;
         }
     }

@@ -8,10 +8,8 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 
-public class WebAuthnAuthenticationHandler : IWebAuthnHandler
+public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageService) : IWebAuthnHandler
 {
-    private readonly ILocalStorageService _localStorageService;
-
     public async Task<CredentialsDTO> GetCredentialsDto()
     {
         return new CredentialsDTO()
@@ -30,27 +28,20 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
     }
 
     private async Task<string> GetCredentialId() =>
-        await _localStorageService.ReadPropertyAsync("credentialId") ?? string.Empty;
+        await localStorageService.ReadPropertyAsync("credentialId") ?? string.Empty;
 
     private async Task<string> GetCounter() =>
-        await _localStorageService.ReadPropertyAsync("credentialIdCounter") ?? string.Empty;
+        await localStorageService.ReadPropertyAsync("credentialIdCounter") ?? string.Empty;
 
     public async Task<string> GetRefreshCredential() => await GetCounter();
 
     public async Task<string> GetAccessCredential() => await GetCredentialId();
 
-    public WebAuthnAuthenticationHandler(ILocalStorageService localStorageService)
-    {
-        _localStorageService = localStorageService;
-    }
-
-    public async Task<AuthenticationType?> GetAuthenticationTypeAsync()
-    {
-        return AuthenticationType.WebAuthn;
-    }
+    public Task<AuthenticationType?> GetAuthenticationTypeAsync()
+        => Task.FromResult(AuthenticationType.WebAuthn as AuthenticationType?);
 
     public async Task<string> GetUsernameAsync() =>
-        await _localStorageService.ReadPropertyAsync("credentialUsername") ?? string.Empty;
+        await localStorageService.ReadPropertyAsync("credentialUsername") ?? string.Empty;
 
     public async Task<bool> IsSetToUseAsync()
     {
@@ -61,11 +52,11 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
         var dto = await GetCredentialsDto();
-        
+
         if (dto.WebAuthnPair is null)
             dto.WebAuthnPair = new();
-        
-        await hubConnection.SendAsync("ValidateCredentials",  dto);
+
+        await hubConnection.SendAsync("ValidateCredentials", dto);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
@@ -76,20 +67,21 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
             throw new ArgumentException("Invalid credentials stored in local storage.");
 
         uint updatedCounter = dto.WebAuthnPair.Counter + 1;
-        await _localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
-        await _localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
-        await _localStorageService.WritePropertyAsync("CredentialUpdatedOn", DateTime.UtcNow.ToString("s"));
+        await localStorageService.WritePropertyAsync("credentialId", dto.WebAuthnPair.CredentialId);
+        await localStorageService.WritePropertyAsync("credentialIdCounter", updatedCounter.ToString());
+        await localStorageService.WritePropertyAsync("CredentialUpdatedOn", DateTime.UtcNow.ToString("s"));
     }
+
     public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
     {
         if ((DateTime.UtcNow - await GetCredentialsUpdatedOn()).TotalMinutes < 5)
             return;
-        
+
         var dto = await GetCredentialsDto();
-        
+
         if (result.Result == AuthResultType.Success)
             await hubConnection.SendAsync("RefreshCredentials", dto);
-        
+
         await UpdateCredentials(new WebAuthnPair
         {
             Counter = dto.WebAuthnPair!.Counter,
@@ -99,11 +91,11 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 
     private async Task<DateTime> GetCredentialsUpdatedOn()
     {
-        var dateString = await _localStorageService.ReadPropertyAsync("CredentialUpdatedOn");
-        
-        if(DateTime.TryParse(dateString, out var updatedOn))
+        var dateString = await localStorageService.ReadPropertyAsync("CredentialUpdatedOn");
+
+        if (DateTime.TryParse(dateString, out var updatedOn))
             return updatedOn;
-        
+
         return DateTime.MinValue;
     }
 
@@ -123,7 +115,7 @@ public class WebAuthnAuthenticationHandler : IWebAuthnHandler
 
         if (string.IsNullOrWhiteSpace(counter) || !uint.TryParse(counter, out var number))
         {
-            await _localStorageService.WritePropertyAsync("credentialIdCounter", "0");
+            await localStorageService.WritePropertyAsync("credentialIdCounter", "0");
             return new WebAuthnPair()
             {
                 Counter = 0,

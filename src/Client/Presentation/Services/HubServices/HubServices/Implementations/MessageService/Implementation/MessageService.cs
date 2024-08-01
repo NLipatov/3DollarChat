@@ -415,7 +415,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                 throw new ArgumentException();
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 await SendMessage(new EventMessage()
                 {

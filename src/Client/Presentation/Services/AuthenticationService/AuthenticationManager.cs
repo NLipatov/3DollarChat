@@ -9,61 +9,53 @@ using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService;
 
-public class AuthenticationManager : IAuthenticationHandler, IAuthenticationManager
+public class AuthenticationManager(IJwtHandler jwtHandler, IWebAuthnHandler webAuthnHandler)
+    : IAuthenticationHandler, IAuthenticationManager
 {
-    private readonly IJwtHandler _jwtHandler;
-    private readonly IWebAuthnHandler _webAuthnHandler;
-
-    public AuthenticationManager(IJwtHandler jwtHandler, IWebAuthnHandler webAuthnHandler)
-    {
-        _jwtHandler = jwtHandler;
-        _webAuthnHandler = webAuthnHandler;
-    }
-
     private async Task<IAuthenticationHandler?> GetAvailableHandlerAsync()
     {
-        if (await _jwtHandler.IsSetToUseAsync())
-            return _jwtHandler;
+        if (await jwtHandler.IsSetToUseAsync())
+            return jwtHandler;
 
-        if (await _webAuthnHandler.IsSetToUseAsync())
-            return _webAuthnHandler;
+        if (await webAuthnHandler.IsSetToUseAsync())
+            return webAuthnHandler;
         
         return null;
     }
 
     public async Task<CredentialsDTO> GetCredentialsDto()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetCredentialsDto();
     }
 
     public async Task<ICredentials> GetCredentials()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetCredentials();
     }
 
     public async Task<AuthenticationType?> GetAuthenticationTypeAsync()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetAuthenticationTypeAsync();
     }
 
     public async Task<string> GetRefreshCredential()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetRefreshCredential();
     }
 
     public async Task<string> GetAccessCredential()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetAccessCredential();
     }
 
     public async Task<string> GetUsernameAsync()
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         return await handler.GetUsernameAsync();
     }
 
@@ -79,19 +71,19 @@ public class AuthenticationManager : IAuthenticationHandler, IAuthenticationMana
 
     public async Task TriggerCredentialsValidation(HubConnection hubConnection)
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         await handler.TriggerCredentialsValidation(hubConnection);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         await handler.UpdateCredentials(newCredentials);
     }
 
     public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
     {
-        var handler = await GetAvailableHandlerAsync();
+        var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
         await handler.ExecutePostCredentialsValidation(result, hubConnection);
     }
 }

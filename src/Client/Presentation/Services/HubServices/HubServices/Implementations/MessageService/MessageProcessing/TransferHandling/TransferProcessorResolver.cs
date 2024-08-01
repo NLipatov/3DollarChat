@@ -7,8 +7,6 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.
     AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    AESTransmitting.Interface;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
@@ -39,7 +37,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinarySendingManager binarySendingManager, IBinaryReceivingManager
             binaryReceivingManager, ICryptographyService cryptographyService,
-        IKeyExchangeContextManager keyExchangeContextManager, IAesTransmissionManager aesTransmissionManager)
+        IKeyExchangeContextManager keyExchangeContextManager)
     {
         _keyExchangeContextManager = keyExchangeContextManager;
         var textMessageReceivedHandlerFactory = new TransferHandlerFactory<TextMessage>();
@@ -77,7 +75,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new OnSentEventMessage(messageService));
 
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<KeyMessage>(TransferDirection.Incoming),
-            new OnReceivedKeyMessage(keyStorage, messageService, cryptographyService, aesTransmissionManager));
+            new OnReceivedKeyMessage(keyStorage, messageService, cryptographyService));
 
         _textMessageProcessor = new(textMessageReceivedHandlerFactory);
         _eventMessageProcessor = new(eventMessageTransferReceivedHandlerFactory);

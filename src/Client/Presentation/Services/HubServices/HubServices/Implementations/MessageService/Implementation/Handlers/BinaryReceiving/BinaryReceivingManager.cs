@@ -100,11 +100,4 @@ public class BinaryReceivingManager : IBinaryReceivingManager
 
         return data ?? [];
     }
-
-    public Metadata PopMetadata(Guid fileId)
-    {
-        FileIdToMetadata.TryGetValue(fileId, out var metadata);
-        FileIdToMetadata.TryRemove(fileId, out var _);
-        return metadata;
-    }
 }

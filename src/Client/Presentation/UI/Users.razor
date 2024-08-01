@@ -7,9 +7,9 @@
 @using EthachatShared.Models.ConnectedUsersManaging;
 @using Ethachat.Client.UI.Shared.Callout
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
-@inject NavigationManager _navigationManager
-@inject IUsersService _usersService
-@inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
+@inject NavigationManager NavigationManager
+@inject IUsersService UsersService
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IAuthenticationHandler AuthenticationHandler
 @implements IDisposable
 
@@ -18,13 +18,13 @@
 <AuthenticatedView>
     <AuthenticatedContent>
         <div class="ApplicationContent p-2">
-            @if (!_usersOnlineMessage.UserConnections.Any(x => x.Username != myUsername))
+            @if (UsersOnlineMessage.UserConnections.All(x => x.Username == MyUsername))
             {
                 <CustomCallout
                     CalloutTitle="Looks like everyone is offline now"
                     CalloutType="CalloutType.Info"/>
             }
-            else if (string.IsNullOrWhiteSpace(myUsername))
+            else if (string.IsNullOrWhiteSpace(MyUsername))
             {
                 <CustomCallout
                     CalloutType="CalloutType.Info"
@@ -33,11 +33,13 @@
             else
             {
                 <Virtualize
-                    Items="_usersOnlineMessage.UserConnections.Where(x => x.Username != myUsername && x.ConnectionIds.Count > 0).DistinctBy(x => x.Username).ToArray() ?? Array.Empty<UserConnection>()"
+                    Items="UsersOnlineMessage.UserConnections
+                        .Where(x => x.Username != MyUsername && x.ConnectionIds.Count > 0)
+                        .DistinctBy(x => x.Username).ToArray()"
                     Context="connection">
 
                     <ContactBar Username="@connection.Username"
-                                OnClickCallback="@(() => _navigationManager.NavigateTo($"{connection.Username}"))"/>
+                                OnClickCallback="@(() => NavigationManager.NavigateTo($"{connection.Username}"))"/>
                 </Virtualize>
             }
         </div>
@@ -48,40 +50,41 @@
 </AuthenticatedView>
 
 @code {
-    private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
-    private string myUsername { get; set; } = String.Empty;
+    private UserConnectionsReport UsersOnlineMessage { get; set; } = new();
+    private string MyUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
-    public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
-    //This id will be needed on dispose stage
-    //On dispose stage we need to clear out all of the component event subscriptions
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         if (!await AuthenticationHandler.IsSetToUseAsync())
         {
-            _navigationManager.NavigateTo("/signIn");
+            NavigationManager.NavigateTo("/signIn");
             return;
         }
 
-        myUsername = await AuthenticationHandler.GetUsernameAsync();
+        MyUsername = await AuthenticationHandler.GetUsernameAsync();
 
-    //Subscribing to server event of updating online users
-        _hubServiceSubscriptionManager
+        //Subscribing to server event of updating online users
+        HubServiceSubscriptionManager
             .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
 
-    //Actualizing list of users that currently online
-        await _usersService.ActualizeConnectedUsersAsync();
+        //Actualizing list of users that currently online
+        await UsersService.ActualizeConnectedUsersAsync();
     }
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
-        if (_usersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        if (UsersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
         {
-            _usersOnlineMessage = usersOnlineMessage;
+            UsersOnlineMessage = usersOnlineMessage;
             StateHasChanged();
         }
     }
+
 }

@@ -4,6 +4,5 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGate
 
 public interface IMessageGateway<T> where T : IDestinationResolvable
 {
-    Task SendAsync(T data);
     Task TransferAsync(T data);
 }

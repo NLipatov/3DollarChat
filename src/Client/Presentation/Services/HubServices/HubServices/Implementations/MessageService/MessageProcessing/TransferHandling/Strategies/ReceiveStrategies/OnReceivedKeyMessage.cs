@@ -1,12 +1,16 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.AESTransmitting.Interface;
 using EthachatShared.Encryption;
+using EthachatShared.Models.Message.KeyTransmition;
 
-namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
+namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
+    TransferHandling.Strategies.ReceiveStrategies;
 
-public class OnReceivedKeyMessage(IKeyStorage keyStorage, IMessageService messageService, ICryptographyService cryptographyService, IAesTransmissionManager aesTransmissionManager) : ITransferHandler<KeyMessage>
+public class OnReceivedKeyMessage(
+    IKeyStorage keyStorage,
+    IMessageService messageService,
+    ICryptographyService cryptographyService) : ITransferHandler<KeyMessage>
 {
     public async Task HandleAsync(KeyMessage message)
     {
@@ -24,11 +28,22 @@ public class OnReceivedKeyMessage(IKeyStorage keyStorage, IMessageService messag
         message.Key.Author = message.Sender;
         message.Key.Contact = message.Sender;
         await keyStorage.StoreAsync(message.Key);
-        
-        var aesKey = await cryptographyService.GenerateAesKeyAsync(message.Sender);
-        aesKey.Author = message.Target;
 
-        var offer = await aesTransmissionManager.GenerateOffer(message.Sender, aesKey);
+        var offer = await GenerateAesOfferAsync(message);
         await messageService.TransferAsync(offer);
+    }
+
+    private async Task<AesOffer> GenerateAesOfferAsync(KeyMessage keyMessage)
+    {
+        var aesKey = await cryptographyService.GenerateAesKeyAsync(keyMessage.Sender, keyMessage.Target);
+        await keyStorage.StoreAsync(aesKey);
+
+        return new()
+        {
+            Id = aesKey.Id,
+            Sender = keyMessage.Target,
+            Target = keyMessage.Sender,
+            key = aesKey,
+        };
     }
 }

@@ -38,7 +38,7 @@ namespace Client.Infrastructure.Cryptography
             await _keyStorage.StoreAsync(publicRsa);
         }
 
-        public async Task<Key> GenerateAesKeyAsync(string contact)
+        public async Task<Key> GenerateAesKeyAsync(string contact, string author)
         {
             var key = await _cryptographyExecutor.InvokeAsync<string>("GenerateAESKeyAsync", []);
             return new Key
@@ -47,6 +47,7 @@ namespace Client.Infrastructure.Cryptography
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,
                 Contact = contact,
+                Author = author,
                 CreationDate = DateTime.UtcNow,
                 IsAccepted = false
             };

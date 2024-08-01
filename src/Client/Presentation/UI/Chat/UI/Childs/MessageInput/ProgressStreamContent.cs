@@ -4,22 +4,18 @@ namespace Ethachat.Client.UI.Chat.UI.Childs.MessageInput;
 
 public delegate void ProgressHandler(long bytes, long currentBytes, long totalBytes);
 
-public class ProgressStreamContent : StreamContent
+public class ProgressStreamContent(
+    Stream innerStream,
+    long contentSize,
+    int bufferSize = ProgressStreamContent.DefaultBufferSize)
+    : StreamContent(innerStream, bufferSize)
 {
     private const int DefaultBufferSize = 4096;
     public event ProgressHandler ProgressChanged = delegate { };
-    private long _bytesCounter = 0;
-    private long TotalBytes { get; init; }
-    private Stream InnerStream { get; }
-    private int BufferSize { get; }
-
-    public ProgressStreamContent(Stream innerStream, long contentSize, int bufferSize = DefaultBufferSize) :
-        base(innerStream, bufferSize)
-    {
-        TotalBytes = contentSize;
-        InnerStream = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
-        BufferSize = bufferSize > 0 ? bufferSize : throw new ArgumentOutOfRangeException(nameof(bufferSize));
-    }
+    private long _bytesCounter;
+    private long TotalBytes { get; } = contentSize;
+    private Stream InnerStream { get; } = innerStream ?? throw new ArgumentNullException(nameof(innerStream));
+    private int BufferSize { get; } = bufferSize > 0 ? bufferSize : throw new ArgumentOutOfRangeException(nameof(bufferSize));
 
     private void ResetInnerStream()
     {
@@ -35,17 +31,17 @@ public class ProgressStreamContent : StreamContent
         }
     }
 
-    protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context)
+    protected override async Task SerializeToStreamAsync(Stream stream, TransportContext? context)
     {
         if (stream == null) throw new ArgumentNullException(nameof(stream));
 
         ResetInnerStream();
 
         var buffer = new byte[BufferSize];
-        var bytesRead = 0;
+        int bytesRead;
         while ((bytesRead = await InnerStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
         {
-            stream.Write(buffer, 0, bytesRead);
+            await stream.WriteAsync(buffer.AsMemory(0, bytesRead));
             _bytesCounter += bytesRead;
 
             ProgressChanged(bytesRead, _bytesCounter, TotalBytes);

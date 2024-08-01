@@ -48,7 +48,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                     return;
                 }
 
-                await _gateway.SendAsync(message);
+                await _gateway.TransferAsync(message);
                 backoff = IncreaseBackoff(backoff);
                 await Task.Delay(backoff.Value);
                 await Deliver(message, backoff);

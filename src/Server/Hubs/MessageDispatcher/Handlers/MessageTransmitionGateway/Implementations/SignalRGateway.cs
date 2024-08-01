@@ -11,10 +11,6 @@ public class SignalRGateway<T> : IMessageGateway<T> where T : IDestinationResolv
     {
         _context = context;
     }
-    public async Task SendAsync(T data)
-    {
-        await _context.Clients.Group(data.Target).SendAsync("ReceiveMessage", data);
-    }
 
     public async Task TransferAsync(T data)
     {

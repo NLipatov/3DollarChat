@@ -13,7 +13,6 @@ namespace Ethachat.Client.ClientOnlyModels
         public string PlainText => GetText();
         public bool IsToastShown { get; set; } = false;
         public List<Package> Packages { get; set; } = new();
-        public List<ClientDataFile> ClientFiles { get; set; }
         public List<DataFile> Files { get; set; } = new();
         public new required MessageType Type { get; set; }
         public IBrowserFile BrowserFile { get; set; }

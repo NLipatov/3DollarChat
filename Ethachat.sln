@@ -7,9 +7,9 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Presentation", "Clie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Client", "src\Client\Presentation\Ethachat.Client.csproj", "{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "src\Client\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{A2E3B78F-17C9-4C24-9333-15909BBC0855}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "src\Client\Infrastructure\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{A2E3B78F-17C9-4C24-9333-15909BBC0855}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Cryptography\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "src\Shared\EthachatShared\EthachatShared.csproj", "{43063D95-7AFB-4720-8B5C-86EF09B36082}"
 EndProject

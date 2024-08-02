@@ -10,8 +10,8 @@
       <ProjectReference Include="..\..\..\..\Client.Application.Runtime\Client.Application.Runtime.csproj" />
       <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
       <ProjectReference Include="..\..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
-      <ProjectReference Include="..\..\Application\Client.Application.Runtime\Client.Application.Runtime.csproj" />
       <ProjectReference Include="..\..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+      <ProjectReference Include="..\..\Application\Client.Application.Runtime\Client.Application.Runtime.csproj" />
     </ItemGroup>
 
     <ItemGroup>

@@ -1,5 +1,6 @@
+using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration;
-using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Strategies;
+using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Implemetations;
 using Ethachat.Server.Utilities.HttpMessaging;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.Interfaces;
@@ -26,7 +27,8 @@ public class FirebasePushNotificationService : IWebPushNotificationService
         Configuration = fcmConfigJson;
 
         _pushMessageFactory = new PushMessageFactory();
-        _pushMessageFactory.RegisterStrategy<TextMessage>(new TextMessageStrategy());
+        _pushMessageFactory.RegisterStrategy<TextMessage>(new TextStrategy());
+        _pushMessageFactory.RegisterStrategy<HlsPlaylistMessage>(new HlsStrategy());
     }
 
     public async Task SendAsync<T>(T itemToNotifyAbout) where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable

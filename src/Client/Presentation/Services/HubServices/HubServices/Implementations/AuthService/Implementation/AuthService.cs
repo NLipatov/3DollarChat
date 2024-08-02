@@ -50,7 +50,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
                 return;
             
             HubConnectionInstance = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.AuthHubRelativeAddress));
+                .Build(NavigationManager.ToAbsoluteUri(HubAddress.Auth));
         }
 
         public async Task<HubConnection> GetHubConnectionAsync()

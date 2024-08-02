@@ -40,7 +40,7 @@ public class LoggingService : ILoggingService
     private void InitializeHubConnection()
     {
         hubConnection = HubServiceConnectionBuilder
-            .Build(_navigationManager.ToAbsoluteUri(HubRelativeAddresses.ExceptionLoggingHubRelativeAddress));
+            .Build(_navigationManager.ToAbsoluteUri(HubAddress.ExceptionLogging));
     }
 
     private void RegisterHubEventHandlers()

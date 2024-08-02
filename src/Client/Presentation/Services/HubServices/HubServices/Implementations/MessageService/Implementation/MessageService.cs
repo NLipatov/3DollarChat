@@ -145,7 +145,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 return;
 
             HubConnection = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.MessageHubRelativeAddress));
+                .Build(NavigationManager.ToAbsoluteUri(HubAddress.Message));
         }
 
         private void RegisterHubEventHandlers()

@@ -7,21 +7,31 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Presentation", "Clie
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Client", "src\Client\Presentation\Ethachat.Client.csproj", "{AD280107-0F1F-46DC-8B28-E2B7C9EDE9C3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "src\Client\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{A2E3B78F-17C9-4C24-9333-15909BBC0855}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Cryptography", "src\Client\Infrastructure\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj", "{A2E3B78F-17C9-4C24-9333-15909BBC0855}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Cryptography\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Cryptography", "src\Client\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj", "{686395DF-8997-4E92-930A-A79BB368668B}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EthachatShared", "src\Shared\EthachatShared\EthachatShared.csproj", "{43063D95-7AFB-4720-8B5C-86EF09B36082}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Ethachat.Server", "src\Server\Ethachat.Server.csproj", "{D96747EB-5585-429A-A697-0E27FACD4649}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Cryptography", "Client.Cryptography", "{04967310-B99F-49CB-A597-30C5D14CC669}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure.Cryptography", "Client.Infrastructure.Cryptography", "{04967310-B99F-49CB-A597-30C5D14CC669}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client", "Client", "{116A1E2F-851E-46CA-B657-7C8E8DADD14D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Server", "Server", "{F4C10991-76B3-49C4-9601-3F8BCB9D439D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Shared", "Shared", "{1F014D03-3C8D-42D5-A231-1EFE8865E8B0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Transfer.Domain", "Client.Transfer.Domain", "{73ABCF61-671A-4C2E-B876-431A18446692}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Transfer.Domain", "src\Client\Transfer\Client.Transfer.Domain\Client.Transfer.Domain.csproj", "{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure.Runtime", "Client.Infrastructure.Runtime", "{70E460EC-1E53-45CA-8836-E26737D50F1F}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Runtime", "src\Client\Infrastructure\Client.Infrastructure.Runtime\Client.Infrastructure.Runtime.csproj", "{16E68133-A223-478A-9698-FE6102A8EA1B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Runtime", "src\Client\Application\Client.Application.Runtime\Client.Application.Runtime.csproj", "{163C06FC-EB23-4733-8075-D7201CCAF2E9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +59,18 @@ Global
 		{D96747EB-5585-429A-A697-0E27FACD4649}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D96747EB-5585-429A-A697-0E27FACD4649}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D96747EB-5585-429A-A697-0E27FACD4649}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{16E68133-A223-478A-9698-FE6102A8EA1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{16E68133-A223-478A-9698-FE6102A8EA1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{16E68133-A223-478A-9698-FE6102A8EA1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{16E68133-A223-478A-9698-FE6102A8EA1B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{163C06FC-EB23-4733-8075-D7201CCAF2E9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{163C06FC-EB23-4733-8075-D7201CCAF2E9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{163C06FC-EB23-4733-8075-D7201CCAF2E9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{163C06FC-EB23-4733-8075-D7201CCAF2E9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -64,5 +86,10 @@ Global
 		{BF400104-D998-4F45-BC3F-D18770D741B9} = {116A1E2F-851E-46CA-B657-7C8E8DADD14D}
 		{D96747EB-5585-429A-A697-0E27FACD4649} = {F4C10991-76B3-49C4-9601-3F8BCB9D439D}
 		{43063D95-7AFB-4720-8B5C-86EF09B36082} = {1F014D03-3C8D-42D5-A231-1EFE8865E8B0}
+		{73ABCF61-671A-4C2E-B876-431A18446692} = {116A1E2F-851E-46CA-B657-7C8E8DADD14D}
+		{B5E72FB0-A79F-4C2E-8733-DDB3E377FFC3} = {73ABCF61-671A-4C2E-B876-431A18446692}
+		{70E460EC-1E53-45CA-8836-E26737D50F1F} = {116A1E2F-851E-46CA-B657-7C8E8DADD14D}
+		{16E68133-A223-478A-9698-FE6102A8EA1B} = {70E460EC-1E53-45CA-8836-E26737D50F1F}
+		{163C06FC-EB23-4733-8075-D7201CCAF2E9} = {70E460EC-1E53-45CA-8836-E26737D50F1F}
 	EndGlobalSection
 EndGlobal

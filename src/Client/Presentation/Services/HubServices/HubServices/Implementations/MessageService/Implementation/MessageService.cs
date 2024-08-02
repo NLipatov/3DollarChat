@@ -2,8 +2,8 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
-using Ethachat.Client.ClientOnlyModels;
-using Ethachat.Client.ClientOnlyModels.Events;
+using Client.Transfer.Domain.Entities.Events;
+using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;

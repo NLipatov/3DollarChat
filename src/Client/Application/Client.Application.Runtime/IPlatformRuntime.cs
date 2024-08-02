@@ -1,8 +1,8 @@
 using System.Diagnostics.CodeAnalysis;
 
-namespace Client.Application.Cryptography;
+namespace Client.Application.Runtime;
 
-public interface IRuntimeCryptographyExecutor
+public interface IPlatformRuntime
 {
     ValueTask<TValue> InvokeAsync<
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors |

@@ -1,5 +1,6 @@
 ﻿using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Runtime;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
 
@@ -7,12 +8,12 @@ namespace Client.Infrastructure.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {
-        private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
+        private readonly IPlatformRuntime _cryptographyExecutor;
         private readonly IKeyStorage _keyStorage;
 
         public CryptographyService(IPlatformRuntime platformRuntime, IKeyStorage keyStorage)
         {
-            _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
+            _cryptographyExecutor = platformRuntime;
             _keyStorage = keyStorage;
             _ = GenerateRsaKeyPairAsync();
         }
@@ -22,6 +23,7 @@ namespace Client.Infrastructure.Cryptography
             var keyPair = await _cryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
             var publicRsa = new Key
             {
+                Id = Guid.NewGuid(),
                 Value = keyPair[0],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPublic,
@@ -29,6 +31,7 @@ namespace Client.Infrastructure.Cryptography
             };
             var privateRsa = new Key
             {
+                Id = Guid.NewGuid(),
                 Value = keyPair[1],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPrivate,
@@ -43,6 +46,7 @@ namespace Client.Infrastructure.Cryptography
             var key = await _cryptographyExecutor.InvokeAsync<string>("GenerateAESKeyAsync", []);
             return new Key
             {
+                Id = Guid.NewGuid(),
                 Value = key,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,

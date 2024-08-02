@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\..\..\Client.Application.Runtime\Client.Application.Runtime.csproj" />
+      <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
+      <ProjectReference Include="..\..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+      <ProjectReference Include="..\..\Application\Client.Application.Runtime\Client.Application.Runtime.csproj" />
+      <ProjectReference Include="..\..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <PackageReference Include="MessagePack" Version="2.5.108" />
+    </ItemGroup>
+
+</Project>

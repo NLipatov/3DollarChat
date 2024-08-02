@@ -1,4 +1,4 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using Client.Transfer.Domain.Entities.Messages;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 

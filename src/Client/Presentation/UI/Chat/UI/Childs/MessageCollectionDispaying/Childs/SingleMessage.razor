@@ -1,18 +1,18 @@
-﻿@using Ethachat.Client.ClientOnlyModels;
-@using Ethachat.Client.ClientOnlyModels.Events
-@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+﻿@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message;
-@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
 @inject ICallbackExecutor CallbackExecutor
 @inject IMessageBox MessageBox
 @inject IMessageService MessageService
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime JsRuntime
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
 @using Ethachat.Client.UI.Shared.ReuseableComponents
+@using global::Client.Transfer.Domain.Entities.Events
+@using global::Client.Transfer.Domain.Entities.Messages
 @implements IDisposable
 
 @if (Message != null)

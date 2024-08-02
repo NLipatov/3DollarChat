@@ -1,5 +1,5 @@
 using Client.Application.Cryptography.KeyStorage;
-using Ethachat.Client.ClientOnlyModels.Events;
+using Client.Transfer.Domain.Entities.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message.KeyTransmition;
 

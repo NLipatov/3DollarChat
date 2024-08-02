@@ -1,7 +1,7 @@
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 
-namespace Ethachat.Client.ClientOnlyModels;
+namespace Client.Transfer.Domain.Entities.Messages;
 
 [MessagePackObject]
 public class HlsPlaylistMessage : IDestinationResolvable, ISourceResolvable, IIdentifiable

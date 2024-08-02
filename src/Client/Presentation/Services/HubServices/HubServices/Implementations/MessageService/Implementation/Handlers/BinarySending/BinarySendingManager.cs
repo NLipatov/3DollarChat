@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Ethachat.Client.ClientOnlyModels;
+using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.PackageForming.Models.TransmittedBinaryFileModels;
 using Ethachat.Client.Services.InboxService;

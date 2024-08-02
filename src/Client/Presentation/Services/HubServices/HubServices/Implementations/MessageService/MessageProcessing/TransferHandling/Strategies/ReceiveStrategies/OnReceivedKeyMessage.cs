@@ -1,6 +1,6 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
-using Ethachat.Client.ClientOnlyModels;
+using Client.Transfer.Domain.Entities.Messages;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Message.KeyTransmition;
 

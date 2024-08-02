@@ -1,4 +1,4 @@
-using Ethachat.Client.ClientOnlyModels.Events;
+using Client.Transfer.Domain.Entities.Events;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.SendStrategies;

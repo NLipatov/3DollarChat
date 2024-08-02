@@ -1,4 +1,5 @@
 ﻿using Client.Application.Cryptography;
+using Client.Application.Runtime;
 using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
@@ -7,12 +8,12 @@ using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;
 
-public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
+public class RsaHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
 {
     public async Task<BinaryCryptogram> Encrypt<T>(T data, Key key)
     {
         var bytes = MessagePackSerializer.Serialize(data);
-        var encryptedBytes = await runtimeCryptographyExecutor.InvokeAsync<byte[]>("EncryptDataWithRSAPublicKey",
+        var encryptedBytes = await platformRuntime.InvokeAsync<byte[]>("EncryptDataWithRSAPublicKey",
             [bytes, key.Value?.ToString()]);
 
         return new BinaryCryptogram
@@ -27,7 +28,7 @@ public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
 
     public async Task<BinaryCryptogram> Decrypt(BinaryCryptogram cryptogram, Key key)
     {
-        var decryptedData = await runtimeCryptographyExecutor.InvokeAsync<byte[]>("DecryptDataWithRSAPrivateKey",
+        var decryptedData = await platformRuntime.InvokeAsync<byte[]>("DecryptDataWithRSAPrivateKey",
             [cryptogram.Cypher, key.Value?.ToString()]);
 
         return new BinaryCryptogram
@@ -41,7 +42,7 @@ public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
     {
         try
         {
-            EncryptionResult result = await runtimeCryptographyExecutor
+            EncryptionResult result = await platformRuntime
                 .InvokeAsync<EncryptionResult>("EncryptWithRSAPublicKey",
                     [textCryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
 
@@ -59,7 +60,7 @@ public class RsaHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
 
     public async Task<TextCryptogram> Decrypt(TextCryptogram textCryptogram, Key key)
     {
-        EncryptionResult result = await runtimeCryptographyExecutor
+        EncryptionResult result = await platformRuntime
             .InvokeAsync<EncryptionResult>("DecryptWithRSAPrivateKey",
                 [textCryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
 

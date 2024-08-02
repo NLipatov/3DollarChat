@@ -1,38 +1,26 @@
 using System.Text.Json;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Runtime;
 using EthachatShared.Encryption;
 
 namespace Client.Infrastructure.Cryptography.KeyStorage;
 
-internal class RsaKeyStorage(IPlatformRuntime runtime) : IKeyStorage
+internal class AesKeyStorage(IPlatformRuntime runtime) : IKeyStorage
 {
-    private static Key? RsaPublic { get; set; }
-    private static Key? RsaPrivate { get; set; }
-
     public async Task<Key?> GetLastAcceptedAsync(string accessor, KeyType type)
     {
-        if (string.IsNullOrWhiteSpace(accessor))
-        {
-            return type switch
-            {
-                KeyType.RsaPrivate => RsaPrivate,
-                KeyType.RsaPublic => RsaPublic,
-                _ => throw new ArgumentException($"Unexpected {nameof(KeyType)}")
-            };
-        }
+        var keys = await GetAsync(accessor, type);
+        var acceptedKeys = keys.Where(x => x.IsAccepted).ToArray();
+        if (acceptedKeys.Any())
+            return acceptedKeys.MaxBy(x => x.CreationDate);
 
-        return type switch
-        {
-            KeyType.RsaPrivate or KeyType.RsaPublic => (await GetAsync(accessor, type)).MaxBy(x => x.CreationDate),
-            _ => throw new ArgumentException($"Unexpected {nameof(KeyType)}")
-        };
+        return null;
     }
 
     public async Task StoreAsync(Key key)
     {
         var existingCollection =
-            await GetAsync(key.Contact ?? throw new ArgumentException($"Unexpected {nameof(key.Contact)} value"),
-                key.Type ?? KeyType.Unspecified);
+            await GetAsync(key.Contact ?? throw new ArgumentException(), key.Type ?? KeyType.Unspecified);
 
         if (existingCollection.Any(x => x.Id == key.Id))
             return;

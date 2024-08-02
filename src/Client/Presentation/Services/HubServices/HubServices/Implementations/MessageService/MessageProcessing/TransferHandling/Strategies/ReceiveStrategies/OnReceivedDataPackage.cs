@@ -1,4 +1,4 @@
-using Ethachat.Client.ClientOnlyModels.Events;
+using Client.Transfer.Domain.Entities.Events;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using EthachatShared.Models.Message.DataTransfer;

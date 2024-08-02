@@ -22,6 +22,7 @@ namespace Client.Infrastructure.Cryptography
             var keyPair = await _cryptographyExecutor.InvokeAsync<string[]>("GenerateRSAOAEPKeyPairAsync", []);
             var publicRsa = new Key
             {
+                Id = Guid.NewGuid(),
                 Value = keyPair[0],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPublic,
@@ -29,6 +30,7 @@ namespace Client.Infrastructure.Cryptography
             };
             var privateRsa = new Key
             {
+                Id = Guid.NewGuid(),
                 Value = keyPair[1],
                 Format = KeyFormat.PemSpki,
                 Type = KeyType.RsaPrivate,
@@ -43,6 +45,7 @@ namespace Client.Infrastructure.Cryptography
             var key = await _cryptographyExecutor.InvokeAsync<string>("GenerateAESKeyAsync", []);
             return new Key
             {
+                Id = Guid.NewGuid(),
                 Value = key,
                 Format = KeyFormat.Raw,
                 Type = KeyType.Aes,

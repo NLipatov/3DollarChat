@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Reference Include="Microsoft.JSInterop">
+        <HintPath>..\..\..\..\..\..\..\.dotnet\shared\Microsoft.AspNetCore.App\8.0.7\Microsoft.JSInterop.dll</HintPath>
+      </Reference>
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
+    </ItemGroup>
+
+</Project>

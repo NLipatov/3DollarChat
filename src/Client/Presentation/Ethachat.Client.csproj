@@ -46,6 +46,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\EthachatShared\EthachatShared.csproj" />
     <ProjectReference Include="..\Cryptography\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
+    <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Runtime\Client.Infrastructure.Runtime.csproj" />
     <ProjectReference Include="..\Transfer\Client.Transfer.Domain\Client.Transfer.Domain.csproj" />
   </ItemGroup>
 

@@ -1,4 +1,4 @@
-﻿using Ethachat.Client.ClientOnlyModels;
+﻿using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;

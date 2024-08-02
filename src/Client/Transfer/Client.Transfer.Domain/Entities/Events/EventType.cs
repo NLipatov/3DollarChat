@@ -1,4 +1,4 @@
-namespace Ethachat.Client.ClientOnlyModels.Events;
+namespace Client.Transfer.Domain.Entities.Events;
 
 public enum EventType
 {

@@ -1,6 +1,4 @@
-﻿@using Ethachat.Client.ClientOnlyModels
-@using Ethachat.Client.ClientOnlyModels.Events
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
@@ -12,6 +10,8 @@
 @using EthachatShared.Models.Message.DataTransfer
 @using global::Client.Application.Cryptography
 @using global::Client.Application.Cryptography.KeyStorage
+@using global::Client.Transfer.Domain.Entities.Events
+@using global::Client.Transfer.Domain.Entities.Messages
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime

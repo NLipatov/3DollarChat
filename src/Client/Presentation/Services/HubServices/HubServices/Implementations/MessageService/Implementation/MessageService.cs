@@ -9,8 +9,6 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.HubServices.HubServices.Builders;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.
-    AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -46,7 +44,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
-        private readonly IKeyExchangeContextManager _exchangeContextManager;
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnection { get; set; }
         private ITransferProcessorResolver _transferProcessorResolver;
@@ -61,8 +58,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IConfiguration configuration,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
-            IKeyStorage keyStorage,
-            IKeyExchangeContextManager exchangeContextManager)
+            IKeyStorage keyStorage)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -74,13 +70,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binarySendingManager =
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
-            _exchangeContextManager = exchangeContextManager;
             InitializeHubConnection();
             RegisterHubEventHandlers();
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
-                _cryptographyService, _exchangeContextManager);
+                _cryptographyService);
         }
 
         private void RegisterTransferHandlers()
@@ -268,27 +263,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
-
-                await UpdateRSAPublicKeyAsync(rsaPublicKey);
             });
-        }
-
-        private async Task MarkKeyAsAccepted(Guid keyId, string contact)
-        {
-            var keys = await _keyStorage.GetAsync(contact, KeyType.Aes);
-            var acceptedKeyId = keyId;
-
-            var acceptedKey = keys.First(x => x.Id == acceptedKeyId);
-            if (acceptedKey.IsAccepted)
-                return;
-
-            acceptedKey.IsAccepted = true;
-            await _keyStorage.UpdateAsync(acceptedKey);
-        }
-
-        public async Task UpdateRSAPublicKeyAsync(Key RSAPublicKey)
-        {
-            await _usersService.SetRSAPublicKey(RSAPublicKey);
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)

@@ -73,9 +73,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<AuthHub>(HubRelativeAddresses.AuthHubRelativeAddress);
-app.MapHub<UsersHub>(HubRelativeAddresses.UsersHubRelativeAddress);
-app.MapHub<MessageHub>(HubRelativeAddresses.MessageHubRelativeAddress);
+app.MapHub<AuthHub>(HubAddress.Auth);
+app.MapHub<UsersHub>(HubAddress.Users);
+app.MapHub<MessageHub>(HubAddress.Message);
 app.MapFallbackToFile("index.html");
 
 #if DEBUG

@@ -23,7 +23,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.Exception
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation;
@@ -44,7 +43,7 @@ var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
-builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddTransient<IKeyStorage, KeyStorage>();
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();
@@ -68,7 +67,6 @@ builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>()
 builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IRuntimeCryptographyExecutor, RuntimeCryptographyExecutor>();
-builder.Services.AddSingleton<IKeyExchangeContextManager, KeyExchangeContextManager>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

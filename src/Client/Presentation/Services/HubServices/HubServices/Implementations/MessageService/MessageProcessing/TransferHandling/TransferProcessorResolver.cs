@@ -4,8 +4,6 @@ using Ethachat.Client.ClientOnlyModels;
 using Ethachat.Client.ClientOnlyModels.Events;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.ContextManagers.
-    AesKeyExchange;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -24,7 +22,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public class TransferProcessorResolver : ITransferProcessorResolver
 {
-    private readonly IKeyExchangeContextManager _keyExchangeContextManager;
     private Dictionary<Type, object> _typeToProcessor = [];
     private MessageProcessor<TextMessage> _textMessageProcessor;
     private MessageProcessor<EventMessage> _eventMessageProcessor;
@@ -36,10 +33,8 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinarySendingManager binarySendingManager, IBinaryReceivingManager
-            binaryReceivingManager, ICryptographyService cryptographyService,
-        IKeyExchangeContextManager keyExchangeContextManager)
+            binaryReceivingManager, ICryptographyService cryptographyService)
     {
-        _keyExchangeContextManager = keyExchangeContextManager;
         var textMessageReceivedHandlerFactory = new TransferHandlerFactory<TextMessage>();
         var eventMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<EventMessage>();
         var packageTransferReceivedHandlerFactory = new TransferHandlerFactory<Package>();
@@ -67,8 +62,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
 
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<EventMessage>(TransferDirection.Incoming),
-            new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage,
-                _keyExchangeContextManager));
+            new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage));
 
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<EventMessage>(TransferDirection.Outcoming),

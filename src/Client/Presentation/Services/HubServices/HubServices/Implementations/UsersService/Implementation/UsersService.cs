@@ -51,7 +51,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 return;
 
             HubConnectionInstance = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri(HubRelativeAddresses.UsersHubRelativeAddress));
+                .Build(NavigationManager.ToAbsoluteUri(HubAddress.Users));
         }
 
         private void RegisterHubEventHandlers()

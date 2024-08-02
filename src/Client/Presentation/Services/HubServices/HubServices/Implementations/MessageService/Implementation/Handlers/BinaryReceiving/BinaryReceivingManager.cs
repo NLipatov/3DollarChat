@@ -8,18 +8,9 @@ using Microsoft.JSInterop;
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 
-public class BinaryReceivingManager : IBinaryReceivingManager
+public class BinaryReceivingManager(IJSRuntime jsRuntime, IMessageBox messageBox) : IBinaryReceivingManager
 {
-    private readonly IJSRuntime _jsRuntime;
-    private readonly IMessageBox _messageBox;
-    private ConcurrentDictionary<Guid, Metadata> FileIdToMetadata = new();
-    private ConcurrentDictionary<Guid, Package[]> FileIdToPackages = new();
-
-    public BinaryReceivingManager(IJSRuntime jsRuntime, IMessageBox messageBox)
-    {
-        _jsRuntime = jsRuntime;
-        _messageBox = messageBox;
-    }
+    private readonly ConcurrentDictionary<Guid, Package[]> _fileIdToPackages = new();
 
     public async Task<(bool, Guid)> StoreAsync(Package message)
     {
@@ -31,21 +22,14 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         return progressStatus;
     }
 
-    public (bool, Guid) Store(Metadata metadata)
+    private (bool, Guid) Store(Package package)
     {
-        FileIdToMetadata.TryAdd(metadata.DataFileId, metadata);
-
-        return (IsLoadingCompleted(metadata.DataFileId), metadata.DataFileId);
-    }
-
-    public (bool, Guid) Store(Package package)
-    {
-        if (!FileIdToPackages.ContainsKey(package.FileDataid))
+        if (!_fileIdToPackages.ContainsKey(package.FileDataid))
         {
-            FileIdToPackages.TryAdd(package.FileDataid, new Package[package.Total]);
+            _fileIdToPackages.TryAdd(package.FileDataid, new Package[package.Total]);
         }
 
-        FileIdToPackages.AddOrUpdate(package.FileDataid,
+        _fileIdToPackages.AddOrUpdate(package.FileDataid,
             _ => [package],
             (_, existingData) =>
             {
@@ -58,12 +42,9 @@ public class BinaryReceivingManager : IBinaryReceivingManager
 
     private bool IsLoadingCompleted(Guid fileId)
     {
-        FileIdToPackages.TryGetValue(fileId, out var packages);
-        
-        if (packages?.FirstOrDefault()?.Total == packages?.Where(x=>x is not null).Count())
-            return true;
+        _fileIdToPackages.TryGetValue(fileId, out var packages);
 
-        return false;
+        return packages?.All(x=>x.Data is not null) ?? false;
     }
 
     private async Task AddToMessageBoxAsync(Package package)
@@ -80,9 +61,9 @@ public class BinaryReceivingManager : IBinaryReceivingManager
             .SelectMany(x => x.Data)
             .ToArray();
 
-        var blobUrl = await _jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata!.ContentType);
+        var blobUrl = await jsRuntime.InvokeAsync<string>("createBlobUrl", data, metadata.ContentType);
 
-        _messageBox.AddMessage(new ClientMessage
+        messageBox.AddMessage(new ClientMessage
         {
             BlobLink = blobUrl,
             Id = metadata.DataFileId,
@@ -93,10 +74,9 @@ public class BinaryReceivingManager : IBinaryReceivingManager
         });
     }
 
-    public Package[] PopData(Guid fileId)
+    private Package[] PopData(Guid fileId)
     {
-        FileIdToPackages.TryGetValue(fileId, out var data);
-        FileIdToPackages.TryRemove(fileId, out var _);
+        _fileIdToPackages.TryRemove(fileId, out var data);
 
         return data ?? [];
     }

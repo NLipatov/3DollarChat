@@ -324,11 +324,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await processor.ProcessTransferAsync(eventName, message);
         }
 
-        public async Task SendMessage(KeyMessage message)
-        {
-            await TransferAsync(message);
-        }
-
         public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
         {
             var connection = await GetHubConnectionAsync();

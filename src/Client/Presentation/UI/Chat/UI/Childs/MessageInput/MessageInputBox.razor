@@ -159,14 +159,7 @@
             Sender = MyUsername,
         };
         
-        await MessageService.SendMessage(new Package
-        {
-            Data = fileBytes,
-            ContentType = browserFile.ContentType,
-            Filename = browserFile.Name,
-            Target = TopicName,
-            Sender = MyUsername,
-        });
+        await MessageService.SendMessage(package);
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 

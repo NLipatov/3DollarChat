@@ -1,5 +1,6 @@
 using System.Text.Json;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Runtime;
 using EthachatShared.Encryption;
 
 namespace Client.Infrastructure.Cryptography.KeyStorage;

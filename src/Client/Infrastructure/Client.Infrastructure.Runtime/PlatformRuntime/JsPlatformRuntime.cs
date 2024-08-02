@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Client.Infrastructure.Cryptography;
+using Client.Application.Runtime;
 using Microsoft.JSInterop;
 
 namespace Client.Infrastructure.Runtime.PlatformRuntime;

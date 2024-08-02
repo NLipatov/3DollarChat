@@ -1,4 +1,5 @@
 ﻿using Client.Application.Cryptography;
+using Client.Application.Runtime;
 using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
@@ -7,13 +8,13 @@ using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;
 
-public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor) : ICryptoHandler
+public class AesHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
 {
     public async Task<BinaryCryptogram> Encrypt<T>(T data, Key key)
     {
         var bytes = MessagePackSerializer.Serialize(data);
         var encryptedData =
-            await runtimeCryptographyExecutor.InvokeAsync<byte[]>("AESEncryptData", [bytes, key.Value?.ToString()]);
+            await platformRuntime.InvokeAsync<byte[]>("AESEncryptData", [bytes, key.Value?.ToString()]);
 
         var cryptogram = EncryptedBytesToCryptogram(encryptedData, key);
         return cryptogram;
@@ -22,7 +23,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
     public async Task<BinaryCryptogram> Decrypt(BinaryCryptogram cryptogram, Key key)
     {
         var decryptedData =
-            await runtimeCryptographyExecutor.InvokeAsync<byte[]>("AESDecryptData",
+            await platformRuntime.InvokeAsync<byte[]>("AESDecryptData",
                 [cryptogram.Cypher, key.Value?.ToString(), cryptogram.Iv]);
 
         return new BinaryCryptogram
@@ -50,7 +51,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
 
     public async Task<TextCryptogram> Decrypt(TextCryptogram textCryptogram, Key key)
     {
-        EncryptionResult result = await runtimeCryptographyExecutor.InvokeAsync<EncryptionResult>("AESDecryptText",
+        EncryptionResult result = await platformRuntime.InvokeAsync<EncryptionResult>("AESDecryptText",
         [
             textCryptogram.Cyphertext ?? string.Empty,
             key.Value?.ToString() ?? throw new MissingKeyException(),
@@ -67,7 +68,7 @@ public class AesHandler(IRuntimeCryptographyExecutor runtimeCryptographyExecutor
 
     public async Task<TextCryptogram> Encrypt(TextCryptogram textCryptogram, Key key)
     {
-        EncryptionResult result = await runtimeCryptographyExecutor
+        EncryptionResult result = await platformRuntime
             .InvokeAsync<EncryptionResult>("AESEncryptText",
             [
                 textCryptogram.Cyphertext ?? string.Empty,

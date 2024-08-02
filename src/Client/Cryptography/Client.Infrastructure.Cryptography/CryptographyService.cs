@@ -1,5 +1,6 @@
 ﻿using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Runtime;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
 
@@ -7,12 +8,12 @@ namespace Client.Infrastructure.Cryptography
 {
     public class CryptographyService : ICryptographyService
     {
-        private readonly IRuntimeCryptographyExecutor _cryptographyExecutor;
+        private readonly IPlatformRuntime _cryptographyExecutor;
         private readonly IKeyStorage _keyStorage;
 
         public CryptographyService(IPlatformRuntime platformRuntime, IKeyStorage keyStorage)
         {
-            _cryptographyExecutor = new RuntimeCryptographyExecutor(platformRuntime);
+            _cryptographyExecutor = platformRuntime;
             _keyStorage = keyStorage;
             _ = GenerateRsaKeyPairAsync();
         }

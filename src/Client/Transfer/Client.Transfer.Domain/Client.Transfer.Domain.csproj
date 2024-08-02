@@ -7,16 +7,12 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <Reference Include="MessagePack.Annotations">
-        <HintPath>..\..\..\..\..\..\..\.nuget\packages\messagepack.annotations\2.5.108\lib\netstandard2.0\MessagePack.Annotations.dll</HintPath>
-      </Reference>
-      <Reference Include="Microsoft.AspNetCore.Components.Web">
-        <HintPath>..\..\..\..\..\..\..\.dotnet\shared\Microsoft.AspNetCore.App\8.0.7\Microsoft.AspNetCore.Components.Web.dll</HintPath>
-      </Reference>
+        <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj"/>
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
+        <PackageReference Include="Microsoft.AspNetCore.Components.Forms" Version="8.0.7"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="8.0.7"/>
     </ItemGroup>
 
 </Project>

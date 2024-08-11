@@ -24,6 +24,8 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
+using EthachatShared.Models.Message.ClientToClientTransferData;
+using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
@@ -322,10 +324,22 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 Target = data.Target,
                 Sender = await _authenticationHandler.GetUsernameAsync(),
                 DataType = typeof(T),
+                IsPushRequired = IsWebPushRequired(data)
             };
 
             var connection = await GetHubConnectionAsync();
             await connection.SendAsync("TransferAsync", transferData);
+        }
+
+        private bool IsWebPushRequired<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
+        {
+            return data switch
+            {
+                Package package => package.Index == 0, //if package with index 0 - true
+                TextMessage textMessage => textMessage.Index == 0, //if text message with index 0 - true
+                HlsPlaylistMessage => true,
+                _ => false
+            };
         }
 
         private async Task<BinaryCryptogram> AesEncryptAsync<T>(T data) where T : IIdentifiable, IDestinationResolvable

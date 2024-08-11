@@ -1,5 +1,5 @@
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies;
-using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Implemetations;
+using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Implementations;
 
 namespace Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration;
 

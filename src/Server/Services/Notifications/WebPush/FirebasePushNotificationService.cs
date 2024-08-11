@@ -22,7 +22,7 @@ public class FirebasePushNotificationService : IWebPushNotificationService
     public FirebasePushNotificationService(IServerHttpClient serverHttpClient)
     {
         _serverHttpClient = serverHttpClient;
-        
+
         var rawFcmConfigurationJson = Environment.GetEnvironmentVariable("FCM_KEY_JSON") ?? string.Empty;
         var fcmConfigJson = Uri.UnescapeDataString(rawFcmConfigurationJson);
         Configuration = fcmConfigJson;
@@ -33,18 +33,19 @@ public class FirebasePushNotificationService : IWebPushNotificationService
         _pushMessageFactory.RegisterStrategy<Package>(new PackageStrategy());
     }
 
-    public async Task SendAsync<T>(T itemToNotifyAbout) where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable
+    public async Task SendAsync<T>(T itemToNotifyAbout)
+        where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable, IWebPushNotice
     {
         if (string.IsNullOrWhiteSpace(Configuration))
             return;
-        
+
         try
         {
             var pushMessageStrategy = _pushMessageFactory.GetItemStrategy(itemToNotifyAbout.DataType);
             var pushMessageCommand = pushMessageStrategy.CreateCommand(itemToNotifyAbout);
             if (!pushMessageCommand.IsSendRequired)
                 return;
-            
+
             var subscriptions = await _serverHttpClient
                 .GetUserWebPushSubscriptionsByAccessToken(itemToNotifyAbout.Target);
 

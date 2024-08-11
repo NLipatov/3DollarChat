@@ -10,12 +10,12 @@ namespace Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGenerati
 public class PackageStrategy : IPushItemMessageStrategy
 {
     public SendNotificationCommand CreateCommand<T>(T clientMessage)
-        where T : IDestinationResolvable, ISourceResolvable
+        where T : IDestinationResolvable, ISourceResolvable, IWebPushNotice
     {
         return new SendNotificationCommand
         {
             PushMessage = $"File from {clientMessage.Sender}",
-            IsSendRequired = true
+            IsSendRequired = clientMessage.IsPushRequired
         };
     }
 }

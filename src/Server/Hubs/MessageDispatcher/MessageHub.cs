@@ -210,7 +210,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         }
 
         private async Task SendNotificationAsync<T>(T itemToNotifyAbout)
-            where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable
+            where T : IHasInnerDataType, ISourceResolvable, IDestinationResolvable, IWebPushNotice
         {
             var isReceiverOnline = IsClientConnectedToHub(itemToNotifyAbout.Target);
             if (!isReceiverOnline)

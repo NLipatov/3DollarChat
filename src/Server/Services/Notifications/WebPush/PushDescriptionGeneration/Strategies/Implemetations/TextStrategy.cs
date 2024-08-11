@@ -9,12 +9,13 @@ namespace Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGenerati
 /// </summary>
 public class TextStrategy : IPushItemMessageStrategy
 {
-    public SendNotificationCommand CreateCommand<T>(T clientMessage) where T : IDestinationResolvable, ISourceResolvable
+    public SendNotificationCommand CreateCommand<T>(T clientMessage)
+        where T : IDestinationResolvable, ISourceResolvable, IWebPushNotice
     {
         return new SendNotificationCommand
         {
             PushMessage = $"Text message from {clientMessage.Sender}",
-            IsSendRequired = true
+            IsSendRequired = clientMessage.IsPushRequired
         };
     }
 }

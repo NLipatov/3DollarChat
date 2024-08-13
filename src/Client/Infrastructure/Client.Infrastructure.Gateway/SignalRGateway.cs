@@ -14,7 +14,7 @@ public class SignalRGateway : ISignalRGateway
     private readonly int _reconnectionIntervalMs = 500;
 
 
-    public async Task Authenticate(Uri hubAddress, CredentialsDTO credentialsDto)
+    public async Task AuthenticateAsync(Uri hubAddress, CredentialsDTO credentialsDto)
     {
         if (_connection is not null)
             return;
@@ -32,7 +32,7 @@ public class SignalRGateway : ISignalRGateway
     {
         if (_connection is null)
             throw new NullReferenceException(
-                $"{nameof(HubConnection)} was not initialized. Call {nameof(Authenticate)} to initialize it.");
+                $"{nameof(HubConnection)} was not initialized. Call {nameof(AuthenticateAsync)} to initialize it.");
 
         while (_connection.State is HubConnectionState.Disconnected)
         {

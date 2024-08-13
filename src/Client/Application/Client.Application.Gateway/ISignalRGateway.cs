@@ -9,7 +9,7 @@ namespace Client.Application.Gateway;
 /// </summary>
 public interface ISignalRGateway
 {
-    Task Authenticate(Uri hubAddress, CredentialsDTO credentialsDto);
+    Task AuthenticateAsync(Uri hubAddress, CredentialsDTO credentialsDto);
     
     /// <summary>
     /// Sends encrypted data

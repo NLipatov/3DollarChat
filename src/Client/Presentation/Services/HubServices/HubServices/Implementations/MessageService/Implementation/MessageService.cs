@@ -107,7 +107,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task InitializeGatewayAsync()
         {
-            await _signalRGateway.Authenticate(NavigationManager.ToAbsoluteUri(HubAddress.Message), await _authenticationHandler.GetCredentialsDto());
+            await _signalRGateway.AuthenticateAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message), await _authenticationHandler.GetCredentialsDto());
 
             await _signalRGateway.AddEventCallbackAsync<EncryptedDataTransfer>("OnTransfer", async transfer =>
             {

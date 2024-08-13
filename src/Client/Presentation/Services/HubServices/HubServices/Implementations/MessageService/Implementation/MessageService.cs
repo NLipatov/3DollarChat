@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Gateway;
 using Client.Infrastructure.Cryptography.Handlers;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
@@ -8,7 +9,6 @@ using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
-using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -46,6 +46,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
+        private readonly ISignalRGateway _signalRGateway;
         private bool _isConnectionClosedCallbackSet = false;
         private HubConnection? HubConnection { get; set; }
         private ITransferProcessorResolver _transferProcessorResolver;
@@ -60,7 +61,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IConfiguration configuration,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
-            IKeyStorage keyStorage)
+            IKeyStorage keyStorage,
+            ISignalRGateway signalRGateway)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -72,8 +74,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binarySendingManager =
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
-            InitializeHubConnection();
-            RegisterHubEventHandlers();
+            _signalRGateway = signalRGateway;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
@@ -94,45 +95,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task<HubConnection> GetHubConnectionAsync()
         {
-            //Shortcut connection is alive and ready to be used
-            if (HubConnection?.State is HubConnectionState.Connected
-                && !string.IsNullOrWhiteSpace(await _authenticationHandler.GetUsernameAsync()))
-                return HubConnection;
-
-            if (!await _authenticationHandler.IsSetToUseAsync())
-            {
-                NavigationManager.NavigateTo("signin");
-                return null;
-            }
-
-            if (HubConnection == null)
-                throw new ArgumentException($"{nameof(HubConnection)} was not properly instantiated.");
-
-            while (HubConnection.State is HubConnectionState.Disconnected)
-            {
-                try
-                {
-                    await HubConnection.StartAsync();
-                }
-                catch
-                {
-                    var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
-                    await Task.Delay(interval);
-                    return await GetHubConnectionAsync();
-                }
-            }
-
-            await HubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
-
-            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
-
-            if (_isConnectionClosedCallbackSet is false)
-            {
-                HubConnection.Closed += OnConnectionLost;
-                _isConnectionClosedCallbackSet = true;
-            }
-
-            return HubConnection;
+            await InitializeGatewayAsync();
+            return null;
         }
 
         private async Task OnConnectionLost(Exception? exception)
@@ -141,26 +105,15 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await GetHubConnectionAsync();
         }
 
-        private void InitializeHubConnection()
+        private async Task InitializeGatewayAsync()
         {
-            if (HubConnection is not null)
-                return;
+            await _signalRGateway.Authenticate(NavigationManager.ToAbsoluteUri(HubAddress.Message), await _authenticationHandler.GetCredentialsDto());
 
-            HubConnection = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri(HubAddress.Message));
-        }
-
-        private void RegisterHubEventHandlers()
-        {
-            if (HubConnection is null)
-                throw new NullReferenceException("Could not register event handlers - hub was null.");
-
-            HubConnection.On<EncryptedDataTransfer>("OnTransfer", async transfer =>
+            await _signalRGateway.AddEventCallbackAsync<EncryptedDataTransfer>("OnTransfer", async transfer =>
             {
                 if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
-                    var connection = await GetHubConnectionAsync();
-                    await connection.SendAsync("OnTransferAcked", transfer);
+                    await _signalRGateway.AckTransferAsync(transfer);
                 }
 
                 try
@@ -234,24 +187,39 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
             });
 
-            HubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers",
+            await _signalRGateway.AddEventCallbackAsync<UserConnectionsReport>("ReceiveOnlineUsers",
                 updatedTrackedUserConnections =>
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
+                    return Task.CompletedTask;
                 });
 
-            HubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
-                messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"); });
+            await _signalRGateway.AddEventCallbackAsync<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
+                messageId =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
+                    return Task.CompletedTask;
+                });
 
-            HubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
-                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
+            await _signalRGateway.AddEventCallbackAsync<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
+            {
+                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex);
+                return Task.CompletedTask;
+            });
 
-            HubConnection.On<AuthResult>("OnAccessTokenInvalid",
-                authResult => { NavigationManager.NavigateTo("signin"); });
+            await _signalRGateway.AddEventCallbackAsync<AuthResult>("OnAccessTokenInvalid",
+                authResult =>
+                {
+                    NavigationManager.NavigateTo("signin");
+                    return Task.CompletedTask;
+                });
 
-            HubConnection.On<Guid>("MetadataRegisteredByHub", metadataId => { });
+            await _signalRGateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub", metadataId =>
+            {
+                return Task.CompletedTask;
+            });
 
-            HubConnection.On<string>("OnMyNameResolved", async username =>
+            await _signalRGateway.AddEventCallbackAsync<string>("OnMyNameResolved", async username =>
             {
                 if (!await _authenticationHandler.IsSetToUseAsync())
                 {
@@ -303,8 +271,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
         {
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("TransferAsync", data);
+            await _signalRGateway.UnsafeTransferAsync(data);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
@@ -327,8 +294,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 IsPushRequired = IsWebPushRequired(data)
             };
 
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("TransferAsync", transferData);
+            await _signalRGateway.TransferAsync(transferData);
         }
 
         private bool IsWebPushRequired<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

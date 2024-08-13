@@ -1,9 +1,11 @@
 using Blazored.Toast;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Gateway;
 using Client.Application.Runtime;
 using Client.Infrastructure.Cryptography;
 using Client.Infrastructure.Cryptography.KeyStorage;
+using Client.Infrastructure.Gateway;
 using Client.Infrastructure.Runtime.PlatformRuntime;
 using Ethachat.Client;
 using Ethachat.Client.Services.AuthenticationService;
@@ -45,6 +47,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
+builder.Services.AddSingleton<ISignalRGateway, SignalRGateway>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddTransient<IKeyStorage, KeyStorage>();
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();

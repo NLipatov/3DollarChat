@@ -7,7 +7,6 @@ using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
@@ -40,25 +39,20 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private NavigationManager NavigationManager { get; set; }
         private readonly IMessageBox _messageBox;
         private readonly ICryptographyService _cryptographyService;
-        private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
-        private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
         private readonly IGateway _gateway;
         private bool _isConnectionClosedCallbackSet = false;
-        private HubConnection? HubConnection { get; set; }
         private ITransferProcessorResolver _transferProcessorResolver;
 
         public MessageService
         (IMessageBox messageBox,
             NavigationManager navigationManager,
             ICryptographyService cryptographyService,
-            IUsersService usersService,
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
-            IConfiguration configuration,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
             IKeyStorage keyStorage,
@@ -67,10 +61,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _messageBox = messageBox;
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
-            _usersService = usersService;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
-            _configuration = configuration;
             _binarySendingManager =
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;

@@ -5,19 +5,19 @@ using EthachatShared.Models.Message.Interfaces;
 namespace Client.Application.Gateway;
 
 /// <summary>
-/// Abstraction over SignalR hub connection
+/// Communication channel between server and client
 /// </summary>
-public interface ISignalRGateway
+public interface IGateway
 {
     Task AuthenticateAsync(Uri hubAddress, CredentialsDTO credentialsDto);
-    
+
     /// <summary>
     /// Sends encrypted data
     /// </summary>
     /// <param name="data">data to send</param>
     /// <typeparam name="T">data type</typeparam>
     Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
-    
+
     /// <summary>
     /// Send unencrypted data
     /// </summary>
@@ -30,7 +30,7 @@ public interface ISignalRGateway
     /// <param name="ackData">ack data</param>
     /// <typeparam name="T">ack data type</typeparam>
     Task AckTransferAsync<T>(T ackData);
-    
+
     /// <summary>
     /// Registers a handler that will be invoked when the hub method with the specified method name is invoked.
     /// </summary>
@@ -39,7 +39,7 @@ public interface ISignalRGateway
     /// <param name="handler">The handler that will be raised when the hub method is invoked.</param>
     /// <returns>A subscription that can be disposed to unsubscribe from the hub method.</returns>
     Task AddEventCallbackAsync<T>(string methodName, Func<T, Task> handler);
-    
+
     /// <summary>
     /// Registers a handler that will be invoked when the hub method with the specified method name is invoked.
     /// </summary>
@@ -49,7 +49,7 @@ public interface ISignalRGateway
     /// <param name="handler">The handler that will be raised when the hub method is invoked.</param>
     /// <returns>A subscription that can be disposed to unsubscribe from the hub method.</returns>
     Task AddEventCallbackAsync<T1, T2>(string methodName, Func<T1, T2, Task> handler);
-    
+
     /// <summary>
     /// Registers a handler that will be invoked when the hub method with the specified method name is invoked.
     /// </summary>

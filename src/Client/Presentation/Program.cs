@@ -47,7 +47,7 @@ builder.RootComponents.Add<App>("#app");
 builder.RootComponents.Add<HeadOutlet>("head::after");
 
 builder.Services.AddScoped(_ => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-builder.Services.AddSingleton<ISignalRGateway, SignalRGateway>();
+builder.Services.AddSingleton<IGateway, SignalRGateway>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddTransient<IKeyStorage, KeyStorage>();
 builder.Services.AddSingleton<ICryptographyService, CryptographyService>();

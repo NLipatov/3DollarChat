@@ -7,18 +7,20 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Client.Infrastructure.Gateway;
 
-public class SignalRGateway : ISignalRGateway
+/// <summary>
+/// A SignalR-compatible <see cref="IGateway"/> implementation
+/// </summary>
+public class SignalRGateway : IGateway
 {
     private HubConnection? _connection;
     private bool _isConnectionClosedCallbackSet;
     private readonly int _reconnectionIntervalMs = 500;
 
-
     public async Task AuthenticateAsync(Uri hubAddress, CredentialsDTO credentialsDto)
     {
         if (_connection is not null)
             return;
-        
+
         _connection = new HubConnectionBuilder()
             .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
             .AddMessagePackProtocol()

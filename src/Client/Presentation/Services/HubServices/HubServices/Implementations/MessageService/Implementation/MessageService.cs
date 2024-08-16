@@ -91,12 +91,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             return null;
         }
 
-        private async Task OnConnectionLost(Exception? exception)
-        {
-            _callbackExecutor.ExecuteSubscriptionsByName(false, "OnMessageHubConnectionStatusChanged");
-            await GetHubConnectionAsync();
-        }
-
         private async Task InitializeGatewayAsync()
         {
             await _gateway.AuthenticateAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message), await _authenticationHandler.GetCredentialsDto());

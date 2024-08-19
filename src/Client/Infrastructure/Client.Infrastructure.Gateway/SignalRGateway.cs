@@ -86,6 +86,18 @@ public class SignalRGateway : IGateway
         connection.On(methodName, async () => { await handler(); });
     }
 
+    public async Task SendAsync(string methodName)
+    {
+        var connection = await GetHubConnectionAsync();
+        await connection.SendAsync(methodName);
+    }
+
+    public async Task SendAsync(string methodName, object arg)
+    {
+        var connection = await GetHubConnectionAsync();
+        await connection.SendAsync(methodName, arg);
+    }
+
     public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
     {
         var connection = await GetHubConnectionAsync();

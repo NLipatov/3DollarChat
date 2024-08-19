@@ -144,6 +144,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             {
                 await Dispatch(m).ConfigureAwait(false);
             }
+
+            await Clients.Caller.SendAsync("Authenticated", Context.ConnectionId);
         }
 
         public async Task PushOnlineUsersToClients()

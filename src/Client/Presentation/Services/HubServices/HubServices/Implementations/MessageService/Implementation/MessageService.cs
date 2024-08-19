@@ -3,6 +3,7 @@ using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Application.Gateway;
 using Client.Infrastructure.Cryptography.Handlers;
+using Client.Infrastructure.Gateway;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
@@ -43,9 +44,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
-        private readonly IGateway _gateway;
         private bool _isConnectionClosedCallbackSet = false;
         private ITransferProcessorResolver _transferProcessorResolver;
+        private IGateway? _gateway;
+
+        private async Task<IGateway> ConfigureGateway()
+        {
+            var gateway = new SignalRGateway();
+            await gateway.ConfigureAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message),
+                async () => await _authenticationHandler.GetCredentialsDto());
+            return gateway;
+        }
 
         public MessageService
         (IMessageBox messageBox,
@@ -55,8 +64,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IAuthenticationHandler authenticationHandler,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
-            IKeyStorage keyStorage,
-            IGateway gateway)
+            IKeyStorage keyStorage)
         {
             _messageBox = messageBox;
             NavigationManager = navigationManager;
@@ -66,7 +74,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _binarySendingManager =
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
-            _gateway = gateway;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
@@ -93,7 +100,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task InitializeGatewayAsync()
         {
-            await _gateway.AuthenticateAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message), await _authenticationHandler.GetCredentialsDto());
+            _gateway ??= await ConfigureGateway();
 
             await _gateway.AddEventCallbackAsync<EncryptedDataTransfer>("OnTransfer", async transfer =>
             {
@@ -194,16 +201,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             });
 
             await _gateway.AddEventCallbackAsync<AuthResult>("OnAccessTokenInvalid",
-                authResult =>
+                async _ =>
                 {
-                    NavigationManager.NavigateTo("signin");
-                    return Task.CompletedTask;
+                    _gateway = await ConfigureGateway();
                 });
 
-            await _gateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub", metadataId =>
-            {
-                return Task.CompletedTask;
-            });
+            await _gateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub",
+                metadataId => { return Task.CompletedTask; });
 
             await _gateway.AddEventCallbackAsync<string>("OnMyNameResolved", async username =>
             {

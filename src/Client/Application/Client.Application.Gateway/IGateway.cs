@@ -9,8 +9,6 @@ namespace Client.Application.Gateway;
 /// </summary>
 public interface IGateway
 {
-    Task AuthenticateAsync(Uri hubAddress, CredentialsDTO credentialsDto);
-
     /// <summary>
     /// Sends encrypted data
     /// </summary>

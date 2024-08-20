@@ -13,11 +13,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthS
 
 public class AuthService : IAuthService
 {
-    public NavigationManager NavigationManager { get; set; }
+    private NavigationManager NavigationManager { get; set; }
     private readonly ICallbackExecutor _callbackExecutor;
     private readonly ILocalStorageService _localStorageService;
-    private bool _isConnectionClosedCallbackSet = false;
-    private ConcurrentQueue<Func<bool, Task>> RefreshTokenCallbackQueue = new();
+    private readonly ConcurrentQueue<Func<bool, Task>> _refreshTokenCallbackQueue = new();
     public ConcurrentQueue<Func<AuthResult, Task>> IsTokenValidCallbackQueue { get; set; } = new();
     private readonly IAuthenticationHandler _authenticationManager;
     private IGateway? _gateway;
@@ -39,7 +38,7 @@ public class AuthService : IAuthService
         _callbackExecutor = callbackExecutor;
         _localStorageService = localStorageService;
         _authenticationManager = authenticationManager;
-        GetHubConnectionAsync();
+        _ = GetHubConnectionAsync();
     }
 
     public async Task<IGateway> GetHubConnectionAsync()
@@ -62,8 +61,11 @@ public class AuthService : IAuthService
             _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshCredentials");
         });
 
-        await _gateway.AddEventCallbackAsync<AuthResult>("OnValidateCredentials",
-            async result => { _callbackExecutor.ExecuteSubscriptionsByName(result, "OnValidateCredentials"); });
+        await _gateway.AddEventCallbackAsync<AuthResult>("OnValidateCredentials", result =>
+            {
+                _callbackExecutor.ExecuteSubscriptionsByName(result, "OnValidateCredentials");
+                return Task.CompletedTask;
+            });
 
         await _gateway.AddEventCallbackAsync<AuthResult>("OnLoggingIn",
             result => 
@@ -72,13 +74,13 @@ public class AuthService : IAuthService
                 return Task.CompletedTask;
             });
 
-        await _gateway.AddEventCallbackAsync<List<AccessRefreshEventLog>>("OnRefreshTokenHistoryResponse",
-            async result =>
+        await _gateway.AddEventCallbackAsync<List<AccessRefreshEventLog>>("OnRefreshTokenHistoryResponse", result =>
             {
                 _callbackExecutor.ExecuteSubscriptionsByName(result, "OnRefreshTokenHistoryResponse");
+                return Task.CompletedTask;
             });
 
-        await _gateway.AddEventCallbackAsync<AuthResult, Guid>("OnCredentialIdRefresh", async (result, eventId) =>
+        await _gateway.AddEventCallbackAsync<AuthResult, Guid>("OnCredentialIdRefresh", async (result, _) =>
         {
             var currentCounter =
                 uint.Parse(await _localStorageService.ReadPropertyAsync("credentialIdCounter") ?? "0");
@@ -89,7 +91,7 @@ public class AuthService : IAuthService
             }
 
             _callbackExecutor.ExecuteCallbackQueue(result.Result == AuthResultType.Success,
-                RefreshTokenCallbackQueue);
+                _refreshTokenCallbackQueue);
         });
 
         await _gateway.AddEventCallbackAsync<AuthResult>("OnRegister",

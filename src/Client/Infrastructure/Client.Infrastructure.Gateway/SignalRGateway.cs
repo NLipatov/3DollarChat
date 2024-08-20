@@ -12,8 +12,8 @@ namespace Client.Infrastructure.Gateway;
 /// </summary>
 public class SignalRGateway : IGateway
 {
-    private Func<Task<CredentialsDTO>> _credentialsFactory;
-    private HubConnection _connection;
+    private Func<Task<CredentialsDTO>>? _credentialsFactory;
+    private HubConnection? _connection;
     private bool _isConnectionClosedCallbackSet;
     private readonly int _reconnectionIntervalMs = 500;
 
@@ -24,12 +24,9 @@ public class SignalRGateway : IGateway
             .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
             .AddMessagePackProtocol()
             .Build();
-        
-        
-        await AddEventCallbackAsync<string>("Authenticated", id =>
-        {
-            return Task.CompletedTask;
-        });
+
+
+        await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);
     }
 
     public async Task ConfigureAsync(Uri hubAddress)
@@ -38,16 +35,16 @@ public class SignalRGateway : IGateway
             .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
             .AddMessagePackProtocol()
             .Build();
-        
-        
-        await AddEventCallbackAsync<string>("Authenticated", id =>
-        {
-            return Task.CompletedTask;
-        });
+
+
+        await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);
     }
 
     private async Task<HubConnection> GetHubConnectionAsync()
     {
+        if (_connection is null)
+            throw new NullReferenceException($"{nameof(_connection)} is null");
+
         while (_connection.State is HubConnectionState.Disconnected)
         {
             try

@@ -30,7 +30,6 @@ using EthachatShared.Models.Message.Interfaces;
 using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
@@ -92,13 +91,12 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService));
         }
 
-        public async Task<HubConnection> GetHubConnectionAsync()
+        public async Task<IGateway> GetHubConnectionAsync()
         {
-            await InitializeGatewayAsync();
-            return null;
+            return await InitializeGatewayAsync();
         }
 
-        private async Task InitializeGatewayAsync()
+        private async Task<IGateway> InitializeGatewayAsync()
         {
             _gateway ??= await ConfigureGateway();
 
@@ -224,6 +222,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
             });
+
+            return _gateway;
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)

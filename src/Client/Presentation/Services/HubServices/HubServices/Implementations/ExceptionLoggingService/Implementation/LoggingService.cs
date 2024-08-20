@@ -1,20 +1,23 @@
-using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Builders;
+using Client.Application.Gateway;
+using Client.Infrastructure.Gateway;
 using EthachatShared.Constants;
 using EthachatShared.Models.Logging.ExceptionLogging;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.ExceptionLoggingService.Implementation;
 
-public class LoggingService : ILoggingService
+public class LoggingService(NavigationManager navigationManager) : ILoggingService
 {
-    private readonly ICallbackExecutor _callbackExecutor;
-    private readonly IConfiguration _configuration;
-    private readonly NavigationManager _navigationManager;
-    private HubConnection hubConnection;
-    private bool _isConnectionClosedCallbackSet = false;
+    private IGateway? _gateway;
+
+    private async Task<IGateway> ConfigureGateway()
+    {
+        var gateway = new SignalRGateway();
+        await gateway.ConfigureAsync(navigationManager.ToAbsoluteUri(HubAddress.ExceptionLogging));
+        return gateway;
+    }
+
     public async Task LogException(Exception exception)
     {
         var exceptionLog = new ExceptionLog
@@ -23,68 +26,13 @@ public class LoggingService : ILoggingService
             Message = exception.Message,
             StackTrace = exception.StackTrace
         };
-        
-        var connection = await GetHubConnectionAsync();
-        await connection.SendAsync("Log", exceptionLog);
-    }
 
-    public LoggingService(ICallbackExecutor callbackExecutor, IConfiguration configuration, NavigationManager navigationManager)
-    {
-        _callbackExecutor = callbackExecutor;
-        _configuration = configuration;
-        _navigationManager = navigationManager;
-        InitializeHubConnection();
-        RegisterHubEventHandlers();
-    }
-
-    private void InitializeHubConnection()
-    {
-        hubConnection = HubServiceConnectionBuilder
-            .Build(_navigationManager.ToAbsoluteUri(HubAddress.ExceptionLogging));
-    }
-
-    private void RegisterHubEventHandlers()
-    {
-        return;
-    }
-
-    public async Task<HubConnection> GetHubConnectionAsync()
-    {
-        //Shortcut connection is alive and ready to be used
-        if (hubConnection.State is HubConnectionState.Connected)
-            return hubConnection;
-
-        if (hubConnection == null)
-            throw new ArgumentException($"{nameof(hubConnection)} was not properly instantiated.");
-
-        while (hubConnection.State is HubConnectionState.Disconnected)
-        {
-            try
-            {
-                await hubConnection.StartAsync();
-            }
-            catch
-            {
-                var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
-                await Task.Delay(interval);
-                return await GetHubConnectionAsync();
-            }
-        }
-            
-        _callbackExecutor.ExecuteSubscriptionsByName(true, "OnExceptionLoggingHubConnectionStatusChanged");
-
-        if (_isConnectionClosedCallbackSet is false)
-        {
-            hubConnection.Closed += OnConnectionLost;
-            _isConnectionClosedCallbackSet = true;
-        }
-
-        return hubConnection;
+        var gateway = await GetHubConnectionAsync();
+        await gateway.SendAsync("Log", exceptionLog);
     }
     
-    private async Task OnConnectionLost(Exception? exception)
+    public async Task<IGateway> GetHubConnectionAsync()
     {
-        _callbackExecutor.ExecuteSubscriptionsByName(false, "OnExceptionLoggingHubConnectionStatusChanged");
-        await GetHubConnectionAsync();
+        return _gateway ??= await ConfigureGateway(); 
     }
 }

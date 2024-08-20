@@ -32,15 +32,32 @@ public class SignalRGateway : IGateway
         });
     }
 
+    public async Task ConfigureAsync(Uri hubAddress)
+    {
+        _connection = new HubConnectionBuilder()
+            .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
+            .AddMessagePackProtocol()
+            .Build();
+        
+        
+        await AddEventCallbackAsync<string>("Authenticated", id =>
+        {
+            return Task.CompletedTask;
+        });
+    }
+
     private async Task<HubConnection> GetHubConnectionAsync()
     {
         while (_connection.State is HubConnectionState.Disconnected)
         {
             try
             {
-                var credentialsDto = await _credentialsFactory();
                 await _connection.StartAsync();
-                await _connection.SendAsync("SetUsername", credentialsDto);
+                if (_credentialsFactory != null)
+                {
+                    var credentialsDto = await _credentialsFactory();
+                    await _connection.SendAsync("SetUsername", credentialsDto);
+                }
             }
             catch
             {

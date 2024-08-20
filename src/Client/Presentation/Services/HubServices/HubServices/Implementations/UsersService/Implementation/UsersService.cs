@@ -9,7 +9,6 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
@@ -43,18 +42,17 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         }
 
 
-        public async Task<HubConnection> GetHubConnectionAsync()
+        public async Task<IGateway> GetHubConnectionAsync()
         {
             if (!await _authenticationHandler.IsSetToUseAsync())
             {
                 NavigationManager.NavigateTo("signin");
             }
 
-            await InitializeGatewayAsync();
-            return null;
+            return await InitializeGatewayAsync();
         }
 
-        private async Task InitializeGatewayAsync()
+        private async Task<IGateway> InitializeGatewayAsync()
         {
             _gateway ??= await ConfigureGateway();
 
@@ -114,6 +112,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
                 });
+
+            return _gateway;
         }
 
         public async Task ActualizeConnectedUsersAsync()

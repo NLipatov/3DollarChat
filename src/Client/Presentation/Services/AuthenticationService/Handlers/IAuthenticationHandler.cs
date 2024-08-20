@@ -1,8 +1,8 @@
-﻿using EthachatShared.Models.Authentication.Models;
+﻿using Client.Application.Gateway;
+using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Types;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService.Handlers;
 
@@ -15,7 +15,7 @@ public interface IAuthenticationHandler
     Task<string> GetAccessCredential();
     Task<string> GetUsernameAsync();
     Task<bool> IsSetToUseAsync();
-    Task TriggerCredentialsValidation(HubConnection hubConnection);
+    Task TriggerCredentialsValidation(IGateway gateway);
     Task UpdateCredentials(ICredentials newCredentials);
-    Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection);
+    Task ExecutePostCredentialsValidation(AuthResult result, IGateway gateway);
 }

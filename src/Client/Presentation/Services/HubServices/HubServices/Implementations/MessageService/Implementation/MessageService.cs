@@ -37,13 +37,11 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     public class MessageService : IMessageService
     {
         private NavigationManager NavigationManager { get; set; }
-        private readonly IMessageBox _messageBox;
         private readonly ICryptographyService _cryptographyService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
-        private bool _isConnectionClosedCallbackSet = false;
         private ITransferProcessorResolver _transferProcessorResolver;
         private IGateway? _gateway;
 
@@ -65,7 +63,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IJSRuntime jsRuntime,
             IKeyStorage keyStorage)
         {
-            _messageBox = messageBox;
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
             _callbackExecutor = callbackExecutor;
@@ -74,7 +71,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
             RegisterTransferHandlers();
-            _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
+            _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
                 _cryptographyService);
         }

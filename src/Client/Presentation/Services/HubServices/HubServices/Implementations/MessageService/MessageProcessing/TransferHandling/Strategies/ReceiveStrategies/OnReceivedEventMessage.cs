@@ -17,8 +17,13 @@ public class OnReceivedEventMessage(
     IMessageService messageService,
     IKeyStorage keyStorage) : ITransferHandler<EventMessage>
 {
+    private readonly HashSet<Guid> _handledIds = [];
+
     public async Task HandleAsync(EventMessage message)
     {
+        if (!_handledIds.Add(message.Id)) //if .Add returned true - event message is new, else - duplicate
+            return;
+
         var handleTask = message.Type switch
         {
             EventType.ConversationDeletion => HandleConversationDeletionAsync(message),
@@ -81,10 +86,6 @@ public class OnReceivedEventMessage(
 
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "AESUpdated");
-
-        var rsaKey =
-            ((await keyStorage.GetAsync(eventMessage.Sender, KeyType.RsaPublic)).MaxBy(x => x.CreationDate) ??
-             throw new NullReferenceException()).Value.ToString();
     }
 
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)

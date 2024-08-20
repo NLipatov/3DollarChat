@@ -12,8 +12,13 @@ public class OnReceivedKeyMessage(
     IMessageService messageService,
     ICryptographyService cryptographyService) : ITransferHandler<KeyMessage>
 {
+    private readonly HashSet<Guid> _handledIds = [];
+
     public async Task HandleAsync(KeyMessage message)
     {
+        if (!_handledIds.Add(message.Id)) //if .Add returned true - event message is new, else - duplicate
+            return;
+
         var handleTask = message.Key.Type switch
         {
             KeyType.RsaPublic => HandleRsaPublicReceivedAsync(message),
@@ -30,13 +35,13 @@ public class OnReceivedKeyMessage(
         await keyStorage.StoreAsync(message.Key);
 
         var offer = await GenerateAesOfferAsync(message);
+        await keyStorage.StoreAsync(offer.key);
         await messageService.TransferAsync(offer);
     }
 
     private async Task<AesOffer> GenerateAesOfferAsync(KeyMessage keyMessage)
     {
         var aesKey = await cryptographyService.GenerateAesKeyAsync(keyMessage.Sender, keyMessage.Target);
-        await keyStorage.StoreAsync(aesKey);
 
         return new()
         {

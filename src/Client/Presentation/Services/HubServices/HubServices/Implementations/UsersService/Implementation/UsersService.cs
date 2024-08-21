@@ -12,41 +12,30 @@ using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
-    public class UsersService : IUsersService
+    public class UsersService(
+        NavigationManager navigationManager,
+        ICallbackExecutor callbackExecutor,
+        IAuthenticationHandler authenticationHandler)
+        : IUsersService
     {
-        public NavigationManager NavigationManager { get; set; }
-        private readonly ICallbackExecutor _callbackExecutor;
-        private readonly IAuthenticationHandler _authenticationHandler;
-        private bool _isConnectionClosedCallbackSet = false;
-
-        private ConcurrentDictionary<Guid, Func<string, Task>> ConnectionIdReceivedCallbacks = new();
-        private ConcurrentDictionary<Guid, Func<string, Task>> UsernameResolvedCallbacks = new();
+        private readonly ConcurrentDictionary<Guid, Func<string, Task>> _connectionIdReceivedCallbacks = new();
+        private readonly ConcurrentDictionary<Guid, Func<string, Task>> _usernameResolvedCallbacks = new();
         private IGateway? _gateway;
 
         private async Task<IGateway> ConfigureGateway()
         {
             var gateway = new SignalRGateway();
-            await gateway.ConfigureAsync(NavigationManager.ToAbsoluteUri(HubAddress.Users),
-                async () => await _authenticationHandler.GetCredentialsDto());
+            await gateway.ConfigureAsync(navigationManager.ToAbsoluteUri(HubAddress.Users),
+                async () => await authenticationHandler.GetCredentialsDto());
             return gateway;
-        }
-
-        public UsersService
-        (NavigationManager navigationManager,
-            ICallbackExecutor callbackExecutor,
-            IAuthenticationHandler authenticationHandler)
-        {
-            NavigationManager = navigationManager;
-            _callbackExecutor = callbackExecutor;
-            _authenticationHandler = authenticationHandler;
         }
 
 
         public async Task<IGateway> GetHubConnectionAsync()
         {
-            if (!await _authenticationHandler.IsSetToUseAsync())
+            if (!await authenticationHandler.IsSetToUseAsync())
             {
-                NavigationManager.NavigateTo("signin");
+                navigationManager.NavigateTo("signin");
             }
 
             return await InitializeGatewayAsync();
@@ -59,42 +48,43 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await _gateway.AddEventCallbackAsync<UserConnectionsReport>("ReceiveOnlineUsers",
                 updatedTrackedUserConnections =>
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
+                    callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
                     return Task.CompletedTask;
                 });
 
             await _gateway.AddEventCallbackAsync<string>("ReceiveConnectionId",
                 connectionId =>
                 {
-                    _callbackExecutor.ExecuteCallbackDictionary(connectionId, ConnectionIdReceivedCallbacks);
+                    callbackExecutor.ExecuteCallbackDictionary(connectionId, _connectionIdReceivedCallbacks);
                     return Task.CompletedTask;
                 });
 
-            await _gateway.AddEventCallbackAsync<string>("OnNameResolve", async username =>
+            await _gateway.AddEventCallbackAsync<string>("OnNameResolve", username =>
             {
-                _callbackExecutor.ExecuteSubscriptionsByName(username, "OnNameResolve");
+                callbackExecutor.ExecuteSubscriptionsByName(username, "OnNameResolve");
 
-                _callbackExecutor.ExecuteCallbackDictionary(username, UsernameResolvedCallbacks);
+                callbackExecutor.ExecuteCallbackDictionary(username, _usernameResolvedCallbacks);
+                return Task.CompletedTask;
             });
 
             await _gateway.AddEventCallbackAsync<UserConnection>("IsUserOnlineResponse",
-                (UserConnection) =>
+                (userConnection) =>
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(UserConnection, "IsUserOnlineResponse");
+                    callbackExecutor.ExecuteSubscriptionsByName(userConnection, "IsUserOnlineResponse");
                     return Task.CompletedTask;
                 });
 
             await _gateway.AddEventCallbackAsync<NotificationSubscriptionDto[]>("ReceiveWebPushSubscriptions",
                 subscriptions =>
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
+                    callbackExecutor.ExecuteSubscriptionsByName(subscriptions, "ReceiveWebPushSubscriptions");
                     return Task.CompletedTask;
                 });
 
             await _gateway.AddEventCallbackAsync<NotificationSubscriptionDto[]>("RemovedFromWebPushSubscriptions",
                 removedSubscriptions =>
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions,
+                    callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions,
                         "RemovedFromWebPushSubscriptions");
                     
                     return Task.CompletedTask;
@@ -103,14 +93,14 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await _gateway.AddEventCallbackAsync("WebPushSubscriptionSetChanged",
                 () => 
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
+                    callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
                     return Task.CompletedTask;
                 });
 
-            await _gateway.AddEventCallbackAsync<IsUserExistDto>("UserExistanceResponse",
-                async isUserExistDTO =>
+            await _gateway.AddEventCallbackAsync<IsUserExistDto>("UserExistanceResponse", isUserExistDto =>
                 {
-                    _callbackExecutor.ExecuteSubscriptionsByName(isUserExistDTO, "UserExistanceResponse");
+                    callbackExecutor.ExecuteSubscriptionsByName(isUserExistDto, "UserExistanceResponse");
+                    return Task.CompletedTask;
                 });
 
             return _gateway;
@@ -128,10 +118,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await gateway.SendAsync("IsUserOnline", username);
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDTO)
+        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDto)
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("AddUserWebPushSubscription", subscriptionDTO);
+            await gateway.SendAsync("AddUserWebPushSubscription", subscriptionDto);
         }
 
         public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)

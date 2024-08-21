@@ -149,8 +149,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 if (processTransferMethod == null)
                                     throw new ApplicationException("Could not resolve ProcessTransferAsync method");
 
-                                Task processTransferTask = (Task)processTransferMethod.Invoke(processor,
-                                    new object[] { eventName, decryptedData });
+                                var processTransferTask = (Task?)processTransferMethod.Invoke(processor,
+                                    [eventName, decryptedData]);
 
                                 if (processTransferTask is null)
                                     throw new ApplicationException("Could not resolve task to await");
@@ -160,7 +160,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     await SendMessage(new EventMessage
                     {
@@ -252,7 +252,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
         {
-            await _gateway.UnsafeTransferAsync(data);
+            var gateway = _gateway ?? await InitializeGatewayAsync();
+            await gateway.UnsafeTransferAsync(data);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
@@ -275,7 +276,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 IsPushRequired = IsWebPushRequired(data)
             };
 
-            await _gateway.TransferAsync(transferData);
+            var gateway = _gateway ?? await InitializeGatewayAsync();
+            await gateway.TransferAsync(transferData);
         }
 
         private bool IsWebPushRequired<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

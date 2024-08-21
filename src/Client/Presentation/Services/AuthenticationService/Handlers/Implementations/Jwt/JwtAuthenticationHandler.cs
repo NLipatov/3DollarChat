@@ -50,9 +50,9 @@ public class JwtAuthenticationHandler : IJwtHandler
         };
     }
 
-    public async Task<AuthenticationType?> GetAuthenticationTypeAsync()
+    public Task<AuthenticationType?> GetAuthenticationTypeAsync()
     {
-        return AuthenticationType.JwtToken;
+        return Task.FromResult<AuthenticationType?>(AuthenticationType.JwtToken);
     }
 
     public async Task<string> GetRefreshCredential() => await GetRefreshTokenAsync() ?? string.Empty;

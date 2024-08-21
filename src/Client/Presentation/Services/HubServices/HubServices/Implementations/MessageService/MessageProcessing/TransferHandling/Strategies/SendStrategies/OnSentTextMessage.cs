@@ -1,5 +1,6 @@
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
@@ -10,7 +11,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class OnSentTextMessage(
     IMessageService messageService,
     IAuthenticationHandler authenticationHandler,
-    IMessageBox messageBox) : ITransferHandler<TextMessage>
+    IMessageBox messageBox) : IStrategyHandler<TextMessage>
 {
     private const int MaxTextChunkLength = 512;
 

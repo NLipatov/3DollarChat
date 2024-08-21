@@ -2,6 +2,7 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
@@ -15,7 +16,7 @@ public class OnReceivedEventMessage(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,
-    IKeyStorage keyStorage) : ITransferHandler<EventMessage>
+    IKeyStorage keyStorage) : IStrategyHandler<EventMessage>
 {
     private readonly HashSet<Guid> _handledIds = [];
 

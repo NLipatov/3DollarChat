@@ -1,5 +1,6 @@
 using Client.Transfer.Domain.Entities.Events;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
@@ -10,7 +11,7 @@ public class OnReceivedTextMessage(
     IMessageBox messageBox,
     IAuthenticationHandler authenticationHandler,
     IMessageService messageService)
-    : ITransferHandler<TextMessage>
+    : IStrategyHandler<TextMessage>
 {
     public async Task HandleAsync(TextMessage textMessage)
     {

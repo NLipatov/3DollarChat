@@ -1,9 +1,10 @@
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Factory;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing;
 
-public class MessageProcessor<T>(ITransferHandlerFactory<T> transferHandlerFactory)
+public class MessageProcessor<T>(ITransferHandlerFactory<T> transferHandlerFactory) : IMessageProcessor
 {
     public async Task ProcessTransferAsync(string eventType, T decryptedData)
     {

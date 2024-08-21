@@ -1,4 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
+using Client.Application.Gateway;
 using Ethachat.Client.Services.LocalStorageService;
 using Ethachat.Client.Services.UserAgent;
 using EthachatShared.Models.Authentication.Models;
@@ -6,7 +7,6 @@ using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
@@ -50,9 +50,9 @@ public class JwtAuthenticationHandler : IJwtHandler
         };
     }
 
-    public async Task<AuthenticationType?> GetAuthenticationTypeAsync()
+    public Task<AuthenticationType?> GetAuthenticationTypeAsync()
     {
-        return AuthenticationType.JwtToken;
+        return Task.FromResult<AuthenticationType?>(AuthenticationType.JwtToken);
     }
 
     public async Task<string> GetRefreshCredential() => await GetRefreshTokenAsync() ?? string.Empty;
@@ -79,14 +79,14 @@ public class JwtAuthenticationHandler : IJwtHandler
                !string.IsNullOrWhiteSpace(jWtPair.RefreshToken.Token);
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
+    public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         JwtPair jWtPair = await GetJwtPairAsync();
-        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(hubConnection);
+        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(gateway);
 
         if (!isCredentialsBeingRefreshed)
         {
-            await hubConnection.SendAsync("ValidateCredentials", new CredentialsDTO{JwtPair = jWtPair});
+            await gateway.SendAsync("ValidateCredentials", new CredentialsDTO{JwtPair = jWtPair});
         }
     }
 
@@ -96,7 +96,7 @@ public class JwtAuthenticationHandler : IJwtHandler
         await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", (newCredentials as JwtPair)!.RefreshToken.Token);
     }
 
-    public Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    public Task ExecutePostCredentialsValidation(AuthResult result, IGateway gateway)
     {
         return Task.CompletedTask;
     }
@@ -134,7 +134,7 @@ public class JwtAuthenticationHandler : IJwtHandler
     /// Checks if credentials are outdated and updates it
     /// </summary>
     /// <returns>bool which determins if credentials refresh is in progress now</returns>
-    private async Task<bool> TryRefreshCredentialsAsync(HubConnection hubConnection)
+    private async Task<bool> TryRefreshCredentialsAsync(IGateway gateway)
     {
         JwtPair? jwtPair = await GetCredentials() as JwtPair;
         if (jwtPair is not null)
@@ -142,7 +142,7 @@ public class JwtAuthenticationHandler : IJwtHandler
             var tokenTtl = await GetTokenTimeToLiveAsync();
             if (tokenTtl <= 60)
             {
-                await hubConnection.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
+                await gateway.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
 
                 return true;
             }

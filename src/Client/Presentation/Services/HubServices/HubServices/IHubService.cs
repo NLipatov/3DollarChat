@@ -1,9 +1,9 @@
-﻿using Microsoft.AspNetCore.SignalR.Client;
+﻿using Client.Application.Gateway;
 
 namespace Ethachat.Client.Services.HubServices.HubServices
 {
     public interface IHubService
     {
-        Task<HubConnection> GetHubConnectionAsync();
+        Task<IGateway> GetHubConnectionAsync();
     }
 }

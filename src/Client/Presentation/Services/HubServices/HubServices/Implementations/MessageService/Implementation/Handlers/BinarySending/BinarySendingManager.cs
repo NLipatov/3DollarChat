@@ -16,7 +16,7 @@ public class BinarySendingManager(
     ICallbackExecutor callbackExecutor)
     : IBinarySendingManager
 {
-    private ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> _fileIdUploadProgress = new();
+    private readonly ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> _fileIdUploadProgress = new();
 
     public async IAsyncEnumerable<Package> GetChunksToSendAsync(Package message)
     {
@@ -28,7 +28,7 @@ public class BinarySendingManager(
 
         messageBox.AddMessage(metadataMessage);
 
-        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata, message.Data, message.Sender,
+        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata!, message.Data, message.Sender,
             message.Target);
 
         int chunksCounter = 0;

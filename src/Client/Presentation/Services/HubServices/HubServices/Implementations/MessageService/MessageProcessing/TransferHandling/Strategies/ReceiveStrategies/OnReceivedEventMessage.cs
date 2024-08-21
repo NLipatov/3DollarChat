@@ -2,6 +2,7 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
@@ -15,10 +16,15 @@ public class OnReceivedEventMessage(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,
-    IKeyStorage keyStorage) : ITransferHandler<EventMessage>
+    IKeyStorage keyStorage) : IStrategyHandler<EventMessage>
 {
+    private readonly HashSet<Guid> _handledIds = [];
+
     public async Task HandleAsync(EventMessage message)
     {
+        if (!_handledIds.Add(message.Id)) //if .Add returned true - event message is new, else - duplicate
+            return;
+
         var handleTask = message.Type switch
         {
             EventType.ConversationDeletion => HandleConversationDeletionAsync(message),
@@ -35,21 +41,24 @@ public class OnReceivedEventMessage(
         await handleTask;
     }
 
-    private async Task HandleConversationDeletionAsync(EventMessage eventMessage)
+    private Task HandleConversationDeletionAsync(EventMessage eventMessage)
     {
         messageBox.Delete(eventMessage.Sender);
+        return Task.CompletedTask;
     }
 
-    private async Task HandleMessageReadAsync(EventMessage eventMessage)
+    private Task HandleMessageReadAsync(EventMessage eventMessage)
     {
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Id,
             "OnReceiverMarkedMessageAsRead");
+        return Task.CompletedTask;
     }
 
-    private async Task HandleMessageReceivedAsync(EventMessage eventMessage)
+    private Task HandleMessageReceivedAsync(EventMessage eventMessage)
     {
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Id,
             "OnReceiverMarkedMessageAsReceived");
+        return Task.CompletedTask;
     }
 
     private async Task HandleResendRequestAsync(EventMessage eventMessage)
@@ -61,14 +70,16 @@ public class OnReceivedEventMessage(
         }
     }
 
-    private async Task HandleDataTransferConfirmationAsync(EventMessage eventMessage)
+    private Task HandleDataTransferConfirmationAsync(EventMessage eventMessage)
     {
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Id, "OnFileReceived");
+        return Task.CompletedTask;
     }
 
-    private async Task HandleOnTypingAsync(EventMessage eventMessage)
+    private Task HandleOnTypingAsync(EventMessage eventMessage)
     {
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnTyping");
+        return Task.CompletedTask;
     }
 
     private async Task HandleAesOfferAcceptedAsync(EventMessage eventMessage)
@@ -81,10 +92,6 @@ public class OnReceivedEventMessage(
 
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "OnPartnerAESKeyReady");
         callbackExecutor.ExecuteSubscriptionsByName(eventMessage.Sender, "AESUpdated");
-
-        var rsaKey =
-            ((await keyStorage.GetAsync(eventMessage.Sender, KeyType.RsaPublic)).MaxBy(x => x.CreationDate) ??
-             throw new NullReferenceException()).Value.ToString();
     }
 
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)

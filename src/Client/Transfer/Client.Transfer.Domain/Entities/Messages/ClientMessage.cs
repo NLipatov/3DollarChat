@@ -15,7 +15,7 @@ namespace Client.Transfer.Domain.Entities.Messages
         public List<Package> Packages { get; set; } = new();
         public List<DataFile> Files { get; set; } = new();
         public new required MessageType Type { get; set; }
-        public IBrowserFile BrowserFile { get; set; }
+        public IBrowserFile? BrowserFile { get; set; }
 
         public void AddChunk(TextChunk chunk)
         {

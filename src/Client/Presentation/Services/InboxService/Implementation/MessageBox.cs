@@ -118,20 +118,23 @@ namespace Ethachat.Client.Services.InboxService.Implementation
             _callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "NewUnreadedMessage");
         }
 
-        public async Task OnDelivered(Guid messageId)
+        public Task OnDelivered(Guid messageId)
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
             {
                 message.IsDelivered = true;
             }
+
+            return Task.CompletedTask;
         }
 
-        public async Task OnRegistered(Guid messageId)
+        public Task OnRegistered(Guid messageId)
         {
             Message? message = Messages.FirstOrDefault(x => x.Id == messageId);
             if (message != null)
                 message.IsRegisteredByHub = true;
+            return Task.CompletedTask;
         }
 
         public void OnToastWasShown(Guid messageId)

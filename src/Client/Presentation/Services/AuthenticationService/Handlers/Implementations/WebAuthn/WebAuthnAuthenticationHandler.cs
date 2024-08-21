@@ -1,10 +1,10 @@
-﻿using Ethachat.Client.Services.LocalStorageService;
+﻿using Client.Application.Gateway;
+using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 
@@ -49,14 +49,14 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         return !string.IsNullOrWhiteSpace(webAuthnPair.CredentialId);
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
+    public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         var dto = await GetCredentialsDto();
 
         if (dto.WebAuthnPair is null)
             dto.WebAuthnPair = new();
 
-        await hubConnection.SendAsync("ValidateCredentials", dto);
+        await gateway.SendAsync("ValidateCredentials", dto);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
@@ -72,7 +72,7 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         await localStorageService.WritePropertyAsync("CredentialUpdatedOn", DateTime.UtcNow.ToString("s"));
     }
 
-    public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    public async Task ExecutePostCredentialsValidation(AuthResult result, IGateway gateway)
     {
         if ((DateTime.UtcNow - await GetCredentialsUpdatedOn()).TotalMinutes < 5)
             return;
@@ -80,7 +80,7 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         var dto = await GetCredentialsDto();
 
         if (result.Result == AuthResultType.Success)
-            await hubConnection.SendAsync("RefreshCredentials", dto);
+            await gateway.SendAsync("RefreshCredentials", dto);
 
         await UpdateCredentials(new WebAuthnPair
         {

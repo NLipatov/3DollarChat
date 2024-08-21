@@ -1,11 +1,11 @@
-﻿using Ethachat.Client.Services.AuthenticationService.Handlers;
+﻿using Client.Application.Gateway;
+using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
 using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Types;
-using Microsoft.AspNetCore.SignalR.Client;
 
 namespace Ethachat.Client.Services.AuthenticationService;
 
@@ -69,10 +69,10 @@ public class AuthenticationManager(IJwtHandler jwtHandler, IWebAuthnHandler webA
         return await handler.IsSetToUseAsync();
     }
 
-    public async Task TriggerCredentialsValidation(HubConnection hubConnection)
+    public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
-        await handler.TriggerCredentialsValidation(hubConnection);
+        await handler.TriggerCredentialsValidation(gateway);
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
@@ -81,9 +81,9 @@ public class AuthenticationManager(IJwtHandler jwtHandler, IWebAuthnHandler webA
         await handler.UpdateCredentials(newCredentials);
     }
 
-    public async Task ExecutePostCredentialsValidation(AuthResult result, HubConnection hubConnection)
+    public async Task ExecutePostCredentialsValidation(AuthResult result, IGateway gateway)
     {
         var handler = await GetAvailableHandlerAsync() ?? throw new NullReferenceException();
-        await handler.ExecutePostCredentialsValidation(result, hubConnection);
+        await handler.ExecutePostCredentialsValidation(result, gateway);
     }
 }

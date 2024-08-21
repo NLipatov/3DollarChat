@@ -38,15 +38,17 @@
     </PackageReference>
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="8.0.1" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="8.0.1" PrivateAssets="all" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.1" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Client" Version="8.0.8" />
+    <PackageReference Include="Microsoft.AspNetCore.SignalR.Protocols.MessagePack" Version="8.0.8" />
     <PackageReference Include="System.IdentityModel.Tokens.Jwt" Version="7.3.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\EthachatShared\EthachatShared.csproj" />
     <ProjectReference Include="..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+    <ProjectReference Include="..\Application\Client.Application.Gateway\Client.Application.Gateway.csproj" />
     <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
+    <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Gateway\Client.Infrastructure.Gateway.csproj" />
     <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Runtime\Client.Infrastructure.Runtime.csproj" />
     <ProjectReference Include="..\Transfer\Client.Transfer.Domain\Client.Transfer.Domain.csproj" />
   </ItemGroup>

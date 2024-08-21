@@ -1,22 +1,24 @@
 ﻿using System.Reflection;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Application.Gateway;
 using Client.Infrastructure.Cryptography.Handlers;
+using Client.Infrastructure.Gateway;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.AuthenticationService.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.InboxService;
-using Ethachat.Client.Services.HubServices.HubServices.Builders;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Factory;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Strategies.ReceiveStrategies;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Types;
 using EthachatShared.Constants;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
@@ -27,10 +29,8 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
-using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
@@ -38,129 +38,67 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
     public class MessageService : IMessageService
     {
         private NavigationManager NavigationManager { get; set; }
-        private readonly IMessageBox _messageBox;
         private readonly ICryptographyService _cryptographyService;
-        private readonly IUsersService _usersService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
-        private readonly IConfiguration _configuration;
         private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
-        private bool _isConnectionClosedCallbackSet = false;
-        private HubConnection? HubConnection { get; set; }
         private ITransferProcessorResolver _transferProcessorResolver;
+        private IGateway? _gateway;
+
+        private async Task<IGateway> ConfigureGateway()
+        {
+            var gateway = new SignalRGateway();
+            await gateway.ConfigureAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message),
+                async () => await _authenticationHandler.GetCredentialsDto());
+            return gateway;
+        }
 
         public MessageService
         (IMessageBox messageBox,
             NavigationManager navigationManager,
             ICryptographyService cryptographyService,
-            IUsersService usersService,
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
-            IConfiguration configuration,
             IBinaryReceivingManager binaryReceivingManager,
             IJSRuntime jsRuntime,
             IKeyStorage keyStorage)
         {
-            _messageBox = messageBox;
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
-            _usersService = usersService;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
-            _configuration = configuration;
             _binarySendingManager =
                 new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
-            InitializeHubConnection();
-            RegisterHubEventHandlers();
             RegisterTransferHandlers();
-            _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, _messageBox,
+            _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
                 _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
                 _cryptographyService);
         }
 
         private void RegisterTransferHandlers()
         {
-            var aesOfferTransferReceivedHandlerFactory = new TransferHandlerFactory<AesOffer>();
             var keyMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<KeyMessage>();
 
-            aesOfferTransferReceivedHandlerFactory.RegisterHandler(nameof(AesOffer),
-                new OnReceivedAesOffer(_keyStorage, this, _callbackExecutor));
-
             keyMessageTransferReceivedHandlerFactory.RegisterHandler(nameof(KeyMessage),
-                new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService));
+                new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService, _callbackExecutor));
         }
 
-        public async Task<HubConnection> GetHubConnectionAsync()
+        public async Task<IGateway> GetHubConnectionAsync()
         {
-            //Shortcut connection is alive and ready to be used
-            if (HubConnection?.State is HubConnectionState.Connected
-                && !string.IsNullOrWhiteSpace(await _authenticationHandler.GetUsernameAsync()))
-                return HubConnection;
-
-            if (!await _authenticationHandler.IsSetToUseAsync())
-            {
-                NavigationManager.NavigateTo("signin");
-                return null;
-            }
-
-            if (HubConnection == null)
-                throw new ArgumentException($"{nameof(HubConnection)} was not properly instantiated.");
-
-            while (HubConnection.State is HubConnectionState.Disconnected)
-            {
-                try
-                {
-                    await HubConnection.StartAsync();
-                }
-                catch
-                {
-                    var interval = int.Parse(_configuration["HubConnection:ReconnectionIntervalMs"] ?? "0");
-                    await Task.Delay(interval);
-                    return await GetHubConnectionAsync();
-                }
-            }
-
-            await HubConnection.SendAsync("SetUsername", await _authenticationHandler.GetCredentialsDto());
-
-            _callbackExecutor.ExecuteSubscriptionsByName(true, "OnMessageHubConnectionStatusChanged");
-
-            if (_isConnectionClosedCallbackSet is false)
-            {
-                HubConnection.Closed += OnConnectionLost;
-                _isConnectionClosedCallbackSet = true;
-            }
-
-            return HubConnection;
+            return await InitializeGatewayAsync();
         }
 
-        private async Task OnConnectionLost(Exception? exception)
+        private async Task<IGateway> InitializeGatewayAsync()
         {
-            _callbackExecutor.ExecuteSubscriptionsByName(false, "OnMessageHubConnectionStatusChanged");
-            await GetHubConnectionAsync();
-        }
+            _gateway ??= await ConfigureGateway();
 
-        private void InitializeHubConnection()
-        {
-            if (HubConnection is not null)
-                return;
-
-            HubConnection = HubServiceConnectionBuilder
-                .Build(NavigationManager.ToAbsoluteUri(HubAddress.Message));
-        }
-
-        private void RegisterHubEventHandlers()
-        {
-            if (HubConnection is null)
-                throw new NullReferenceException("Could not register event handlers - hub was null.");
-
-            HubConnection.On<EncryptedDataTransfer>("OnTransfer", async transfer =>
+            await _gateway.AddEventCallbackAsync<EncryptedDataTransfer>("OnTransfer", async transfer =>
             {
                 if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
-                    var connection = await GetHubConnectionAsync();
-                    await connection.SendAsync("OnTransferAcked", transfer);
+                    await _gateway.AckTransferAsync(transfer);
                 }
 
                 try
@@ -211,8 +149,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                                 if (processTransferMethod == null)
                                     throw new ApplicationException("Could not resolve ProcessTransferAsync method");
 
-                                Task processTransferTask = (Task)processTransferMethod.Invoke(processor,
-                                    new object[] { eventName, decryptedData });
+                                var processTransferTask = (Task?)processTransferMethod.Invoke(processor,
+                                    [eventName, decryptedData]);
 
                                 if (processTransferTask is null)
                                     throw new ApplicationException("Could not resolve task to await");
@@ -222,7 +160,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         }
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     await SendMessage(new EventMessage
                     {
@@ -234,24 +172,33 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
             });
 
-            HubConnection.On<UserConnectionsReport>("ReceiveOnlineUsers",
+            await _gateway.AddEventCallbackAsync<UserConnectionsReport>("ReceiveOnlineUsers",
                 updatedTrackedUserConnections =>
                 {
                     _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
+                    return Task.CompletedTask;
                 });
 
-            HubConnection.On<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
-                messageId => { _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub"); });
+            await _gateway.AddEventCallbackAsync<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
+                messageId =>
+                {
+                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
+                    return Task.CompletedTask;
+                });
 
-            HubConnection.On<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
-                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex));
+            await _gateway.AddEventCallbackAsync<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
+            {
+                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex);
+                return Task.CompletedTask;
+            });
 
-            HubConnection.On<AuthResult>("OnAccessTokenInvalid",
-                authResult => { NavigationManager.NavigateTo("signin"); });
+            await _gateway.AddEventCallbackAsync<AuthResult>("OnAccessTokenInvalid",
+                async _ => { _gateway = await ConfigureGateway(); });
 
-            HubConnection.On<Guid>("MetadataRegisteredByHub", metadataId => { });
+            await _gateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub",
+                metadataId => { return Task.CompletedTask; });
 
-            HubConnection.On<string>("OnMyNameResolved", async username =>
+            await _gateway.AddEventCallbackAsync<string>("OnMyNameResolved", async username =>
             {
                 if (!await _authenticationHandler.IsSetToUseAsync())
                 {
@@ -266,6 +213,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }
             });
+
+            return _gateway;
         }
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
@@ -303,8 +252,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
         {
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("TransferAsync", data);
+            var gateway = _gateway ?? await InitializeGatewayAsync();
+            await gateway.UnsafeTransferAsync(data);
         }
 
         public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
@@ -327,8 +276,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 IsPushRequired = IsWebPushRequired(data)
             };
 
-            var connection = await GetHubConnectionAsync();
-            await connection.SendAsync("TransferAsync", transferData);
+            var gateway = _gateway ?? await InitializeGatewayAsync();
+            await gateway.TransferAsync(transferData);
         }
 
         private bool IsWebPushRequired<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable

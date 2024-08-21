@@ -1,8 +1,9 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
+using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Message.KeyTransmition;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.ReceiveStrategies;
@@ -10,7 +11,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 public class OnReceivedKeyMessage(
     IKeyStorage keyStorage,
     IMessageService messageService,
-    ICryptographyService cryptographyService) : ITransferHandler<KeyMessage>
+    ICryptographyService cryptographyService,
+    ICallbackExecutor callbackExecutor) : ITransferHandler<KeyMessage>
 {
     private readonly HashSet<Guid> _handledIds = [];
 
@@ -21,11 +23,30 @@ public class OnReceivedKeyMessage(
 
         var handleTask = message.Key.Type switch
         {
+            KeyType.Aes => HandleAesReceivedAsync(message),
             KeyType.RsaPublic => HandleRsaPublicReceivedAsync(message),
             _ => throw new ArgumentException($"Unexpected {nameof(message.Key.Type)} - {message.Key.Type}")
         };
 
         await handleTask;
+    }
+
+    private async Task HandleAesReceivedAsync(KeyMessage message)
+    {
+        message.Key.IsAccepted = true; 
+        message.Key.Contact = message.Sender;
+        await keyStorage.StoreAsync(message.Key);
+
+        callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "OnPartnerAESKeyReady");
+        callbackExecutor.ExecuteSubscriptionsByName(message.Sender, "AESUpdated");
+        
+        await messageService.TransferAsync(new EventMessage
+        {
+            Id = message.Key.Id,
+            Sender = message.Target,
+            Target = message.Sender,
+            Type = EventType.AesOfferAccepted
+        });
     }
 
     private async Task HandleRsaPublicReceivedAsync(KeyMessage message)
@@ -34,12 +55,12 @@ public class OnReceivedKeyMessage(
         message.Key.Contact = message.Sender;
         await keyStorage.StoreAsync(message.Key);
 
-        var offer = await GenerateAesOfferAsync(message);
-        await keyStorage.StoreAsync(offer.key);
-        await messageService.TransferAsync(offer);
+        var keyMessage = await GenerateAesOfferAsync(message);
+        await keyStorage.StoreAsync(keyMessage.Key);
+        await messageService.TransferAsync(keyMessage);
     }
 
-    private async Task<AesOffer> GenerateAesOfferAsync(KeyMessage keyMessage)
+    private async Task<KeyMessage> GenerateAesOfferAsync(KeyMessage keyMessage)
     {
         var aesKey = await cryptographyService.GenerateAesKeyAsync(keyMessage.Sender, keyMessage.Target);
 
@@ -48,7 +69,7 @@ public class OnReceivedKeyMessage(
             Id = aesKey.Id,
             Sender = keyMessage.Target,
             Target = keyMessage.Sender,
-            key = aesKey,
+            Key = aesKey,
         };
     }
 }

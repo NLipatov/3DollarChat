@@ -15,7 +15,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
-using EthachatShared.Models.Message.KeyTransmition;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling;
@@ -26,7 +25,6 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     private MessageProcessor<TextMessage> _textMessageProcessor;
     private MessageProcessor<EventMessage> _eventMessageProcessor;
     private MessageProcessor<Package> _packageProcessor;
-    private MessageProcessor<AesOffer> _aesOfferProcessor;
     private MessageProcessor<KeyMessage> _keyMessageProcessor;
     private MessageProcessor<HlsPlaylistMessage> _hlsPlaylistMessageProcessor;
 
@@ -38,7 +36,6 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         var textMessageReceivedHandlerFactory = new TransferHandlerFactory<TextMessage>();
         var eventMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<EventMessage>();
         var packageTransferReceivedHandlerFactory = new TransferHandlerFactory<Package>();
-        var aesOfferTransferReceivedHandlerFactory = new TransferHandlerFactory<AesOffer>();
         var keyMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<KeyMessage>();
         var hlsPlaylistMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<HlsPlaylistMessage>();
 
@@ -57,9 +54,6 @@ public class TransferProcessorResolver : ITransferProcessorResolver
         textMessageReceivedHandlerFactory.RegisterHandler(GetEventName<TextMessage>(TransferDirection.Outcoming),
             new OnSentTextMessage(messageService, authenticationHandler, messageBox));
 
-        aesOfferTransferReceivedHandlerFactory.RegisterHandler(GetEventName<AesOffer>(TransferDirection.Incoming),
-            new OnReceivedAesOffer(keyStorage, messageService, callbackExecutor));
-
         eventMessageTransferReceivedHandlerFactory.RegisterHandler(
             GetEventName<EventMessage>(TransferDirection.Incoming),
             new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage));
@@ -69,18 +63,16 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new OnSentEventMessage(messageService));
 
         keyMessageTransferReceivedHandlerFactory.RegisterHandler(GetEventName<KeyMessage>(TransferDirection.Incoming),
-            new OnReceivedKeyMessage(keyStorage, messageService, cryptographyService));
+            new OnReceivedKeyMessage(keyStorage, messageService, cryptographyService, callbackExecutor));
 
         _textMessageProcessor = new(textMessageReceivedHandlerFactory);
         _eventMessageProcessor = new(eventMessageTransferReceivedHandlerFactory);
         _packageProcessor = new(packageTransferReceivedHandlerFactory);
-        _aesOfferProcessor = new(aesOfferTransferReceivedHandlerFactory);
         _keyMessageProcessor = new(keyMessageTransferReceivedHandlerFactory);
         _hlsPlaylistMessageProcessor = new(hlsPlaylistMessageTransferReceivedHandlerFactory);
         _typeToProcessor.Add(typeof(TextMessage), _textMessageProcessor);
         _typeToProcessor.Add(typeof(EventMessage), _eventMessageProcessor);
         _typeToProcessor.Add(typeof(Package), _packageProcessor);
-        _typeToProcessor.Add(typeof(AesOffer), _aesOfferProcessor);
         _typeToProcessor.Add(typeof(KeyMessage), _keyMessageProcessor);
         _typeToProcessor.Add(typeof(HlsPlaylistMessage), _hlsPlaylistMessageProcessor);
     }

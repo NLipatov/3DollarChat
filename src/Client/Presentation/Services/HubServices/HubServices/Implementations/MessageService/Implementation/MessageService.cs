@@ -27,7 +27,6 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
-using EthachatShared.Models.Message.KeyTransmition;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
@@ -78,14 +77,10 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private void RegisterTransferHandlers()
         {
-            var aesOfferTransferReceivedHandlerFactory = new TransferHandlerFactory<AesOffer>();
             var keyMessageTransferReceivedHandlerFactory = new TransferHandlerFactory<KeyMessage>();
 
-            aesOfferTransferReceivedHandlerFactory.RegisterHandler(nameof(AesOffer),
-                new OnReceivedAesOffer(_keyStorage, this, _callbackExecutor));
-
             keyMessageTransferReceivedHandlerFactory.RegisterHandler(nameof(KeyMessage),
-                new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService));
+                new OnReceivedKeyMessage(_keyStorage, this, _cryptographyService, _callbackExecutor));
         }
 
         public async Task<IGateway> GetHubConnectionAsync()
@@ -196,10 +191,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             });
 
             await _gateway.AddEventCallbackAsync<AuthResult>("OnAccessTokenInvalid",
-                async _ =>
-                {
-                    _gateway = await ConfigureGateway();
-                });
+                async _ => { _gateway = await ConfigureGateway(); });
 
             await _gateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub",
                 metadataId => { return Task.CompletedTask; });

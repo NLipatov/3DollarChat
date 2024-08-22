@@ -1,5 +1,5 @@
 using Client.Transfer.Domain.Entities.Messages;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;

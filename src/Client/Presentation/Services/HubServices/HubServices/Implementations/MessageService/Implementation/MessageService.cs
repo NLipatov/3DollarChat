@@ -6,7 +6,7 @@ using Client.Infrastructure.Cryptography.Handlers;
 using Client.Infrastructure.Gateway;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.

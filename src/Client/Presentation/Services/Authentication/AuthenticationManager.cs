@@ -1,13 +1,13 @@
 ﻿using Client.Application.Gateway;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
-using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
+using Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Types;
 
-namespace Ethachat.Client.Services.AuthenticationService;
+namespace Ethachat.Client.Services.Authentication;
 
 public class AuthenticationManager(IJwtHandler jwtHandler, IWebAuthnHandler webAuthnHandler)
     : IAuthenticationHandler, IAuthenticationManager

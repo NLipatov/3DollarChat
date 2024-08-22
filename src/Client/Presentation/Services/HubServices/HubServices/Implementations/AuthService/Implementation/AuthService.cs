@@ -1,7 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
 using Client.Infrastructure.Gateway;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
+using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Constants;

@@ -1,5 +1,5 @@
 ﻿using System.IdentityModel.Tokens.Jwt;
-using Ethachat.Client.Services.AuthenticationService;
+using Ethachat.Client.Services.Authentication;
 using Ethachat.Server.Utilities.HttpMessaging;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;

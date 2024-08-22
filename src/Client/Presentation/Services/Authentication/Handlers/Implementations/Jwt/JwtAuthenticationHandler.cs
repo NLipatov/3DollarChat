@@ -1,7 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
+﻿using System.Collections.Concurrent;
+using System.IdentityModel.Tokens.Jwt;
 using Client.Application.Gateway;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
-using Ethachat.Client.Services.UserAgent;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
@@ -9,26 +10,21 @@ using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using Microsoft.JSInterop;
 
-namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
+namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
 
-public class JwtAuthenticationHandler : IJwtHandler
+public class JwtAuthenticationHandler(
+    ILocalStorageService localStorageService,
+    IJSRuntime jsRuntime,
+    ICallbackExecutor callbackExecutor)
+    : IJwtHandler
 {
-    private readonly ILocalStorageService _localStorageService;
-    private readonly IUserAgentService _userAgentService;
-    private readonly IJSRuntime _jsRuntime;
+    private readonly ConcurrentDictionary<string, DateTime> _tokenCache = [];
 
     private async Task<string?> GetAccessTokenAsync() =>
-        await _localStorageService.ReadPropertyAsync("access-token");
+        await localStorageService.ReadPropertyAsync("access-token");
 
     private async Task<string?> GetRefreshTokenAsync() =>
-        await _localStorageService.ReadPropertyAsync("refresh-token");
-
-    public JwtAuthenticationHandler(ILocalStorageService localStorageService, IUserAgentService userAgentService, IJSRuntime jsRuntime)
-    {
-        _localStorageService = localStorageService;
-        _userAgentService = userAgentService;
-        _jsRuntime = jsRuntime;
-    }
+        await localStorageService.ReadPropertyAsync("refresh-token");
 
     public async Task<CredentialsDTO> GetCredentialsDto()
     {
@@ -66,7 +62,7 @@ public class JwtAuthenticationHandler : IJwtHandler
         var securityToken = tokenHandler.ReadToken(accessToken) as JwtSecurityToken;
 
         var usernameClaimKey = "unique_name";
-        return securityToken?.Claims.FirstOrDefault(claim => claim.Type == usernameClaimKey)?.Value 
+        return securityToken?.Claims.FirstOrDefault(claim => claim.Type == usernameClaimKey)?.Value
                ?? throw new ApplicationException($"Exception:" +
                                                  $"{nameof(JwtAuthenticationHandler)}.{nameof(GetUsernameAsync)}:" +
                                                  $"Could not get a '{usernameClaimKey}' claim value.");
@@ -82,18 +78,46 @@ public class JwtAuthenticationHandler : IJwtHandler
     public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         JwtPair jWtPair = await GetJwtPairAsync();
-        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(gateway);
+        
+        if (await TryUseCachedCredentialsAsync(jWtPair))
+            return;
 
+        var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(gateway);
         if (!isCredentialsBeingRefreshed)
         {
-            await gateway.SendAsync("ValidateCredentials", new CredentialsDTO{JwtPair = jWtPair});
+            await gateway.SendAsync("ValidateCredentials", new CredentialsDTO { JwtPair = jWtPair });
         }
+    }
+    
+    private async Task<bool> TryUseCachedCredentialsAsync(JwtPair jwtPair)
+    {
+        if (_tokenCache.TryGetValue(jwtPair.AccessToken, out var validTo))
+        {
+            if (validTo - TimeSpan.FromMinutes(1) > DateTime.UtcNow)
+            {
+                callbackExecutor.ExecuteSubscriptionsByName(new AuthResult
+                {
+                    JwtPair = jwtPair,
+                    Result = AuthResultType.Success,
+                    Message = "Cached Token Validation Result"
+                }, "OnValidateCredentials");
+                
+                return true;
+            }
+        }
+
+        _tokenCache.Clear();
+        _tokenCache.TryAdd(jwtPair.AccessToken, await GetTokenValidToAsync());
+
+        return false;
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)
     {
-        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "access-token", (newCredentials as JwtPair)!.AccessToken);
-        await _jsRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token", (newCredentials as JwtPair)!.RefreshToken.Token);
+        await jsRuntime.InvokeVoidAsync("localStorage.setItem", "access-token",
+            (newCredentials as JwtPair)!.AccessToken);
+        await jsRuntime.InvokeVoidAsync("localStorage.setItem", "refresh-token",
+            (newCredentials as JwtPair)!.RefreshToken.Token);
     }
 
     public Task ExecutePostCredentialsValidation(AuthResult result, IGateway gateway)
@@ -139,10 +163,10 @@ public class JwtAuthenticationHandler : IJwtHandler
         JwtPair? jwtPair = await GetCredentials() as JwtPair;
         if (jwtPair is not null)
         {
-            var tokenTtl = await GetTokenTimeToLiveAsync();
+            var tokenTtl = await GetTokenTimeToLiveSecondsAsync();
             if (tokenTtl <= 60)
             {
-                await gateway.SendAsync("RefreshCredentials", new CredentialsDTO {JwtPair = jwtPair} );
+                await gateway.SendAsync("RefreshCredentials", new CredentialsDTO { JwtPair = jwtPair });
 
                 return true;
             }
@@ -151,15 +175,19 @@ public class JwtAuthenticationHandler : IJwtHandler
         return false;
     }
 
-    private async Task<int> GetTokenTimeToLiveAsync()
+    private async Task<int> GetTokenTimeToLiveSecondsAsync()
+    {
+        var validTo = await GetTokenValidToAsync();
+
+        return (int)(validTo - DateTime.UtcNow).TotalSeconds;
+    }
+    
+    private async Task<DateTime> GetTokenValidToAsync()
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var securityToken = tokenHandler.ReadToken(await GetAccessCredential()) as JwtSecurityToken;
-
-        if (securityToken?.ValidTo is null)
-            return 0;
-
-        return (int)(securityToken.ValidTo - DateTime.UtcNow).TotalSeconds;
+        
+        return securityToken?.ValidTo ?? DateTime.MinValue;
     }
 }

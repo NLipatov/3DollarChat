@@ -1,4 +1,6 @@
-﻿using Client.Application.Gateway;
+﻿using System.Collections.Concurrent;
+using Client.Application.Gateway;
+using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials;
@@ -6,10 +8,13 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 
-namespace Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 
-public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageService) : IWebAuthnHandler
+public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageService, ICallbackExecutor callbackExecutor)
+    : IWebAuthnHandler
 {
+    private readonly ConcurrentDictionary<string, DateTime> _tokenCache = [];
+
     public async Task<CredentialsDTO> GetCredentialsDto()
     {
         return new CredentialsDTO()
@@ -52,11 +57,40 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
     public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         var dto = await GetCredentialsDto();
-
+        
+        if (TryUseCachedCredentialsAsync(dto))
+            return;
+        
         if (dto.WebAuthnPair is null)
             dto.WebAuthnPair = new();
 
         await gateway.SendAsync("ValidateCredentials", dto);
+    }
+
+    private bool TryUseCachedCredentialsAsync(CredentialsDTO dto)
+    {
+        var credentialId = dto.WebAuthnPair?.CredentialId ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(credentialId))
+            return false;
+        
+        if (_tokenCache.TryGetValue(credentialId, out var validTo))
+        {
+            if (validTo >= DateTime.UtcNow)
+            {
+                callbackExecutor.ExecuteSubscriptionsByName(new AuthResult
+                {
+                    CredentialId = credentialId,
+                    Result = AuthResultType.Success,
+                    Message = "Cached Token Validation Result"
+                }, "OnValidateCredentials");
+
+                return true;
+            }
+        }
+
+        _tokenCache.Clear();
+        _tokenCache.TryAdd(credentialId, DateTime.UtcNow.Add(TimeSpan.FromMinutes(10)));
+        return false;
     }
 
     public async Task UpdateCredentials(ICredentials newCredentials)

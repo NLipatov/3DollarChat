@@ -4,7 +4,7 @@ using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Types;
 
-namespace Ethachat.Client.Services.AuthenticationService.Handlers;
+namespace Ethachat.Client.Services.Authentication.Handlers;
 
 public interface IAuthenticationHandler
 {

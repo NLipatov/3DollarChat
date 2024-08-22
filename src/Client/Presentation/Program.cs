@@ -6,10 +6,11 @@ using Client.Infrastructure.Cryptography;
 using Client.Infrastructure.Cryptography.KeyStorage;
 using Client.Infrastructure.Runtime.PlatformRuntime;
 using Ethachat.Client;
-using Ethachat.Client.Services.AuthenticationService;
-using Ethachat.Client.Services.AuthenticationService.Handlers;
-using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.Jwt;
-using Ethachat.Client.Services.AuthenticationService.Handlers.Implementations.WebAuthn;
+using Ethachat.Client.Services.Authentication;
+using Ethachat.Client.Services.Authentication.Boundaries;
+using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
+using Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 using Ethachat.Client.Services.ConcurrentCollectionManager;
 using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
@@ -68,6 +69,7 @@ builder.Services.AddSingleton<IBinaryReceivingManager, BinaryReceivingManager>()
 builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
+builder.Services.AddSingleton<IAuthenticationManagerBoundary, AuthenticationManagerBoundary>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

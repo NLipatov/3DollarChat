@@ -37,8 +37,9 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("OnRefreshTokenHistoryResponse", history);
         }
 
-        public async Task ValidateCredentials(CredentialsDTO dto)
+        public async Task ValidateCredentials(ClientToServerData data)
         {
+            var dto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             AuthResult result = await _serverHttpClient.ValidateCredentials(dto);
 
             await Clients.Caller.SendAsync("OnValidateCredentials", result);

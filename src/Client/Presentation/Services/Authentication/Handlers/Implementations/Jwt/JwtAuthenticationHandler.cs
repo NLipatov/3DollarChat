@@ -87,7 +87,12 @@ public class JwtAuthenticationHandler(
         var isCredentialsBeingRefreshed = await TryRefreshCredentialsAsync(gateway);
         if (!isCredentialsBeingRefreshed)
         {
-            await gateway.SendAsync("ValidateCredentials", new CredentialsDTO { JwtPair = jWtPair });
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "ValidateCredentials",
+                Data = MessagePackSerializer.Serialize(new CredentialsDTO { JwtPair = jWtPair }),
+                Type = typeof(CredentialsDTO)
+            });
         }
     }
 

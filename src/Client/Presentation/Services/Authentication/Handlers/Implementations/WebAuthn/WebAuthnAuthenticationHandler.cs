@@ -7,6 +7,8 @@ using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
+using EthachatShared.Models.Message;
+using MessagePack;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 
@@ -64,7 +66,12 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         if (dto.WebAuthnPair is null)
             dto.WebAuthnPair = new();
 
-        await gateway.SendAsync("ValidateCredentials", dto);
+        await gateway.TransferAsync(new ClientToServerData
+        {
+            EventName = "ValidateCredentials",
+            Data = MessagePackSerializer.Serialize(dto),
+            Type = typeof(CredentialsDTO)
+        });
     }
 
     private bool TryUseCachedCredentialsAsync(CredentialsDTO dto)
@@ -114,7 +121,12 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         var dto = await GetCredentialsDto();
 
         if (result.Result == AuthResultType.Success)
-            await gateway.SendAsync("RefreshCredentials", dto);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "RefreshCredentials",
+                Data = MessagePackSerializer.Serialize(dto),
+                Type = typeof(CredentialsDTO)
+            });
 
         await UpdateCredentials(new WebAuthnPair
         {

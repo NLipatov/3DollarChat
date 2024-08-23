@@ -12,7 +12,7 @@ namespace Client.Infrastructure.Gateway;
 /// <summary>
 /// A SignalR-compatible <see cref="IGateway"/> implementation
 /// </summary>
-public class SignalRGateway : IGateway
+public class SignalRGateway : IGateway, IRawSendAsyncProvider
 {
     private Func<Task<CredentialsDTO>>? _credentialsFactory;
     private HubConnection? _connection;

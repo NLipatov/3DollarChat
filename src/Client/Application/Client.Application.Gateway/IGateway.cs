@@ -8,7 +8,7 @@ namespace Client.Application.Gateway;
 public interface IGateway
 {
     /// <summary>
-    /// Sends data to server
+    /// Sends unencrypted data to server
     /// </summary>
     /// <param name="data">data to send</param>
     Task TransferAsync(ClientToServerData data);
@@ -58,12 +58,4 @@ public interface IGateway
     /// <param name="handler">The handler that will be raised when the hub method is invoked.</param>
     /// <returns>A subscription that can be disposed to unsubscribe from the hub method.</returns>
     Task AddEventCallbackAsync(string methodName, Func<Task> handler);
-
-    /// <summary>
-    /// Calls SendAsync on HubConnectionInstance
-    /// </summary>
-    /// <param name="methodName"></param>
-    /// <param name="arg"></param>
-    /// <returns></returns>
-    Task SendAsync(string methodName, object arg);
 }

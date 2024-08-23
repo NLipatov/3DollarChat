@@ -1,5 +1,4 @@
 using System.Collections.Concurrent;
-using Client.Application.Gateway;
 using EthachatShared.Contracts;
 using EthachatShared.Models.Message;
 
@@ -7,13 +6,13 @@ namespace Client.Infrastructure.Gateway.ClientToClient;
 
 internal class ClientTransferContainerReliableSender : IReliableSender<ClientToClientData>
 {
-    private readonly IGateway _gateway;
+    private readonly SignalRGateway _gateway;
     private readonly ConcurrentQueue<UnsentItem<ClientToClientData>> _messageQueue = new();
     private readonly ConcurrentDictionary<Guid, bool> _acked = new();
     private readonly ConcurrentDictionary<Guid, ClientToClientData> _unsentItems = new();
     private TaskCompletionSource<bool> _queueSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public ClientTransferContainerReliableSender(IGateway gateway)
+    public ClientTransferContainerReliableSender(SignalRGateway gateway)
     {
         _gateway = gateway;
         Task.Run(async () => await ProcessQueueAsync());

@@ -8,17 +8,22 @@ namespace Client.Application.Gateway;
 public interface IGateway
 {
     /// <summary>
-    /// Sends encrypted data
+    /// Sends data to server
     /// </summary>
     /// <param name="data">data to send</param>
-    /// <typeparam name="T">data type</typeparam>
-    Task TransferAsync(EncryptedDataTransfer data);
+    Task TransferAsync(ClientToServerData data);
 
     /// <summary>
-    /// Send unencrypted data
+    /// Sends encrypted data to other client
     /// </summary>
     /// <param name="data">data to send</param>
-    Task UnsafeTransferAsync(EncryptedDataTransfer data);
+    Task TransferAsync(ClientToClientData data);
+
+    /// <summary>
+    /// Send unencrypted data to other client
+    /// </summary>
+    /// <param name="data">data to send</param>
+    Task UnsafeTransferAsync(ClientToClientData data);
 
     /// <summary>
     /// Acks the transfer(sends transfer confirmation to server)
@@ -58,13 +63,7 @@ public interface IGateway
     /// Calls SendAsync on HubConnectionInstance
     /// </summary>
     /// <param name="methodName"></param>
-    /// <returns></returns>
-    Task SendAsync(string methodName);
-
-    /// <summary>
-    /// Calls SendAsync on HubConnectionInstance
-    /// </summary>
-    /// <param name="methodName"></param>
+    /// <param name="arg"></param>
     /// <returns></returns>
     Task SendAsync(string methodName, object arg);
 }

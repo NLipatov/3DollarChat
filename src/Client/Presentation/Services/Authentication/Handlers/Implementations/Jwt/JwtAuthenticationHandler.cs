@@ -8,6 +8,8 @@ using EthachatShared.Models.Authentication.Models.Credentials;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
+using EthachatShared.Models.Message;
+using MessagePack;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
@@ -78,7 +80,7 @@ public class JwtAuthenticationHandler(
     public async Task TriggerCredentialsValidation(IGateway gateway)
     {
         JwtPair jWtPair = await GetJwtPairAsync();
-        
+
         if (await TryUseCachedCredentialsAsync(jWtPair))
             return;
 
@@ -88,7 +90,7 @@ public class JwtAuthenticationHandler(
             await gateway.SendAsync("ValidateCredentials", new CredentialsDTO { JwtPair = jWtPair });
         }
     }
-    
+
     private async Task<bool> TryUseCachedCredentialsAsync(JwtPair jwtPair)
     {
         if (_tokenCache.TryGetValue(jwtPair.AccessToken, out var validTo))
@@ -101,7 +103,7 @@ public class JwtAuthenticationHandler(
                     Result = AuthResultType.Success,
                     Message = "Cached Token Validation Result"
                 }, "OnValidateCredentials");
-                
+
                 return true;
             }
         }
@@ -166,7 +168,12 @@ public class JwtAuthenticationHandler(
             var tokenTtl = await GetTokenTimeToLiveSecondsAsync();
             if (tokenTtl <= 60)
             {
-                await gateway.SendAsync("RefreshCredentials", new CredentialsDTO { JwtPair = jwtPair });
+                await gateway.TransferAsync(new ClientToServerData
+                {
+                    EventName = "RefreshCredentials",
+                    Data = MessagePackSerializer.Serialize(new CredentialsDTO { JwtPair = jwtPair }),
+                    Type = typeof(CredentialsDTO),
+                });
 
                 return true;
             }
@@ -181,13 +188,13 @@ public class JwtAuthenticationHandler(
 
         return (int)(validTo - DateTime.UtcNow).TotalSeconds;
     }
-    
+
     private async Task<DateTime> GetTokenValidToAsync()
     {
         var tokenHandler = new JwtSecurityTokenHandler();
 
         var securityToken = tokenHandler.ReadToken(await GetAccessCredential()) as JwtSecurityToken;
-        
+
         return securityToken?.ValidTo ?? DateTime.MinValue;
     }
 }

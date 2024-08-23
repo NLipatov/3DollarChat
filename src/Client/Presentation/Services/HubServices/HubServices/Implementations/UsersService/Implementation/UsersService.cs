@@ -6,8 +6,10 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Constants;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Message;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
+using MessagePack;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
@@ -86,22 +88,22 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 {
                     callbackExecutor.ExecuteSubscriptionsByName(removedSubscriptions,
                         "RemovedFromWebPushSubscriptions");
-                    
+
                     return Task.CompletedTask;
                 });
 
             await _gateway.AddEventCallbackAsync("WebPushSubscriptionSetChanged",
-                () => 
+                () =>
                 {
                     callbackExecutor.ExecuteSubscriptionsByName("WebPushSubscriptionSetChanged");
                     return Task.CompletedTask;
                 });
 
             await _gateway.AddEventCallbackAsync<IsUserExistDto>("UserExistanceResponse", isUserExistDto =>
-                {
-                    callbackExecutor.ExecuteSubscriptionsByName(isUserExistDto, "UserExistanceResponse");
-                    return Task.CompletedTask;
-                });
+            {
+                callbackExecutor.ExecuteSubscriptionsByName(isUserExistDto, "UserExistanceResponse");
+                return Task.CompletedTask;
+            });
 
             return _gateway;
         }
@@ -109,13 +111,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         public async Task ActualizeConnectedUsersAsync()
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("PushOnlineUsersToClients");
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                Id = Guid.NewGuid(),
+                EventName = "PushOnlineUsersToClients"
+            });
         }
 
         public async Task CheckIfUserOnline(string username)
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("IsUserOnline", username);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                Id = Guid.NewGuid(),
+                EventName = "IsUserOnline",
+                Type = typeof(string),
+                Data = MessagePackSerializer.Serialize(username)
+            });
         }
 
         public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDto)

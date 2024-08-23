@@ -1,4 +1,6 @@
 using Client.Application.Gateway;
+using Client.Infrastructure.Gateway.ClientToClient;
+using Client.Infrastructure.Gateway.ClientToServer;
 using EthachatShared.Contracts;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Message;
@@ -16,7 +18,8 @@ public class SignalRGateway : IGateway
     private HubConnection? _connection;
     private bool _isConnectionClosedCallbackSet;
     private readonly int _reconnectionIntervalMs = 500;
-    private IReliableSender<EncryptedDataTransfer> ReliableSender => new ClientReliableSender(this);
+    private IReliableSender<ClientToClientData> ReliableContainerSender => new ClientTransferContainerReliableSender(this);
+    private IReliableSender<ClientToServerData> ReliableServerMessageSender => new ServerMessageReliableSender(this);
 
     public async Task ConfigureAsync(Uri hubAddress, Func<Task<CredentialsDTO>> credentialsFactory)
     {
@@ -28,9 +31,14 @@ public class SignalRGateway : IGateway
 
 
         await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);
-        await AddEventCallbackAsync<Guid>("MessageRegisteredByHub", id =>
+        await AddEventCallbackAsync<Guid>("OnClientToClientDataAck", id =>
         {
-            ReliableSender.OnAck(id);
+            ReliableContainerSender.OnAck(id);
+            return Task.CompletedTask;
+        });
+        await AddEventCallbackAsync<Guid>("OnClientToServerDataAck", guid =>
+        {
+            ReliableServerMessageSender.OnAck(guid);
             return Task.CompletedTask;
         });
     }
@@ -106,19 +114,15 @@ public class SignalRGateway : IGateway
         connection.On(methodName, async () => { await handler(); });
     }
 
-    public async Task SendAsync(string methodName)
-    {
-        var connection = await GetHubConnectionAsync();
-        await connection.SendAsync(methodName);
-    }
-
     public async Task SendAsync(string methodName, object arg)
     {
         var connection = await GetHubConnectionAsync();
         await connection.SendAsync(methodName, arg);
     }
 
-    public async Task TransferAsync(EncryptedDataTransfer data) => await ReliableSender.EnqueueAsync(data);
+    public async Task TransferAsync(ClientToServerData data) => await ReliableServerMessageSender.EnqueueAsync(data);
+    
+    public async Task TransferAsync(ClientToClientData data) => await ReliableContainerSender.EnqueueAsync(data);
 
-    public async Task UnsafeTransferAsync(EncryptedDataTransfer data) => await ReliableSender.EnqueueAsync(data);
+    public async Task UnsafeTransferAsync(ClientToClientData data) => await ReliableContainerSender.EnqueueAsync(data);
 }

@@ -2,6 +2,8 @@
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Message;
+using MessagePack;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs
@@ -41,8 +43,10 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("OnValidateCredentials", result);
         }
 
-        public async Task RefreshCredentials(CredentialsDTO dto)
+        public async Task RefreshCredentials(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var dto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             AuthResult result = await _serverHttpClient.RefreshCredentials(dto);
             
             await Clients.Caller.SendAsync("OnRefreshCredentials", result);

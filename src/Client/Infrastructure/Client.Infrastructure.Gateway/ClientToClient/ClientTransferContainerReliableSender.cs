@@ -3,27 +3,27 @@ using Client.Application.Gateway;
 using EthachatShared.Contracts;
 using EthachatShared.Models.Message;
 
-namespace Client.Infrastructure.Gateway;
+namespace Client.Infrastructure.Gateway.ClientToClient;
 
-internal class ClientReliableSender : IReliableSender<EncryptedDataTransfer>
+internal class ClientTransferContainerReliableSender : IReliableSender<ClientToClientData>
 {
     private readonly IGateway _gateway;
-    private readonly ConcurrentQueue<UnsentItem<EncryptedDataTransfer>> _messageQueue = new();
+    private readonly ConcurrentQueue<UnsentItem<ClientToClientData>> _messageQueue = new();
     private readonly ConcurrentDictionary<Guid, bool> _acked = new();
-    private readonly ConcurrentDictionary<Guid, EncryptedDataTransfer> _unsentItems = new();
+    private readonly ConcurrentDictionary<Guid, ClientToClientData> _unsentItems = new();
     private TaskCompletionSource<bool> _queueSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-    public ClientReliableSender(IGateway gateway)
+    public ClientTransferContainerReliableSender(IGateway gateway)
     {
         _gateway = gateway;
         Task.Run(async () => await ProcessQueueAsync());
     }
 
-    public Task EnqueueAsync(EncryptedDataTransfer data)
+    public Task EnqueueAsync(ClientToClientData data)
     {
         if (_unsentItems.TryAdd(data.Id, data))
         {
-            _messageQueue.Enqueue(new UnsentItem<EncryptedDataTransfer>
+            _messageQueue.Enqueue(new UnsentItem<ClientToClientData>
             {
                 Item = data,
                 Backoff = TimeSpan.FromSeconds(1)
@@ -39,7 +39,7 @@ internal class ClientReliableSender : IReliableSender<EncryptedDataTransfer>
         await _queueSignal.Task; // Wait for signal
         _queueSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        var pendingItems = new List<UnsentItem<EncryptedDataTransfer>>();
+        var pendingItems = new List<UnsentItem<ClientToClientData>>();
         while (_messageQueue.TryDequeue(out var unsentItem))
         {
             if (unsentItem.SendAfter <= DateTime.UtcNow)
@@ -58,7 +58,7 @@ internal class ClientReliableSender : IReliableSender<EncryptedDataTransfer>
         }
     }
 
-    private async Task SendAsync(UnsentItem<EncryptedDataTransfer> unsentItem)
+    private async Task SendAsync(UnsentItem<ClientToClientData> unsentItem)
     {
         if (_acked.TryGetValue(unsentItem.Item.Id, out var isAcked) && isAcked)
         {
@@ -85,7 +85,7 @@ internal class ClientReliableSender : IReliableSender<EncryptedDataTransfer>
         return newBackoff < TimeSpan.FromSeconds(5) ? newBackoff : TimeSpan.FromSeconds(5);
     }
 
-    public void OnAck(EncryptedDataTransfer data)
+    public void OnAck(ClientToClientData data)
     {
         _acked[data.Id] = true;
         Remove(data.Id);

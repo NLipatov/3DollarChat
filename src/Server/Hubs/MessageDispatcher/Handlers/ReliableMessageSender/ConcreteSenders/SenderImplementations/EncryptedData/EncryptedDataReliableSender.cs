@@ -8,28 +8,28 @@ using EthachatShared.Models.Message;
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
     EncryptedData
 {
-    public class EncryptedDataReliableSender : IReliableSender<EncryptedDataTransfer>
+    public class EncryptedDataReliableSender : IReliableSender<ClientToClientData>
     {
-        private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermStorageService;
-        private readonly IMessageGateway<EncryptedDataTransfer> _gateway;
-        private readonly ConcurrentQueue<UnsentItem<EncryptedDataTransfer>> _messageQueue = new();
+        private readonly ILongTermStorageService<ClientToClientData> _longTermStorageService;
+        private readonly IMessageGateway<ClientToClientData> _gateway;
+        private readonly ConcurrentQueue<UnsentItem<ClientToClientData>> _messageQueue = new();
         private readonly ConcurrentDictionary<Guid, bool> _acked = new();
-        private readonly ConcurrentDictionary<Guid, EncryptedDataTransfer> _unsentItems = new();
+        private readonly ConcurrentDictionary<Guid, ClientToClientData> _unsentItems = new();
         private TaskCompletionSource<bool> _queueSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public EncryptedDataReliableSender(IMessageGateway<EncryptedDataTransfer> gateway,
-            ILongTermStorageService<EncryptedDataTransfer> longTermStorageService)
+        public EncryptedDataReliableSender(IMessageGateway<ClientToClientData> gateway,
+            ILongTermStorageService<ClientToClientData> longTermStorageService)
         {
             _longTermStorageService = longTermStorageService;
             _gateway = gateway;
             Task.Run(async () => await ProcessQueueAsync());
         }
 
-        public Task EnqueueAsync(EncryptedDataTransfer data)
+        public Task EnqueueAsync(ClientToClientData data)
         {
             if (_unsentItems.TryAdd(data.Id, data))
             {
-                _messageQueue.Enqueue(new UnsentItem<EncryptedDataTransfer>
+                _messageQueue.Enqueue(new UnsentItem<ClientToClientData>
                 {
                     Item = data,
                     Backoff = TimeSpan.FromSeconds(1)
@@ -45,7 +45,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             await _queueSignal.Task; // Wait for signal
             _queueSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            var pendingItems = new List<UnsentItem<EncryptedDataTransfer>>();
+            var pendingItems = new List<UnsentItem<ClientToClientData>>();
             while (_messageQueue.TryDequeue(out var unsentItem))
             {
                 if (unsentItem.SendAfter <= DateTime.UtcNow)
@@ -64,7 +64,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             }
         }
 
-        private async Task SendAsync(UnsentItem<EncryptedDataTransfer> unsentItem)
+        private async Task SendAsync(UnsentItem<ClientToClientData> unsentItem)
         {
             if (!HasActiveConnections(unsentItem.Item.Target))
             {
@@ -99,7 +99,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 .Where(x => x.Key == username)
                 .SelectMany(x => x.Value).Any();
 
-        public void OnAck(EncryptedDataTransfer data)
+        public void OnAck(ClientToClientData data)
         {
             _acked[data.Id] = true;
             Remove(data.Id);

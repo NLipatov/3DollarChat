@@ -39,7 +39,7 @@
 <CustomModal
     @ref="TooLargeFileModal"
     Title=@($"Maximum file size is {Math.Floor((decimal)MaxFileSizeBytes / 1024000)} MB.")
-    Buttons=@( [new CustomButton { Title = "Close", ButtonType = Shared.Button.ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
+    Buttons=@( [new CustomButton { Title = "Close", ButtonType = ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
 </CustomModal>
 
 <FileEncryptionModal />

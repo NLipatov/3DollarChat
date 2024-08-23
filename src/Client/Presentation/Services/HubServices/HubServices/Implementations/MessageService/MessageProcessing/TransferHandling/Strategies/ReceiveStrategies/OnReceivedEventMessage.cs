@@ -106,7 +106,7 @@ public class OnReceivedEventMessage(
             Target = eventMessage.Sender,
             Key = mostRecentRsa
         };
-        await messageService.UnsafeTransferAsync(new EncryptedDataTransfer
+        await messageService.UnsafeTransferAsync(new ClientToClientData
         {
             Id = Guid.NewGuid(),
             Sender = keyMessage.Sender,

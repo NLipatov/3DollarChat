@@ -117,7 +117,7 @@ namespace Ethachat.Server.Utilities.HttpMessaging
                         _configuration["AuthAutority:Address"] + _configuration["AuthAutority:Endpoints:Get-Token"],
                         content);
 
-                if (response.StatusCode != System.Net.HttpStatusCode.OK)
+                if (response.StatusCode != HttpStatusCode.OK)
                 {
                     return new AuthResult
                     {

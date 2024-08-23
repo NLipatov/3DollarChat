@@ -16,8 +16,9 @@ namespace Ethachat.Server.Hubs
             _serverHttpClient = serverHttpClient;
         }
 
-        public async Task Register(UserAuthentication userDto)
+        public async Task Register(ClientToServerData data)
         {
+            var userDto = MessagePackSerializer.Deserialize<UserAuthentication>(data.Data);
             AuthResult result = await _serverHttpClient.Register(userDto);
 
             await Clients.Caller.SendAsync("OnRegister", result);

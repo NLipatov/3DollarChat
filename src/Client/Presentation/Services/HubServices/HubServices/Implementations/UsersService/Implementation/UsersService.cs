@@ -133,13 +133,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         public async Task AddUserWebPushSubscription(NotificationSubscriptionDto subscriptionDto)
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("AddUserWebPushSubscription", subscriptionDto);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "AddUserWebPushSubscription",
+                Data = MessagePackSerializer.Serialize(subscriptionDto),
+                Type = typeof(string),
+            });
         }
 
         public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("GetUserWebPushSubscriptions", credentialsDto);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "GetUserWebPushSubscriptions",
+                Data = MessagePackSerializer.Serialize(credentialsDto),
+                Type = typeof(CredentialsDTO)
+            });
         }
 
         public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove)
@@ -150,13 +160,23 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                  $"should have it's {nameof(NotificationSubscriptionDto.WebAuthnPair)} or {nameof(NotificationSubscriptionDto.JwtPair)} not null");
 
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("RemoveUserWebPushSubscriptions", subscriptionsToRemove);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "RemoveUserWebPushSubscriptions",
+                Data = MessagePackSerializer.Serialize(subscriptionsToRemove),
+                Type = typeof(NotificationSubscriptionDto[]),
+            });
         }
 
         public async Task CheckIfUserExists(string username)
         {
             var gateway = _gateway ?? await ConfigureGateway();
-            await gateway.SendAsync("CheckIfUserExist", username);
+            await gateway.TransferAsync(new ClientToServerData
+            {
+                EventName = "CheckIfUserExist",
+                Data = MessagePackSerializer.Serialize(username),
+                Type = typeof(string),
+            });
         }
     }
 }

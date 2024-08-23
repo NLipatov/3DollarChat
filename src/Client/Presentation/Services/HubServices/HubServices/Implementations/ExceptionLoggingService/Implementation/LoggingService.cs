@@ -2,6 +2,8 @@ using Client.Application.Gateway;
 using Client.Infrastructure.Gateway;
 using EthachatShared.Constants;
 using EthachatShared.Models.Logging.ExceptionLogging;
+using EthachatShared.Models.Message;
+using MessagePack;
 using Microsoft.AspNetCore.Components;
 using LogLevel = EthachatShared.Models.Logging.ExceptionLogging.LogLevel;
 
@@ -28,7 +30,12 @@ public class LoggingService(NavigationManager navigationManager) : ILoggingServi
         };
 
         var gateway = await GetHubConnectionAsync();
-        await gateway.SendAsync("Log", exceptionLog);
+        await gateway.TransferAsync(new ClientToServerData
+        {
+            EventName = "Log",
+            Data = MessagePackSerializer.Serialize(exceptionLog),
+            Type = typeof(ExceptionLog)
+        });
     }
     
     public async Task<IGateway> GetHubConnectionAsync()

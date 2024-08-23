@@ -193,14 +193,18 @@ namespace Ethachat.Server.Hubs
             });
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto notificationSubscriptionDTO)
+        public async Task AddUserWebPushSubscription(ClientToServerData data)
         {
-            await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var notificationSubscriptionDto = MessagePackSerializer.Deserialize<NotificationSubscriptionDto>(data.Data);
+            await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDto);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
+        public async Task GetUserWebPushSubscriptions(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var credentialsDto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             if (userRequestResult.Result is not AuthResultType.Success)
@@ -212,15 +216,19 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
+        public async Task RemoveUserWebPushSubscriptions(ClientToServerData data)
         {
-            await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
-            await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var notificationSubscriptionDtOs = MessagePackSerializer.Deserialize<NotificationSubscriptionDto[]>(data.Data);
+            await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDtOs);
+            await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDtOs);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task CheckIfUserExist(string username)
+        public async Task CheckIfUserExist(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var username = MessagePackSerializer.Deserialize<string>(data.Data);
             IsUserExistDto response = await _serverHttpClient.CheckIfUserExists(username);
             await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }

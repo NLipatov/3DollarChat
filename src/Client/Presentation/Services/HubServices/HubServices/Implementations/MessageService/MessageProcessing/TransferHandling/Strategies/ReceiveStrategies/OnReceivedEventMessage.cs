@@ -2,7 +2,8 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Handlers;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
+    .Handlers;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
@@ -64,10 +65,8 @@ public class OnReceivedEventMessage(
     private async Task HandleResendRequestAsync(EventMessage eventMessage)
     {
         var message = messageBox.Messages.FirstOrDefault(x => x.Id == eventMessage.Id);
-        if (message?.Type is MessageType.TextMessage)
-        {
+        if (message is not null)
             await messageService.TransferAsync(message);
-        }
     }
 
     private Task HandleDataTransferConfirmationAsync(EventMessage eventMessage)

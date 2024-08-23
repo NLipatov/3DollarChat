@@ -1,15 +1,14 @@
 using System.Collections.Concurrent;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
-using
-    Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Models;
 using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+using EthachatShared.Contracts;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
     EncryptedData
 {
-    public class EncryptedDataReliableSender : IReliableMessageSender<EncryptedDataTransfer>
+    public class EncryptedDataReliableSender : IReliableSender<EncryptedDataTransfer>
     {
         private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermStorageService;
         private readonly IMessageGateway<EncryptedDataTransfer> _gateway;
@@ -104,6 +103,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         {
             _acked[data.Id] = true;
             Remove(data.Id);
+        }
+
+        public void OnAck(Guid id)
+        {
+            _acked[id] = true;
+            Remove(id);
         }
 
         private TimeSpan IncreaseBackoff(TimeSpan backoff)

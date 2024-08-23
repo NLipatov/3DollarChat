@@ -1,7 +1,7 @@
 using Client.Application.Gateway;
+using EthachatShared.Contracts;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -16,6 +16,7 @@ public class SignalRGateway : IGateway
     private HubConnection? _connection;
     private bool _isConnectionClosedCallbackSet;
     private readonly int _reconnectionIntervalMs = 500;
+    private IReliableSender<EncryptedDataTransfer> ReliableSender => new ClientReliableSender(this);
 
     public async Task ConfigureAsync(Uri hubAddress, Func<Task<CredentialsDTO>> credentialsFactory)
     {
@@ -27,6 +28,11 @@ public class SignalRGateway : IGateway
 
 
         await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);
+        await AddEventCallbackAsync<Guid>("MessageRegisteredByHub", id =>
+        {
+            ReliableSender.OnAck(id);
+            return Task.CompletedTask;
+        });
     }
 
     public async Task ConfigureAsync(Uri hubAddress)
@@ -112,15 +118,7 @@ public class SignalRGateway : IGateway
         await connection.SendAsync(methodName, arg);
     }
 
-    public async Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable
-    {
-        var connection = await GetHubConnectionAsync();
-        await connection.SendAsync("TransferAsync", data);
-    }
+    public async Task TransferAsync(EncryptedDataTransfer data) => await ReliableSender.EnqueueAsync(data);
 
-    public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
-    {
-        var connection = await GetHubConnectionAsync();
-        await connection.SendAsync("TransferAsync", data);
-    }
+    public async Task UnsafeTransferAsync(EncryptedDataTransfer data) => await ReliableSender.EnqueueAsync(data);
 }

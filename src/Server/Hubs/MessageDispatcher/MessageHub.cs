@@ -1,5 +1,4 @@
 ﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
-using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
     EncryptedData;
@@ -10,6 +9,7 @@ using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersReque
 using Ethachat.Server.Services.Notifications.WebPush;
 using Ethachat.Server.Utilities.HttpMessaging;
 using Ethachat.Server.Utilities.UsernameResolver;
+using EthachatShared.Contracts;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.ConnectedUsersManaging;
@@ -28,8 +28,8 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         private readonly ILongTermStorageService<Message> _longTermStorageService;
         private readonly ILongTermStorageService<EncryptedDataTransfer> _longTermTransferStorageService;
         private readonly IUsernameResolverService _usernameResolverService;
-        private static ReliableMessageSender _reliableMessageSender;
-        private static IReliableMessageSender<EncryptedDataTransfer> _reliableTransferDataSender;
+        private static ReliableSender _reliableSender;
+        private static IReliableSender<EncryptedDataTransfer> _reliableTransferDataSender;
         private static IHubContext<MessageHub> _context;
 
         public MessageHub
@@ -51,10 +51,10 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             _longTermTransferStorageService = longTermTransferStorageService;
             _usernameResolverService = usernameResolverService;
 
-            if (_reliableMessageSender is null)
+            if (_reliableSender is null)
             {
-                _reliableMessageSender =
-                    new ReliableMessageSender(new SignalRGateway<Message>(_context), _longTermStorageService);
+                _reliableSender =
+                    new ReliableSender(new SignalRGateway<Message>(_context), _longTermStorageService);
             }
 
             if (_reliableTransferDataSender is null)
@@ -166,7 +166,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             SendRegistrationConfirmationAsync(message);
 
             if (IsClientConnectedToHub(message.Target!))
-                _reliableMessageSender.EnqueueAsync(message);
+                _reliableSender.EnqueueAsync(message);
             else
             {
                 _longTermStorageService.SaveAsync(message);
@@ -228,7 +228,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public async Task OnAck(Message syncMessage)
         {
-            _reliableMessageSender.OnAck(syncMessage);
+            _reliableSender.OnAck(syncMessage);
         }
     }
 }

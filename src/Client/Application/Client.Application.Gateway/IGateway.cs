@@ -1,5 +1,4 @@
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.Interfaces;
 
 namespace Client.Application.Gateway;
 
@@ -13,7 +12,7 @@ public interface IGateway
     /// </summary>
     /// <param name="data">data to send</param>
     /// <typeparam name="T">data type</typeparam>
-    Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
+    Task TransferAsync(EncryptedDataTransfer data);
 
     /// <summary>
     /// Send unencrypted data

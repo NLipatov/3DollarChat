@@ -41,6 +41,7 @@
 
 
   <ItemGroup>
+    <Folder Include="Hubs\MessageDispatcher\Handlers\ReliableMessageSender\ConcreteSenders\SenderImplementations\Models\" />
     <Folder Include="Services\Notifications\" />
   </ItemGroup>
 

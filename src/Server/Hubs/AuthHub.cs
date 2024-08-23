@@ -2,6 +2,8 @@
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Message;
+using MessagePack;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs
@@ -14,35 +16,45 @@ namespace Ethachat.Server.Hubs
             _serverHttpClient = serverHttpClient;
         }
 
-        public async Task Register(UserAuthentication userDto)
+        public async Task Register(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var userDto = MessagePackSerializer.Deserialize<UserAuthentication>(data.Data);
             AuthResult result = await _serverHttpClient.Register(userDto);
 
             await Clients.Caller.SendAsync("OnRegister", result);
         }
-        public async Task LogIn(UserAuthentication userDto)
+        public async Task LogIn(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var userDto = MessagePackSerializer.Deserialize<UserAuthentication>(data.Data);
             var result = await _serverHttpClient.GetJWTPairAsync(userDto);
 
             await Clients.Caller.SendAsync("OnLoggingIn", result);
         }
 
-        public async Task GetTokenRefreshHistory(string accessToken)
+        public async Task GetTokenRefreshHistory(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var accessToken = MessagePackSerializer.Deserialize<string>(data.Data);
             var history = await _serverHttpClient.GetTokenRefreshHistory(accessToken);
 
             await Clients.Caller.SendAsync("OnRefreshTokenHistoryResponse", history);
         }
 
-        public async Task ValidateCredentials(CredentialsDTO dto)
+        public async Task ValidateCredentials(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var dto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             AuthResult result = await _serverHttpClient.ValidateCredentials(dto);
 
             await Clients.Caller.SendAsync("OnValidateCredentials", result);
         }
 
-        public async Task RefreshCredentials(CredentialsDTO dto)
+        public async Task RefreshCredentials(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var dto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             AuthResult result = await _serverHttpClient.RefreshCredentials(dto);
             
             await Clients.Caller.SendAsync("OnRefreshCredentials", result);

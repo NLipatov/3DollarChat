@@ -8,7 +8,7 @@ using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text.Implementation
 {
-    public class ReliableTextMessageSender : IReliableTextMessageSender
+    public class ReliableTextSender : IReliableTextSender
     {
         private readonly ILongTermStorageService<Message> _longTermStorageService;
         private readonly IMessageGateway<Message> _gateway;
@@ -16,7 +16,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         private ConcurrentDictionary<Guid, bool> _acked = new();
         private volatile bool _isSending;
 
-        public ReliableTextMessageSender(IMessageGateway<Message> gateway,
+        public ReliableTextSender(IMessageGateway<Message> gateway,
             ILongTermStorageService<Message> longTermStorageService)
         {
             _longTermStorageService = longTermStorageService;
@@ -76,6 +76,12 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             _acked.TryAdd(data.SyncItem!.MessageId, true);
         }
 
+        public void OnAck(Guid id)
+        {
+            _acked[id] = true;
+            Remove(id);
+        }
+
         private TimeSpan IncreaseBackoff(TimeSpan? backoff = null)
         {
             if (backoff.HasValue)
@@ -84,7 +90,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                     backoff.Value.Multiply(1.5);
             }
 
-            return TimeSpan.FromSeconds(3);
+            return TimeSpan.FromSeconds(1);
         }
 
         private void Remove(Guid messageId)

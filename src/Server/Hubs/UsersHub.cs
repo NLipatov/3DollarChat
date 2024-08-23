@@ -9,8 +9,10 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using EthachatShared.Models.ConnectedUsersManaging;
+using EthachatShared.Models.Message;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
+using MessagePack;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs
@@ -59,7 +61,7 @@ namespace Ethachat.Server.Hubs
                 else
                     InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
 
-                await PushOnlineUsersToClients();
+                await SendOnlineUsersToClients();
             }
 
             await base.OnDisconnectedAsync(exception);
@@ -85,7 +87,7 @@ namespace Ethachat.Server.Hubs
                 InMemoryHubConnectionStorage.UsersHubConnections.TryRemove(key, out _);
                 InMemoryHubConnectionStorage.UsersHubConnections.TryAdd(usernameFromToken, connections);
 
-                await PushOnlineUsersToClients();
+                await SendOnlineUsersToClients();
             }
         }
 
@@ -133,12 +135,12 @@ namespace Ethachat.Server.Hubs
                 throw;
             }
 
-            await PushOnlineUsersToClients();
+            await SendOnlineUsersToClients();
         }
 
         private async Task OnUsernameResolvedHandlers(string username)
         {
-            await PushOnlineUsersToClients();
+            await SendOnlineUsersToClients();
             await PushConId();
             await PushResolvedName(username);
         }
@@ -148,8 +150,17 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("OnNameResolve", username);
         }
 
-        public async Task PushOnlineUsersToClients()
+        private async Task SendOnlineUsersToClients()
         {
+            //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
+            UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
+            //Pushes set of clients to all the clients
+            await Clients.All.SendAsync("ReceiveOnlineUsers", report);
+        }
+
+        public async Task PushOnlineUsersToClients(ClientToServerData data)
+        {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
             //Defines a set of clients that are connected to both UsersHub and MessageDispatcherHub at the same time
             UserConnectionsReport report = _onlineUsersManager.FormUsersOnlineMessage();
             //Pushes set of clients to all the clients
@@ -161,8 +172,10 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveConnectionId", Context.ConnectionId);
         }
 
-        public async Task IsUserOnline(string username)
+        public async Task IsUserOnline(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var username = MessagePackSerializer.Deserialize<string>(data.Data);
             string[] userHubConnections =
                 InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value)
                     .ToArray();
@@ -180,14 +193,18 @@ namespace Ethachat.Server.Hubs
             });
         }
 
-        public async Task AddUserWebPushSubscription(NotificationSubscriptionDto notificationSubscriptionDTO)
+        public async Task AddUserWebPushSubscription(ClientToServerData data)
         {
-            await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDTO);
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var notificationSubscriptionDto = MessagePackSerializer.Deserialize<NotificationSubscriptionDto>(data.Data);
+            await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDto);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto)
+        public async Task GetUserWebPushSubscriptions(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var credentialsDto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
             var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             if (userRequestResult.Result is not AuthResultType.Success)
@@ -199,15 +216,19 @@ namespace Ethachat.Server.Hubs
             await Clients.Caller.SendAsync("ReceiveWebPushSubscriptions", userSubscriptions);
         }
 
-        public async Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] notificationSubscriptionDTOs)
+        public async Task RemoveUserWebPushSubscriptions(ClientToServerData data)
         {
-            await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDTOs);
-            await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDTOs);
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var notificationSubscriptionDtOs = MessagePackSerializer.Deserialize<NotificationSubscriptionDto[]>(data.Data);
+            await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDtOs);
+            await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDtOs);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
 
-        public async Task CheckIfUserExist(string username)
+        public async Task CheckIfUserExist(ClientToServerData data)
         {
+            await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
+            var username = MessagePackSerializer.Deserialize<string>(data.Data);
             IsUserExistDto response = await _serverHttpClient.CheckIfUserExists(username);
             await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }

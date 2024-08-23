@@ -7,6 +7,8 @@ using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Constants;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
+using EthachatShared.Models.Message;
+using MessagePack;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation;
@@ -125,19 +127,34 @@ public class AuthService : IAuthService
     public async Task Register(UserAuthentication newUserDto)
     {
         _gateway ??= await ConfigureGateway();
-        await _gateway.SendAsync("Register", newUserDto);
+        await _gateway.TransferAsync(new ClientToServerData
+        {
+            EventName = "Register",
+            Data = MessagePackSerializer.Serialize(newUserDto),
+            Type = typeof(UserAuthentication)
+        });
     }
 
     public async Task LogIn(UserAuthentication userAuthentication)
     {
         _gateway ??= await ConfigureGateway();
-        await _gateway.SendAsync("LogIn", userAuthentication);
+        await _gateway.TransferAsync(new ClientToServerData
+        {
+            EventName = "LogIn",
+            Data = MessagePackSerializer.Serialize(userAuthentication),
+            Type = typeof(UserAuthentication)
+        });
     }
 
     public async Task GetRefreshTokenHistory()
     {
         _gateway ??= await ConfigureGateway();
         var accessToken = await _authenticationManager.GetAccessCredential();
-        await _gateway.SendAsync("GetTokenRefreshHistory", accessToken);
+        await _gateway.TransferAsync(new ClientToServerData
+        {
+            EventName = "GetTokenRefreshHistory",
+            Data = MessagePackSerializer.Serialize(accessToken),
+            Type = typeof(string)
+        });
     }
 }

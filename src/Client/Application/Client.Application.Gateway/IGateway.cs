@@ -1,5 +1,4 @@
 using EthachatShared.Models.Message;
-using EthachatShared.Models.Message.Interfaces;
 
 namespace Client.Application.Gateway;
 
@@ -9,17 +8,22 @@ namespace Client.Application.Gateway;
 public interface IGateway
 {
     /// <summary>
-    /// Sends encrypted data
+    /// Sends unencrypted data to server
     /// </summary>
     /// <param name="data">data to send</param>
-    /// <typeparam name="T">data type</typeparam>
-    Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
+    Task TransferAsync(ClientToServerData data);
 
     /// <summary>
-    /// Send unencrypted data
+    /// Sends encrypted data to other client
     /// </summary>
     /// <param name="data">data to send</param>
-    Task UnsafeTransferAsync(EncryptedDataTransfer data);
+    Task TransferAsync(ClientToClientData data);
+
+    /// <summary>
+    /// Send unencrypted data to other client
+    /// </summary>
+    /// <param name="data">data to send</param>
+    Task UnsafeTransferAsync(ClientToClientData data);
 
     /// <summary>
     /// Acks the transfer(sends transfer confirmation to server)
@@ -54,18 +58,4 @@ public interface IGateway
     /// <param name="handler">The handler that will be raised when the hub method is invoked.</param>
     /// <returns>A subscription that can be disposed to unsubscribe from the hub method.</returns>
     Task AddEventCallbackAsync(string methodName, Func<Task> handler);
-
-    /// <summary>
-    /// Calls SendAsync on HubConnectionInstance
-    /// </summary>
-    /// <param name="methodName"></param>
-    /// <returns></returns>
-    Task SendAsync(string methodName);
-
-    /// <summary>
-    /// Calls SendAsync on HubConnectionInstance
-    /// </summary>
-    /// <param name="methodName"></param>
-    /// <returns></returns>
-    Task SendAsync(string methodName, object arg);
 }

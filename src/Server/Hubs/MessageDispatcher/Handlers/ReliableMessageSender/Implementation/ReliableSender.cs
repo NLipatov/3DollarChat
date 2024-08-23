@@ -2,19 +2,20 @@ using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.Text.Implementation;
+using EthachatShared.Contracts;
 using EthachatShared.Models.Message;
 
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.Implementation;
 
-public class ReliableMessageSender : IReliableMessageSender<Message>
+public class ReliableSender : IReliableSender<Message>
 {
-    private static IReliableTextMessageSender _reliableTextMessageSender;
+    private static IReliableTextSender _reliableTextSender;
 
-    public ReliableMessageSender(IMessageGateway<Message> gateway, ILongTermStorageService<Message> longTermStorageService)
+    public ReliableSender(IMessageGateway<Message> gateway, ILongTermStorageService<Message> longTermStorageService)
     {
-        if (_reliableTextMessageSender is null)
+        if (_reliableTextSender is null)
         {
-            _reliableTextMessageSender = new ReliableTextMessageSender(gateway, longTermStorageService);
+            _reliableTextSender = new ReliableTextSender(gateway, longTermStorageService);
         }
     }
 
@@ -37,12 +38,17 @@ public class ReliableMessageSender : IReliableMessageSender<Message>
         GetTargetSender(data.Type).OnAck(data);
     }
 
-    private IReliableMessageSender<Message> GetTargetSender(MessageType type)
+    public void OnAck(Guid id)
+    {
+        _reliableTextSender.OnAck(id);
+    }
+
+    private IReliableSender<Message> GetTargetSender(MessageType type)
     {
         return type switch
             
         {
-            _ => _reliableTextMessageSender
+            _ => _reliableTextSender
         };
     }
 }

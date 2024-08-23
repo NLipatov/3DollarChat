@@ -94,7 +94,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             _gateway ??= await ConfigureGateway();
 
-            await _gateway.AddEventCallbackAsync<EncryptedDataTransfer>("OnTransfer", async transfer =>
+            await _gateway.AddEventCallbackAsync<ClientToClientData>("OnTransfer", async transfer =>
             {
                 if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
@@ -219,7 +219,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         public async Task NegotiateOnAESAsync(string partnerUsername)
         {
-            await UnsafeTransferAsync(new EncryptedDataTransfer
+            await UnsafeTransferAsync(new ClientToClientData
             {
                 Id = Guid.NewGuid(),
                 Sender = await _authenticationHandler.GetUsernameAsync(),
@@ -250,7 +250,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             await processor.ProcessTransferAsync(eventName, message);
         }
 
-        public async Task UnsafeTransferAsync(EncryptedDataTransfer data)
+        public async Task UnsafeTransferAsync(ClientToClientData data)
         {
             var gateway = _gateway ?? await InitializeGatewayAsync();
             await gateway.UnsafeTransferAsync(data);
@@ -266,7 +266,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 false => AesEncryptAsync(data)
             };
 
-            var transferData = new EncryptedDataTransfer
+            var transferData = new ClientToClientData
             {
                 Id = data.Id,
                 BinaryCryptogram = await encryptionTask,
@@ -310,37 +310,37 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 rsaKey ?? throw new ApplicationException("Missing key"));
         }
 
-        private async Task<T?> DecryptTransferAsync<T>(EncryptedDataTransfer dataTransfer)
+        private async Task<T?> DecryptTransferAsync<T>(ClientToClientData dataClientToClientData)
         {
             try
             {
-                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.None)
+                if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.None)
                 {
-                    var result = MessagePackSerializer.Deserialize<T>(dataTransfer.BinaryCryptogram.Cypher);
+                    var result = MessagePackSerializer.Deserialize<T>(dataClientToClientData.BinaryCryptogram.Cypher);
                     return result;
                 }
 
-                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.RsaPublic)
+                if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.RsaPublic)
                 {
                     var rsaPrivateKey = (await _keyStorage.GetAsync(string.Empty, KeyType.RsaPrivate))
                                         .MaxBy(x => x.CreationDate) ??
                                         throw new NullReferenceException("Missing key");
 
                     var decryptedRsa =
-                        await _cryptographyService.DecryptAsync<RsaHandler>(dataTransfer.BinaryCryptogram,
+                        await _cryptographyService.DecryptAsync<RsaHandler>(dataClientToClientData.BinaryCryptogram,
                             rsaPrivateKey);
                     var result = MessagePackSerializer.Deserialize<T>(decryptedRsa.Cypher);
                     return result;
                 }
 
-                if (dataTransfer.BinaryCryptogram.EncryptionKeyType is KeyType.Aes)
+                if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.Aes)
                 {
-                    var aesKeys = await _keyStorage.GetAsync(dataTransfer.Sender, KeyType.Aes);
-                    var aesKey = aesKeys.FirstOrDefault(x => x.Id == dataTransfer.BinaryCryptogram.KeyId) ??
+                    var aesKeys = await _keyStorage.GetAsync(dataClientToClientData.Sender, KeyType.Aes);
+                    var aesKey = aesKeys.FirstOrDefault(x => x.Id == dataClientToClientData.BinaryCryptogram.KeyId) ??
                                  throw new NullReferenceException("Missing key");
 
                     var cryptogram = await _cryptographyService
-                        .DecryptAsync<AesHandler>(dataTransfer.BinaryCryptogram, aesKey);
+                        .DecryptAsync<AesHandler>(dataClientToClientData.BinaryCryptogram, aesKey);
 
                     var result = MessagePackSerializer.Deserialize<T>(cryptogram.Cypher);
                     return result;
@@ -353,8 +353,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 await SendMessage(new EventMessage()
                 {
                     Sender = await _authenticationHandler.GetUsernameAsync(),
-                    Target = dataTransfer.Sender,
-                    Id = dataTransfer.Id,
+                    Target = dataClientToClientData.Sender,
+                    Id = dataClientToClientData.Id,
                     Type = EventType.ResendRequest
                 });
                 throw;

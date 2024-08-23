@@ -33,7 +33,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 _messageQueue.Enqueue(new UnsentItem<EncryptedDataTransfer>
                 {
                     Item = data,
-                    Backoff = TimeSpan.FromSeconds(3)
+                    Backoff = TimeSpan.FromSeconds(1)
                 });
                 _queueSignal.TrySetResult(true); // Signal that a new item is available
             }

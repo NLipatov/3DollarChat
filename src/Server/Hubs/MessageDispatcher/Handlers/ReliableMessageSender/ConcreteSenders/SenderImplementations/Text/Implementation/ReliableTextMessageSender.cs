@@ -84,7 +84,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                     backoff.Value.Multiply(1.5);
             }
 
-            return TimeSpan.FromSeconds(3);
+            return TimeSpan.FromSeconds(1);
         }
 
         private void Remove(Guid messageId)

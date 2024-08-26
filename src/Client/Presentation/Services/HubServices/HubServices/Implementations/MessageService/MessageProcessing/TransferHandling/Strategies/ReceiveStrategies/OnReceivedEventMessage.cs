@@ -23,9 +23,6 @@ public class OnReceivedEventMessage(
 
     public async Task HandleAsync(EventMessage message)
     {
-        if (!_handledIds.Add(message.Id)) //if .Add returned true - event message is new, else - duplicate
-            return;
-
         var handleTask = message.Type switch
         {
             EventType.ConversationDeletion => HandleConversationDeletionAsync(message),
@@ -83,6 +80,9 @@ public class OnReceivedEventMessage(
 
     private async Task HandleAesOfferAcceptedAsync(EventMessage eventMessage)
     {
+        if (!_handledIds.Add(eventMessage.Id)) //if .Add returned true - event message is new, else - duplicate
+            return;
+        
         var keys = await keyStorage.GetAsync(eventMessage.Sender, KeyType.Aes);
         var acceptedKey = keys.FirstOrDefault(x => x.Id == eventMessage.Id) ??
                           throw new ArgumentException("Missing key");
@@ -95,6 +95,9 @@ public class OnReceivedEventMessage(
 
     private async Task HandleRsaPubKeyRequestAsync(EventMessage eventMessage)
     {
+        if (!_handledIds.Add(eventMessage.Id)) //if .Add returned true - event message is new, else - duplicate
+            return;
+        
         var rsaPubKeys = await keyStorage.GetAsync(string.Empty, KeyType.RsaPublic);
         var mostRecentRsa = rsaPubKeys.MaxBy(x => x.CreationDate) ??
                             throw new NullReferenceException("Missing RSA Public Key");

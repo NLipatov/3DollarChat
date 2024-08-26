@@ -93,21 +93,4 @@ public class BinarySendingManager(
     {
         return await jsRuntime.InvokeAsync<string>("createBlobUrl", bytes, contentType);
     }
-
-    public void HandlePackageRegisteredByHub(Guid fileId, int packageIndex)
-    {
-        callbackExecutor.ExecuteSubscriptionsByName(fileId, "OnChunkLoaded");
-
-        _fileIdUploadProgress.TryGetValue(fileId, out var currentProgress);
-
-        _fileIdUploadProgress
-            .TryUpdate(fileId, (currentProgress.chunksLoaded + 1, currentProgress.chunksTotal),
-                (currentProgress.chunksLoaded, currentProgress.chunksTotal));
-
-        if (_fileIdUploadProgress[fileId].chunksLoaded == _fileIdUploadProgress[fileId].chunksTotal)
-        {
-            callbackExecutor.ExecuteSubscriptionsByName(fileId, "MessageRegisteredByHub");
-            _fileIdUploadProgress.TryRemove(fileId, out _);
-        }
-    }
 }

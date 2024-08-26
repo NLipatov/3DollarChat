@@ -86,7 +86,7 @@
 
     private async Task DeleteConversationAsync()
     {
-        await _messageService.SendMessage(new EventMessage
+        await _messageService.TransferAsync(new EventMessage
         {
             Type = EventType.ConversationDeletion,
             Target = PartnerName,

@@ -25,7 +25,7 @@ public class AuthService : IAuthService
 
     private async Task<IGateway> ConfigureGateway()
     {
-        var gateway = new SignalRGateway();
+        var gateway = new SignalrGateway();
         await gateway.ConfigureAsync(NavigationManager.ToAbsoluteUri(HubAddress.Auth));
         return gateway;
     }

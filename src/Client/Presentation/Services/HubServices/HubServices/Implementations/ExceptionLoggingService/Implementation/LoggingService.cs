@@ -15,7 +15,7 @@ public class LoggingService(NavigationManager navigationManager) : ILoggingServi
 
     private async Task<IGateway> ConfigureGateway()
     {
-        var gateway = new SignalRGateway();
+        var gateway = new SignalrGateway();
         await gateway.ConfigureAsync(navigationManager.ToAbsoluteUri(HubAddress.ExceptionLogging));
         return gateway;
     }

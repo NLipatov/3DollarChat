@@ -48,7 +48,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
         private async Task<IGateway> ConfigureGateway()
         {
-            var gateway = new SignalRGateway();
+            var gateway = new SignalrGateway();
             await gateway.ConfigureAsync(NavigationManager.ToAbsoluteUri(HubAddress.Message),
                 async () => await _authenticationHandler.GetCredentialsDto());
             return gateway;

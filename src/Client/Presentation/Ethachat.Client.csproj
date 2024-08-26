@@ -59,7 +59,6 @@
 
   <ItemGroup>
     <Folder Include="Services\Authentication\Handlers\Implementations\" />
-    <Folder Include="Services\HubServices\HubServices\Implementations\MessageService\ReliableSenders\" />
     <Folder Include="UI\CommonComponents\" />
     <Folder Include="UI\Shared\Card\" />
     <Folder Include="UI\Shared\Input\" />

@@ -175,7 +175,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
 
         public async Task TransferAsync(ClientToClientData dataClientToClientData)
         {
-            await Clients.Caller.SendAsync("OnClientToClientDataAck", dataClientToClientData.Id);
             if (IsClientConnectedToHub(dataClientToClientData.Target))
                 await _reliableTransferDataSender.EnqueueAsync(dataClientToClientData);
             else
@@ -204,10 +203,6 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
                 await Clients.Group(message.Sender!)
                     .SendAsync("PackageRegisteredByHub", message.Package!.FileDataid,
                         message.Package.Index);
-            }
-            else if (message.Type is MessageType.TextMessage)
-            {
-                await Clients.Caller.SendAsync("OnClientToClientDataAck", message.Id);
             }
         }
 

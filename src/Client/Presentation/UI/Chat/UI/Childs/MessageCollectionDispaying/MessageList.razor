@@ -22,11 +22,9 @@
 
 @code {
 
-    [Parameter]
-    public string TargetGroup { get; set; } = string.Empty;
+    [Parameter] public string TargetGroup { get; set; } = string.Empty;
 
-    [Parameter]
-    public string MyUsername { get; set; } = string.Empty;
+    [Parameter] public string MyUsername { get; set; } = string.Empty;
 
     [Parameter] public string HtmlClass { get; set; } = string.Empty;
 
@@ -37,7 +35,7 @@
     protected override void OnInitialized()
     {
         base.OnInitialized();
-        
+
         ComponentId = Guid.NewGuid();
         SubscribeToHubEvents();
     }
@@ -48,27 +46,27 @@
             .AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
         
         HubServiceSubscriptionManager
-            .AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
-        
+            .AddCallback<Guid>(MarkAsRead, "OnReceiverMarkedMessageAsRead", ComponentId);
+
         HubServiceSubscriptionManager
-            .AddCallback<Guid>(MessageRegisteredByHub, "MessageRegisteredByHub", ComponentId);
+            .AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
     }
 
-    public async Task MessageRegisteredByHub(Guid id)
-    {
-        await MessageBox.OnRegistered(id);
-
-        StateHasChanged();
-    }
-
-    public async Task MarkAsReceived(Guid messageId)
+    private async Task MarkAsReceived(Guid messageId)
     {
         await MessageBox.OnDelivered(messageId);
 
         StateHasChanged();
     }
 
-    public async Task AddMessageAsync()
+    private async Task MarkAsRead(Guid messageId)
+    {
+        MessageBox.OnSeen(messageId);
+
+        StateHasChanged();
+    }
+
+    private async Task AddMessageAsync()
     {
         StateHasChanged();
 

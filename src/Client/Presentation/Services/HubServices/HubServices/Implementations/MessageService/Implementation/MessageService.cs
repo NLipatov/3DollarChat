@@ -24,7 +24,6 @@ using EthachatShared.Encryption;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Cryptograms;
-using EthachatShared.Models.EventNameConstants;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
@@ -178,19 +177,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     _callbackExecutor.ExecuteSubscriptionsByName(updatedTrackedUserConnections, "ReceiveOnlineUsers");
                     return Task.CompletedTask;
                 });
-
-            await _gateway.AddEventCallbackAsync<Guid>(SystemEventType.MessageRegisteredByHub.ToString(),
-                messageId =>
-                {
-                    _callbackExecutor.ExecuteSubscriptionsByName(messageId, "MessageRegisteredByHub");
-                    return Task.CompletedTask;
-                });
-
-            await _gateway.AddEventCallbackAsync<Guid, int>("PackageRegisteredByHub", (fileId, packageIndex) =>
-            {
-                _binarySendingManager.HandlePackageRegisteredByHub(fileId, packageIndex);
-                return Task.CompletedTask;
-            });
 
             await _gateway.AddEventCallbackAsync<AuthResult>("OnAccessTokenInvalid",
                 async _ => { _gateway = await ConfigureGateway(); });

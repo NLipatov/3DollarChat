@@ -1,4 +1,4 @@
-﻿using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
+using Ethachat.Server.Hubs.MessageDispatcher.Handlers.MessageTransmitionGateway.Implementations;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.LongTermMessageStorage;
 using Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
     EncryptedData;
@@ -176,14 +176,14 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task TransferAsync(ClientToClientData dataClientToClientData)
         {
             if (IsClientConnectedToHub(dataClientToClientData.Target))
-                await _reliableTransferDataSender.EnqueueAsync(dataClientToClientData);
+                Task.Run(()=> _reliableTransferDataSender.EnqueueAsync(dataClientToClientData));
             else
             {
                 _longTermTransferStorageService.SaveAsync(dataClientToClientData);
                 SendNotificationAsync(dataClientToClientData);
             }
 
-            await _context.Clients.Group(dataClientToClientData.Target).SendAsync("OnTransfer", dataClientToClientData);
+            //await _context.Clients.Group(dataClientToClientData.Target).SendAsync("OnTransfer", dataClientToClientData);
         }
 
         private async Task SendRegistrationConfirmationAsync(Message message)

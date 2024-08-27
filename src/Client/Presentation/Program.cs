@@ -6,6 +6,7 @@ using Client.Infrastructure.Cryptography;
 using Client.Infrastructure.Cryptography.KeyStorage;
 using Client.Infrastructure.Runtime.PlatformRuntime;
 using Ethachat.Client;
+using Ethachat.Client.Services;
 using Ethachat.Client.Services.Authentication;
 using Ethachat.Client.Services.Authentication.Boundaries;
 using Ethachat.Client.Services.Authentication.Handlers;
@@ -70,6 +71,7 @@ builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddSingleton<IAuthenticationManagerBoundary, AuthenticationManagerBoundary>();
+builder.Services.AddSingleton<MessageRenderer>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

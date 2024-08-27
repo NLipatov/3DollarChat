@@ -18,32 +18,32 @@ public class BinarySendingManager(
 {
     private readonly ConcurrentDictionary<Guid, (int chunksLoaded, int chunksTotal)> _fileIdUploadProgress = new();
 
-    public async IAsyncEnumerable<Package> GetChunksToSendAsync(Package message)
+    public async IAsyncEnumerable<Package> GetChunksToSendAsync(Package data)
     {
         var fileDataId = Guid.NewGuid();
-        var chunkableBinary = new ChunkableBinary(message.Data);
-        int totalChunks = chunkableBinary.Count;
+        var chunkedBytes = new ChunkedBytes(data.Data);
+        int totalChunks = chunkedBytes.Count;
         _fileIdUploadProgress.TryAdd(fileDataId, (0, totalChunks));
-        var metadataMessage = GenerateMetadataMessage(fileDataId, message, totalChunks);
+        var metadataMessage = GenerateMetadataMessage(fileDataId, data, totalChunks);
 
         messageBox.AddMessage(metadataMessage);
 
-        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata!, message.Data, message.Sender,
-            message.Target);
+        await AddBinaryAsBlobToMessageBox(metadataMessage.Metadata!, data.Data, data.Sender,
+            data.Target);
 
         int chunksCounter = 0;
-        foreach (var chunk in chunkableBinary.GetChunk())
+        foreach (var chunk in chunkedBytes.GetChunk())
         {
             var package = new Package
             {
-                Sender = message.Sender,
-                Target = message.Target,
+                Sender = data.Sender,
+                Target = data.Target,
                 Index = chunksCounter,
                 Total = totalChunks,
                 Data = chunk,
                 FileDataid = fileDataId,
-                Filename = message.Filename,
-                ContentType = message.ContentType,
+                Filename = data.Filename,
+                ContentType = data.ContentType,
             };
 
             yield return package;

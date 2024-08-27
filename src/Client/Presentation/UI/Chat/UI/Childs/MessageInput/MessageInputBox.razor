@@ -3,6 +3,7 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending
 @using Ethachat.Client.Services.VideoStreamingService
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
@@ -21,6 +22,7 @@
 @inject IHlsStreamingService HlsStreamingService
 @inject NavigationManager NavigationManager
 @inject IKeyStorage KeyStorage
+@inject IBinarySendingManager BinarySendingManager
 @implements IAsyncDisposable
 
 <div class="message-input-box">
@@ -82,6 +84,8 @@
             SendIBrowserFileDelegate = SendIBrowserFile;
             await JsModule.InvokeVoidAsync("AddOnPasteEvent");
         }
+
+        BinarySendingManager = new BinarySendingManager(JsRuntime, MessageBox, CallbackExecutor);
     }
 
     private void UpdateMessageInput(ChangeEventArgs e)
@@ -152,6 +156,7 @@
 
         var package = new Package
         {
+            Id = Guid.NewGuid(),
             Data = fileBytes,
             ContentType = browserFile.ContentType,
             Filename = browserFile.Name,
@@ -159,7 +164,9 @@
             Sender = MyUsername,
         };
         
-        await MessageService.SendMessage(package);
+        await foreach (var dataPartMessage in BinarySendingManager.GetChunksToSendAsync(package))
+            _ = Task.Run(async () => await MessageService.TransferAsync(dataPartMessage));
+        
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
@@ -170,7 +177,7 @@
         var formData = new MultipartFormDataContent();
 
         var progressStreamContent = new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
-        progressStreamContent.ProgressChanged += (bytes, currBytes, totalBytes) =>
+        progressStreamContent.ProgressChanged += (_, currBytes, totalBytes) =>
         {
             var ratio = currBytes / (double)totalBytes;
             var percentage = Math.Round(ratio * 100, 1);
@@ -179,36 +186,34 @@
 
         formData.Add(progressStreamContent, "payload", browserFile.Name);
 
-        using (var httpClient = new HttpClient())
+        using var httpClient = new HttpClient();
+        try
         {
-            try
-            {
-                var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
+            var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
 
-                var request = await httpClient.PostAsync(hlsApiUrl, formData);
+            var request = await httpClient.PostAsync(hlsApiUrl, formData);
 
-                if (!request.IsSuccessStatusCode)
-                    throw new ApplicationException("Could not post video to HLS API");
+            if (!request.IsSuccessStatusCode)
+                throw new ApplicationException("Could not post video to HLS API");
 
-                var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
+            var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
 
-                if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
-                    return null;
+            if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
+                return null;
             
-                return new HlsPlaylist
-                {
-                    Name = browserFile.Name,
-                    M3U8Content = m3U8PlaylistContent,
-                };
-            }
-            catch (Exception e)
+            return new HlsPlaylist
             {
-                throw new ApplicationException("Could not convert video to HLS", e);
-            }
-            finally
-            {
-                CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
-            }
+                Name = browserFile.Name,
+                M3U8Content = m3U8PlaylistContent,
+            };
+        }
+        catch (Exception e)
+        {
+            throw new ApplicationException("Could not convert video to HLS", e);
+        }
+        finally
+        {
+            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
         }
     }
 

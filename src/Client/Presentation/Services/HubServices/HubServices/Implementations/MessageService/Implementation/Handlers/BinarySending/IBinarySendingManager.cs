@@ -4,5 +4,5 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
 public interface IBinarySendingManager
 {
-    IAsyncEnumerable<Package> GetChunksToSendAsync(Package message);
+    IAsyncEnumerable<Package> GetChunksToSendAsync(Package data);
 }

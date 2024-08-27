@@ -63,11 +63,6 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             {
                 TransferDirection = TransferDirection.Incoming,
                 Handler = new OnReceivedDataPackage(callbackExecutor, binaryReceivingManager, messageService)
-            },
-            new()
-            {
-                TransferDirection = TransferDirection.Outcoming,
-                Handler = new OnSentPackage(messageService, binarySendingManager)
             }
         ]);
 

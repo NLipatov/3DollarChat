@@ -22,18 +22,18 @@ public class HlsStreamingService : IHlsStreamingService
     {
         try
         {
+            //Is extension supported by HLS?
+            if (!IsExtensionSupportedByHls(filename))
+                return false;
+           
             //Is HLS service accessible?
             var endpointAddress = string.Join("", _navigationManager.BaseUri, "hlsapi/health");
-            Console.WriteLine("Using HLS API: " + endpointAddress);
             using var client = new HttpClient();
             var request = await client.GetAsync(endpointAddress);
             var hlsServiceHealth = await request.Content.ReadAsStringAsync();
-            Console.WriteLine("HLS API Health Response: "+hlsServiceHealth);
             var hlsIsAccessible = hlsServiceHealth == "Ready";
             
-            //Is extension supported by HLS?
-            var extensionIsSupported = IsExtensionSupportedByHls(filename); 
-            return extensionIsSupported && hlsIsAccessible;
+            return hlsIsAccessible;
         }
         catch (Exception e)
         {

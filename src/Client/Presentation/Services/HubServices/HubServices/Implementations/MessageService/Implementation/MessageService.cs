@@ -67,8 +67,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _cryptographyService = cryptographyService;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
-            _binarySendingManager =
-                new BinarySendingManager(jsRuntime, messageBox, callbackExecutor);
             _keyStorage = keyStorage;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,

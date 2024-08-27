@@ -26,6 +26,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.Exception
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation;
 using Ethachat.Client.Services.InboxService;
@@ -70,6 +71,7 @@ builder.Services.AddTransient<IHlsStreamingService, HlsStreamingService>();
 builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddSingleton<IAuthenticationManagerBoundary, AuthenticationManagerBoundary>();
+builder.Services.AddTransient<IBinarySendingManager, BinarySendingManager>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

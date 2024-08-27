@@ -176,14 +176,14 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
         public async Task TransferAsync(ClientToClientData dataClientToClientData)
         {
             if (IsClientConnectedToHub(dataClientToClientData.Target))
-                Task.Run(()=> _reliableTransferDataSender.EnqueueAsync(dataClientToClientData));
+                await _reliableTransferDataSender.EnqueueAsync(dataClientToClientData);
             else
             {
                 _longTermTransferStorageService.SaveAsync(dataClientToClientData);
                 SendNotificationAsync(dataClientToClientData);
             }
 
-            //await _context.Clients.Group(dataClientToClientData.Target).SendAsync("OnTransfer", dataClientToClientData);
+            await _context.Clients.Group(dataClientToClientData.Target).SendAsync("OnTransfer", dataClientToClientData);
         }
 
         private async Task SendRegistrationConfirmationAsync(Message message)

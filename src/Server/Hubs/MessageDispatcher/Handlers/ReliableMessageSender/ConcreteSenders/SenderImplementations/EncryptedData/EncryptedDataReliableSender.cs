@@ -60,6 +60,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                                 _acked.TryRemove(key, out _);
                             }
                         }
+                        Console.WriteLine($"{nameof(_messageQueue)}: {_messageQueue.Count}");
+                        Console.WriteLine($"{nameof(unsentItem)}: {_unsentItems.Count}");
+                        Console.WriteLine($"{nameof(_acked)}: {_acked.Count}");
                         continue;
                     }
 

@@ -80,7 +80,7 @@
 
     private void UpdateUsersList(UserConnectionsReport usersOnlineMessage)
     {
-        if (UsersOnlineMessage.FormedAt < usersOnlineMessage.FormedAt)
+        if (UsersOnlineMessage.FormedAt <= usersOnlineMessage.FormedAt)
         {
             UsersOnlineMessage = usersOnlineMessage;
             StateHasChanged();

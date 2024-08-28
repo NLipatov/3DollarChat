@@ -72,18 +72,9 @@ app.UseRouting();
 
 app.MapRazorPages();
 app.MapControllers();
-app.MapHub<AuthHub>(HubAddress.Auth, options =>
-{
-    options.AllowStatefulReconnects = true;
-});
-app.MapHub<UsersHub>(HubAddress.Users, options =>
-{
-    options.AllowStatefulReconnects = true;
-});
-app.MapHub<MessageHub>(HubAddress.Message, options =>
-{
-    options.AllowStatefulReconnects = true;
-});
+app.MapHub<AuthHub>(HubAddress.Auth);
+app.MapHub<UsersHub>(HubAddress.Users);
+app.MapHub<MessageHub>(HubAddress.Message);
 app.MapFallbackToFile("index.html");
 
 #if DEBUG

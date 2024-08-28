@@ -25,7 +25,7 @@ public class SignalrGateway : IGateway
             _credentialsFactory = credentialsFactory;
 
         _connection = new HubConnectionBuilder()
-            .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
+            .WithUrl(hubAddress)
             .AddMessagePackProtocol()
             .Build();
 

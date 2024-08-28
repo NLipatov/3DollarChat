@@ -25,7 +25,7 @@ public class SignalrGateway : IGateway
 
         _connection = new HubConnectionBuilder()
             .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
-            .WithAutomaticReconnect()
+            //.WithAutomaticReconnect()
             .AddMessagePackProtocol()
             .Build();
 

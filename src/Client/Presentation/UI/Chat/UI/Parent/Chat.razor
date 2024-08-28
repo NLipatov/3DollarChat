@@ -66,12 +66,12 @@ else
     protected override async Task OnInitializedAsync()
     {
         //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         myUsername = await AuthenticationHandler.GetUsernameAsync();
 
-        //If username was not read, ask user to relogin
+        //If username was not read, ask user to re-login
         if (string.IsNullOrWhiteSpace(myUsername))
         {
             _navigationManager.NavigateTo("/signIn");

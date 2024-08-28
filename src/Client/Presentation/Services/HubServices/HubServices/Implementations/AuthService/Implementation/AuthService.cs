@@ -55,7 +55,10 @@ public class AuthService : IAuthService
         await _gateway.AddEventCallbackAsync<AuthResult>("OnRefreshCredentials", async result =>
         {
             if (result.Result is not AuthResultType.Success)
+            {
                 NavigationManager.NavigateTo("signin");
+                return;
+            }
 
             if (result.JwtPair is not null)
                 await _authenticationManager.UpdateCredentials(result.JwtPair);

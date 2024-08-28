@@ -46,7 +46,6 @@ builder.Services.AddScoped<IUserConnectedHandler<MessageHub>, MDConnectionHandle
 builder.Services.AddTransient<IOnlineUsersManager, OnlineUsersManager>();
 builder.Services.AddSingleton<IWebPushNotificationService, FirebasePushNotificationService>();
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
-builder.Services.AddSingleton<ILongTermStorageService<Message>, InMemoryLongTermStorage>();
 builder.Services.AddSingleton<ILongTermStorageService<ClientToClientData>, InMemoryLongTermTransferStorage>();
 builder.Services.AddTransient<IServerHttpClient, ServerHttpClient>();
 

@@ -95,7 +95,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
                 {
-                    await _gateway.AckTransferAsync(transfer);
+                    await _gateway.AckTransferAsync(transfer.Id);
                 }
 
                 try

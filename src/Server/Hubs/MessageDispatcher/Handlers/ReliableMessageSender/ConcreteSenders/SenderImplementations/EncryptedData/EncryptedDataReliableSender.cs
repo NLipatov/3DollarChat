@@ -42,25 +42,44 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
 
         private async Task ProcessQueueAsync()
         {
-            await _queueSignal.Task; // Wait for signal
-            _queueSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
-
-            var pendingItems = new List<UnsentItem<ClientToClientData>>();
-            while (_messageQueue.TryDequeue(out var unsentItem))
+            while (true)
             {
-                if (unsentItem.SendAfter <= DateTime.UtcNow)
-                {
-                    pendingItems.Add(unsentItem);
-                }
-                else
-                {
-                    _messageQueue.Enqueue(unsentItem);
-                }
-            }
+                await _queueSignal.Task; // Wait for signal
+                _queueSignal = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
 
-            foreach (var item in pendingItems)
-            {
-                await SendAsync(item);
+                while (_messageQueue.TryDequeue(out var unsentItem))
+                {
+                    if (_acked.TryGetValue(unsentItem.Item.Id, out var acked) && acked)
+                    {
+                        // Item acked - remove it
+                        _acked.TryRemove(unsentItem.Item.Id, out _);
+                        foreach (var key in _acked.Keys)
+                        {
+                            if (!_unsentItems.ContainsKey(key))
+                            {
+                                _acked.TryRemove(key, out _);
+                            }
+                        }
+                        continue;
+                    }
+
+                    if (unsentItem.SendAfter <= DateTime.UtcNow)
+                    {
+                        await SendAsync(unsentItem);
+                    }
+                    else
+                    {
+                        // If message is not ready to be sent, move it back to queueu
+                        _messageQueue.Enqueue(unsentItem);
+                        break; // waiting for next signal
+                    }
+                }
+
+                // Rerunning queue processing if something still in queue
+                if (!_messageQueue.IsEmpty)
+                {
+                    _queueSignal.TrySetResult(true);
+                }
             }
         }
 
@@ -69,21 +88,30 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
             if (!HasActiveConnections(unsentItem.Item.Target))
             {
                 await PassToLongTermSender(unsentItem.Item.Id);
-                Remove(unsentItem.Item.Id);
+                _unsentItems.TryRemove(unsentItem.Item.Id, out _);
                 return;
             }
 
             if (_acked.TryGetValue(unsentItem.Item.Id, out var isAcked) && isAcked)
             {
-                Remove(unsentItem.Item.Id);
+                _unsentItems.TryRemove(unsentItem.Item.Id, out _);
                 return;
             }
 
             await _gateway.TransferAsync(unsentItem.Item);
 
-            unsentItem.Backoff = IncreaseBackoff(unsentItem.Backoff);
-            unsentItem.SendAfter = DateTime.UtcNow.Add(unsentItem.Backoff);
-            _messageQueue.Enqueue(unsentItem);
+            if (!_acked.TryGetValue(unsentItem.Item.Id, out isAcked) || !isAcked)
+            {
+                // Item is not acked - increase backoff and move back to queue
+                unsentItem.Backoff = IncreaseBackoff(unsentItem.Backoff);
+                unsentItem.SendAfter = DateTime.UtcNow.Add(unsentItem.Backoff);
+                _messageQueue.Enqueue(unsentItem);
+            }
+            else
+            {
+                // Item acked - remove it
+                _unsentItems.TryRemove(unsentItem.Item.Id, out _);
+            }
         }
 
         private async Task PassToLongTermSender(Guid messageId)
@@ -99,28 +127,22 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                 .Where(x => x.Key == username)
                 .SelectMany(x => x.Value).Any();
 
-        public void OnAck(ClientToClientData data)
-        {
-            _acked[data.Id] = true;
-            Remove(data.Id);
-        }
-
-        public void OnAck(Guid id)
-        {
-            _acked[id] = true;
-            Remove(id);
-        }
-
         private TimeSpan IncreaseBackoff(TimeSpan backoff)
         {
             var newBackoff = TimeSpan.FromTicks((long)(backoff.Ticks * 1.5));
             return newBackoff < TimeSpan.FromSeconds(5) ? newBackoff : TimeSpan.FromSeconds(5);
         }
 
-        private void Remove(Guid messageId)
+        public void OnAck(ClientToClientData data)
         {
-            _unsentItems.TryRemove(messageId, out _);
-            _acked.TryRemove(messageId, out _);
+            _acked[data.Id] = true;   
+            _unsentItems.TryRemove(data.Id, out _);
+        }
+
+        public void OnAck(Guid id)
+        {
+            _acked[id] = true;
+            _unsentItems.TryRemove(id, out _);
         }
     }
 }

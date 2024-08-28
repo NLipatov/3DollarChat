@@ -63,16 +63,10 @@ public class SignalrGateway : IGateway
         {
             try
             {
-                while (_connection.State is HubConnectionState.Connecting)
-                {
-                    Console.WriteLine("State: Connecting...");
-                }
-
                 if (_connection.State is HubConnectionState.Connected)
                     return _connection;
                 
                 await _connection.StopAsync();
-
                 await _connection.StartAsync();
                 if (_credentialsFactory != null)
                 {
@@ -94,10 +88,10 @@ public class SignalrGateway : IGateway
         return _connection;
     }
 
-    public async Task AckTransferAsync<T>(T ackData)
+    public async Task AckTransferAsync(Guid id)
     {
         var connection = await GetHubConnectionAsync();
-        await connection.SendAsync("OnTransferAcked", ackData);
+        await connection.SendAsync("OnTransferAcked", id);
     }
 
     public async Task AddEventCallbackAsync<T>(string methodName, Func<T, Task> handler)

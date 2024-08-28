@@ -28,9 +28,8 @@ public interface IGateway
     /// <summary>
     /// Acks the transfer(sends transfer confirmation to server)
     /// </summary>
-    /// <param name="ackData">ack data</param>
-    /// <typeparam name="T">ack data type</typeparam>
-    Task AckTransferAsync<T>(T ackData);
+    /// <param name="id">ack data identifier</param>
+    Task AckTransferAsync(Guid id);
 
     /// <summary>
     /// Registers a handler that will be invoked when the hub method with the specified method name is invoked.

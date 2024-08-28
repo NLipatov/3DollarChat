@@ -12,6 +12,7 @@ namespace Client.Infrastructure.Gateway;
 /// </summary>
 public class SignalrGateway : IGateway
 {
+    private const int ReconnectionInterval = 1000;
     private Func<Task<CredentialsDTO>>? _credentialsFactory;
     private HubConnection? _connection;
 
@@ -54,17 +55,30 @@ public class SignalrGateway : IGateway
     private async Task<HubConnection> GetHubConnectionAsync()
     {
         if (_connection is null)
-            throw new NullReferenceException($"{nameof(_connection)} is null");
+            throw new NullReferenceException(
+                $"{nameof(_connection)} is null. Invoke {nameof(ConfigureAsync)} before calling this method.");
 
         //HubConnection can only be started if state is Disconnected
-        while (_connection.State is not HubConnectionState.Connected)
+        while (_connection!.State is not HubConnectionState.Connected)
         {
-            Console.WriteLine("Trying to connect...");
             try
             {
-                Console.WriteLine($"State: {_connection.State}. Stopping.");
+                while (_connection.State is HubConnectionState.Connecting)
+                {
+                    Console.WriteLine("State: Connecting...");
+                }
+
+                if (_connection.State is HubConnectionState.Connected)
+                    return _connection;
+                
                 await _connection.StopAsync();
-                await ConnectAsync();
+
+                await _connection.StartAsync();
+                if (_credentialsFactory != null)
+                {
+                    var credentialsDto = await _credentialsFactory();
+                    await _connection.SendAsync("SetUsername", credentialsDto);
+                }
             }
             catch (Exception ex)
             {
@@ -72,30 +86,12 @@ public class SignalrGateway : IGateway
             }
             finally
             {
-                Console.WriteLine("Delay between connections attempts.");
-                await Task.Delay(1000);
-                Console.WriteLine("Next attempt starts now.");
+                // delay between reconnection attempts
+                await Task.Delay(ReconnectionInterval);
             }
-
-            Console.WriteLine($"State: {_connection.State}");
         }
 
         return _connection;
-    }
-
-    private async Task ConnectAsync()
-    {
-        if (_connection is null)
-            throw new NullReferenceException($"{nameof(_connection)} is null");
-
-        Console.WriteLine("StartAsync...");
-        await _connection.StartAsync();
-        if (_credentialsFactory != null)
-        {
-            var credentialsDto = await _credentialsFactory();
-            Console.WriteLine("Send credentials...");
-            await _connection.SendAsync("SetUsername", credentialsDto);
-        }
     }
 
     public async Task AckTransferAsync<T>(T ackData)

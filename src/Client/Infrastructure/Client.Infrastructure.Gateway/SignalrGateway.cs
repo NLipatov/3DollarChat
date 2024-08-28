@@ -19,17 +19,34 @@ public class SignalrGateway : IGateway
     {
         if (_connection != null)
             return;
-        
+
         if (credentialsFactory is not null)
             _credentialsFactory = credentialsFactory;
 
         _connection = new HubConnectionBuilder()
             .WithUrl(hubAddress, options => { options.UseStatefulReconnect = true; })
-            //.WithAutomaticReconnect()
             .AddMessagePackProtocol()
             .Build();
 
-        _connection.Reconnected += async _ => await AuthenticateAsync();
+        _connection.Closed += async (_) =>
+        {
+            Console.WriteLine("Event: Closed");
+            _connection = await GetHubConnectionAsync();
+        };
+
+        _connection.Reconnected += id =>
+        {
+            Console.WriteLine($"Event: Reconnected: {id}");
+            return Task.CompletedTask;
+        };
+
+        _connection.Reconnecting += id =>
+        {
+            Console.WriteLine($"Event: Reconnecting: {id}");
+            return Task.CompletedTask;
+        };
+
+        _connection = await GetHubConnectionAsync();
 
         await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);
     }
@@ -39,30 +56,44 @@ public class SignalrGateway : IGateway
         if (_connection is null)
             throw new NullReferenceException($"{nameof(_connection)} is null");
 
-        if (_connection.State == HubConnectionState.Disconnected || _connection.State == HubConnectionState.Reconnecting)
+        //HubConnection can only be started if state is Disconnected
+        while (_connection.State is not HubConnectionState.Connected)
         {
+            Console.WriteLine("Trying to connect...");
             try
             {
-                await _connection.StartAsync();
-                await AuthenticateAsync();
+                Console.WriteLine($"State: {_connection.State}. Stopping.");
+                await _connection.StopAsync();
+                await ConnectAsync();
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"SignalR connection attempt failed: {ex.Message}");
             }
+            finally
+            {
+                Console.WriteLine("Delay between connections attempts.");
+                await Task.Delay(1000);
+                Console.WriteLine("Next attempt starts now.");
+            }
+
+            Console.WriteLine($"State: {_connection.State}");
         }
 
         return _connection;
     }
 
-    private async Task AuthenticateAsync()
+    private async Task ConnectAsync()
     {
         if (_connection is null)
             throw new NullReferenceException($"{nameof(_connection)} is null");
 
+        Console.WriteLine("StartAsync...");
+        await _connection.StartAsync();
         if (_credentialsFactory != null)
         {
             var credentialsDto = await _credentialsFactory();
+            Console.WriteLine("Send credentials...");
             await _connection.SendAsync("SetUsername", credentialsDto);
         }
     }

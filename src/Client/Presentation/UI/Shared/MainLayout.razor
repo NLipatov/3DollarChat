@@ -2,66 +2,42 @@
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message
-@using global::Client.Application.Cryptography
 @using Ethachat.Client.UI.Shared.ErrorCatching
 @inherits LayoutComponentBase
-@inject ICryptographyService _cryptographyService
 @inject IToastService _toastService
 @inject IHubServiceSubscriptionManager _hubServiceSubscriptionManager
 @inject IMessageBox _messageBox
 @inject NavigationManager _navigationManager
 @inject IAuthenticationHandler AuthenticationHandler
 
-@if (!isRSAGenerated)
-{
-    <div class="RSACalculatingWarning">
-        <p>
-            Calculating an RSA key pair...
-        </p>
+
+<div class="ApplicationContent">
+    <Ethachat.Client.UI.Shared.Sidebar.Sidebar/>
+    <div class="ApplicationBody">
+        <GlobalErrorBoundary>
+            @Body
+        </GlobalErrorBoundary>
     </div>
-}
-else if (!isConnectedToHubs)
-{
-    <div class="RSACalculatingWarning">
-        <p>
-            Connecting to application server
-        </p>
-    </div>
-}
-else
-{
-    <div class="ApplicationContent">
-        <Ethachat.Client.UI.Shared.Sidebar.Sidebar/>
-        <div class="ApplicationBody">
-            <GlobalErrorBoundary>
-                @Body
-            </GlobalErrorBoundary>
-        </div>
-    </div>
-}
+</div>
 
 <BlazoredToasts
     Position="Blazored.Toast.Configuration.ToastPosition.BottomRight"
     Timeout="2"/>
 
 @code{
-    private bool isRSAGenerated = false;
-    private bool isConnectedToHubs = false;
     private Guid ComponentId { get; set; }
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
     protected override async Task OnInitializedAsync()
     {
         //This id will be needed on dispose stage
-        //On dispose stage we need to clear out all of the component event subscriptions
+        //On dispose stage we need to clear out all the component event subscriptions
         ComponentId = Guid.NewGuid();
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
-        
-        isRSAGenerated = true;
+
         StateHasChanged();
-        isConnectedToHubs = true;
     }
 
     private async void ShowMessageToast()

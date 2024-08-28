@@ -216,9 +216,9 @@ namespace Ethachat.Server.Hubs.MessageDispatcher
             }
         }
 
-        public async Task OnTransferAcked(ClientToClientData edt)
+        public void OnTransferAcked(Guid id)
         {
-            _reliableTransferDataSender.OnAck(edt);
+            _reliableTransferDataSender.OnAck(id);
         }
 
         public async Task OnAck(Message syncMessage)

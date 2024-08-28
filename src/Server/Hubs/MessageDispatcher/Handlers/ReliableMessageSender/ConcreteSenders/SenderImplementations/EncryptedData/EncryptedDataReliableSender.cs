@@ -69,7 +69,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
                     }
                     else
                     {
-                        // If message is not ready to be sent, move it back to queueu
+                        // If message is not ready to be sent, move it back to queue
                         _messageQueue.Enqueue(unsentItem);
                         break; // waiting for next signal
                     }

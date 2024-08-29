@@ -28,7 +28,8 @@
 @implements IAsyncDisposable
 
 <div class="message-input-box">
-    <input type="text" class="message-input" placeholder="Send a message..." value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown"/>
+    <input type="text" class="message-input" placeholder="Send a message..." 
+           value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown"/>
 
     <label for="fileinput" class="label-wrapper">
         <span>
@@ -60,6 +61,7 @@
     private const long MaxFileSizeBytes = long.MaxValue;
     private static Func<IBrowserFile, Task>? SendIBrowserFileDelegate { get; set; } = default;
     private IJSObjectReference? JsModule { get; set; }
+    private DateTime LastTypingEventSentOn { get; set; } = DateTime.MinValue;
 
     [JSInvokable]
     public static async Task FileFromClipboard(byte[] content, string name, string contentType)
@@ -103,7 +105,11 @@
         }
         else
         {
-            await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping });
+            if (LastTypingEventSentOn + TimeSpan.FromMilliseconds(1500) < DateTime.UtcNow)
+            {
+                await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping });
+                LastTypingEventSentOn = DateTime.UtcNow;
+            }
         }
     }
 

@@ -13,7 +13,7 @@
 
 @code {
     [Parameter] public string PartnerUsername { get; set; } = string.Empty;
-    [Parameter] public int CooldownMs { get; set; } = 600;
+    [Parameter] public TimeSpan CooldownMs { get; set; } = TimeSpan.FromSeconds(2);
     private bool IsTyping { get; set; }
     private CancellationTokenSource _typingCancellation = new();
     

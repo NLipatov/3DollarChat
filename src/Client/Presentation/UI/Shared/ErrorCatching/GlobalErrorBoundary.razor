@@ -23,7 +23,7 @@ else
             <CustomCallout
                 CalloutType="CalloutType.Danger"
                 CalloutTitle="Error"
-                CalloutBody="@exception.Message"/>
+                CalloutBody=@($"{exception.Message}. StackTrace:({exception.StackTrace})")/>
         }
         <CustomButton ButtonType="ButtonType.Primary" OnPress="Recover">
             <ChildContext>

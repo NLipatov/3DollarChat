@@ -11,11 +11,10 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    BinarySending;
 using
     Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Factory;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
+    .Factory;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Strategies.ReceiveStrategies;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Types;
@@ -30,19 +29,17 @@ using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 using Microsoft.AspNetCore.Components;
-using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
     public class MessageService : IMessageService
     {
-        private NavigationManager NavigationManager { get; set; }
+        private NavigationManager NavigationManager { get; }
         private readonly ICryptographyService _cryptographyService;
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
-        private readonly IBinarySendingManager _binarySendingManager;
         private readonly IKeyStorage _keyStorage;
-        private ITransferProcessorResolver _transferProcessorResolver;
+        private readonly ITransferProcessorResolver _transferProcessorResolver;
         private IGateway? _gateway;
 
         private async Task<IGateway> ConfigureGateway()
@@ -60,7 +57,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
             IBinaryReceivingManager binaryReceivingManager,
-            IJSRuntime jsRuntime,
             IKeyStorage keyStorage)
         {
             NavigationManager = navigationManager;
@@ -70,7 +66,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _keyStorage = keyStorage;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
-                _keyStorage, _authenticationHandler, _binarySendingManager, binaryReceivingManager,
+                _keyStorage, _authenticationHandler, binaryReceivingManager,
                 _cryptographyService);
         }
 
@@ -171,9 +167,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 async _ => { _gateway = await ConfigureGateway(); });
 
             await _gateway.AddEventCallbackAsync<Guid>("MetadataRegisteredByHub",
-                metadataId => { return Task.CompletedTask; });
+                _ => Task.CompletedTask);
 
-            await _gateway.AddEventCallbackAsync<string>("OnMyNameResolved", async username =>
+            await _gateway.AddEventCallbackAsync<string>("OnMyNameResolved", async _ =>
             {
                 if (!await _authenticationHandler.IsSetToUseAsync())
                 {
@@ -183,7 +179,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                 var rsaPublicKey = (await _keyStorage.GetAsync(string.Empty, KeyType.RsaPublic))
                     .OrderBy(x => x.CreationDate).First();
-                if (string.IsNullOrWhiteSpace(rsaPublicKey.Value?.ToString()))
+                if (string.IsNullOrWhiteSpace(rsaPublicKey.Value))
                 {
                     throw new ApplicationException("RSA Public key was not properly generated.");
                 }

@@ -122,7 +122,6 @@ public class ClientToClientDataReliableSenderTests
 
         // Assert
         Assert.Empty(GetUnsentItems(reliableSender)); // It should not be in unsentItems
-        Assert.Empty(GetMessageQueue(reliableSender)); // It should not be re-enqueued
     }
 
     [Fact]

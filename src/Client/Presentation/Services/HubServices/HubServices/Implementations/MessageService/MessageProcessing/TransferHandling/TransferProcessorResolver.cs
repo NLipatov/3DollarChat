@@ -36,11 +36,6 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             {
                 TransferDirection = TransferDirection.Incoming,
                 Handler = new OnReceivedTextMessage(messageBox, authenticationHandler, messageService)
-            },
-            new()
-            {
-                TransferDirection = TransferDirection.Outcoming,
-                Handler = new OnSentTextMessage(messageService, authenticationHandler, messageBox)
             }
         ]);
 

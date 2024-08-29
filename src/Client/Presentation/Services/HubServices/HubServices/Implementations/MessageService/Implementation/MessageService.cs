@@ -93,10 +93,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             await _gateway.AddEventCallbackAsync<ClientToClientData>("OnTransfer", async transfer =>
             {
-                if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
-                {
-                    await _gateway.AckTransferAsync(transfer.Id);
-                }
+                await _gateway.AckTransferAsync(transfer.Id);
 
                 try
                 {
@@ -159,13 +156,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 }
                 catch (Exception)
                 {
-                    await SendMessage(new EventMessage
-                    {
-                        Sender = await _authenticationHandler.GetUsernameAsync(),
-                        Target = transfer.Sender,
-                        Id = transfer.Id,
-                        Type = EventType.ResendRequest
-                    });
+                    await NegotiateOnAESAsync(transfer.Sender);
                 }
             });
 
@@ -221,17 +212,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     })
                 }
             });
-        }
-
-        public async Task SendMessage<T>(T message) where T : IDestinationResolvable
-        {
-            var direction = message.Target == await _authenticationHandler.GetUsernameAsync()
-                ? TransferDirection.Incoming
-                : TransferDirection.Outcoming;
-
-            var eventName = _transferProcessorResolver.GetEventName<T>(direction);
-            var processor = _transferProcessorResolver.GetProcessor<T>();
-            await processor.ProcessTransferAsync(eventName, message);
         }
 
         public async Task UnsafeTransferAsync(ClientToClientData data)
@@ -334,13 +314,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception)
             {
-                await SendMessage(new EventMessage()
-                {
-                    Sender = await _authenticationHandler.GetUsernameAsync(),
-                    Target = dataClientToClientData.Sender,
-                    Id = dataClientToClientData.Id,
-                    Type = EventType.ResendRequest
-                });
+                await NegotiateOnAESAsync(dataClientToClientData.Sender);
                 throw;
             }
         }

@@ -31,7 +31,7 @@ public class OnReceivedTextMessage(
         if (messageSender == myUsername)
             return;
 
-        await messageService.SendMessage(new EventMessage
+        await messageService.TransferAsync(new EventMessage
         {
             Id = messageId,
             Sender = myUsername,

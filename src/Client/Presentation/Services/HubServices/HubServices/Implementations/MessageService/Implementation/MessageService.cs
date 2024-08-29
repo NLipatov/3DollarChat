@@ -214,17 +214,6 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             });
         }
 
-        public async Task SendMessage<T>(T message) where T : IDestinationResolvable
-        {
-            var direction = message.Target == await _authenticationHandler.GetUsernameAsync()
-                ? TransferDirection.Incoming
-                : TransferDirection.Outcoming;
-
-            var eventName = _transferProcessorResolver.GetEventName<T>(direction);
-            var processor = _transferProcessorResolver.GetProcessor<T>();
-            await processor.ProcessTransferAsync(eventName, message);
-        }
-
         public async Task UnsafeTransferAsync(ClientToClientData data)
         {
             var gateway = _gateway ?? await InitializeGatewayAsync();

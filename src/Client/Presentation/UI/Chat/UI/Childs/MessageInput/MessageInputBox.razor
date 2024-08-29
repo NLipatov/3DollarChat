@@ -101,7 +101,7 @@
         }
         else
         {
-            await MessageService.SendMessage(new EventMessage{Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping});
+            await MessageService.TransferAsync(new EventMessage{Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping});
         }
     }
 

@@ -21,7 +21,11 @@
 {
     case AuthenticationState.TokenActualisation:
         <div class="d-flex flex-column align-items-center text-center">
-            <p class="mt-3 mb-0">Checking if you have been authenticated</p>
+            <span>
+                <CustomIcon
+                    Color="white"
+                    Name="lock"/>
+            </span>
         </div>
         break;
     case AuthenticationState.Authenticated:

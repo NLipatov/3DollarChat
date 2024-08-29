@@ -1,4 +1,5 @@
-﻿@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+﻿@using Ethachat.Client.Services.Authentication.Handlers
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using EthachatShared.Models.Message
@@ -23,16 +24,17 @@
 @inject NavigationManager NavigationManager
 @inject IKeyStorage KeyStorage
 @inject IBinarySendingManager BinarySendingManager
+@inject IAuthenticationHandler AuthenticationHandler
 @implements IAsyncDisposable
 
 <div class="message-input-box">
-    <input type="text" class="message-input" placeholder="Send a message..." value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown" />
+    <input type="text" class="message-input" placeholder="Send a message..." value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown"/>
 
     <label for="fileinput" class="label-wrapper">
         <span>
             <i class="fas fa-paperclip paperclip-icon"></i>
         </span>
-        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;" />
+        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;"/>
     </label>
 
     <button class="send-button" @onclick="SendMessage">Send</button>
@@ -44,8 +46,8 @@
     Buttons=@( [new CustomButton { Title = "Close", ButtonType = ButtonType.Secondary, OnPress = (TooLargeFileModal is not null ? TooLargeFileModal.Hide : () => { }) }])>
 </CustomModal>
 
-<FileEncryptionModal />
-<HlsConvertationModal />
+<FileEncryptionModal/>
+<HlsConvertationModal/>
 
 @code {
     [Parameter] public string MyUsername { get; set; } = string.Empty;
@@ -101,7 +103,7 @@
         }
         else
         {
-            await MessageService.TransferAsync(new EventMessage{Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping});
+            await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping });
         }
     }
 
@@ -124,7 +126,7 @@
         if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
         {
             var playlist = await PostVideoToHlsapiAsync(browserFile);
-        
+
             if (playlist is not null)
             {
                 CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
@@ -138,14 +140,14 @@
                 };
 
                 MessageBox.AddMessage(playlistMessage);
-        
+
                 await MessageService.TransferAsync(playlistMessage);
                 return;
             }
         }
 
         CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-        
+
         byte[] fileBytes;
         await using (var fileStream = browserFile.OpenReadStream(long.MaxValue))
         {
@@ -163,10 +165,10 @@
             Target = TopicName,
             Sender = MyUsername,
         };
-        
+
         await foreach (var dataPartMessage in BinarySendingManager.GetChunksToSendAsync(package))
             _ = Task.Run(async () => await MessageService.TransferAsync(dataPartMessage));
-        
+
         CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
@@ -200,7 +202,7 @@
 
             if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
                 return null;
-            
+
             return new HlsPlaylist
             {
                 Name = browserFile.Name,
@@ -227,18 +229,66 @@
 
         if (!string.IsNullOrWhiteSpace(MessageInput))
         {
-            await MessageService.SendMessage(new TextMessage
+            var textMessage = new TextMessage
             {
                 Sender = MyUsername,
                 Target = TopicName,
                 Text = MessageInput,
                 Index = 0,
                 Total = 1
-            });
+            };
+
+            await AddToMessageBox(textMessage.Text, textMessage.Target, textMessage.Id);
+            await foreach (var tMessage in BuildTextMessageAsync(textMessage))
+                await MessageService.TransferAsync(tMessage);
         }
 
         MessageInput = string.Empty;
         StateHasChanged();
+    }
+
+    private async Task AddToMessageBox(string plainText, string target, Guid id)
+    {
+        var message = new ClientMessage
+        {
+            Id = id,
+            Sender = await AuthenticationHandler.GetUsernameAsync(),
+            Target = target,
+            DateSent = DateTime.UtcNow,
+            Type = MessageType.TextMessage
+        };
+        message.AddChunk(new()
+        {
+            Index = 0,
+            Total = 1,
+            Text = plainText
+        });
+        MessageBox.AddMessage(message);
+    }
+
+    private const int MaxTextChunkLength = 512;
+
+    private async IAsyncEnumerable<TextMessage> BuildTextMessageAsync(TextMessage message)
+    {
+        var messagesCount = (int)Math.Ceiling(message.Text.Length / (decimal)MaxTextChunkLength);
+        for (int i = 0; i * MaxTextChunkLength < message.Text.Length; i++)
+        {
+            var textChunk = message.Text.Substring(i * MaxTextChunkLength,
+                Math.Min(MaxTextChunkLength, message.Text.Length - i * MaxTextChunkLength));
+
+            var messageToSend = new TextMessage
+            {
+                Id = message.Id,
+                Total = messagesCount,
+                Target = message.Target ?? throw new ArgumentException("Missing message target"),
+                Sender = message.Sender,
+                Index = i,
+                Text = textChunk,
+            };
+
+            await Task.Yield();
+            yield return messageToSend;
+        }
     }
 
     public async ValueTask DisposeAsync()
@@ -249,4 +299,5 @@
             await JsModule.DisposeAsync();
         }
     }
+
 }

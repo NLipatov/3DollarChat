@@ -18,17 +18,17 @@
 <AuthenticatedView>
     <AuthenticatedContent>
         <div class="ApplicationContent p-2">
-            @if (UsersOnlineMessage.UserConnections.All(x => x.Username == MyUsername))
+            @if (UsersOnlineMessage.FormedAt == DateTime.MinValue)
+            {
+                <CustomCallout
+                CalloutTitle="Actualization"
+                CalloutType="CalloutType.Info"/>
+            }
+            else if (UsersOnlineMessage.UserConnections.All(x => x.Username == MyUsername))
             {
                 <CustomCallout
                     CalloutTitle="No one online"
                     CalloutType="CalloutType.Info"/>
-            }
-            else if (string.IsNullOrWhiteSpace(MyUsername))
-            {
-                <CustomCallout
-                    CalloutType="CalloutType.Info"
-                    CalloutBody="Resolving your username."/>
             }
             else
             {
@@ -50,7 +50,10 @@
 </AuthenticatedView>
 
 @code {
-    private UserConnectionsReport UsersOnlineMessage { get; set; } = new();
+    private UserConnectionsReport UsersOnlineMessage { get; set; } = new()
+            {
+                FormedAt = DateTime.MinValue
+            };
     private string MyUsername { get; set; } = String.Empty;
     private Guid ComponentId { get; set; }
 
@@ -73,8 +76,10 @@
         //Subscribing to server event of updating online users
         HubServiceSubscriptionManager
             .AddCallback<UserConnectionsReport>(UpdateUsersList, "ReceiveOnlineUsers", ComponentId);
+        
+        HubServiceSubscriptionManager
+            .AddCallback(UsersService.ActualizeConnectedUsersAsync, "AuthenticationStateHasChanged", ComponentId);
 
-        //Actualizing list of users that currently online
         await UsersService.ActualizeConnectedUsersAsync();
     }
 

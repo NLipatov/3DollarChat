@@ -6,10 +6,9 @@ using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
-    BinarySending;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Models;
-using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Factory;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
+    .Factory;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Strategies.ReceiveStrategies;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
@@ -28,8 +27,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
 
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
-        IBinarySendingManager binarySendingManager, IBinaryReceivingManager
-            binaryReceivingManager, ICryptographyService cryptographyService)
+        IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService)
     {
         RegisterProcessor<TextMessage>([
             new()

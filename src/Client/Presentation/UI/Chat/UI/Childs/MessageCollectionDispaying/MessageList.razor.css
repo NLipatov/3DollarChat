@@ -5,12 +5,12 @@
     align-items: flex-start;
     width: calc(100vw - var(--bb-sidebar-width));
     overflow-y: auto;
-    max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height));
+    height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height) - 1.5rem);
 }
 
 @media (max-width: 768px) {
     .messages-box {
         width: 100%;
-        max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height) - 57px);
+        max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height) - 6rem);
     }
 }

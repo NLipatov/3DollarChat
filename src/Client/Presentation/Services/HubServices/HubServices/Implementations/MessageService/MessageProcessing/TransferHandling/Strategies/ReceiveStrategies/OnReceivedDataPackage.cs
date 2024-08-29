@@ -21,7 +21,7 @@ public class OnReceivedDataPackage(
 
         if (progressStatus.isTransmissionCompleted)
         {
-            await messageService.SendMessage(new EventMessage
+            await messageService.TransferAsync(new EventMessage
             {
                 Target = package.Sender,
                 Sender = package.Target,

@@ -8,7 +8,7 @@ using EthachatShared.Models.Message;
 namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.ConcreteSenders.SenderImplementations.
     EncryptedData
 {
-    public class EncryptedDataReliableSender : IReliableSender<ClientToClientData>
+    public class ClientToClientDataReliableSender : IReliableSender<ClientToClientData>
     {
         private readonly ILongTermStorageService<ClientToClientData> _longTermStorageService;
         private readonly IMessageGateway<ClientToClientData> _gateway;
@@ -17,7 +17,7 @@ namespace Ethachat.Server.Hubs.MessageDispatcher.Handlers.ReliableMessageSender.
         private readonly ConcurrentDictionary<Guid, ClientToClientData> _unsentItems = new();
         private TaskCompletionSource<bool> _queueSignal = new(TaskCreationOptions.RunContinuationsAsynchronously);
 
-        public EncryptedDataReliableSender(IMessageGateway<ClientToClientData> gateway,
+        public ClientToClientDataReliableSender(IMessageGateway<ClientToClientData> gateway,
             ILongTermStorageService<ClientToClientData> longTermStorageService)
         {
             _longTermStorageService = longTermStorageService;

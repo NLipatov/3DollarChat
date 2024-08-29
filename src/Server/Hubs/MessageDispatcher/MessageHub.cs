@@ -45,7 +45,7 @@ public class MessageHub : Hub
         if (_reliableTransferDataSender is null)
         {
             _reliableTransferDataSender =
-                new EncryptedDataReliableSender(new SignalRGateway<ClientToClientData>(_context),
+                new ClientToClientDataReliableSender(new SignalRGateway<ClientToClientData>(_context),
                     _longTermTransferStorageService);
         }
     }

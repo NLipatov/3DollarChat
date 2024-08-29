@@ -93,10 +93,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
             await _gateway.AddEventCallbackAsync<ClientToClientData>("OnTransfer", async transfer =>
             {
-                if (transfer.Sender != await _authenticationHandler.GetUsernameAsync())
-                {
-                    await _gateway.AckTransferAsync(transfer.Id);
-                }
+                await _gateway.AckTransferAsync(transfer.Id);
 
                 try
                 {

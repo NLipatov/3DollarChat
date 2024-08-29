@@ -325,13 +325,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             }
             catch (Exception)
             {
-                await SendMessage(new EventMessage()
-                {
-                    Sender = await _authenticationHandler.GetUsernameAsync(),
-                    Target = dataClientToClientData.Sender,
-                    Id = dataClientToClientData.Id,
-                    Type = EventType.ResendRequest
-                });
+                await NegotiateOnAESAsync(dataClientToClientData.Sender);
                 throw;
             }
         }

@@ -106,10 +106,7 @@
             }
         </div>
         <OnObservedTrigger
-            Callback=@(async () => { if (Message.Sender != MyUsername) 
-            {
-                await MessageService.TransferAsync(new EventMessage { Type = EventType.MessageRead, Target = Message.Sender, Sender = Message.Target, Id = Message.Id });
-            } })/>
+            Callback=@(async () => await OnObserved())/>
     </div>
 }
 
@@ -181,6 +178,28 @@
         _messageClass = _isOutcoming ? "outcoming" : "incoming";
 
         await base.OnParametersSetAsync();
+    }
+
+    private async Task OnObserved()
+    {
+        if (Message is null)
+            throw new NullReferenceException($"{nameof(Message)} was null");
+        
+        if (Message.IsSeen)
+            return;
+        
+        MessageBox.OnSeen(Message.Id);
+        
+        if (Message.Sender != MyUsername)
+        {
+            await MessageService.TransferAsync(new EventMessage
+            {
+                Type = EventType.MessageRead,
+                Target = Message.Sender,
+                Sender = Message.Target, 
+                Id = Message.Id
+            });
+        }
     }
 
 }

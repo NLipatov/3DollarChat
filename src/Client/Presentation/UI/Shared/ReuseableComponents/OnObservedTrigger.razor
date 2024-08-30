@@ -38,21 +38,23 @@
     private async Task AttachObserver()
     {
         var script = @"
-    'use strict';
-    const {CID}observer = new IntersectionObserver((entries, observer) => {{
-        entries.forEach(entry => {{
-            if (entry.isIntersecting) {{
-                DotNet.invokeMethodAsync('Ethachat.Client', 'OnScreen', '{CID}');
-                observer.unobserve(entry.target);
-                observer.disconnect();
-            }}
-        }});
-    }});
-
-    let {CID} = document.getElementById('{CID}');
-    {CID}observer.observe({CID});
-".Replace("{CID}", ComponentId);
+            'use strict';
+            const {CID}observer = new IntersectionObserver((entries, observer) => {{
+                entries.forEach(entry => {{
+                    if (entry.isIntersecting) {{
+                        DotNet.invokeMethodAsync('Ethachat.Client', 'OnScreen', '{CID}');
+                        observer.unobserve(entry.target);
+                        observer.disconnect();
+                    }}
+                }});
+            }});
+        
+            let {CID} = document.getElementById('{CID}');
+            {CID}observer.observe({CID});
+            console.log({CID})
+        ".Replace("{CID}", ComponentId);
 
         await JsRuntime.InvokeVoidAsync("eval", script);
     }
+
 }

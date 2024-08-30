@@ -133,17 +133,17 @@ public class MessageHub : Hub
         await Clients.All.SendAsync("ReceiveOnlineUsers", report);
     }
 
-    public async Task TransferAsync(ClientToClientData dataClientToClientData)
+    public Task TransferAsync(ClientToClientData dataClientToClientData)
     {
         if (IsClientConnectedToHub(dataClientToClientData.Target))
-            await _reliableTransferDataSender.EnqueueAsync(dataClientToClientData);
+            _ = _reliableTransferDataSender.EnqueueAsync(dataClientToClientData);
         else
         {
-            _longTermTransferStorageService.SaveAsync(dataClientToClientData);
-            SendNotificationAsync(dataClientToClientData);
+            _ = _longTermTransferStorageService.SaveAsync(dataClientToClientData);
+            _ = SendNotificationAsync(dataClientToClientData);
         }
 
-        await _context.Clients.Group(dataClientToClientData.Target).SendAsync("OnTransfer", dataClientToClientData);
+        return Task.CompletedTask;
     }
 
     private async Task SendNotificationAsync<T>(T itemToNotifyAbout)

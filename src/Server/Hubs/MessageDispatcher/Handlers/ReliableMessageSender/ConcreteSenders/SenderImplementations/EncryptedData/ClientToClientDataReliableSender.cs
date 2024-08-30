@@ -24,22 +24,24 @@ public class ClientToClientDataReliableSender : IReliableSender<ClientToClientDa
         Task.Run(async () => await ProcessQueueAsync());
     }
 
-    public Task EnqueueAsync(ClientToClientData data)
+    public async Task EnqueueAsync(ClientToClientData data)
     {
+        var unsentItem = new UnsentItem<ClientToClientData>
+        {
+            Item = data,
+            Backoff = TimeSpan.FromSeconds(5)
+        };
+        
         //If data has unique id, add it to unsentItems collection
-        if (!_unsentItems.TryAdd(data.Id, new UnsentItem<ClientToClientData>
-            {
-                Item = data,
-                Backoff = TimeSpan.FromSeconds(1)
-            }))
-            return Task.CompletedTask;
+        if (!_unsentItems.TryAdd(data.Id, unsentItem))
+            return;
+        
+        await _gateway.TransferAsync(unsentItem.Item);
 
         //Add unsent item to send queue
         _messageQueue.Enqueue(data.Id);
         //Start queue processing
         _queueSignal.TrySetResult(true);
-
-        return Task.CompletedTask;
     }
 
     private async Task ProcessQueueAsync()
@@ -100,7 +102,7 @@ public class ClientToClientDataReliableSender : IReliableSender<ClientToClientDa
     private TimeSpan IncreaseBackoff(TimeSpan backoff)
     {
         var newBackoff = TimeSpan.FromTicks((long)(backoff.Ticks * 1.5));
-        return newBackoff < TimeSpan.FromSeconds(5) ? newBackoff : TimeSpan.FromSeconds(5);
+        return newBackoff < TimeSpan.FromSeconds(10) ? newBackoff : TimeSpan.FromSeconds(10);
     }
 
     public void OnAck(ClientToClientData data)

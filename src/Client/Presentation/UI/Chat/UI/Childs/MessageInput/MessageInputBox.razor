@@ -105,10 +105,12 @@
         }
         else
         {
-            if (LastTypingEventSentOn + TimeSpan.FromMilliseconds(1500) < DateTime.UtcNow)
+            // Debounce
+            var now = DateTime.UtcNow;
+            if ((now - LastTypingEventSentOn).TotalMilliseconds > 1500)
             {
                 await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping });
-                LastTypingEventSentOn = DateTime.UtcNow;
+                LastTypingEventSentOn = now;
             }
         }
     }

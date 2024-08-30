@@ -36,6 +36,7 @@ public class BinarySendingManager(
         {
             var package = new Package
             {
+                Id = Guid.NewGuid(),
                 Sender = data.Sender,
                 Target = data.Target,
                 Index = chunksCounter,

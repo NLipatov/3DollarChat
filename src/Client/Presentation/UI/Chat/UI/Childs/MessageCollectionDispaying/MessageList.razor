@@ -46,7 +46,7 @@
             .AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
         
         HubServiceSubscriptionManager
-            .AddCallback<Guid>(MarkAsRead, "OnReceiverMarkedMessageAsRead", ComponentId);
+            .AddCallback<Guid>(MarkAsReadAsync, "OnReceiverMarkedMessageAsRead", ComponentId);
 
         HubServiceSubscriptionManager
             .AddCallback(AddMessageAsync, "MessageBoxUpdate", ComponentId);
@@ -59,11 +59,12 @@
         StateHasChanged();
     }
 
-    private async Task MarkAsRead(Guid messageId)
+    private Task MarkAsReadAsync(Guid messageId)
     {
         MessageBox.OnSeen(messageId);
 
         StateHasChanged();
+        return Task.CompletedTask;
     }
 
     private async Task AddMessageAsync()

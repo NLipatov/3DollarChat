@@ -105,8 +105,11 @@
                 </span>
             }
         </div>
-        <OnObservedTrigger
-            Callback=@(async () => await OnObserved())/>
+        @if(Message.Sender != MyUsername && !Message.IsSeen)
+        {
+            <OnObservedTrigger
+                Callback=@(async () => await OnObserved())/>
+        }
     </div>
 }
 

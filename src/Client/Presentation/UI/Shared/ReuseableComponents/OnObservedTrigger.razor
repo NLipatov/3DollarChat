@@ -51,7 +51,6 @@
         
             let {CID} = document.getElementById('{CID}');
             {CID}observer.observe({CID});
-            console.log({CID})
         ".Replace("{CID}", ComponentId);
 
         await JsRuntime.InvokeVoidAsync("eval", script);

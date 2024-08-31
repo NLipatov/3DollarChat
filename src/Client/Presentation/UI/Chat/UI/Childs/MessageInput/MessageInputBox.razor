@@ -1,19 +1,17 @@
 ﻿@using Ethachat.Client.Services.Authentication.Handlers
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
-@using Ethachat.Client.Services.InboxService;
 @using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
-@using EthachatShared.Models.Message
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinaryReceiving
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.BinarySending
+@using Ethachat.Client.Services.InboxService
 @using Ethachat.Client.Services.VideoStreamingService
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.BrowserFile
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Text
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Modals
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Models
-@using EthachatShared.Models.Message.ClientToClientTransferData
-@using EthachatShared.Models.Message.DataTransfer
 @using global::Client.Application.Cryptography
 @using global::Client.Application.Cryptography.KeyStorage
 @using global::Client.Transfer.Domain.Entities.Events
-@using global::Client.Transfer.Domain.Entities.Messages
 @inject IMessageService MessageService
 @inject IMessageBox MessageBox
 @inject IJSRuntime JsRuntime
@@ -25,17 +23,22 @@
 @inject IKeyStorage KeyStorage
 @inject IBinarySendingManager BinarySendingManager
 @inject IAuthenticationHandler AuthenticationHandler
+@inject ITextMessageSender TextMessageSender
+@inject IBrowserFileSender BrowserFileSender
 @implements IAsyncDisposable
 
 <div class="message-input-box">
-    <input type="text" class="message-input" placeholder="Send a message..." 
+    <input type="text" class="message-input" placeholder="Send a message..."
            value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown"/>
 
     <label for="fileinput" class="label-wrapper">
         <span>
             <i class="fas fa-paperclip paperclip-icon"></i>
         </span>
-        <InputFile id="fileinput" @key="_fileInputId" OnChange="OnFileInput" style="display: none;"/>
+        <InputFile id="fileinput" 
+            @key="_fileInputId" 
+            OnChange=@(async e => await BrowserFileSender.SendIBrowserFile(e.File, _topicName)) 
+            style="display: none;"/>
     </label>
 
     <button class="send-button" @onclick="SendMessage">Send</button>
@@ -53,13 +56,14 @@
 @code {
     [Parameter] public string MyUsername { get; set; } = string.Empty;
     [Parameter] public string TopicName { get; set; } = string.Empty;
+    private static string _topicName = string.Empty;
 
     private CustomModal? TooLargeFileModal { get; set; }
 
     private string MessageInput { get; set; } = string.Empty;
     private Guid _fileInputId = Guid.NewGuid();
     private const long MaxFileSizeBytes = long.MaxValue;
-    private static Func<IBrowserFile, Task>? SendIBrowserFileDelegate { get; set; } = default;
+    private static Func<IBrowserFile, string, Task>? SendIBrowserFileDelegate { get; set; } = default;
     private IJSObjectReference? JsModule { get; set; }
     private DateTime LastTypingEventSentOn { get; set; } = DateTime.MinValue;
 
@@ -69,27 +73,23 @@
         if (SendIBrowserFileDelegate is not null)
         {
             var browserFile = new ClipboardFile(content, name, contentType);
-            await SendIBrowserFileDelegate(browserFile);
+            await SendIBrowserFileDelegate(browserFile, _topicName);
         }
     }
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        await base.OnAfterRenderAsync(firstRender);
-
+        _topicName = TopicName;
         if (JsModule is null)
         {
             var path = "./js/Clipboard/ClipboardInteractor.js";
             JsModule = await JsRuntime.InvokeAsync<IJSObjectReference>("import", path);
         }
-
-        if (firstRender)
-        {
-            SendIBrowserFileDelegate = SendIBrowserFile;
-            await JsModule.InvokeVoidAsync("AddOnPasteEvent");
-        }
-
-        BinarySendingManager = new BinarySendingManager(JsRuntime, MessageBox, CallbackExecutor);
+            
+        SendIBrowserFileDelegate = BrowserFileSender.SendIBrowserFile;
+        await JsModule.InvokeVoidAsync("AddOnPasteEvent");
+        
+        await base.OnInitializedAsync();
     }
 
     private void UpdateMessageInput(ChangeEventArgs e)
@@ -106,197 +106,20 @@
         else
         {
             // Debounce
-            var now = DateTime.UtcNow;
-            if ((now - LastTypingEventSentOn).TotalMilliseconds > 1500)
+            if ((DateTime.UtcNow - LastTypingEventSentOn).TotalMilliseconds > 1500)
             {
-                await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = TopicName, Type = EventType.OnTyping });
-                LastTypingEventSentOn = now;
+                _ = Task.Run(async () => await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = _topicName, Type = EventType.OnTyping }));
+                LastTypingEventSentOn = DateTime.UtcNow;
             }
-        }
-    }
-
-    private async Task OnFileInput(InputFileChangeEventArgs e)
-    {
-        //if file exceeds the max size limit
-        if (MaxFileSizeBytes - e.File.Size < 0)
-        {
-            TooLargeFileModal?.Show();
-            _fileInputId = Guid.NewGuid();
-            return;
-        }
-
-        await SendIBrowserFile(e.File);
-    }
-
-    private async Task SendIBrowserFile(IBrowserFile browserFile)
-    {
-        //stream it if it can be streamed
-        if (await HlsStreamingService.CanFileBeStreamedAsync(browserFile.Name))
-        {
-            var playlist = await PostVideoToHlsapiAsync(browserFile);
-
-            if (playlist is not null)
-            {
-                CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-
-                var playlistMessage = new HlsPlaylistMessage
-                {
-                    Id = Guid.NewGuid(),
-                    Playlist = playlist.M3U8Content,
-                    Target = TopicName,
-                    Sender = MyUsername,
-                };
-
-                MessageBox.AddMessage(playlistMessage);
-
-                await MessageService.TransferAsync(playlistMessage);
-                return;
-            }
-        }
-
-        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-
-        byte[] fileBytes;
-        await using (var fileStream = browserFile.OpenReadStream(long.MaxValue))
-        {
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-
-        var package = new Package
-        {
-            Id = Guid.NewGuid(),
-            Data = fileBytes,
-            ContentType = browserFile.ContentType,
-            Filename = browserFile.Name,
-            Target = TopicName,
-            Sender = MyUsername,
-        };
-
-        await foreach (var dataPartMessage in BinarySendingManager.GetChunksToSendAsync(package))
-            _ = Task.Run(async () => await MessageService.TransferAsync(dataPartMessage));
-
-        CallbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-    }
-
-    private async Task<HlsPlaylist?> PostVideoToHlsapiAsync(IBrowserFile browserFile)
-    {
-        CallbackExecutor.ExecuteSubscriptionsByName($"HLS: Uploading a {browserFile.Name}", "OnTitleChange");
-        CallbackExecutor.ExecuteSubscriptionsByName(true, "OnShouldRender");
-        var formData = new MultipartFormDataContent();
-
-        var progressStreamContent = new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
-        progressStreamContent.ProgressChanged += (_, currBytes, totalBytes) =>
-        {
-            var ratio = currBytes / (double)totalBytes;
-            var percentage = Math.Round(ratio * 100, 1);
-            CallbackExecutor.ExecuteSubscriptionsByName(percentage, "OnVideoUploadProgressChanged");
-        };
-
-        formData.Add(progressStreamContent, "payload", browserFile.Name);
-
-        using var httpClient = new HttpClient();
-        try
-        {
-            var hlsApiUrl = string.Join("", NavigationManager.BaseUri, "hlsapi/convert");
-
-            var request = await httpClient.PostAsync(hlsApiUrl, formData);
-
-            if (!request.IsSuccessStatusCode)
-                throw new ApplicationException("Could not post video to HLS API");
-
-            var m3U8PlaylistContent = await request.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(m3U8PlaylistContent))
-                return null;
-
-            return new HlsPlaylist
-            {
-                Name = browserFile.Name,
-                M3U8Content = m3U8PlaylistContent,
-            };
-        }
-        catch (Exception e)
-        {
-            throw new ApplicationException("Could not convert video to HLS", e);
-        }
-        finally
-        {
-            CallbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
         }
     }
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(MessageInput) || string.IsNullOrWhiteSpace(TopicName) || string.IsNullOrWhiteSpace(MyUsername))
-        {
-            MessageInput = string.Empty;
-            return;
-        }
-
-        if (!string.IsNullOrWhiteSpace(MessageInput))
-        {
-            var textMessage = new TextMessage
-            {
-                Sender = MyUsername,
-                Target = TopicName,
-                Text = MessageInput,
-                Index = 0,
-                Total = 1
-            };
-
-            await AddToMessageBox(textMessage.Text, textMessage.Target, textMessage.Id);
-            await foreach (var tMessage in BuildTextMessageAsync(textMessage))
-                await MessageService.TransferAsync(tMessage);
-        }
+        await TextMessageSender.SendTextMessageAsync(MessageInput, _topicName);
 
         MessageInput = string.Empty;
         StateHasChanged();
-    }
-
-    private async Task AddToMessageBox(string plainText, string target, Guid id)
-    {
-        var message = new ClientMessage
-        {
-            Id = id,
-            Sender = await AuthenticationHandler.GetUsernameAsync(),
-            Target = target,
-            DateSent = DateTime.UtcNow,
-            Type = MessageType.TextMessage
-        };
-        message.AddChunk(new()
-        {
-            Index = 0,
-            Total = 1,
-            Text = plainText
-        });
-        MessageBox.AddMessage(message);
-    }
-
-    private const int MaxTextChunkLength = 512;
-
-    private async IAsyncEnumerable<TextMessage> BuildTextMessageAsync(TextMessage message)
-    {
-        var messagesCount = (int)Math.Ceiling(message.Text.Length / (decimal)MaxTextChunkLength);
-        for (int i = 0; i * MaxTextChunkLength < message.Text.Length; i++)
-        {
-            var textChunk = message.Text.Substring(i * MaxTextChunkLength,
-                Math.Min(MaxTextChunkLength, message.Text.Length - i * MaxTextChunkLength));
-
-            var messageToSend = new TextMessage
-            {
-                Id = message.Id,
-                Total = messagesCount,
-                Target = message.Target ?? throw new ArgumentException("Missing message target"),
-                Sender = message.Sender,
-                Index = i,
-                Text = textChunk,
-            };
-
-            await Task.Yield();
-            yield return messageToSend;
-        }
     }
 
     public async ValueTask DisposeAsync()

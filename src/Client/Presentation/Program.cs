@@ -39,6 +39,8 @@ using Ethachat.Client.Services.UserAgent.Implementation;
 using Ethachat.Client.Services.VersioningService;
 using Ethachat.Client.Services.VideoStreamingService;
 using Ethachat.Client.UI.AccountManagement.LogicHandlers;
+using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.BrowserFile;
+using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Text;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 
@@ -72,6 +74,8 @@ builder.Services.AddTransient<IVersionService, VersionService>();
 builder.Services.AddTransient<IPlatformRuntime, JsPlatformRuntime>();
 builder.Services.AddSingleton<IAuthenticationManagerBoundary, AuthenticationManagerBoundary>();
 builder.Services.AddTransient<IBinarySendingManager, BinarySendingManager>();
+builder.Services.AddScoped<IBrowserFileSender, BrowserFileSender>();
+builder.Services.AddScoped<ITextMessageSender, TextMessageSender>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

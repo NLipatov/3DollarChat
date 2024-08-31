@@ -45,8 +45,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\Shared\EthachatShared\EthachatShared.csproj" />
-    <ProjectReference Include="..\Application\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
-    <ProjectReference Include="..\Application\Client.Application.Gateway\Client.Application.Gateway.csproj" />
+    <ProjectReference Include="..\Infrastructure\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
+    <ProjectReference Include="..\Infrastructure\Client.Application.Gateway\Client.Application.Gateway.csproj" />
     <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
     <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Gateway\Client.Infrastructure.Gateway.csproj" />
     <ProjectReference Include="..\Infrastructure\Client.Infrastructure.Runtime\Client.Infrastructure.Runtime.csproj" />
@@ -60,8 +60,6 @@
   <ItemGroup>
     <Folder Include="Services\Authentication\Handlers\Implementations\" />
     <Folder Include="UI\CommonComponents\" />
-    <Folder Include="UI\Shared\Card\" />
-    <Folder Include="UI\Shared\Input\" />
   </ItemGroup>
 
   <ItemGroup>

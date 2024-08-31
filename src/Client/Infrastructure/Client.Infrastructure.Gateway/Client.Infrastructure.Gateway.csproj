@@ -7,7 +7,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\Application\Client.Application.Gateway\Client.Application.Gateway.csproj" />
+      <ProjectReference Include="..\Client.Application.Gateway\Client.Application.Gateway.csproj" />
       <ProjectReference Include="..\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
     </ItemGroup>
 

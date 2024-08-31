@@ -9,7 +9,7 @@ public class CryptographyService(IPlatformRuntime cryptographyExecutor) : ICrypt
 {
     private readonly CryptoTaskQueue _cryptoTaskQueue = new();
 
-    public Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
+    public async Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
         where T : ICryptoHandler
     {
 
@@ -20,7 +20,7 @@ public class CryptographyService(IPlatformRuntime cryptographyExecutor) : ICrypt
         return await handler.Decrypt(cryptogram, key);
     }
 
-    public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key)
+    public async Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key)
         where TCryptoHandler : ICryptoHandler
     {
         var handler = (TCryptoHandler?)Activator.CreateInstance(typeof(TCryptoHandler), cryptographyExecutor);

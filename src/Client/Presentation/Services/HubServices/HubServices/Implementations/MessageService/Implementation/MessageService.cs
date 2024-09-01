@@ -150,9 +150,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                         }
                     }
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    await NegotiateOnAESAsync(transfer.Sender);
+                    throw ex;
                 }
             });
 
@@ -308,10 +308,9 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
 
                 throw new ArgumentException();
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                await NegotiateOnAESAsync(dataClientToClientData.Sender);
-                throw;
+                throw ex;
             }
         }
     }

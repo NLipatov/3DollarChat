@@ -1,6 +1,7 @@
 using Client.Application.Cryptography.KeyStorage;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
+using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Handlers;
@@ -8,7 +9,6 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
-using MessagePack;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.ReceiveStrategies;
@@ -116,7 +116,7 @@ public class OnReceivedEventMessage(
             DataType = typeof(KeyMessage),
             BinaryCryptogram = new BinaryCryptogram
             {
-                Cypher = MessagePackSerializer.Serialize(keyMessage),
+                Cypher = await keyMessage.SerializeAsync(),
                 Iv = [],
                 KeyId = keyMessage.Key.Id,
                 EncryptionKeyType = KeyType.None

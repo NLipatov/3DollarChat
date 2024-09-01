@@ -8,7 +8,7 @@ namespace Client.Application.Cryptography
         public Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
             where T : ICryptoHandler;
 
-        public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key) where TCryptoHandler : ICryptoHandler;
+        public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler>(byte[] data, Key key) where TCryptoHandler : ICryptoHandler;
         Task<Key> GenerateAesKeyAsync(string contact, string author);
     }
 }

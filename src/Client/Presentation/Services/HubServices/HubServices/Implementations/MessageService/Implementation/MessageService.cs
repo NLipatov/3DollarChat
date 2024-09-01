@@ -6,6 +6,7 @@ using Client.Infrastructure.Cryptography.Handlers;
 using Client.Infrastructure.Gateway;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
+using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.InboxService;
@@ -27,7 +28,6 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
-using MessagePack;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
@@ -199,13 +199,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 BinaryCryptogram = new BinaryCryptogram
                 {
                     EncryptionKeyType = KeyType.None,
-                    Cypher = MessagePackSerializer.Serialize(new EventMessage
+                    Cypher = await new EventMessage
                     {
                         Id = Guid.NewGuid(),
                         Target = partnerUsername,
                         Sender = await _authenticationHandler.GetUsernameAsync(),
                         Type = EventType.RsaPubKeyRequest,
-                    })
+                    }.SerializeAsync()
                 }
             });
         }
@@ -255,7 +255,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);
 
-            return await _cryptographyService.EncryptAsync<AesHandler, T>(data,
+            return await _cryptographyService.EncryptAsync<AesHandler>(await data.SerializeAsync(),
                 aesKey ?? throw new ApplicationException("Missing key"));
         }
 
@@ -266,7 +266,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 (await _keyStorage.GetAsync(data.Target, KeyType.RsaPublic)).MaxBy(x => x.CreationDate) ??
                 throw new NullReferenceException("Missing RSA key");
 
-            return await _cryptographyService.EncryptAsync<RsaHandler, T>(data,
+            return await _cryptographyService.EncryptAsync<RsaHandler>(await data.SerializeAsync(),
                 rsaKey ?? throw new ApplicationException("Missing key"));
         }
 
@@ -276,7 +276,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.None)
                 {
-                    var result = MessagePackSerializer.Deserialize<T>(dataClientToClientData.BinaryCryptogram.Cypher);
+                    var result = await dataClientToClientData.BinaryCryptogram.Cypher.DeserializeAsync<T>();
                     return result;
                 }
 
@@ -289,7 +289,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     var decryptedRsa =
                         await _cryptographyService.DecryptAsync<RsaHandler>(dataClientToClientData.BinaryCryptogram,
                             rsaPrivateKey);
-                    var result = MessagePackSerializer.Deserialize<T>(decryptedRsa.Cypher);
+                    var result = await decryptedRsa.Cypher.DeserializeAsync<T>();
                     return result;
                 }
 
@@ -302,7 +302,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     var cryptogram = await _cryptographyService
                         .DecryptAsync<AesHandler>(dataClientToClientData.BinaryCryptogram, aesKey);
 
-                    var result = MessagePackSerializer.Deserialize<T>(cryptogram.Cypher);
+                    var result = await cryptogram.Cypher.DeserializeAsync<T>();
                     return result;
                 }
 

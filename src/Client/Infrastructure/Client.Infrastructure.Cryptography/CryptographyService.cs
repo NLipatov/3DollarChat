@@ -19,24 +19,55 @@ public class CryptographyService : ICryptographyService
         _ = GenerateRsaKeyPairAsync();
     }
 
-    public async Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
+    public Task<BinaryCryptogram> DecryptAsync<T>(BinaryCryptogram cryptogram, Key key)
         where T : ICryptoHandler
     {
-        var handler = (T?)Activator.CreateInstance(typeof(T), _platformRuntime);
-        if (handler is null)
-            throw new NullReferenceException();
+        var taskCompletionSource = new TaskCompletionSource<BinaryCryptogram>();
 
-        return await handler.Decrypt(cryptogram, key);
+        _cryptoTaskQueue.EnqueueTask(async () =>
+        {
+            try
+            {
+                var handler = (T?)Activator.CreateInstance(typeof(T), _platformRuntime);
+                if (handler is null)
+                    throw new NullReferenceException();
+
+                var result = await handler.Decrypt(cryptogram, key);
+                taskCompletionSource.SetResult(result);
+            }
+            catch (Exception ex)
+            {
+                taskCompletionSource.SetException(ex);
+            }
+        });
+
+        return taskCompletionSource.Task;
     }
 
-    public async Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key)
+
+    public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler>(byte[] data, Key key)
         where TCryptoHandler : ICryptoHandler
     {
-        var handler = (TCryptoHandler?)Activator.CreateInstance(typeof(TCryptoHandler), _platformRuntime);
-        if (handler is null)
-            throw new NullReferenceException();
+        var taskCompletionSource = new TaskCompletionSource<BinaryCryptogram>();
 
-        return await handler.Encrypt(data, key);
+        _cryptoTaskQueue.EnqueueTask(async () =>
+        {
+            try
+            {
+                var handler = (TCryptoHandler?)Activator.CreateInstance(typeof(TCryptoHandler), _platformRuntime);
+                if (handler is null)
+                    throw new NullReferenceException();
+
+                var result = await handler.Encrypt(data, key);
+                taskCompletionSource.SetResult(result);
+            }
+            catch (Exception ex)
+            {
+                taskCompletionSource.SetException(ex);
+            }
+        });
+
+        return taskCompletionSource.Task;
     }
 
     public async Task<Key> GenerateAesKeyAsync(string contact, string author)

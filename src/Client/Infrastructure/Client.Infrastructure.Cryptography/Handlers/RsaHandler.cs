@@ -4,17 +4,15 @@ using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
-using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;
 
 public class RsaHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
 {
-    public async Task<BinaryCryptogram> Encrypt<T>(T data, Key key)
+    public async Task<BinaryCryptogram> Encrypt(byte[] data, Key key)
     {
-        var bytes = MessagePackSerializer.Serialize(data);
         var encryptedBytes = await platformRuntime.InvokeAsync<byte[]>("EncryptDataWithRSAPublicKey",
-            [bytes, key.Value?.ToString()]);
+            [data, key.Value]);
 
         return new BinaryCryptogram
         {
@@ -29,7 +27,7 @@ public class RsaHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
     public async Task<BinaryCryptogram> Decrypt(BinaryCryptogram cryptogram, Key key)
     {
         var decryptedData = await platformRuntime.InvokeAsync<byte[]>("DecryptDataWithRSAPrivateKey",
-            [cryptogram.Cypher, key.Value?.ToString()]);
+            [cryptogram.Cypher, key.Value]);
 
         return new BinaryCryptogram
         {
@@ -44,7 +42,7 @@ public class RsaHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
         {
             EncryptionResult result = await platformRuntime
                 .InvokeAsync<EncryptionResult>("EncryptWithRSAPublicKey",
-                    [textCryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
+                    [textCryptogram.Cyphertext, key.Value ?? throw new MissingKeyException()]);
 
             return new()
             {
@@ -62,7 +60,7 @@ public class RsaHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
     {
         EncryptionResult result = await platformRuntime
             .InvokeAsync<EncryptionResult>("DecryptWithRSAPrivateKey",
-                [textCryptogram.Cyphertext, key.Value?.ToString() ?? throw new MissingKeyException()]);
+                [textCryptogram.Cyphertext, key.Value ?? throw new MissingKeyException()]);
 
         return new()
         {

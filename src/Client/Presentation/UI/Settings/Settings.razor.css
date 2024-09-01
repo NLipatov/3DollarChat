@@ -1,5 +1,5 @@
 .container {
-    background-color: rgba(18, 23, 17, 255);
+    background-color: var(--app-background);
     display: flex;
     color: #FFFFFF;
     max-width: 100%;

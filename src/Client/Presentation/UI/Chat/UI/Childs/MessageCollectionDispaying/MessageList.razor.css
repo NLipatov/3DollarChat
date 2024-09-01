@@ -11,5 +11,6 @@
 @media (max-width: 768px) {
     .messages-box {
         width: 100%;
+        max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height) - 5.5rem);
     }
 }

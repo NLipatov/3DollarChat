@@ -4,17 +4,15 @@ using Client.Infrastructure.Cryptography.Handlers.Exceptions;
 using Client.Infrastructure.Cryptography.Handlers.Models;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
-using MessagePack;
 
 namespace Client.Infrastructure.Cryptography.Handlers;
 
 public class AesHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
 {
-    public async Task<BinaryCryptogram> Encrypt<T>(T data, Key key)
+    public async Task<BinaryCryptogram> Encrypt(byte[] data, Key key)
     {
-        var bytes = MessagePackSerializer.Serialize(data);
         var encryptedData =
-            await platformRuntime.InvokeAsync<byte[]>("AESEncryptData", [bytes, key.Value?.ToString()]);
+            await platformRuntime.InvokeAsync<byte[]>("AESEncryptData", [data, key.Value]);
 
         var cryptogram = EncryptedBytesToCryptogram(encryptedData, key);
         return cryptogram;
@@ -24,7 +22,7 @@ public class AesHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
     {
         var decryptedData =
             await platformRuntime.InvokeAsync<byte[]>("AESDecryptData",
-                [cryptogram.Cypher, key.Value?.ToString(), cryptogram.Iv]);
+                [cryptogram.Cypher, key.Value, cryptogram.Iv]);
 
         return new BinaryCryptogram
         {
@@ -54,7 +52,7 @@ public class AesHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
         EncryptionResult result = await platformRuntime.InvokeAsync<EncryptionResult>("AESDecryptText",
         [
             textCryptogram.Cyphertext ?? string.Empty,
-            key.Value?.ToString() ?? throw new MissingKeyException(),
+            key.Value ?? throw new MissingKeyException(),
             textCryptogram.Iv
         ]);
 
@@ -72,7 +70,7 @@ public class AesHandler(IPlatformRuntime platformRuntime) : ICryptoHandler
             .InvokeAsync<EncryptionResult>("AESEncryptText",
             [
                 textCryptogram.Cyphertext ?? string.Empty,
-                key.Value?.ToString() ?? throw new MissingKeyException()
+                key.Value ?? throw new MissingKeyException()
             ]);
 
         return new()

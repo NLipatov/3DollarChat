@@ -1,5 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
+using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
@@ -8,7 +9,6 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using EthachatShared.Models.Message;
-using MessagePack;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 
@@ -69,7 +69,7 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         await gateway.TransferAsync(new ClientToServerData
         {
             EventName = "ValidateCredentials",
-            Data = MessagePackSerializer.Serialize(dto),
+            Data = await dto.SerializeAsync(),
             Type = typeof(CredentialsDTO)
         });
     }
@@ -124,7 +124,7 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "RefreshCredentials",
-                Data = MessagePackSerializer.Serialize(dto),
+                Data = await dto.SerializeAsync(),
                 Type = typeof(CredentialsDTO)
             });
 

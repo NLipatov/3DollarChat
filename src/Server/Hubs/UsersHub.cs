@@ -1,4 +1,5 @@
-﻿using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
+﻿using Ethachat.Client.Extensions;
+using Ethachat.Server.Hubs.UsersConnectedManaging.ConnectedUserStorage;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling;
 using Ethachat.Server.Hubs.UsersConnectedManaging.EventHandling.OnlineUsersRequestEvent;
 using Ethachat.Server.Utilities.HttpMessaging;
@@ -12,7 +13,6 @@ using EthachatShared.Models.ConnectedUsersManaging;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
-using MessagePack;
 using Microsoft.AspNetCore.SignalR;
 
 namespace Ethachat.Server.Hubs
@@ -175,7 +175,7 @@ namespace Ethachat.Server.Hubs
         public async Task IsUserOnline(ClientToServerData data)
         {
             await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
-            var username = MessagePackSerializer.Deserialize<string>(data.Data);
+            var username = await data.Data.DeserializeAsync<string>();
             string[] userHubConnections =
                 InMemoryHubConnectionStorage.UsersHubConnections.Where(x => x.Key == username).SelectMany(x => x.Value)
                     .ToArray();
@@ -196,7 +196,7 @@ namespace Ethachat.Server.Hubs
         public async Task AddUserWebPushSubscription(ClientToServerData data)
         {
             await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
-            var notificationSubscriptionDto = MessagePackSerializer.Deserialize<NotificationSubscriptionDto>(data.Data);
+            var notificationSubscriptionDto = await data.Data.DeserializeAsync<NotificationSubscriptionDto>();
             await _serverHttpClient.AddUserWebPushSubscribtion(notificationSubscriptionDto);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
         }
@@ -204,7 +204,7 @@ namespace Ethachat.Server.Hubs
         public async Task GetUserWebPushSubscriptions(ClientToServerData data)
         {
             await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
-            var credentialsDto = MessagePackSerializer.Deserialize<CredentialsDTO>(data.Data);
+            var credentialsDto = await data.Data.DeserializeAsync<CredentialsDTO>();
             var userRequestResult = await _usernameResolverService.GetUsernameAsync(credentialsDto);
 
             if (userRequestResult.Result is not AuthResultType.Success)
@@ -219,7 +219,7 @@ namespace Ethachat.Server.Hubs
         public async Task RemoveUserWebPushSubscriptions(ClientToServerData data)
         {
             await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
-            var notificationSubscriptionDtOs = MessagePackSerializer.Deserialize<NotificationSubscriptionDto[]>(data.Data);
+            var notificationSubscriptionDtOs = await data.Data.DeserializeAsync<NotificationSubscriptionDto[]>();
             await _serverHttpClient.RemoveUserWebPushSubscriptions(notificationSubscriptionDtOs);
             await Clients.Caller.SendAsync("RemovedFromWebPushSubscriptions", notificationSubscriptionDtOs);
             await Clients.Caller.SendAsync("WebPushSubscriptionSetChanged");
@@ -228,7 +228,7 @@ namespace Ethachat.Server.Hubs
         public async Task CheckIfUserExist(ClientToServerData data)
         {
             await Clients.All.SendAsync("OnClientToServerDataAck", data.Id);
-            var username = MessagePackSerializer.Deserialize<string>(data.Data);
+            var username = await data.Data.DeserializeAsync<string>();
             IsUserExistDto response = await _serverHttpClient.CheckIfUserExists(username);
             await Clients.Caller.SendAsync("UserExistanceResponse", response);
         }

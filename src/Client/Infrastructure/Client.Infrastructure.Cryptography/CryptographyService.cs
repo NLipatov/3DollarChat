@@ -45,7 +45,7 @@ public class CryptographyService : ICryptographyService
     }
 
 
-    public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler, TData>(TData data, Key key)
+    public Task<BinaryCryptogram> EncryptAsync<TCryptoHandler>(byte[] data, Key key)
         where TCryptoHandler : ICryptoHandler
     {
         var taskCompletionSource = new TaskCompletionSource<BinaryCryptogram>();

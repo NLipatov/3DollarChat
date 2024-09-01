@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using Client.Application.Gateway;
+using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
@@ -9,7 +10,6 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using EthachatShared.Models.Message;
-using MessagePack;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
@@ -90,7 +90,7 @@ public class JwtAuthenticationHandler(
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "ValidateCredentials",
-                Data = MessagePackSerializer.Serialize(new CredentialsDTO { JwtPair = jWtPair }),
+                Data = await new CredentialsDTO { JwtPair = jWtPair }.SerializeAsync(),
                 Type = typeof(CredentialsDTO)
             });
         }
@@ -176,7 +176,7 @@ public class JwtAuthenticationHandler(
                 await gateway.TransferAsync(new ClientToServerData
                 {
                     EventName = "RefreshCredentials",
-                    Data = MessagePackSerializer.Serialize(new CredentialsDTO { JwtPair = jwtPair }),
+                    Data = await new CredentialsDTO { JwtPair = jwtPair }.SerializeAsync(),
                     Type = typeof(CredentialsDTO),
                 });
 

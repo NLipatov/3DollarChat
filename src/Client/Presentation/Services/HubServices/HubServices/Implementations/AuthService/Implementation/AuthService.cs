@@ -1,6 +1,7 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
 using Client.Infrastructure.Gateway;
+using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
@@ -8,7 +9,6 @@ using EthachatShared.Constants;
 using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using EthachatShared.Models.Message;
-using MessagePack;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation;
@@ -133,7 +133,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "Register",
-            Data = MessagePackSerializer.Serialize(newUserDto),
+            Data = await newUserDto.SerializeAsync(),
             Type = typeof(UserAuthentication)
         });
     }
@@ -144,7 +144,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "LogIn",
-            Data = MessagePackSerializer.Serialize(userAuthentication),
+            Data = await userAuthentication.SerializeAsync(),
             Type = typeof(UserAuthentication)
         });
     }
@@ -156,7 +156,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "GetTokenRefreshHistory",
-            Data = MessagePackSerializer.Serialize(accessToken),
+            Data = await accessToken.SerializeAsync(),
             Type = typeof(string)
         });
     }

@@ -1,0 +1,41 @@
+@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
+@implements IDisposable
+
+<CustomToggleSwitch
+    IsToggled=@(IsEnabled)
+    BackgroundColor=@(IsEnabled ? "#3ca04c" : "")
+    OnPress=@(() => OnToggle(!IsEnabled))/>
+
+@code {
+    private Guid ComponentId { get; set; }
+    private bool IsEnabled { get; set; }
+    private bool IsDarkTheme { get; set; } = true;
+
+    public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    private bool _IsEnabled
+    {
+        get => IsEnabled;
+        set
+        {
+            OnToggle(value);
+            IsEnabled = value;
+        }
+    }
+
+    private void OnToggle(bool value)
+    {
+        IsDarkTheme = !IsDarkTheme;
+    }
+
+    protected override Task OnInitializedAsync()
+    {
+        //This id will be needed on dispose stage
+        //On dispose stage we need to clear out all the component event subscriptions
+        ComponentId = Guid.NewGuid();
+
+        return Task.CompletedTask;
+    }
+
+}

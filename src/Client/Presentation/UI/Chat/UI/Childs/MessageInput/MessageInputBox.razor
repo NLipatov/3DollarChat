@@ -29,16 +29,19 @@
 
 <div class="message-input-box">
     <input type="text" class="message-input" placeholder="Send a message..."
-           value="@MessageInput" @oninput="UpdateMessageInput" @onkeydown="HandleKeyDown"/>
+           @bind="MessageInput"
+           @bind:event="oninput"
+           @bind:after="SendOnTypingEvent"
+           @onkeydown=@HandleKeyDown/>
 
     <label for="fileinput" class="label-wrapper">
         <span>
             <i class="fas fa-paperclip paperclip-icon"></i>
         </span>
-        <InputFile id="fileinput" 
-            @key="_fileInputId" 
-            OnChange=@(async e => await BrowserFileSender.SendIBrowserFile(e.File, _topicName)) 
-            style="display: none;"/>
+        <InputFile id="fileinput"
+                   @key="_fileInputId"
+                   OnChange=@(async e => await BrowserFileSender.SendIBrowserFile(e.File, _topicName))
+                   style="display: none;"/>
     </label>
 
     <button class="send-button" @onclick="SendMessage">Send</button>
@@ -92,25 +95,21 @@
         await base.OnInitializedAsync();
     }
 
-    private void UpdateMessageInput(ChangeEventArgs e)
-    {
-        MessageInput = e.Value?.ToString() ?? string.Empty;
-    }
-
     private async Task HandleKeyDown(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
             await SendMessage();
         }
-        else
+    }
+
+    private async Task SendOnTypingEvent()
+    {
+        // Debounce
+        if ((DateTime.UtcNow - LastTypingEventSentOn).TotalMilliseconds > 1500)
         {
-            // Debounce
-            if ((DateTime.UtcNow - LastTypingEventSentOn).TotalMilliseconds > 1500)
-            {
-                _ = Task.Run(async () => await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = _topicName, Type = EventType.OnTyping }));
-                LastTypingEventSentOn = DateTime.UtcNow;
-            }
+            _ = Task.Run(async () => await MessageService.TransferAsync(new EventMessage { Sender = MyUsername, Target = _topicName, Type = EventType.OnTyping }));
+            LastTypingEventSentOn = DateTime.UtcNow;
         }
     }
 

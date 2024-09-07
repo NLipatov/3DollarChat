@@ -1,5 +1,3 @@
-"use strict";
-
 window.virtualScrolling = {
     getScrollPosition: function (element) {
         if (element) {
@@ -24,7 +22,13 @@ window.virtualScrolling = {
     getElementHeight: function (elementId) {
         var element = document.getElementById(elementId);
         if (element) {
-            return element.offsetHeight;
+            var rect = element.getBoundingClientRect();
+            var computedStyle = getComputedStyle(element);
+            var marginTop = parseFloat(computedStyle.marginTop);
+            var marginBottom = parseFloat(computedStyle.marginBottom);
+            var totalHeight = rect.height + marginTop + marginBottom; // Учитываем margin и фактическую высоту
+
+            return totalHeight; // Возвращаем общую высоту компонента
         }
         return 0;
     },

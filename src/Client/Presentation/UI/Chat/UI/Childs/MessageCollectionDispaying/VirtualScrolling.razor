@@ -1,7 +1,7 @@
 @inject IJSRuntime JsRuntime
 
 <div @ref="_scrollContainer" @onscroll="OnScroll" style="overflow-y: scroll; width: 100%;">
-    <div style="height:@TopSpacerHeight"></div>
+    <div style="height:@($"{TopSpacerHeight}px");"></div>
 
     @foreach (var component in _visibleComponents)
     {
@@ -10,7 +10,7 @@
         </div>
     }
 
-    <div style="height:@BottomSpacerHeight"></div>
+    <div style="height:@($"{BottomSpacerHeight}px");"></div>
 </div>
 
 @code {

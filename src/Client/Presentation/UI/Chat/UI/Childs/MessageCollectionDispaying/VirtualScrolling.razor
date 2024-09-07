@@ -5,7 +5,9 @@
 
     @foreach (var component in _visibleComponents)
     {
-        @component.Content
+        <div id="component-@(component.Id)">
+            @component.Content
+        </div>
     }
 
     <div style="height:@BottomSpacerHeight"></div>
@@ -15,12 +17,13 @@
     [Parameter] public List<RenderFragment>? Components { get; set; }
 
     private ElementReference _scrollContainer;
-    private List<ScrollComponent> _visibleComponents = new List<ScrollComponent>();
+    private List<ScrollComponent> _visibleComponents = new();
 
-    private int _topSpacerHeight = 0;
-    private int _bottomSpacerHeight = 0;
-    private const int VisibleComponentCount = 20; // Сколько компонентов показывать на экране
-    private int _startIndex = 0; // Индекс первого видимого компонента
+    private Dictionary<int, double> _componentHeights = new();
+    private double _topSpacerHeight = 0;
+    private double _bottomSpacerHeight = 0;
+    private const int VisibleComponentCount = 15;
+    private int _startIndex = 0;
     private int EndIndex => _startIndex + VisibleComponentCount - 1;
     private bool _autoScroll = true;
 
@@ -43,6 +46,7 @@
         }
 
         await MeasureUncachedHeights();
+        UpdateSpacers();
     }
 
     private async Task OnScroll()
@@ -91,21 +95,23 @@
             _visibleComponents.RemoveAt(_visibleComponents.Count - 1);
         }
 
+        UpdateSpacers();
         StateHasChanged();
     }
 
     private async Task<bool> ComponentOutOfView(ScrollComponent component)
     {
-        var componentPosition = await JsRuntime.InvokeAsync<int>("virtualScrolling.getElementPosition", $"component-{component.Id}");
-        return componentPosition < 0 || componentPosition > await GetContainerHeight();
+        double componentPosition = await JsRuntime.InvokeAsync<double>("virtualScrolling.getElementPosition", $"component-{component.Id}");
+        double containerHeight = await GetContainerHeight();
+        return componentPosition < 0 || componentPosition > containerHeight;
     }
 
     private async Task CacheComponentHeight(ScrollComponent component)
     {
-        if (!component.Height.HasValue)
+        if (!_componentHeights.ContainsKey(component.Id))
         {
-            var height = await JsRuntime.InvokeAsync<int>("virtualScrolling.getElementHeight", $"component-{component.Id}");
-            component.Height = height;
+            var height = await JsRuntime.InvokeAsync<double>("virtualScrolling.getElementHeight", $"component-{component.Id}");
+            _componentHeights[component.Id] = height;
         }
     }
 
@@ -113,10 +119,7 @@
     {
         foreach (var component in _visibleComponents)
         {
-            if (!component.Height.HasValue)
-            {
-                await CacheComponentHeight(component);
-            }
+            await CacheComponentHeight(component);
         }
     }
 
@@ -131,11 +134,39 @@
                 Id = _startIndex + index,
                 Content = component
             }).ToList();
+        
+        UpdateSpacers();
     }
 
-    private async Task<int> GetContainerHeight()
+    private void UpdateSpacers()
     {
-        return await JsRuntime.InvokeAsync<int>("virtualScrolling.getContainerHeight", _scrollContainer);
+        if (Components == null || !Components.Any())
+            return;
+
+        _topSpacerHeight = CalculateSpacerHeight(0, _startIndex);
+        _bottomSpacerHeight = CalculateSpacerHeight(EndIndex + 1, Components.Count);
+    }
+
+    private double CalculateSpacerHeight(int start, int end)
+    {
+        double height = 0;
+        for (int i = start; i < end; i++)
+        {
+            if (_componentHeights.ContainsKey(i))
+            {
+                height += _componentHeights[i];
+            }
+            else
+            {
+                height += 50;
+            }
+        }
+        return height;
+    }
+
+    private async Task<double> GetContainerHeight()
+    {
+        return await JsRuntime.InvokeAsync<double>("virtualScrolling.getContainerHeight", _scrollContainer);
     }
 
     private async Task LoadUpperComponents()
@@ -156,8 +187,8 @@
         }
     }
 
-    private int TopSpacerHeight => _topSpacerHeight;
-    private int BottomSpacerHeight => _bottomSpacerHeight;
+    private double TopSpacerHeight => _topSpacerHeight;
+    private double BottomSpacerHeight => _bottomSpacerHeight;
 
     public async Task AddComponent(RenderFragment newComponent)
     {

@@ -1,0 +1,185 @@
+@inject IJSRuntime JsRuntime
+
+<div @ref="_scrollContainer" @onscroll="OnScroll" style="overflow-y: scroll; width: 100%;">
+    <div style="height:@TopSpacerHeight"></div>
+
+    @foreach (var component in _visibleComponents)
+    {
+        @component.Content
+    }
+
+    <div style="height:@BottomSpacerHeight"></div>
+</div>
+
+@code {
+    [Parameter] public List<RenderFragment>? Components { get; set; }
+
+    private ElementReference _scrollContainer;
+    private List<ScrollComponent> _visibleComponents = new List<ScrollComponent>();
+
+    private int _topSpacerHeight = 0;
+    private int _bottomSpacerHeight = 0;
+    private const int VisibleComponentCount = 20; // Сколько компонентов показывать на экране
+    private int _startIndex = 0; // Индекс первого видимого компонента
+    private int EndIndex => _startIndex + VisibleComponentCount - 1;
+    private bool _autoScroll = true;
+
+    protected override Task OnParametersSetAsync()
+    {
+        UpdateVisibleComponents();
+        return base.OnParametersSetAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (Components != null && Components.Any())
+            {
+                UpdateVisibleComponents();
+            }
+
+            await ScrollToBottom();
+        }
+
+        await MeasureUncachedHeights();
+    }
+
+    private async Task OnScroll()
+    {
+        var scrollPosition = await JsRuntime.InvokeAsync<double>("virtualScrolling.getScrollPosition", _scrollContainer);
+
+        _autoScroll = await IsScrolledToBottom();
+
+        if (scrollPosition == 0)
+        {
+            await LoadUpperComponents(); 
+        }
+        else if (_autoScroll)
+        {
+            await LoadLowerComponents();
+        }
+
+        await RemoveOutOfViewComponents();
+    }
+
+    private async Task ScrollToBottom()
+    {
+        await JsRuntime.InvokeVoidAsync("virtualScrolling.scrollToBottom", _scrollContainer);
+    }
+
+    private async Task<bool> IsScrolledToBottom()
+    {
+        return await JsRuntime.InvokeAsync<bool>("virtualScrolling.isScrolledToBottom", _scrollContainer);
+    }
+
+    private async Task RemoveOutOfViewComponents()
+    {
+        if (Components == null || !Components.Any())
+            return;
+
+        while (_startIndex < Components.Count && await ComponentOutOfView(_visibleComponents.First()))
+        {
+            await CacheComponentHeight(_visibleComponents.First());
+            _visibleComponents.RemoveAt(0);
+            _startIndex++;
+        }
+
+        while (EndIndex < Components.Count && await ComponentOutOfView(_visibleComponents.Last()))
+        {
+            await CacheComponentHeight(_visibleComponents.Last());
+            _visibleComponents.RemoveAt(_visibleComponents.Count - 1);
+        }
+
+        StateHasChanged();
+    }
+
+    private async Task<bool> ComponentOutOfView(ScrollComponent component)
+    {
+        var componentPosition = await JsRuntime.InvokeAsync<int>("virtualScrolling.getElementPosition", $"component-{component.Id}");
+        return componentPosition < 0 || componentPosition > await GetContainerHeight();
+    }
+
+    private async Task CacheComponentHeight(ScrollComponent component)
+    {
+        if (!component.Height.HasValue)
+        {
+            var height = await JsRuntime.InvokeAsync<int>("virtualScrolling.getElementHeight", $"component-{component.Id}");
+            component.Height = height;
+        }
+    }
+
+    private async Task MeasureUncachedHeights()
+    {
+        foreach (var component in _visibleComponents)
+        {
+            if (!component.Height.HasValue)
+            {
+                await CacheComponentHeight(component);
+            }
+        }
+    }
+
+    private void UpdateVisibleComponents()
+    {
+        if (Components == null || !Components.Any())
+            return;
+
+        _visibleComponents = Components.Skip(_startIndex).Take(VisibleComponentCount)
+            .Select((component, index) => new ScrollComponent
+            {
+                Id = _startIndex + index,
+                Content = component
+            }).ToList();
+    }
+
+    private async Task<int> GetContainerHeight()
+    {
+        return await JsRuntime.InvokeAsync<int>("virtualScrolling.getContainerHeight", _scrollContainer);
+    }
+
+    private async Task LoadUpperComponents()
+    {
+        if (_startIndex > 0)
+        {
+            _startIndex = Math.Max(0, _startIndex - VisibleComponentCount);
+            UpdateVisibleComponents();
+        }
+    }
+
+    private async Task LoadLowerComponents()
+    {
+        if (EndIndex < Components.Count - 1)
+        {
+            _startIndex = Math.Min(Components.Count - VisibleComponentCount, _startIndex + VisibleComponentCount);
+            UpdateVisibleComponents();
+        }
+    }
+
+    private int TopSpacerHeight => _topSpacerHeight;
+    private int BottomSpacerHeight => _bottomSpacerHeight;
+
+    public async Task AddComponent(RenderFragment newComponent)
+    {
+        if (Components == null)
+        {
+            Components = new List<RenderFragment>();
+        }
+
+        Components.Add(newComponent);
+
+        if (_autoScroll)
+        {
+            await ScrollToBottom();
+        }
+
+        StateHasChanged();
+    }
+
+    public class ScrollComponent
+    {
+        public int Id { get; set; }
+        public RenderFragment Content { get; set; }
+        public int? Height { get; set; }
+    }
+}

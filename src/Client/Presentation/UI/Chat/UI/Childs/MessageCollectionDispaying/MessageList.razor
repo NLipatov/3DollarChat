@@ -4,6 +4,7 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
 @using EthachatShared.Models.Message;
 @using Ethachat.Client.Services.VideoStreamingService
+@using global::Client.Transfer.Domain.Entities.Messages
 @inject IMessageBox MessageBox
 @inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
 @inject IJSRuntime JsRuntime
@@ -12,12 +13,8 @@
 @implements IDisposable
 
 <div class="messages-box @HtmlClass">
-    @* ReSharper disable once UnusedParameter.Local *@
-    <Virtualize
-        Context="message"
-        Items="MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.Target == TargetGroup || x.Sender == TargetGroup).ToList()">
-        <SingleMessage Message="message" MyUsername=@MyUsername/>
-    </Virtualize>
+    <VirtualScrolling
+        Components=@(MessagesToShowRenderFragments)/>
 </div>
 
 @code {
@@ -31,6 +28,11 @@
     private Guid ComponentId { get; set; }
 
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+
+    private List<ClientMessage> MessagesToShow => MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.Target == TargetGroup || x.Sender == TargetGroup).ToList();
+    private List<RenderFragment> MessagesToShowRenderFragments => MessagesToShow.Select(RenderSingleMessage).ToList();
+
+    private RenderFragment RenderSingleMessage(ClientMessage message) => @<SingleMessage Message=@message MyUsername=@MyUsername/>;
 
     protected override void OnInitialized()
     {

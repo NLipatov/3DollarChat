@@ -81,7 +81,10 @@ public class SignalrGateway : IGateway
             finally
             {
                 // delay between reconnection attempts
-                await Task.Delay(ReconnectionInterval);
+                if (_connection!.State is not HubConnectionState.Connected)
+                {
+                    await Task.Delay(ReconnectionInterval);
+                }
             }
         }
 

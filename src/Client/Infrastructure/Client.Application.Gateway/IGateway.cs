@@ -57,4 +57,7 @@ public interface IGateway
     /// <param name="handler">The handler that will be raised when the hub method is invoked.</param>
     /// <returns>A subscription that can be disposed to unsubscribe from the hub method.</returns>
     Task AddEventCallbackAsync(string methodName, Func<Task> handler);
+
+    void DisableReconnection();
+    Task EnableReconnectionAsync();
 }

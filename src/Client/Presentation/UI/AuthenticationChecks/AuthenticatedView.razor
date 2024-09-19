@@ -1,6 +1,7 @@
 ﻿@using Ethachat.Client.Services.Authentication.Boundaries
 @using Ethachat.Client.Services.Authentication.Boundaries.Stages
 @using Ethachat.Client.Services.Authentication.Handlers
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
@@ -14,6 +15,7 @@
 @inject IAuthenticationHandler AuthenticationHandler
 @inject IHubServiceSubscriptionManager SubscriptionManager
 @inject IAuthenticationManagerBoundary AuthenticationManagerBoundary
+@inject ICallbackExecutor CallbackExecutor
 @implements IDisposable
 
 
@@ -42,7 +44,6 @@
 }
 
 @code {
-
     [Parameter] public RenderFragment? AuthenticatedContent { get; set; }
 
     [Parameter] public RenderFragment? UnauthenticatedContent { get; set; }

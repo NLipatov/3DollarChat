@@ -1,4 +1,5 @@
 ﻿@using Ethachat.Client.Services.Authentication.Handlers
+@using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor
 @using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.InboxService;
 @using EthachatShared.Models.Message
@@ -9,6 +10,7 @@
 @inject IMessageBox _messageBox
 @inject NavigationManager _navigationManager
 @inject IAuthenticationHandler AuthenticationHandler
+@inject ICallbackExecutor CallbackExecutor
 
 
 <div class="ApplicationContent">
@@ -27,6 +29,7 @@
 @code{
     private Guid ComponentId { get; set; }
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
+    private static Action<bool>? AppVisibilityStateChangedDelegate { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
@@ -36,6 +39,10 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager.AddCallback(ShowMessageToast, "MessageBoxUpdate", ComponentId);
+
+        AppVisibilityStateChangedDelegate = isVisible
+            => CallbackExecutor.ExecuteSubscriptionsByName(isVisible, "AppVisibilityStateChanged");
+
 
         StateHasChanged();
     }
@@ -72,6 +79,12 @@
 
             _messageBox.OnToastWasShown(message.Id);
         }
+    }
+
+    [JSInvokable]
+    public static void OnVisibilityChange(bool isVisible)
+    {
+        AppVisibilityStateChangedDelegate?.Invoke(isVisible);
     }
 
 }

@@ -12,6 +12,7 @@ namespace Client.Infrastructure.Gateway;
 /// </summary>
 public class SignalrGateway : IGateway
 {
+    private static bool _isReconnectionEnabled = true;
     private const int ReconnectionInterval = 3000;
     private Func<Task<CredentialsDTO>>? _credentialsFactory;
     private HubConnection? _connection;
@@ -31,8 +32,8 @@ public class SignalrGateway : IGateway
 
         _connection.Closed += async _ =>
         {
-            Console.WriteLine("Event: Closed");
-            _connection = await GetHubConnectionAsync();
+            if (_isReconnectionEnabled)
+                _connection = await GetHubConnectionAsync();
         };
 
         _connection = await GetHubConnectionAsync();
@@ -49,12 +50,16 @@ public class SignalrGateway : IGateway
         //HubConnection can only be started if state is Disconnected
         while (_connection!.State is not HubConnectionState.Connected)
         {
+            if (!_isReconnectionEnabled)
+            {
+                return _connection;
+            }
             try
             {
-                if (_connection.State is HubConnectionState.Connected)
-                    return _connection;
-                
-                await _connection.StopAsync();
+                if (_connection.State != HubConnectionState.Disconnected)
+                {
+                    await _connection.StopAsync();
+                }
                 await _connection.StartAsync();
                 if (_credentialsFactory != null)
                 {
@@ -101,6 +106,19 @@ public class SignalrGateway : IGateway
     {
         var connection = await GetHubConnectionAsync();
         connection.On(methodName, async () => await handler.SafeInvokeAsync());
+    }
+
+    public void DisableReconnection()
+    {
+        _isReconnectionEnabled = false;
+    }
+
+    public async Task EnableReconnectionAsync()
+    {
+        _isReconnectionEnabled = true;
+        
+        if (_connection?.State is not HubConnectionState.Connected)
+            _connection = await GetHubConnectionAsync();
     }
 
     private async Task SendAsync(string methodName, object arg)

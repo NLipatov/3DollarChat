@@ -12,7 +12,7 @@ namespace Client.Infrastructure.Gateway;
 /// </summary>
 public class SignalrGateway : IGateway
 {
-    private const int ReconnectionInterval = 1000;
+    private const int ReconnectionInterval = 3000;
     private Func<Task<CredentialsDTO>>? _credentialsFactory;
     private HubConnection? _connection;
 

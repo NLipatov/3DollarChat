@@ -42,6 +42,25 @@ public class AuthenticationManagerBoundary(
         subscriptionManager
             .AddCallback<AuthResult>(HandleAuthenticationCheckResult, "OnValidateCredentials", ComponentId);
 
+        subscriptionManager
+            .AddCallback<bool>(async isVisible 
+                =>
+            {
+                if (!isVisible)
+                {
+                    authService.PreventReconnecting();
+                    usersService.PreventReconnecting();
+                    messageService.PreventReconnecting();
+                }
+                else
+                {
+                    await Task.WhenAll(
+                        authService.ReconnectAsync(),
+                        usersService.ReconnectAsync(),
+                        messageService.ReconnectAsync());
+                }
+            }, "AppVisibilityStateChanged", ComponentId);
+
         await ValidateCredentials();
     }
 

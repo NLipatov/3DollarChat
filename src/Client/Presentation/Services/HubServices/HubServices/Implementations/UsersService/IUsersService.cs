@@ -11,5 +11,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
         Task GetUserWebPushSubscriptions(CredentialsDTO credentialsDto);
         Task RemoveUserWebPushSubscriptions(NotificationSubscriptionDto[] subscriptionsToRemove);
         Task CheckIfUserExists(string username);
+        void PreventReconnecting();
+        Task ReconnectAsync();
     }
 }

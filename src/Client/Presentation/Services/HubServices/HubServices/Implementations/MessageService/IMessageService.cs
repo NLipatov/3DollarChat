@@ -8,5 +8,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         Task NegotiateOnAESAsync(string partnerUsername);
         Task UnsafeTransferAsync(ClientToClientData data);
         Task TransferAsync<T>(T data) where T : IIdentifiable, ISourceResolvable, IDestinationResolvable;
+        void PreventReconnecting();
+        Task ReconnectAsync();
     }
 }

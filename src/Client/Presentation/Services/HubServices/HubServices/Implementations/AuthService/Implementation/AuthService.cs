@@ -160,4 +160,13 @@ public class AuthService : IAuthService
             Type = typeof(string)
         });
     }
+
+    public void PreventReconnecting() => _gateway?.DisableReconnection();
+    public async Task ReconnectAsync()
+    {
+        if (_gateway is not null)
+        {
+            await _gateway.EnableReconnectionAsync();
+        }
+    }
 }

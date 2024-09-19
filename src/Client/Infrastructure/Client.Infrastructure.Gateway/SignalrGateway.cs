@@ -29,7 +29,7 @@ public class SignalrGateway : IGateway
             .AddMessagePackProtocol()
             .Build();
 
-        _connection.Closed += async (_) =>
+        _connection.Closed += async _ =>
         {
             Console.WriteLine("Event: Closed");
             _connection = await GetHubConnectionAsync();

@@ -35,18 +35,6 @@ public class SignalrGateway : IGateway
             _connection = await GetHubConnectionAsync();
         };
 
-        _connection.Reconnected += id =>
-        {
-            Console.WriteLine($"Event: Reconnected: {id}");
-            return Task.CompletedTask;
-        };
-
-        _connection.Reconnecting += id =>
-        {
-            Console.WriteLine($"Event: Reconnecting: {id}");
-            return Task.CompletedTask;
-        };
-
         _connection = await GetHubConnectionAsync();
 
         await AddEventCallbackAsync<string>("Authenticated", _ => Task.CompletedTask);

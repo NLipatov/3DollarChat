@@ -12,7 +12,7 @@ namespace Client.Infrastructure.Gateway;
 /// </summary>
 public class SignalrGateway : IGateway
 {
-    private const int ReconnectionInterval = 1000;
+    private const int ReconnectionInterval = 3000;
     private Func<Task<CredentialsDTO>>? _credentialsFactory;
     private HubConnection? _connection;
 
@@ -29,22 +29,10 @@ public class SignalrGateway : IGateway
             .AddMessagePackProtocol()
             .Build();
 
-        _connection.Closed += async (_) =>
+        _connection.Closed += async _ =>
         {
             Console.WriteLine("Event: Closed");
             _connection = await GetHubConnectionAsync();
-        };
-
-        _connection.Reconnected += id =>
-        {
-            Console.WriteLine($"Event: Reconnected: {id}");
-            return Task.CompletedTask;
-        };
-
-        _connection.Reconnecting += id =>
-        {
-            Console.WriteLine($"Event: Reconnecting: {id}");
-            return Task.CompletedTask;
         };
 
         _connection = await GetHubConnectionAsync();
@@ -81,7 +69,10 @@ public class SignalrGateway : IGateway
             finally
             {
                 // delay between reconnection attempts
-                await Task.Delay(ReconnectionInterval);
+                if (_connection!.State is not HubConnectionState.Connected)
+                {
+                    await Task.Delay(ReconnectionInterval);
+                }
             }
         }
 

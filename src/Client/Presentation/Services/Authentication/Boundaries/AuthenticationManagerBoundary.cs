@@ -57,15 +57,12 @@ public class AuthenticationManagerBoundary(
         {
             if (AuthenticationState is not AuthenticationState.Authenticated)
             {
-                await messageService.GetHubConnectionAsync();
-                await usersService.GetHubConnectionAsync();
-                await authService.GetHubConnectionAsync();
-
                 AuthenticationState = AuthenticationState.Authenticated;
 
-                await authenticationHandler
-                    .ExecutePostCredentialsValidation(credentialsValidationResult,
-                        await authService.GetHubConnectionAsync());
+                await Task.WhenAll(
+                    authenticationHandler.ExecutePostCredentialsValidation(credentialsValidationResult, await authService.GetHubConnectionAsync()), 
+                    usersService.GetHubConnectionAsync(), 
+                    messageService.GetHubConnectionAsync());
             }
         }
         else
@@ -75,7 +72,7 @@ public class AuthenticationManagerBoundary(
 
         if (LastAuthenticationState != AuthenticationState)
             callbackExecutor.ExecuteSubscriptionsByName("AuthenticationStateHasChanged");
-            
+
         LastAuthenticationState = AuthenticationState;
     }
 }

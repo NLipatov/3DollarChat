@@ -15,6 +15,7 @@ using Ethachat.Client.Services.ConcurrentCollectionManager;
 using Ethachat.Client.Services.ConcurrentCollectionManager.Implementations;
 using Ethachat.Client.Services.ContactsProvider;
 using Ethachat.Client.Services.ContactsProvider.Implementations;
+using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor.Implementation;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
@@ -76,6 +77,7 @@ builder.Services.AddSingleton<IAuthenticationManagerBoundary, AuthenticationMana
 builder.Services.AddTransient<IBinarySendingManager, BinarySendingManager>();
 builder.Services.AddScoped<IBrowserFileSender, BrowserFileSender>();
 builder.Services.AddScoped<ITextMessageSender, TextMessageSender>();
+builder.Services.AddTransient<IDriveService, DriveService>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

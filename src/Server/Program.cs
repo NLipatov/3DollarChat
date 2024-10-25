@@ -1,4 +1,5 @@
 using Ethachat.Server.BackendServiceProxy.AuthenticationInstance;
+using Ethachat.Server.BackendServiceProxy.Drive;
 using Ethachat.Server.BackendServiceProxy.HLS;
 using Ethachat.Server.Hubs;
 using Ethachat.Server.Hubs.MessageDispatcher;
@@ -79,6 +80,7 @@ app.MapFallbackToFile("index.html");
 
 #if DEBUG
     app.UseHlsProxyService(builder.Configuration);
+    app.UseDriveProxyService(builder.Configuration);
     app.UseAuthenticationInstanceProxyService(builder.Configuration);
 #endif
 

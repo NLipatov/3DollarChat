@@ -52,7 +52,14 @@ public class BrowserFileSender(
         
         if (await driveService.CanFileTransmittedAsync(browserFile))
         {
-            _ = await PostFileToDriveApiAsync(browserFile);
+            var driveStoredFile = await PostFileToDriveApiAsync(browserFile);
+            await messageService.TransferAsync(new DriveStoredFileMessage
+            {
+                Id = driveStoredFile.Id,
+                Sender = await authenticationHandler.GetUsernameAsync(),
+                Target = target,
+            });
+            return;
         }
 
         callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
@@ -103,9 +110,7 @@ public class BrowserFileSender(
             if (!request.IsSuccessStatusCode)
                 throw new ApplicationException("Could not post video to HLS API");
 
-            var storedFileId = await request.Content.ReadAsStringAsync();
-
-            if (string.IsNullOrWhiteSpace(storedFileId))
+            if (!Guid.TryParse(await request.Content.ReadAsStringAsync(), out var storedFileId))
                 throw new ArgumentException("Invalid file ID");
 
             return new DriveStoredFile

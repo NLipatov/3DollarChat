@@ -15,13 +15,22 @@ public static class DriveProxyService
                 Log($"Configuration value for {UrlKey} is invalid.");
             
             var healthRequestUrl = string.Join('/', serviceUrl, "health");
-            
-            using var client = new HttpClient();
-            var request = await client.GetAsync(healthRequestUrl);
-            var response = await request.Content.ReadAsStringAsync();
 
-            context.Response.StatusCode = (int) request.StatusCode;
-            await context.Response.WriteAsync(response);
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromMilliseconds(1500);
+                var request = await client.GetAsync(healthRequestUrl);
+                var response = await request.Content.ReadAsStringAsync();
+
+                context.Response.StatusCode = (int) request.StatusCode;
+                await context.Response.WriteAsync(response);
+            }
+            catch (Exception e)
+            {
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync(string.Empty);
+            }
         });
 
         app.MapPost("/driveapi/save", async context =>

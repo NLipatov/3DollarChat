@@ -8,7 +8,7 @@
     <UserSecretsId>8447365c-7c47-4cac-a05f-cfa8c81f20a8</UserSecretsId>
     <RunAOTCompilation>true</RunAOTCompilation>
     <UseInterpreter>true</UseInterpreter>
-    <LangVersion>14</LangVersion>
+    <LangVersion>latestmajor</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

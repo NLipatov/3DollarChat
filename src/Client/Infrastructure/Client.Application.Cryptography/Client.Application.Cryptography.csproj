@@ -5,7 +5,7 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <RootNamespace>Client.Application.Cryptography</RootNamespace>
-        <LangVersion>14</LangVersion>
+        <LangVersion>latestmajor</LangVersion>
     </PropertyGroup>
 
     <ItemGroup>

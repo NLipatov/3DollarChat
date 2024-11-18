@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
 
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
+    <TargetFramework>net9.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
     <UserSecretsId>8447365c-7c47-4cac-a05f-cfa8c81f20a8</UserSecretsId>
     <RunAOTCompilation>true</RunAOTCompilation>
     <UseInterpreter>true</UseInterpreter>
+    <LangVersion>14</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

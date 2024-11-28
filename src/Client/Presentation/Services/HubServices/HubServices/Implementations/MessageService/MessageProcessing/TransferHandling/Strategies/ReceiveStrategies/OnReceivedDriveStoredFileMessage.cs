@@ -7,7 +7,7 @@ using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling.Strategies.ReceiveStrategies;
 
-public class OnReceivedDriveStoredFileMessage(IMessageBox messageBox, IJSRuntime jsRuntime, NavigationManager navigationManager) : IStrategyHandler<DriveStoredFileMessage>
+public class OnReceivedDriveStoredFileMessage2(IMessageBox messageBox, IJSRuntime jsRuntime, NavigationManager navigationManager) : IStrategyHandler<DriveStoredFileMessage>
 {
     public async Task HandleAsync(DriveStoredFileMessage message)
     {

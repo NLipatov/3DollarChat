@@ -8,6 +8,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
+using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Models;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
@@ -139,7 +140,7 @@ public class BrowserFileSender(
             {
                 Id = storedFileId,
                 ContentType = browserFile.ContentType,
-                FileName = browserFile.Name,
+                Filename = browserFile.Name,
             }, fileBytes);
         }
         catch (Exception e)

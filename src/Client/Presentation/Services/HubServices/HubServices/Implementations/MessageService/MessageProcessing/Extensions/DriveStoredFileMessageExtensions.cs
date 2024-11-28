@@ -4,9 +4,9 @@ using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 
-internal static class DriveStoredFileMessageExtensions
+public static class DriveStoredFileMessageExtensions
 {
-    internal static async Task<ClientMessage> ToClientMessage(this DriveStoredFileMessage message, byte[] data, IJSRuntime jsRuntime)
+    public static async Task<ClientMessage> ToClientMessage(this DriveStoredFileMessage message, byte[] data, IJSRuntime jsRuntime)
     {
         var blobUrl = await jsRuntime.InvokeAsync<string>("createBlobUrl", data, message.ContentType);
         return new ClientMessage

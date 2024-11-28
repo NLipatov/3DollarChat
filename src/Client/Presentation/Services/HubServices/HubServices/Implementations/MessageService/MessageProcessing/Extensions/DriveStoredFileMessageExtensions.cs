@@ -4,7 +4,7 @@ using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 
-public static class DriveStoredFileMessage2Extensions
+public static class DriveStoredFileMessageExtensions
 {
     public static async Task<ClientMessage> ToClientMessage(this DriveStoredFileMessage message, byte[] data, IJSRuntime jsRuntime)
     {

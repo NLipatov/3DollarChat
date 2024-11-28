@@ -1,3 +1,7 @@
+using System.Net.Http.Headers;
+using Client.Application.Cryptography;
+using Client.Application.Cryptography.KeyStorage;
+using Client.Infrastructure.Cryptography.Handlers;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.DriveService;
@@ -9,6 +13,8 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
 using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Models;
+using EthachatShared.Encryption;
+using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
@@ -26,7 +32,9 @@ public class BrowserFileSender(
     IMessageService messageService,
     IBinarySendingManager binarySendingManager,
     IDriveService driveService,
-    IJSRuntime jsRuntime) : IBrowserFileSender
+    IJSRuntime jsRuntime,
+    IKeyStorage keyStorage,
+    ICryptographyService cryptographyService) : IBrowserFileSender
 {
     public async Task SendIBrowserFile(IBrowserFile browserFile, string target)
     {
@@ -56,19 +64,24 @@ public class BrowserFileSender(
         
         if (await driveService.CanFileTransmittedAsync(browserFile))
         {
-            var (driveStoredFile, data) = await PostFileToDriveApiAsync(browserFile);
-            var message = new DriveStoredFileMessage
+            _ = Task.Run(async () =>
             {
-                Id = driveStoredFile.Id,
-                Sender = await authenticationHandler.GetUsernameAsync(),
-                Target = target,
-                ContentType = browserFile.ContentType,
-                Filename = browserFile.Name,
-            };
-            await messageService.TransferAsync(message);
+                var (driveStoredFile, data, cryptogram) = await PostFileToDriveApiAsync(browserFile, target);
+                var message = new DriveStoredFileMessage
+                {
+                    Id = driveStoredFile.Id,
+                    Sender = await authenticationHandler.GetUsernameAsync(),
+                    Target = target,
+                    ContentType = browserFile.ContentType,
+                    Filename = browserFile.Name,
+                    Iv = cryptogram.Iv,
+                    KeyId = cryptogram.KeyId,
+                };
+                await messageService.TransferAsync(message);
 
-            var clientMessage = await message.ToClientMessage(data, jsRuntime);
-            messageBox.AddMessage(clientMessage);
+                var clientMessage = await message.ToClientMessage(data, jsRuntime);
+                messageBox.AddMessage(clientMessage);
+            });
             return;
         }
 
@@ -98,7 +111,7 @@ public class BrowserFileSender(
         callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
-    private async Task<(DriveStoredFile, byte[])> PostFileToDriveApiAsync(IBrowserFile browserFile)
+    private async Task<(DriveStoredFile, byte[], BinaryCryptogram)> PostFileToDriveApiAsync(IBrowserFile browserFile, string target)
     {
         var formData = new MultipartFormDataContent();
         byte[] fileBytes;
@@ -108,18 +121,19 @@ public class BrowserFileSender(
             await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
             fileBytes = memoryStream.ToArray();
         }
+        
+        var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
 
-        var progressStreamContent = new ProgressStreamContent(new MemoryStream(fileBytes), browserFile.Size);
-        progressStreamContent.ProgressChanged += (_, currBytes, totalBytes) =>
-        {
-            var ratio = currBytes / (double)totalBytes;
-            var percentage = Math.Round(ratio * 100, 1);
-        };
+        var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(fileBytes,
+            aesKey ?? throw new ApplicationException("Missing key"));
+        
+        var content = new ByteArrayContent(cryptogram.Cypher);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
 
         using var httpClient = new HttpClient();
         try
         {
-            formData.Add(progressStreamContent, "payload", browserFile.Name);
+            formData.Add(content, "payload", browserFile.Name);
             var hlsApiUrl = string.Join("", navigationManager.BaseUri, "driveapi/save");
 
             var request = await httpClient.PostAsync(hlsApiUrl, formData);
@@ -141,7 +155,7 @@ public class BrowserFileSender(
                 Id = storedFileId,
                 ContentType = browserFile.ContentType,
                 Filename = browserFile.Name,
-            }, fileBytes);
+            }, fileBytes, cryptogram);
         }
         catch (Exception e)
         {

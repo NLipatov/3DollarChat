@@ -82,7 +82,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new ()
             {
                 TransferDirection = TransferDirection.Incoming,
-                Handler = new OnReceivedDriveStoredFileMessage2(messageBox, jsRuntime, navigationManager)
+                Handler = new OnReceivedDriveStoredFileMessage(messageBox, jsRuntime, navigationManager, keyStorage, cryptographyService)
             }]);
     }
 

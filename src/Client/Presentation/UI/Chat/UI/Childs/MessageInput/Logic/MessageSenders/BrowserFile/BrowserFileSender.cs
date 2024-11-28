@@ -5,12 +5,14 @@ using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.BrowserFile;
 
@@ -22,7 +24,8 @@ public class BrowserFileSender(
     IMessageBox messageBox,
     IMessageService messageService,
     IBinarySendingManager binarySendingManager,
-    IDriveService driveService) : IBrowserFileSender
+    IDriveService driveService,
+    IJSRuntime jsRuntime) : IBrowserFileSender
 {
     public async Task SendIBrowserFile(IBrowserFile browserFile, string target)
     {
@@ -52,13 +55,19 @@ public class BrowserFileSender(
         
         if (await driveService.CanFileTransmittedAsync(browserFile))
         {
-            var driveStoredFile = await PostFileToDriveApiAsync(browserFile);
-            await messageService.TransferAsync(new DriveStoredFileMessage
+            var (driveStoredFile, data) = await PostFileToDriveApiAsync(browserFile);
+            var message = new DriveStoredFileMessage
             {
                 Id = driveStoredFile.Id,
                 Sender = await authenticationHandler.GetUsernameAsync(),
                 Target = target,
-            });
+                ContentType = browserFile.ContentType,
+                Filename = browserFile.Name,
+            };
+            await messageService.TransferAsync(message);
+
+            var clientMessage = await message.ToClientMessage(data, jsRuntime);
+            messageBox.AddMessage(clientMessage);
             return;
         }
 
@@ -88,17 +97,24 @@ public class BrowserFileSender(
         callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
-    private async Task<DriveStoredFile> PostFileToDriveApiAsync(IBrowserFile browserFile)
+    private async Task<(DriveStoredFile, byte[])> PostFileToDriveApiAsync(IBrowserFile browserFile)
     {
         var formData = new MultipartFormDataContent();
-        var progressStreamContent =
-            new ProgressStreamContent(browserFile.OpenReadStream(long.MaxValue), browserFile.Size);
+        byte[] fileBytes;
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
+            fileBytes = memoryStream.ToArray();
+        }
+
+        var progressStreamContent = new ProgressStreamContent(new MemoryStream(fileBytes), browserFile.Size);
         progressStreamContent.ProgressChanged += (_, currBytes, totalBytes) =>
         {
             var ratio = currBytes / (double)totalBytes;
             var percentage = Math.Round(ratio * 100, 1);
         };
-        
+
         using var httpClient = new HttpClient();
         try
         {
@@ -108,17 +124,23 @@ public class BrowserFileSender(
             var request = await httpClient.PostAsync(hlsApiUrl, formData);
 
             if (!request.IsSuccessStatusCode)
-                throw new ApplicationException("Could not post video to HLS API");
+            {
+                var responseText = await request.Content.ReadAsStringAsync();
+                throw new ApplicationException($"Could not post video to HLS API. Status code: {request.StatusCode}, Response: {responseText}");
+            }
 
-            if (!Guid.TryParse(await request.Content.ReadAsStringAsync(), out var storedFileId))
+            var responseJson = await request.Content.ReadAsStringAsync();
+            if (!Guid.TryParse(responseJson, out var storedFileId))
+            {
                 throw new ArgumentException("Invalid file ID");
+            }
 
-            return new DriveStoredFile
+            return (new DriveStoredFile
             {
                 Id = storedFileId,
                 ContentType = browserFile.ContentType,
                 FileName = browserFile.Name,
-            };
+            }, fileBytes);
         }
         catch (Exception e)
         {

@@ -9,4 +9,6 @@ public record DriveStoredFileMessage : IIdentifiable, ISourceResolvable, IDestin
     [Key(0)] public required Guid Id { get; set; }
     [Key(1)] public required string Sender { get; set; }
     [Key(2)] public required string Target { get; set; }
+    [Key(3)] public required string ContentType { get; set; }
+    [Key(4)] public required string Filename { get; set; }
 }

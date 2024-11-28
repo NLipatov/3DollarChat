@@ -32,6 +32,41 @@ public static class DriveProxyService
                 await context.Response.WriteAsync(string.Empty);
             }
         });
+        
+        app.MapGet("/driveapi/get", async context =>
+        {
+            var fileId = context.Request.Query["id"];
+            if (!Guid.TryParse(fileId, out _))
+                Log($"Invalid file id: \"{fileId}\" - not a guid.");
+            
+            var serviceUrl = GetServiceUrl(configuration);
+            if (string.IsNullOrWhiteSpace(serviceUrl))
+                Log($"Configuration value for {UrlKey} is invalid.");
+            
+            var requestUrl = string.Join('/', serviceUrl, "get?id=") + fileId;
+
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromMilliseconds(1500);
+                var request = await client.GetAsync(requestUrl);
+
+                context.Response.StatusCode = (int)request.StatusCode;
+
+                if (request.Content.Headers.ContentType != null)
+                {
+                    context.Response.ContentType = request.Content.Headers.ContentType.ToString();
+                }
+
+                var stream = await request.Content.ReadAsStreamAsync();
+                await stream.CopyToAsync(context.Response.Body);
+            }
+            catch (Exception e)
+            {
+                context.Response.StatusCode = 500;
+                await context.Response.WriteAsync("Internal server error.");
+            }
+        });
 
         app.MapPost("/driveapi/save", async context =>
         {

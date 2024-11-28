@@ -29,6 +29,7 @@ using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -57,7 +58,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             ICallbackExecutor callbackExecutor,
             IAuthenticationHandler authenticationHandler,
             IBinaryReceivingManager binaryReceivingManager,
-            IKeyStorage keyStorage)
+            IKeyStorage keyStorage,
+            IJSRuntime jsRuntime)
         {
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
@@ -66,8 +68,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _keyStorage = keyStorage;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
-                _keyStorage, _authenticationHandler, binaryReceivingManager,
-                _cryptographyService);
+                _keyStorage, _authenticationHandler, binaryReceivingManager, _cryptographyService, jsRuntime, navigationManager);
         }
 
         private void RegisterTransferHandlers()

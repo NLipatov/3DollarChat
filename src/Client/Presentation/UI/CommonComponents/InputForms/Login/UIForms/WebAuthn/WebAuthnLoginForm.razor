@@ -14,8 +14,8 @@
 {
     <BaseLoginForm
         OnLoginEvent="async (dto) => await OnLogin(dto)"
-        ViaWebAuthn=@true/> 
-        
+        ViaWebAuthn=@true/>
+
     @if (!string.IsNullOrWhiteSpace(LoginResultMessage))
     {
         <p>
@@ -25,12 +25,10 @@
 }
 
 @code {
-    [Parameter]
-    public bool IsRegisterFormVisible { get; set; }
-    
-    [Parameter]
-    public bool IsLoginFormVisible { get; set; }
-    
+    [Parameter] public bool IsRegisterFormVisible { get; set; }
+
+    [Parameter] public bool IsLoginFormVisible { get; set; }
+
     private string LoginResultMessage { get; set; } = string.Empty;
 
     protected override async Task OnInitializedAsync()

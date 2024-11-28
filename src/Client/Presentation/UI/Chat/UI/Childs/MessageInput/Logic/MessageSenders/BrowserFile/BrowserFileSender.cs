@@ -1,15 +1,18 @@
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinarySending;
+using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Components.Forms;
+using Microsoft.JSInterop;
 
 namespace Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.BrowserFile;
 
@@ -20,7 +23,9 @@ public class BrowserFileSender(
     NavigationManager navigationManager,
     IMessageBox messageBox,
     IMessageService messageService,
-    IBinarySendingManager binarySendingManager) : IBrowserFileSender
+    IBinarySendingManager binarySendingManager,
+    IDriveService driveService,
+    IJSRuntime jsRuntime) : IBrowserFileSender
 {
     public async Task SendIBrowserFile(IBrowserFile browserFile, string target)
     {
@@ -46,6 +51,24 @@ public class BrowserFileSender(
                 await messageService.TransferAsync(playlistMessage);
                 return;
             }
+        }
+        
+        if (await driveService.CanFileTransmittedAsync(browserFile))
+        {
+            var (driveStoredFile, data) = await PostFileToDriveApiAsync(browserFile);
+            var message = new DriveStoredFileMessage
+            {
+                Id = driveStoredFile.Id,
+                Sender = await authenticationHandler.GetUsernameAsync(),
+                Target = target,
+                ContentType = browserFile.ContentType,
+                Filename = browserFile.Name,
+            };
+            await messageService.TransferAsync(message);
+
+            var clientMessage = await message.ToClientMessage(data, jsRuntime);
+            messageBox.AddMessage(clientMessage);
+            return;
         }
 
         callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
@@ -74,6 +97,60 @@ public class BrowserFileSender(
         callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
 
+    private async Task<(DriveStoredFile, byte[])> PostFileToDriveApiAsync(IBrowserFile browserFile)
+    {
+        var formData = new MultipartFormDataContent();
+        byte[] fileBytes;
+
+        using (var memoryStream = new MemoryStream())
+        {
+            await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
+            fileBytes = memoryStream.ToArray();
+        }
+
+        var progressStreamContent = new ProgressStreamContent(new MemoryStream(fileBytes), browserFile.Size);
+        progressStreamContent.ProgressChanged += (_, currBytes, totalBytes) =>
+        {
+            var ratio = currBytes / (double)totalBytes;
+            var percentage = Math.Round(ratio * 100, 1);
+        };
+
+        using var httpClient = new HttpClient();
+        try
+        {
+            formData.Add(progressStreamContent, "payload", browserFile.Name);
+            var hlsApiUrl = string.Join("", navigationManager.BaseUri, "driveapi/save");
+
+            var request = await httpClient.PostAsync(hlsApiUrl, formData);
+
+            if (!request.IsSuccessStatusCode)
+            {
+                var responseText = await request.Content.ReadAsStringAsync();
+                throw new ApplicationException($"Could not post video to HLS API. Status code: {request.StatusCode}, Response: {responseText}");
+            }
+
+            var responseJson = await request.Content.ReadAsStringAsync();
+            if (!Guid.TryParse(responseJson, out var storedFileId))
+            {
+                throw new ArgumentException("Invalid file ID");
+            }
+
+            return (new DriveStoredFile
+            {
+                Id = storedFileId,
+                ContentType = browserFile.ContentType,
+                FileName = browserFile.Name,
+            }, fileBytes);
+        }
+        catch (Exception e)
+        {
+            throw new ApplicationException("Could not convert video to HLS", e);
+        }
+        finally
+        {
+            callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
+        }
+    }
 
     private async Task<HlsPlaylist?> PostVideoToHlsApiAsync(IBrowserFile browserFile)
     {

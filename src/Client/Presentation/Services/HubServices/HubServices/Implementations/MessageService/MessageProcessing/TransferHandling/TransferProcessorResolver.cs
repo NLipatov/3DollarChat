@@ -17,6 +17,8 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
+using Microsoft.AspNetCore.Components;
+using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling;
@@ -27,7 +29,8 @@ public class TransferProcessorResolver : ITransferProcessorResolver
 
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
-        IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService)
+        IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService, IJSRuntime jsRuntime, 
+        NavigationManager navigationManager)
     {
         RegisterProcessor<TextMessage>([
             new()
@@ -74,6 +77,13 @@ public class TransferProcessorResolver : ITransferProcessorResolver
                 Handler = new OnReceivedHlsPlaylist(messageBox)
             }
         ]);
+        
+        RegisterProcessor<DriveStoredFileMessage>([
+            new ()
+            {
+                TransferDirection = TransferDirection.Incoming,
+                Handler = new OnReceivedDriveStoredFileMessage(messageBox, jsRuntime, navigationManager)
+            }]);
     }
 
     private void RegisterProcessor<T>(HandlerArguments<T>[] arguments)

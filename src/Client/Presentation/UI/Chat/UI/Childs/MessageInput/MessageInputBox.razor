@@ -31,8 +31,7 @@
     <input type="text" class="message-input" placeholder="Send a message..."
            @bind="MessageInput"
            @bind:event="oninput"
-           @bind:after="SendOnTypingEvent"
-           @onkeydown=@HandleKeyDown/>
+           @bind:after="SendOnTypingEvent"/>
 
     <label for="fileinput" class="label-wrapper">
         <span>
@@ -60,6 +59,7 @@
     [Parameter] public string MyUsername { get; set; } = string.Empty;
     [Parameter] public string TopicName { get; set; } = string.Empty;
     private static string _topicName = string.Empty;
+    private static Func<Task>? sendMessageStaticPointer { get; set; }
 
     private CustomModal? TooLargeFileModal { get; set; }
 
@@ -82,6 +82,7 @@
 
     protected override async Task OnInitializedAsync()
     {
+        sendMessageStaticPointer = SendMessage;
         _topicName = TopicName;
         if (JsModule is null)
         {
@@ -94,13 +95,14 @@
         
         await base.OnInitializedAsync();
     }
-
-    private async Task HandleKeyDown(KeyboardEventArgs e)
+    
+    [JSInvokable]
+    public static void OnKeyDown(string keyCode)
     {
-        if (e.Key == "Enter")
-        {
-            await SendMessage();
-        }
+        if (keyCode.ToLowerInvariant() != "enter") return;
+        
+        if (sendMessageStaticPointer != null)
+            _ = Task.Run(async () => await sendMessageStaticPointer());
     }
 
     private async Task SendOnTypingEvent()

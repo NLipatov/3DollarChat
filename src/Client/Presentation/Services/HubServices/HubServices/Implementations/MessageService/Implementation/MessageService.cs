@@ -8,6 +8,7 @@ using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
@@ -59,7 +60,8 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IAuthenticationHandler authenticationHandler,
             IBinaryReceivingManager binaryReceivingManager,
             IKeyStorage keyStorage,
-            IJSRuntime jsRuntime)
+            IJSRuntime jsRuntime,
+            IDriveService driveService)
         {
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
@@ -68,7 +70,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             _keyStorage = keyStorage;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
-                _keyStorage, _authenticationHandler, binaryReceivingManager, _cryptographyService, jsRuntime, navigationManager);
+                _keyStorage, _authenticationHandler, binaryReceivingManager, _cryptographyService, jsRuntime, driveService);
         }
 
         private void RegisterTransferHandlers()

@@ -3,6 +3,7 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Transfer.Domain.Entities.Events;
 using Client.Transfer.Domain.Entities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation.Handlers.
     BinaryReceiving;
@@ -17,7 +18,6 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
-using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
@@ -30,7 +30,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService, IJSRuntime jsRuntime, 
-        NavigationManager navigationManager)
+        IDriveService dataService)
     {
         RegisterProcessor<TextMessage>([
             new()
@@ -82,7 +82,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new ()
             {
                 TransferDirection = TransferDirection.Incoming,
-                Handler = new OnReceivedDriveStoredFileMessage(messageBox, jsRuntime, navigationManager, keyStorage, cryptographyService)
+                Handler = new OnReceivedDriveStoredFileMessage(messageBox, jsRuntime, dataService)
             }]);
     }
 

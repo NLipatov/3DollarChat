@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Components;
-using Microsoft.AspNetCore.Components.Forms;
 
 namespace Ethachat.Client.Services.DriveService;
 
 public class DriveService(NavigationManager navigationManager) : IDriveService
 {
-    public async Task<bool> CanFileTransmittedAsync(IBrowserFile browserFile)
+    public async Task<bool> IsAccessibleAsync()
     {
         //Is Drive service accessible?
         var endpointAddress = string.Join("", navigationManager.BaseUri, "driveapi/health");

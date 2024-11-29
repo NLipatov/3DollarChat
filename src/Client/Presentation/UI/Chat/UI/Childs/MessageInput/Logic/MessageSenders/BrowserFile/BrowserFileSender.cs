@@ -62,7 +62,7 @@ public class BrowserFileSender(
             }
         }
         
-        if (await driveService.CanFileTransmittedAsync(browserFile))
+        if (await driveService.IsAccessibleAsync())
         {
             _ = Task.Run(async () =>
             {

@@ -1,3 +1,4 @@
+using System.Net.Http.Headers;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
@@ -40,5 +41,30 @@ public class DriveService(NavigationManager navigationManager, IKeyStorage keySt
         }, aesKey ?? throw new ApplicationException("Missing key"));
 
         return cryptogram.Cypher;
+    }
+
+    public async Task<Guid> UploadAsync(byte[] data)
+    {
+        var formData = new MultipartFormDataContent();
+        var content = new ByteArrayContent(data);
+        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+        
+        formData.Add(content, "payload", Guid.NewGuid().ToString());
+        var hlsApiUrl = string.Join("", navigationManager.BaseUri, "driveapi/save");
+
+        using var httpClient = new HttpClient();
+        var request = await httpClient.PostAsync(hlsApiUrl, formData);
+
+        if (!request.IsSuccessStatusCode)
+        {
+            var responseText = await request.Content.ReadAsStringAsync();
+            throw new ApplicationException($"Could not post video to HLS API. Status code: {request.StatusCode}, Response: {responseText}");
+        }
+
+        var responseJson = await request.Content.ReadAsStringAsync();
+        if (!Guid.TryParse(responseJson, out var storedFileId))
+            throw new ArgumentException("Invalid file ID");
+
+        return storedFileId;
     }
 }

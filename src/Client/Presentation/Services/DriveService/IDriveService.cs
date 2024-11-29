@@ -6,4 +6,5 @@ public interface IDriveService
 {
     Task<bool> IsAccessibleAsync();
     Task<byte[]> DownloadAsync(DriveStoredFileMessage message);
+    Task<Guid> UploadAsync(byte[] data);
 }

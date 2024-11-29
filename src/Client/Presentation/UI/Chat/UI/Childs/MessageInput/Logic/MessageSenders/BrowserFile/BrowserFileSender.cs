@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
@@ -12,9 +11,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
-using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Models;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
@@ -66,10 +63,16 @@ public class BrowserFileSender(
         {
             _ = Task.Run(async () =>
             {
-                var (driveStoredFile, data, cryptogram) = await PostFileToDriveApiAsync(browserFile, target);
+                var data = await IBrowserFileToBytesAsync(browserFile);
+                var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
+        
+                var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(data,
+                    aesKey ?? throw new ApplicationException("Missing key"));
+                
+                var storedFileId = await PostToDriveApiAsync(cryptogram.Cypher);
                 var message = new DriveStoredFileMessage
                 {
-                    Id = driveStoredFile.Id,
+                    Id = storedFileId,
                     Sender = await authenticationHandler.GetUsernameAsync(),
                     Target = target,
                     ContentType = browserFile.ContentType,
@@ -78,7 +81,7 @@ public class BrowserFileSender(
                     KeyId = cryptogram.KeyId,
                 };
                 await messageService.TransferAsync(message);
-
+        
                 var clientMessage = await message.ToClientMessage(data, jsRuntime);
                 messageBox.AddMessage(clientMessage);
             });
@@ -87,18 +90,10 @@ public class BrowserFileSender(
 
         callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
 
-        byte[] fileBytes;
-        await using (var fileStream = browserFile.OpenReadStream(long.MaxValue))
-        {
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-
         var package = new Package
         {
             Id = Guid.NewGuid(),
-            Data = fileBytes,
+            Data = await IBrowserFileToBytesAsync(browserFile),
             ContentType = browserFile.ContentType,
             Filename = browserFile.Name,
             Target = target,
@@ -110,52 +105,22 @@ public class BrowserFileSender(
 
         callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
     }
-
-    private async Task<(DriveStoredFile, byte[], BinaryCryptogram)> PostFileToDriveApiAsync(IBrowserFile browserFile, string target)
+    
+    private async Task<byte[]> IBrowserFileToBytesAsync(IBrowserFile browserFile)
     {
-        var formData = new MultipartFormDataContent();
-        byte[] fileBytes;
+        using var memoryStream = new MemoryStream();
+        await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
+    }
 
-        using (var memoryStream = new MemoryStream())
-        {
-            await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-        
-        var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
-
-        var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(fileBytes,
-            aesKey ?? throw new ApplicationException("Missing key"));
-        
-        var content = new ByteArrayContent(cryptogram.Cypher);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
+    private async Task<Guid> PostToDriveApiAsync(byte[] data)
+    {
 
         using var httpClient = new HttpClient();
         try
         {
-            formData.Add(content, "payload", browserFile.Name);
-            var hlsApiUrl = string.Join("", navigationManager.BaseUri, "driveapi/save");
-
-            var request = await httpClient.PostAsync(hlsApiUrl, formData);
-
-            if (!request.IsSuccessStatusCode)
-            {
-                var responseText = await request.Content.ReadAsStringAsync();
-                throw new ApplicationException($"Could not post video to HLS API. Status code: {request.StatusCode}, Response: {responseText}");
-            }
-
-            var responseJson = await request.Content.ReadAsStringAsync();
-            if (!Guid.TryParse(responseJson, out var storedFileId))
-            {
-                throw new ArgumentException("Invalid file ID");
-            }
-
-            return (new DriveStoredFile
-            {
-                Id = storedFileId,
-                ContentType = browserFile.ContentType,
-                Filename = browserFile.Name,
-            }, fileBytes, cryptogram);
+            var storedFileId = await driveService.UploadAsync(data);
+            return storedFileId;
         }
         catch (Exception e)
         {

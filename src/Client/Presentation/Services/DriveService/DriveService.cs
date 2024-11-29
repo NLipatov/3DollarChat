@@ -1,15 +1,10 @@
 using System.Net.Http.Headers;
-using Client.Application.Cryptography;
-using Client.Application.Cryptography.KeyStorage;
-using Client.Infrastructure.Cryptography.Handlers;
 using Client.Transfer.Domain.Entities.Messages;
-using EthachatShared.Encryption;
-using EthachatShared.Models.Cryptograms;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.DriveService;
 
-public class DriveService(NavigationManager navigationManager, IKeyStorage keyStorage, ICryptographyService cryptographyService) : IDriveService
+public class DriveService(NavigationManager navigationManager) : IDriveService
 {
     public async Task<bool> IsAccessibleAsync()
     {
@@ -29,18 +24,8 @@ public class DriveService(NavigationManager navigationManager, IKeyStorage keySt
         var getDataUrl = string.Join("", navigationManager.BaseUri, "driveapi/get?id=", message.Id);
         var request = await httpClient.GetAsync(getDataUrl);
         var data = await request.Content.ReadAsByteArrayAsync();
-        
-        var aesKey = await keyStorage.GetLastAcceptedAsync(message.Sender, KeyType.Aes);
 
-        var cryptogram = await cryptographyService.DecryptAsync<AesHandler>(new BinaryCryptogram
-        {
-            Cypher = data,
-            KeyId = message.KeyId,
-            Iv = message.Iv,
-            EncryptionKeyType = KeyType.Aes
-        }, aesKey ?? throw new ApplicationException("Missing key"));
-
-        return cryptogram.Cypher;
+        return data;
     }
 
     public async Task<Guid> UploadAsync(byte[] data)

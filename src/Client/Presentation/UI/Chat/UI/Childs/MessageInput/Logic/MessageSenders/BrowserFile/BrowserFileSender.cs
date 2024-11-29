@@ -69,7 +69,8 @@ public class BrowserFileSender(
                 var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(data,
                     aesKey ?? throw new ApplicationException("Missing key"));
                 
-                var storedFileId = await PostToDriveApiAsync(cryptogram.Cypher);
+                var storedFileId = await driveService.UploadAsync(cryptogram.Cypher);
+                callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
                 var message = new DriveStoredFileMessage
                 {
                     Id = storedFileId,
@@ -111,25 +112,6 @@ public class BrowserFileSender(
         using var memoryStream = new MemoryStream();
         await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
         return memoryStream.ToArray();
-    }
-
-    private async Task<Guid> PostToDriveApiAsync(byte[] data)
-    {
-
-        using var httpClient = new HttpClient();
-        try
-        {
-            var storedFileId = await driveService.UploadAsync(data);
-            return storedFileId;
-        }
-        catch (Exception e)
-        {
-            throw new ApplicationException("Could not convert video to HLS", e);
-        }
-        finally
-        {
-            callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
-        }
     }
 
     private async Task<HlsPlaylist?> PostVideoToHlsApiAsync(IBrowserFile browserFile)

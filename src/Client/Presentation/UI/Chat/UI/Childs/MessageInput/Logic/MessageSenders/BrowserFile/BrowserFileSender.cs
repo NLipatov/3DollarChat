@@ -49,7 +49,7 @@ public class BrowserFileSender(
                     Id = Guid.NewGuid(),
                     Playlist = playlist.M3U8Content,
                     Target = target,
-                    Sender = await authenticationHandler.GetUsernameAsync(),
+                    Sender = await authenticationHandler.GetUsernameAsync()
                 };
 
                 messageBox.AddMessage(playlistMessage);
@@ -58,17 +58,17 @@ public class BrowserFileSender(
                 return;
             }
         }
-        
+
         if (await driveService.IsAccessibleAsync())
         {
             _ = Task.Run(async () =>
             {
                 var data = await IBrowserFileToBytesAsync(browserFile);
                 var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
-        
+
                 var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(data,
                     aesKey ?? throw new ApplicationException("Missing key"));
-                
+
                 var storedFileId = await driveService.UploadAsync(cryptogram.Cypher);
                 callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
                 var message = new DriveStoredFileMessage
@@ -79,39 +79,18 @@ public class BrowserFileSender(
                     ContentType = browserFile.ContentType,
                     Filename = browserFile.Name,
                     Iv = cryptogram.Iv,
-                    KeyId = cryptogram.KeyId,
+                    KeyId = cryptogram.KeyId
                 };
                 await messageService.TransferAsync(message);
-        
+
                 var clientMessage = await message.ToClientMessage(data, jsRuntime);
                 messageBox.AddMessage(clientMessage);
             });
             return;
         }
 
-        callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-
-        var package = new Package
-        {
-            Id = Guid.NewGuid(),
-            Data = await IBrowserFileToBytesAsync(browserFile),
-            ContentType = browserFile.ContentType,
-            Filename = browserFile.Name,
-            Target = target,
-            Sender = await authenticationHandler.GetUsernameAsync(),
-        };
-
-        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(package))
-            _ = Task.Run(async () => await messageService.TransferAsync(dataPartMessage));
-
-        callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-    }
-    
-    private async Task<byte[]> IBrowserFileToBytesAsync(IBrowserFile browserFile)
-    {
-        using var memoryStream = new MemoryStream();
-        await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
-        return memoryStream.ToArray();
+        //last resort, slow
+        await TransferOverWebSocketsAsync(browserFile, target);
     }
 
     private async Task<HlsPlaylist?> PostVideoToHlsApiAsync(IBrowserFile browserFile)
@@ -149,7 +128,7 @@ public class BrowserFileSender(
             return new HlsPlaylist
             {
                 Name = browserFile.Name,
-                M3U8Content = m3U8PlaylistContent,
+                M3U8Content = m3U8PlaylistContent
             };
         }
         catch (Exception e)
@@ -160,5 +139,32 @@ public class BrowserFileSender(
         {
             callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
         }
+    }
+
+    private async Task TransferOverWebSocketsAsync(IBrowserFile browserFile, string target)
+    {
+        callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+
+        var package = new Package
+        {
+            Id = Guid.NewGuid(),
+            Data = await IBrowserFileToBytesAsync(browserFile),
+            ContentType = browserFile.ContentType,
+            Filename = browserFile.Name,
+            Target = target,
+            Sender = await authenticationHandler.GetUsernameAsync()
+        };
+
+        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(package))
+            await messageService.TransferAsync(dataPartMessage);
+
+        callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+    }
+
+    private async Task<byte[]> IBrowserFileToBytesAsync(IBrowserFile browserFile)
+    {
+        using var memoryStream = new MemoryStream();
+        await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
     }
 }

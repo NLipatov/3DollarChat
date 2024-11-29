@@ -23,9 +23,7 @@ public class DriveService(NavigationManager navigationManager) : IDriveService
         using var httpClient = new HttpClient();
         var getDataUrl = string.Join("", navigationManager.BaseUri, "driveapi/get?id=", message.Id);
         var request = await httpClient.GetAsync(getDataUrl);
-        var data = await request.Content.ReadAsByteArrayAsync();
-
-        return data;
+        return await request.Content.ReadAsByteArrayAsync();
     }
 
     public async Task<Guid> UploadAsync(byte[] data)

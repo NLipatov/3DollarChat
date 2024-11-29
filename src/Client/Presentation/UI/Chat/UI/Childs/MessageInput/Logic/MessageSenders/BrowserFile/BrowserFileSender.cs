@@ -1,4 +1,3 @@
-using System.Net.Http.Headers;
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
@@ -12,9 +11,7 @@ using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageSe
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.Extensions;
 using Ethachat.Client.Services.InboxService;
 using Ethachat.Client.Services.VideoStreamingService;
-using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Models;
 using EthachatShared.Encryption;
-using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.AspNetCore.Components;
@@ -52,7 +49,7 @@ public class BrowserFileSender(
                     Id = Guid.NewGuid(),
                     Playlist = playlist.M3U8Content,
                     Target = target,
-                    Sender = await authenticationHandler.GetUsernameAsync(),
+                    Sender = await authenticationHandler.GetUsernameAsync()
                 };
 
                 messageBox.AddMessage(playlistMessage);
@@ -61,21 +58,28 @@ public class BrowserFileSender(
                 return;
             }
         }
-        
-        if (await driveService.CanFileTransmittedAsync(browserFile))
+
+        if (await driveService.IsAccessibleAsync())
         {
             _ = Task.Run(async () =>
             {
-                var (driveStoredFile, data, cryptogram) = await PostFileToDriveApiAsync(browserFile, target);
+                var data = await IBrowserFileToBytesAsync(browserFile);
+                var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
+
+                var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(data,
+                    aesKey ?? throw new ApplicationException("Missing key"));
+
+                var storedFileId = await driveService.UploadAsync(cryptogram.Cypher);
+                callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
                 var message = new DriveStoredFileMessage
                 {
-                    Id = driveStoredFile.Id,
+                    Id = storedFileId,
                     Sender = await authenticationHandler.GetUsernameAsync(),
                     Target = target,
                     ContentType = browserFile.ContentType,
                     Filename = browserFile.Name,
                     Iv = cryptogram.Iv,
-                    KeyId = cryptogram.KeyId,
+                    KeyId = cryptogram.KeyId
                 };
                 await messageService.TransferAsync(message);
 
@@ -85,86 +89,8 @@ public class BrowserFileSender(
             return;
         }
 
-        callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
-
-        byte[] fileBytes;
-        await using (var fileStream = browserFile.OpenReadStream(long.MaxValue))
-        {
-            var memoryStream = new MemoryStream();
-            await fileStream.CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-
-        var package = new Package
-        {
-            Id = Guid.NewGuid(),
-            Data = fileBytes,
-            ContentType = browserFile.ContentType,
-            Filename = browserFile.Name,
-            Target = target,
-            Sender = await authenticationHandler.GetUsernameAsync(),
-        };
-
-        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(package))
-            _ = Task.Run(async () => await messageService.TransferAsync(dataPartMessage));
-
-        callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
-    }
-
-    private async Task<(DriveStoredFile, byte[], BinaryCryptogram)> PostFileToDriveApiAsync(IBrowserFile browserFile, string target)
-    {
-        var formData = new MultipartFormDataContent();
-        byte[] fileBytes;
-
-        using (var memoryStream = new MemoryStream())
-        {
-            await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
-            fileBytes = memoryStream.ToArray();
-        }
-        
-        var aesKey = await keyStorage.GetLastAcceptedAsync(target, KeyType.Aes);
-
-        var cryptogram = await cryptographyService.EncryptAsync<AesHandler>(fileBytes,
-            aesKey ?? throw new ApplicationException("Missing key"));
-        
-        var content = new ByteArrayContent(cryptogram.Cypher);
-        content.Headers.ContentType = new MediaTypeHeaderValue("application/octet-stream");
-
-        using var httpClient = new HttpClient();
-        try
-        {
-            formData.Add(content, "payload", browserFile.Name);
-            var hlsApiUrl = string.Join("", navigationManager.BaseUri, "driveapi/save");
-
-            var request = await httpClient.PostAsync(hlsApiUrl, formData);
-
-            if (!request.IsSuccessStatusCode)
-            {
-                var responseText = await request.Content.ReadAsStringAsync();
-                throw new ApplicationException($"Could not post video to HLS API. Status code: {request.StatusCode}, Response: {responseText}");
-            }
-
-            var responseJson = await request.Content.ReadAsStringAsync();
-            if (!Guid.TryParse(responseJson, out var storedFileId))
-            {
-                throw new ArgumentException("Invalid file ID");
-            }
-
-            return (new DriveStoredFile
-            {
-                Id = storedFileId,
-                ContentType = browserFile.ContentType,
-                Filename = browserFile.Name,
-            }, fileBytes, cryptogram);
-        }
-        catch (Exception e)
-        {
-            throw new ApplicationException("Could not convert video to HLS", e);
-        }
-        finally
-        {
-            callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
-        }
+        //last resort, slow
+        await TransferOverWebSocketsAsync(browserFile, target);
     }
 
     private async Task<HlsPlaylist?> PostVideoToHlsApiAsync(IBrowserFile browserFile)
@@ -202,7 +128,7 @@ public class BrowserFileSender(
             return new HlsPlaylist
             {
                 Name = browserFile.Name,
-                M3U8Content = m3U8PlaylistContent,
+                M3U8Content = m3U8PlaylistContent
             };
         }
         catch (Exception e)
@@ -213,5 +139,32 @@ public class BrowserFileSender(
         {
             callbackExecutor.ExecuteSubscriptionsByName(false, "OnShouldRender");
         }
+    }
+
+    private async Task TransferOverWebSocketsAsync(IBrowserFile browserFile, string target)
+    {
+        callbackExecutor.ExecuteSubscriptionsByName(true, "OnIsFileBeingEncrypted");
+
+        var package = new Package
+        {
+            Id = Guid.NewGuid(),
+            Data = await IBrowserFileToBytesAsync(browserFile),
+            ContentType = browserFile.ContentType,
+            Filename = browserFile.Name,
+            Target = target,
+            Sender = await authenticationHandler.GetUsernameAsync()
+        };
+
+        await foreach (var dataPartMessage in binarySendingManager.GetChunksToSendAsync(package))
+            await messageService.TransferAsync(dataPartMessage);
+
+        callbackExecutor.ExecuteSubscriptionsByName(false, "OnIsFileBeingEncrypted");
+    }
+
+    private async Task<byte[]> IBrowserFileToBytesAsync(IBrowserFile browserFile)
+    {
+        using var memoryStream = new MemoryStream();
+        await browserFile.OpenReadStream(long.MaxValue).CopyToAsync(memoryStream);
+        return memoryStream.ToArray();
     }
 }

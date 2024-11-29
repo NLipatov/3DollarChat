@@ -1,8 +1,10 @@
-using Microsoft.AspNetCore.Components.Forms;
+using Client.Transfer.Domain.Entities.Messages;
 
 namespace Ethachat.Client.Services.DriveService;
 
 public interface IDriveService
 {
-    Task<bool> CanFileTransmittedAsync(IBrowserFile browserFile);
+    Task<bool> IsAccessibleAsync();
+    Task<byte[]> DownloadAsync(DriveStoredFileMessage message);
+    Task<Guid> UploadAsync(byte[] data);
 }

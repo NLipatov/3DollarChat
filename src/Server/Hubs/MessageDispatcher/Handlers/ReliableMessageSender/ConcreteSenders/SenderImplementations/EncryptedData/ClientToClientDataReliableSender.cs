@@ -36,7 +36,7 @@ public class ClientToClientDataReliableSender : IReliableSender<ClientToClientDa
         if (!_unsentItems.TryAdd(data.Id, unsentItem))
             return;
         
-        await _gateway.TransferAsync(unsentItem.Item);
+        _ = Task.Run(() => _gateway.TransferAsync(unsentItem.Item));
 
         //Add unsent item to send queue
         _messageQueue.Enqueue(data.Id);

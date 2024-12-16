@@ -52,3 +52,7 @@
 .incoming .fa-check-double {
     color: limegreen;
 }
+
+.media-message {
+    max-height: 20vh;
+}

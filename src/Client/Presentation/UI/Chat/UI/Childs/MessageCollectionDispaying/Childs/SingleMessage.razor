@@ -21,21 +21,23 @@
         <div class="message-text">
             @if (Message.Type is MessageType.BlobLink && Message.Metadata!.ContentType.Contains("image"))
             {
-                <img style="max-width: 100%;" src="@Message.BlobLink" alt="image that user sent to you"/>
+                <img class="media-message" src="@Message.BlobLink" alt="image that user sent to you"/>
             }
             else if (Message.Type is MessageType.BlobLink && Message.Metadata!.ContentType.Contains("video"))
             {
-                <video controls="controls" style="max-width: 100%;">
+                <video controls="controls" class="media-message">
                     <source src="@Message.BlobLink" type="video/mp4">
                 </video>
             }
             else if (Message.Type is MessageType.HLSPlaylist)
             {
-                <HlsVideoStreamMessage Message=@Message/>
+                <div class="media-message">
+                    <HlsVideoStreamMessage Message=@Message/>
+                </div>
             }
             else if (!string.IsNullOrWhiteSpace(Message.BlobLink))
             {
-                <div>
+                <div class="media-message">
                     <a
                         href="@Message.BlobLink"
                         download="@Message.Metadata!.Filename"

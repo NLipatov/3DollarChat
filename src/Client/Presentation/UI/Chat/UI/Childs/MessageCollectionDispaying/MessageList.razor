@@ -1,27 +1,27 @@
 ﻿@using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 @using Ethachat.Client.Services.InboxService;
-@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs
-@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService
+@using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs;
+@using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService;
 @using EthachatShared.Models.Message;
-@using Ethachat.Client.Services.VideoStreamingService
-@inject IMessageBox MessageBox
-@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager
-@inject IJSRuntime JsRuntime
-@inject IMessageService MessageService
-@inject IHlsStreamingService HlsStreamingService
-@implements IDisposable
+@using Ethachat.Client.Services.VideoStreamingService;
+@inject IMessageBox MessageBox;
+@inject IHubServiceSubscriptionManager HubServiceSubscriptionManager;
+@inject IJSRuntime JsRuntime;
+@inject IMessageService MessageService;
+@inject IHlsStreamingService HlsStreamingService;
+@implements IDisposable;
 
-<div class="messages-box @HtmlClass">
-    @* ReSharper disable once UnusedParameter.Local *@
-    <Virtualize
-        Context="message"
-        Items="MessageBox.Messages.Where(x => x.Type is not MessageType.Metadata).Where(x => x.Target == TargetGroup || x.Sender == TargetGroup).ToList()">
-        <SingleMessage Message="message" MyUsername=@MyUsername/>
-    </Virtualize>
+<div class="messages-box @HtmlClass" @onwheel="HandleUserScroll">
+    @foreach(var message in MessageBox.Messages
+    .Where(x => x.Type is not MessageType.Metadata)
+    .Where(x => x.Target == TargetGroup || x.Sender == TargetGroup)
+    .ToList())
+    {
+        <SingleMessage Message="message" MyUsername=@MyUsername />
+    }
 </div>
 
 @code {
-
     [Parameter] public string TargetGroup { get; set; } = string.Empty;
 
     [Parameter] public string MyUsername { get; set; } = string.Empty;
@@ -29,6 +29,9 @@
     [Parameter] public string HtmlClass { get; set; } = string.Empty;
 
     private Guid ComponentId { get; set; }
+
+    private bool _userScrolled = false;
+    private bool _shouldScrollDown = false;
 
     public void Dispose() => HubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -44,7 +47,7 @@
     {
         HubServiceSubscriptionManager
             .AddCallback<Guid>(MarkAsReceived, "OnReceiverMarkedMessageAsReceived", ComponentId);
-        
+
         HubServiceSubscriptionManager
             .AddCallback<Guid>(MarkAsReadAsync, "OnReceiverMarkedMessageAsRead", ComponentId);
 
@@ -55,32 +58,60 @@
     private async Task MarkAsReceived(Guid messageId)
     {
         await MessageBox.OnDelivered(messageId);
-
         StateHasChanged();
     }
 
     private Task MarkAsReadAsync(Guid messageId)
     {
         MessageBox.OnSeen(messageId);
-
         StateHasChanged();
         return Task.CompletedTask;
     }
 
     private async Task AddMessageAsync()
     {
-        StateHasChanged();
+        _shouldScrollDown = !_userScrolled && await ShouldScrollDown();
 
-        await ScrollToLastMessage();
+        StateHasChanged();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (_shouldScrollDown)
+        {
+            await ScrollToLastMessage();
+            _shouldScrollDown = false;
+        }
+    }
+
+    private async Task<bool> ShouldScrollDown()
+    {
+        string jsCode = @"
+            var messagesBox = document.querySelector('.messages-box');
+            Math.ceil(messagesBox.scrollTop + messagesBox.clientHeight) >= messagesBox.scrollHeight - 1;";
+        return await JsRuntime.InvokeAsync<bool>("eval", jsCode);
     }
 
     private async Task ScrollToLastMessage()
     {
-        string jsCode =
-            @"var messagesBox = document.querySelector('.messages-box');
-        messagesBox.scrollTop = messagesBox.scrollHeight;";
-
+        string jsCode = @"
+            var messagesBox = document.querySelector('.messages-box');
+            messagesBox.scrollTop = messagesBox.scrollHeight;";
         await JsRuntime.InvokeVoidAsync("eval", jsCode);
     }
 
+    private void HandleUserScroll()
+    {
+        JsRuntime.InvokeVoidAsync("eval", @"
+            var messagesBox = document.querySelector('.messages-box');
+            if (messagesBox.scrollTop + messagesBox.clientHeight < messagesBox.scrollHeight - 1) {
+                window.dotnetHelper.invokeMethodAsync('NotifyUserScrolled');
+            }");
+    }
+
+    [JSInvokable]
+    public void NotifyUserScrolled()
+    {
+        _userScrolled = true;
+    }
 }

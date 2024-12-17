@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.IdentityModel.Tokens.Jwt;
 using Client.Application.Gateway;
-using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
@@ -11,15 +10,18 @@ using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
+using SharedServices;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.Jwt;
 
 public class JwtAuthenticationHandler(
     ILocalStorageService localStorageService,
     IJSRuntime jsRuntime,
-    ICallbackExecutor callbackExecutor)
+    ICallbackExecutor callbackExecutor,
+    ISerializerService serializerService)
     : IJwtHandler
 {
+    private readonly ISerializerService _serializerService = serializerService;
     private readonly ConcurrentDictionary<string, DateTime> _tokenCache = [];
 
     private async Task<string?> GetAccessTokenAsync() =>
@@ -90,7 +92,7 @@ public class JwtAuthenticationHandler(
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "ValidateCredentials",
-                Data = await new CredentialsDTO { JwtPair = jWtPair }.SerializeAsync(),
+                Data = await _serializerService.SerializeAsync(new CredentialsDTO { JwtPair = jWtPair }),
                 Type = typeof(CredentialsDTO)
             });
         }
@@ -176,7 +178,7 @@ public class JwtAuthenticationHandler(
                 await gateway.TransferAsync(new ClientToServerData
                 {
                     EventName = "RefreshCredentials",
-                    Data = await new CredentialsDTO { JwtPair = jwtPair }.SerializeAsync(),
+                    Data = await _serializerService.SerializeAsync(new CredentialsDTO { JwtPair = jwtPair }),
                     Type = typeof(CredentialsDTO),
                 });
 

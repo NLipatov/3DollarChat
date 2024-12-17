@@ -1,7 +1,6 @@
 using Client.Application.Cryptography.KeyStorage;
-using Client.Transfer.Domain.Entities.Events;
-using Client.Transfer.Domain.Entities.Messages;
-using Ethachat.Client.Extensions;
+using Client.Transfer.Domain.TransferedEntities.Events;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling
     .Handlers;
@@ -9,6 +8,7 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Encryption;
 using EthachatShared.Models.Cryptograms;
 using EthachatShared.Models.Message;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling.Strategies.ReceiveStrategies;
@@ -17,8 +17,10 @@ public class OnReceivedEventMessage(
     IMessageBox messageBox,
     ICallbackExecutor callbackExecutor,
     IMessageService messageService,
-    IKeyStorage keyStorage) : IStrategyHandler<EventMessage>
+    IKeyStorage keyStorage,
+    ISerializerService serializerService) : IStrategyHandler<EventMessage>
 {
+    private readonly ISerializerService _serializerService = serializerService;
     private readonly HashSet<Guid> _handledIds = [];
 
     public async Task HandleAsync(EventMessage message)
@@ -116,7 +118,7 @@ public class OnReceivedEventMessage(
             DataType = typeof(KeyMessage),
             BinaryCryptogram = new BinaryCryptogram
             {
-                Cypher = await keyMessage.SerializeAsync(),
+                Cypher = await _serializerService.SerializeAsync(keyMessage),
                 Iv = [],
                 KeyId = keyMessage.Key.Id,
                 EncryptionKeyType = KeyType.None

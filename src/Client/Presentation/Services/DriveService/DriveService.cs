@@ -1,5 +1,5 @@
 using System.Net.Http.Headers;
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Microsoft.AspNetCore.Components;
 
 namespace Ethachat.Client.Services.DriveService;

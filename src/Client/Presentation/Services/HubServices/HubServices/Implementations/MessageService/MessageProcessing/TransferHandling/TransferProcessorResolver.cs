@@ -1,7 +1,7 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
-using Client.Transfer.Domain.Entities.Events;
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Events;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
@@ -19,6 +19,7 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.JSInterop;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling;
@@ -30,7 +31,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService, IJSRuntime jsRuntime, 
-        IDriveService dataService)
+        IDriveService dataService, ISerializerService serializerService)
     {
         RegisterProcessor<TextMessage>([
             new()
@@ -44,7 +45,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new()
             {
                 TransferDirection = TransferDirection.Incoming,
-                Handler = new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage)
+                Handler = new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage, serializerService)
             },
             new()
             {

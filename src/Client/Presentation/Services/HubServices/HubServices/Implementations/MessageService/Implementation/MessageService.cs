@@ -4,9 +4,8 @@ using Client.Application.Cryptography.KeyStorage;
 using Client.Application.Gateway;
 using Client.Infrastructure.Cryptography.Handlers;
 using Client.Infrastructure.Gateway;
-using Client.Transfer.Domain.Entities.Events;
-using Client.Transfer.Domain.Entities.Messages;
-using Ethachat.Client.Extensions;
+using Client.Transfer.Domain.TransferedEntities.Events;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
@@ -31,6 +30,7 @@ using EthachatShared.Models.Message.DataTransfer;
 using EthachatShared.Models.Message.Interfaces;
 using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.Implementation
 {
@@ -41,6 +41,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         private readonly ICallbackExecutor _callbackExecutor;
         private readonly IAuthenticationHandler _authenticationHandler;
         private readonly IKeyStorage _keyStorage;
+        private readonly ISerializerService _serializerService;
         private readonly ITransferProcessorResolver _transferProcessorResolver;
         private IGateway? _gateway;
 
@@ -61,16 +62,19 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             IBinaryReceivingManager binaryReceivingManager,
             IKeyStorage keyStorage,
             IJSRuntime jsRuntime,
-            IDriveService driveService)
+            IDriveService driveService,
+            ISerializerService serializerService)
         {
             NavigationManager = navigationManager;
             _cryptographyService = cryptographyService;
             _callbackExecutor = callbackExecutor;
             _authenticationHandler = authenticationHandler;
             _keyStorage = keyStorage;
+            _serializerService = serializerService;
             RegisterTransferHandlers();
             _transferProcessorResolver = new TransferProcessorResolver(this, _callbackExecutor, messageBox,
-                _keyStorage, _authenticationHandler, binaryReceivingManager, _cryptographyService, jsRuntime, driveService);
+                _keyStorage, _authenticationHandler, binaryReceivingManager, _cryptographyService, jsRuntime, 
+                driveService, serializerService);
         }
 
         private void RegisterTransferHandlers()
@@ -202,13 +206,13 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 BinaryCryptogram = new BinaryCryptogram
                 {
                     EncryptionKeyType = KeyType.None,
-                    Cypher = await new EventMessage
+                    Cypher = await _serializerService.SerializeAsync(new EventMessage
                     {
                         Id = Guid.NewGuid(),
                         Target = partnerUsername,
                         Sender = await _authenticationHandler.GetUsernameAsync(),
                         Type = EventType.RsaPubKeyRequest,
-                    }.SerializeAsync()
+                    })
                 }
             });
         }
@@ -258,7 +262,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
         {
             var aesKey = await _keyStorage.GetLastAcceptedAsync(data.Target, KeyType.Aes);
 
-            return await _cryptographyService.EncryptAsync<AesHandler>(await data.SerializeAsync(),
+            return await _cryptographyService.EncryptAsync<AesHandler>(await _serializerService.SerializeAsync(data),
                 aesKey ?? throw new ApplicationException("Missing key"));
         }
 
@@ -269,7 +273,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                 (await _keyStorage.GetAsync(data.Target, KeyType.RsaPublic)).MaxBy(x => x.CreationDate) ??
                 throw new NullReferenceException("Missing RSA key");
 
-            return await _cryptographyService.EncryptAsync<RsaHandler>(await data.SerializeAsync(),
+            return await _cryptographyService.EncryptAsync<RsaHandler>(await _serializerService.SerializeAsync(data),
                 rsaKey ?? throw new ApplicationException("Missing key"));
         }
 
@@ -279,8 +283,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
             {
                 if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.None)
                 {
-                    var result = await dataClientToClientData.BinaryCryptogram.Cypher.DeserializeAsync<T>();
-                    return result;
+                    return await _serializerService.DeserializeAsync<T>(dataClientToClientData.BinaryCryptogram.Cypher);
                 }
 
                 if (dataClientToClientData.BinaryCryptogram.EncryptionKeyType is KeyType.RsaPublic)
@@ -292,7 +295,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     var decryptedRsa =
                         await _cryptographyService.DecryptAsync<RsaHandler>(dataClientToClientData.BinaryCryptogram,
                             rsaPrivateKey);
-                    var result = await decryptedRsa.Cypher.DeserializeAsync<T>();
+                    var result = await _serializerService.DeserializeAsync<T>(decryptedRsa.Cypher);
                     return result;
                 }
 
@@ -305,7 +308,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Messa
                     var cryptogram = await _cryptographyService
                         .DecryptAsync<AesHandler>(dataClientToClientData.BinaryCryptogram, aesKey);
 
-                    var result = await cryptogram.Cypher.DeserializeAsync<T>();
+                    var result = await _serializerService.DeserializeAsync<T>(cryptogram.Cypher);
                     return result;
                 }
 

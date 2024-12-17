@@ -8,7 +8,7 @@
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
+      <ProjectReference Include="..\..\..\Shared\Shared\EthachatShared\EthachatShared.csproj" />
       <ProjectReference Include="..\..\Infrastructure\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
       <ProjectReference Include="..\..\Infrastructure\Client.Application.Cryptography\Client.Application.Cryptography.csproj" />
       <ProjectReference Include="..\..\Infrastructure\Client.Application.Runtime\Client.Application.Runtime.csproj" />

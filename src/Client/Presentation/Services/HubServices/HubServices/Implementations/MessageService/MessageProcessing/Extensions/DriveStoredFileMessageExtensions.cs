@@ -1,4 +1,4 @@
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using EthachatShared.Models.Message;
 using Microsoft.JSInterop;
 

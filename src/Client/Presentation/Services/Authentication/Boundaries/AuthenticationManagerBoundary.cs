@@ -1,5 +1,5 @@
-using Ethachat.Client.Services.Authentication.Boundaries.Stages;
 using Ethachat.Client.Services.Authentication.Handlers;
+using Ethachat.Client.Services.Authentication.Stages;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.CommonServices.SubscriptionService;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService;

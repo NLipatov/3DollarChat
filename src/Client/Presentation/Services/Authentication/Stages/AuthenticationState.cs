@@ -1,4 +1,4 @@
-﻿namespace Ethachat.Client.Services.Authentication.Boundaries.Stages
+﻿namespace Ethachat.Client.Services.Authentication.Stages
 {
     public enum AuthenticationState
     {

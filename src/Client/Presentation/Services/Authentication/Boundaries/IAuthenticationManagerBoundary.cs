@@ -1,4 +1,4 @@
-using Ethachat.Client.Services.Authentication.Boundaries.Stages;
+using Ethachat.Client.Services.Authentication.Stages;
 
 namespace Ethachat.Client.Services.Authentication.Boundaries;
 

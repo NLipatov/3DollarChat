@@ -3,12 +3,12 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    width: calc(100vw - var(--bb-sidebar-width));
+    width: calc(100vw - var(--app-sidebar-width));
     overflow-y: auto;
     max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height));
 }
 
-@media (max-width: 768px) {
+@media (max-width: 640px) {
     .messages-box {
         width: 100%;
         max-height: calc(100dvh - var(--input-bar-height) - var(--sidebar-header-height) - 5.5rem);

@@ -38,21 +38,31 @@
                 <SearchForContact
                     OnNewContactSearch="OnAddContactAttempt"/>
 
-                @if (ContactsList.Any())
+                @if (_contactsLoaded)
                 {
-                    <EditableList
-                        ItemCollection=@(ContactsList.Select(x => new ItemModel { IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username, Icons = [x.IsTrusted ? new CustomIcon { Name = "shield", Color = "green" } : new CustomIcon { Name = "shield", Color = "red" }], BadgeModel = GetContactBadge(x), ShowBadge = x.UnreadedMessagesCount > 0, AvatarOnlineIndicator = new AvatarOnlineIndicator { PartnerUsername = x.Username }, }).ToList())
-                        OnItemClicked="NavigateToChatWithContact"
-                        OnItemRemoved="RemoveContact"
-                        IconClass="bi bi-person-fill"
-                        ListItemType=@EditableListItemType.Contact/>
+                    @if (ContactsList.Any())
+                    {
+                        <EditableList
+                            ItemCollection=@(ContactsList.Select(x => new ItemModel { IsEncryptionSettedUp = x.IsKeyReady, ItemName = x.Username, Icons = [x.IsTrusted ? new CustomIcon { Name = "shield", Color = "green" } : new CustomIcon { Name = "shield", Color = "red" }], BadgeModel = GetContactBadge(x), ShowBadge = x.UnreadedMessagesCount > 0, AvatarOnlineIndicator = new AvatarOnlineIndicator { PartnerUsername = x.Username }, }).ToList())
+                            OnItemClicked="NavigateToChatWithContact"
+                            OnItemRemoved="RemoveContact"
+                            IconClass="bi bi-person-fill"
+                            ListItemType=@EditableListItemType.Contact/>
+                    }
+                    else
+                    {
+                        <CustomCallout
+                            CalloutType="CalloutType.Idea"
+                            CalloutBody="Add someone and start a new chat!"
+                            CalloutTitle="Your contact book is empty"/>
+                    }
                 }
-                else
+                else 
                 {
                     <CustomCallout
-                        CalloutType="CalloutType.Idea"
-                        CalloutBody="Add someone and start a new chat!"
-                        CalloutTitle="Your contact book is empty"/>
+                        CalloutType="CalloutType.Clock"
+                        CalloutBody="Should not take much time"
+                        CalloutTitle="Loading contacts"/>
                 }
             </div>
         </div>
@@ -75,6 +85,7 @@
     private bool contactEditionMode = false;
     private Guid ComponentId { get; set; }
     private UserConnectionsReport _usersOnlineMessage { get; set; } = new();
+    private bool _contactsLoaded;
 
     public void Dispose() => _hubServiceSubscriptionManager.RemoveComponentCallbacks(ComponentId);
 
@@ -149,7 +160,11 @@
 
         //Subscribing to server event of updating online users
         _hubServiceSubscriptionManager
-            .AddCallback<UserConnectionsReport>(UpdateContacts, "ReceiveOnlineUsers", ComponentId);
+            .AddCallback<UserConnectionsReport>(async report =>
+            {
+                OnContactsLoaded();
+                await UpdateContacts(report);
+            }, "ReceiveOnlineUsers", ComponentId);
 
         _hubServiceSubscriptionManager.AddCallback<string>(UpdateContact, "NewUnreadedMessage", ComponentId);
 
@@ -157,6 +172,12 @@
 
         //Actualizing list of users that currently online
         await _usersService.ActualizeConnectedUsersAsync();
+    }
+    
+    private void OnContactsLoaded()
+    {
+        _contactsLoaded = true;
+        StateHasChanged();
     }
 
     private async Task UpdateContacts(UserConnectionsReport updatedUserConnections)

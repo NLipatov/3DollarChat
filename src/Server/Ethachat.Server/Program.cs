@@ -17,6 +17,7 @@ using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.ResponseCompression;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
+using SharedServices;
 using ISerializerService = SharedServices.ISerializerService;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,7 +51,7 @@ builder.Services.AddSingleton<IWebPushNotificationService, FirebasePushNotificat
 builder.Services.AddTransient<IUsernameResolverService, UsernameResolverService>();
 builder.Services.AddSingleton<ILongTermStorageService<ClientToClientData>, InMemoryLongTermTransferStorage>();
 builder.Services.AddTransient<IServerHttpClient, ServerHttpClient>();
-builder.Services.AddTransient<ISerializerService, ISerializerService>();
+builder.Services.AddTransient<ISerializerService, SerializerService>();
 
 var app = builder.Build();
 

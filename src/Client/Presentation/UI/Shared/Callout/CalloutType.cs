@@ -9,5 +9,6 @@ public enum CalloutType
     Error,
     Success,
     Neutral,
-    Positive
+    Positive,
+    Clock
 }

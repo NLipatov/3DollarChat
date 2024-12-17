@@ -1,4 +1,4 @@
-namespace Client.Transfer.Domain.Entities.Events;
+namespace Client.Transfer.Domain.TransferedEntities.Events;
 
 public enum EventType
 {

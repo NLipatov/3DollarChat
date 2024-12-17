@@ -1,7 +1,7 @@
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 
-namespace Client.Transfer.Domain.Entities.Events;
+namespace Client.Transfer.Domain.TransferedEntities.Events;
 
 [MessagePackObject]
 public record EventMessage : IDestinationResolvable, ISourceResolvable, IIdentifiable

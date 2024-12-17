@@ -31,7 +31,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Infrastructure.Gatew
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Client.Infrastructure", "Client.Infrastructure", "{92D1821E-9A2A-446F-8B26-06DAE4E86B77}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Subdomain", "Subdomain", "{9BCCA7AC-D944-4C51-8970-AFCB5C1E8F25}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Subdomain.Transfer", "Subdomain.Transfer", "{9BCCA7AC-D944-4C51-8970-AFCB5C1E8F25}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Client.Application.Gateway", "src\Client\Infrastructure\Client.Application.Gateway\Client.Application.Gateway.csproj", "{7A1E56D8-DDEA-475C-8EC1-186A6BF1CE76}"
 EndProject

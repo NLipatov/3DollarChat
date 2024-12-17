@@ -1,7 +1,7 @@
 using Client.Application.Cryptography;
 using Client.Application.Cryptography.KeyStorage;
 using Client.Infrastructure.Cryptography.Handlers;
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.DriveService;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;

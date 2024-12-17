@@ -1,4 +1,4 @@
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 
 namespace Ethachat.Client.Services.DriveService;
 

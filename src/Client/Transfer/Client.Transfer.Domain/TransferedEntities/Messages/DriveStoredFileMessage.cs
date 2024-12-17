@@ -1,7 +1,7 @@
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 
-namespace Client.Transfer.Domain.Entities.Messages;
+namespace Client.Transfer.Domain.TransferedEntities.Messages;
 
 [MessagePackObject]
 public record DriveStoredFileMessage : IIdentifiable, ISourceResolvable, IDestinationResolvable

@@ -1,4 +1,4 @@
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration;
 using Ethachat.Server.Services.Notifications.WebPush.PushDescriptionGeneration.Strategies.Implementations;
 using Ethachat.Server.Utilities.HttpMessaging;

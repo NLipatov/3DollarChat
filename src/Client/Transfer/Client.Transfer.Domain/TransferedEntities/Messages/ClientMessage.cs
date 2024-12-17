@@ -4,7 +4,7 @@ using EthachatShared.Models.Message.DataTransfer;
 using MessagePack;
 using Microsoft.AspNetCore.Components.Forms;
 
-namespace Client.Transfer.Domain.Entities.Messages
+namespace Client.Transfer.Domain.TransferedEntities.Messages
 {
     public class ClientMessage : Message
     {

@@ -1,5 +1,5 @@
 using System.Collections.Concurrent;
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message;
 using EthachatShared.Models.Message.DataTransfer;

@@ -2,7 +2,7 @@ using EthachatShared.Encryption;
 using EthachatShared.Models.Message.Interfaces;
 using MessagePack;
 
-namespace Client.Transfer.Domain.Entities.Messages;
+namespace Client.Transfer.Domain.TransferedEntities.Messages;
 
 [MessagePackObject]
 public class KeyMessage : IDestinationResolvable, ISourceResolvable, IIdentifiable

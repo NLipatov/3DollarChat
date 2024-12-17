@@ -1,6 +1,6 @@
 using Client.Application.Cryptography.KeyStorage;
-using Client.Transfer.Domain.Entities.Events;
-using Client.Transfer.Domain.Entities.Messages;
+using Client.Transfer.Domain.TransferedEntities.Events;
+using Client.Transfer.Domain.TransferedEntities.Messages;
 using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.TransferHandling

@@ -44,6 +44,7 @@ using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Browse
 using Ethachat.Client.UI.Chat.UI.Childs.MessageInput.Logic.MessageSenders.Text;
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
+using ISerializerService = SharedServices.ISerializerService;
 
 var builder = WebAssemblyHostBuilder.CreateDefault(args);
 builder.RootComponents.Add<App>("#app");
@@ -78,6 +79,7 @@ builder.Services.AddTransient<IBinarySendingManager, BinarySendingManager>();
 builder.Services.AddScoped<IBrowserFileSender, BrowserFileSender>();
 builder.Services.AddScoped<ITextMessageSender, TextMessageSender>();
 builder.Services.AddTransient<IDriveService, DriveService>();
+builder.Services.AddTransient<ISerializerService, ISerializerService>();
 builder.Services.AddBlazoredToast();
 
 await builder.Build().RunAsync();

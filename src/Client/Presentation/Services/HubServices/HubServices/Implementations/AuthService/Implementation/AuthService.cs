@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
 using Client.Infrastructure.Gateway;
-using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
@@ -10,6 +9,7 @@ using EthachatShared.Models.Authentication.Models;
 using EthachatShared.Models.Authentication.Models.UserAuthentication;
 using EthachatShared.Models.Message;
 using Microsoft.AspNetCore.Components;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.AuthService.Implementation;
 
@@ -21,6 +21,7 @@ public class AuthService : IAuthService
     private readonly ConcurrentQueue<Func<bool, Task>> _refreshTokenCallbackQueue = new();
     public ConcurrentQueue<Func<AuthResult, Task>> IsTokenValidCallbackQueue { get; set; } = new();
     private readonly IAuthenticationHandler _authenticationManager;
+    private readonly ISerializerService _serializerService;
     private IGateway? _gateway;
 
     private async Task<IGateway> ConfigureGateway()
@@ -34,12 +35,14 @@ public class AuthService : IAuthService
     (NavigationManager navigationManager,
         ICallbackExecutor callbackExecutor,
         ILocalStorageService localStorageService,
-        IAuthenticationHandler authenticationManager)
+        IAuthenticationHandler authenticationManager,
+        ISerializerService serializerService)
     {
         NavigationManager = navigationManager;
         _callbackExecutor = callbackExecutor;
         _localStorageService = localStorageService;
         _authenticationManager = authenticationManager;
+        _serializerService = serializerService;
         _ = GetHubConnectionAsync();
     }
 
@@ -133,7 +136,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "Register",
-            Data = await newUserDto.SerializeAsync(),
+            Data = await _serializerService.SerializeAsync(newUserDto),
             Type = typeof(UserAuthentication)
         });
     }
@@ -144,7 +147,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "LogIn",
-            Data = await userAuthentication.SerializeAsync(),
+            Data = await _serializerService.SerializeAsync(userAuthentication),
             Type = typeof(UserAuthentication)
         });
     }
@@ -156,7 +159,7 @@ public class AuthService : IAuthService
         await _gateway.TransferAsync(new ClientToServerData
         {
             EventName = "GetTokenRefreshHistory",
-            Data = await accessToken.SerializeAsync(),
+            Data = await _serializerService.SerializeAsync(accessToken),
             Type = typeof(string)
         });
     }

@@ -19,6 +19,7 @@ using Ethachat.Client.Services.InboxService;
 using EthachatShared.Models.Message.ClientToClientTransferData;
 using EthachatShared.Models.Message.DataTransfer;
 using Microsoft.JSInterop;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.MessageService.MessageProcessing.
     TransferHandling;
@@ -30,7 +31,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
     public TransferProcessorResolver(IMessageService messageService, ICallbackExecutor callbackExecutor,
         IMessageBox messageBox, IKeyStorage keyStorage, IAuthenticationHandler authenticationHandler,
         IBinaryReceivingManager binaryReceivingManager, ICryptographyService cryptographyService, IJSRuntime jsRuntime, 
-        IDriveService dataService)
+        IDriveService dataService, ISerializerService serializerService)
     {
         RegisterProcessor<TextMessage>([
             new()
@@ -44,7 +45,7 @@ public class TransferProcessorResolver : ITransferProcessorResolver
             new()
             {
                 TransferDirection = TransferDirection.Incoming,
-                Handler = new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage)
+                Handler = new OnReceivedEventMessage(messageBox, callbackExecutor, messageService, keyStorage, serializerService)
             },
             new()
             {

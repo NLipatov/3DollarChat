@@ -1,7 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
 using Client.Infrastructure.Gateway;
-using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.Authentication.Handlers;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using EthachatShared.Constants;
@@ -11,13 +10,15 @@ using EthachatShared.Models.Message;
 using EthachatShared.Models.Users;
 using EthachatShared.Models.WebPushNotification;
 using Microsoft.AspNetCore.Components;
+using SharedServices;
 
 namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService.Implementation
 {
     public class UsersService(
         NavigationManager navigationManager,
         ICallbackExecutor callbackExecutor,
-        IAuthenticationHandler authenticationHandler)
+        IAuthenticationHandler authenticationHandler,
+        ISerializerService iSerializerService)
         : IUsersService
     {
         private readonly ConcurrentDictionary<Guid, Func<string, Task>> _connectionIdReceivedCallbacks = new();
@@ -126,7 +127,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
                 Id = Guid.NewGuid(),
                 EventName = "IsUserOnline",
                 Type = typeof(string),
-                Data = await username.SerializeAsync()
+                Data = await iSerializerService.SerializeAsync(username)
             });
         }
 
@@ -136,7 +137,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "AddUserWebPushSubscription",
-                Data = await subscriptionDto.SerializeAsync(),
+                Data = await iSerializerService.SerializeAsync(subscriptionDto),
                 Type = typeof(string),
             });
         }
@@ -147,7 +148,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "GetUserWebPushSubscriptions",
-                Data = await credentialsDto.SerializeAsync(),
+                Data = await iSerializerService.SerializeAsync(credentialsDto),
                 Type = typeof(CredentialsDTO)
             });
         }
@@ -163,7 +164,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "RemoveUserWebPushSubscriptions",
-                Data = await subscriptionsToRemove.SerializeAsync(),
+                Data = await iSerializerService.SerializeAsync(subscriptionsToRemove),
                 Type = typeof(NotificationSubscriptionDto[]),
             });
         }
@@ -174,7 +175,7 @@ namespace Ethachat.Client.Services.HubServices.HubServices.Implementations.Users
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "CheckIfUserExist",
-                Data = await username.SerializeAsync(),
+                Data = await iSerializerService.SerializeAsync(username),
                 Type = typeof(string),
             });
         }

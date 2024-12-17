@@ -1,6 +1,5 @@
 ﻿using System.Collections.Concurrent;
 using Client.Application.Gateway;
-using Ethachat.Client.Extensions;
 using Ethachat.Client.Services.HubServices.CommonServices.CallbackExecutor;
 using Ethachat.Client.Services.LocalStorageService;
 using EthachatShared.Models.Authentication.Models;
@@ -9,12 +8,15 @@ using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO;
 using EthachatShared.Models.Authentication.Models.Credentials.Implementation;
 using EthachatShared.Models.Authentication.Types;
 using EthachatShared.Models.Message;
+using SharedServices;
 
 namespace Ethachat.Client.Services.Authentication.Handlers.Implementations.WebAuthn;
 
-public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageService, ICallbackExecutor callbackExecutor)
+public class WebAuthnAuthenticationHandler
+    (ILocalStorageService localStorageService, ICallbackExecutor callbackExecutor, ISerializerService serializerService)
     : IWebAuthnHandler
 {
+    private readonly ISerializerService _serializerService = serializerService;
     private readonly ConcurrentDictionary<string, DateTime> _tokenCache = [];
 
     public async Task<CredentialsDTO> GetCredentialsDto()
@@ -63,13 +65,12 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
         if (TryUseCachedCredentialsAsync(dto))
             return;
         
-        if (dto.WebAuthnPair is null)
-            dto.WebAuthnPair = new();
+        dto.WebAuthnPair ??= new();
 
         await gateway.TransferAsync(new ClientToServerData
         {
             EventName = "ValidateCredentials",
-            Data = await dto.SerializeAsync(),
+            Data = await _serializerService.SerializeAsync(dto),
             Type = typeof(CredentialsDTO)
         });
     }
@@ -124,7 +125,7 @@ public class WebAuthnAuthenticationHandler(ILocalStorageService localStorageServ
             await gateway.TransferAsync(new ClientToServerData
             {
                 EventName = "RefreshCredentials",
-                Data = await dto.SerializeAsync(),
+                Data = await _serializerService.SerializeAsync(dto),
                 Type = typeof(CredentialsDTO)
             });
 

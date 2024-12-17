@@ -28,7 +28,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\Client\Infrastructure\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
+      <ProjectReference Include="..\Client.Infrastructure.Cryptography\Client.Infrastructure.Cryptography.csproj" />
     </ItemGroup>
 
 </Project>

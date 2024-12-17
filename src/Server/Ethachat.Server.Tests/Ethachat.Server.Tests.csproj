@@ -29,7 +29,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Server\Ethachat.Server.csproj" />
+      <ProjectReference Include="..\Ethachat.Server\Ethachat.Server.csproj" />
     </ItemGroup>
 
 </Project>

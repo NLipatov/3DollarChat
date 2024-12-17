@@ -36,13 +36,13 @@
 
 
   <ItemGroup>
-    <ProjectReference Include="..\Client\Presentation\Ethachat.Client.csproj" />
-    <ProjectReference Include="..\Shared\EthachatShared\EthachatShared.csproj" />
+    <Folder Include="Services\Notifications\" />
   </ItemGroup>
 
 
   <ItemGroup>
-    <Folder Include="Services\Notifications\" />
+    <ProjectReference Include="..\..\Client\Presentation\Ethachat.Client.csproj" />
+    <ProjectReference Include="..\..\Shared\EthachatShared\EthachatShared.csproj" />
   </ItemGroup>
 
 </Project>

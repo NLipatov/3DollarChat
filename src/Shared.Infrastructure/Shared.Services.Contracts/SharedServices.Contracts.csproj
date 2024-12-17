@@ -4,11 +4,7 @@
         <TargetFramework>net9.0</TargetFramework>
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
-        <LangVersion>latestmajor</LangVersion>
+        <RootNamespace>SharedServices</RootNamespace>
     </PropertyGroup>
-
-    <ItemGroup>
-      <ProjectReference Include="..\..\..\Shared\EthachatShared\EthachatShared.csproj" />
-    </ItemGroup>
 
 </Project>

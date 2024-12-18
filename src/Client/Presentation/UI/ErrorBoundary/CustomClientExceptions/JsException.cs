@@ -1,4 +1,4 @@
-namespace Ethachat.Client.UI.Shared.ErrorCatching.CustomClientExceptions;
+namespace Ethachat.Client.UI.ErrorBoundary.CustomClientExceptions;
 
 public class JsException : Exception
 {

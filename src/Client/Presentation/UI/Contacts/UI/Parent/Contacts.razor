@@ -16,14 +16,14 @@
 @inject IKeyStorage KeyStorage
 @inject IMessageBox _messageBox
 @inject IAuthenticationHandler AuthenticationHandler
-@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList;
 @using Ethachat.Client.UI.Contacts.Models
-@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using EthachatShared.Models.Users;
 @using Ethachat.Client.UI.Shared.Callout
+@using Ethachat.Client.UI.Shared.EditableList.Models
 @using EthachatShared.Encryption
 @using global::Client.Application.Cryptography.KeyStorage
 @using CalloutType = Ethachat.Client.UI.Shared.Callout.CalloutType
+@using Ethachat.Client.UI.Shared.EditableList
 @implements IDisposable
 
 <AuthenticatedView>

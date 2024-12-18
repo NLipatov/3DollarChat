@@ -1,7 +1,7 @@
 ﻿using Ethachat.Client.UI.Chat.UI.Childs.ChatHeader.Indicators;
 using Ethachat.Client.UI.Shared.Icon;
 
-namespace Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
+namespace Ethachat.Client.UI.Shared.EditableList.Models
 {
     public class ItemModel
     {

@@ -10,9 +10,9 @@
 @inject IJSRuntime JsRuntime
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Childs.SingleMessagesByType
 @using Ethachat.Client.UI.Chat.UI.Childs.MessageCollectionDispaying.Extensions
-@using Ethachat.Client.UI.Shared.ReuseableComponents
 @using global::Client.Transfer.Domain.TransferedEntities.Events
 @using global::Client.Transfer.Domain.TransferedEntities.Messages
+@using Ethachat.Client.UI.Shared.Triggers
 @implements IDisposable
 
 @if (Message != null)
@@ -174,7 +174,10 @@
             StateHasChanged();
         }, "OnReceiverMarkedMessageAsReceived", ComponentId);
 
-        HubServiceSubscriptionManager.AddCallback<Guid>(id => { StateHasChanged(); }, "TextMessageUpdate", ComponentId);
+        HubServiceSubscriptionManager.AddCallback<Guid>(_ => 
+        {
+            StateHasChanged();
+        }, "TextMessageUpdate", ComponentId);
     }
 
     protected override async Task OnParametersSetAsync()

@@ -79,13 +79,12 @@
     <_ContentIncludedByDefault Remove="Shared\ReuseableComponents\EditableList\EditableListItem.razor" />
     <_ContentIncludedByDefault Remove="Shared\ReuseableComponents\OnObservedTrigger.razor" />
     <_ContentIncludedByDefault Remove="UI\Shared\Sidebar\SidebarMenu.razor" />
+    <_ContentIncludedByDefault Remove="UI\Shared\ReuseableComponents\EditableList\EditableList.razor" />
+    <_ContentIncludedByDefault Remove="UI\Shared\ReuseableComponents\EditableList\EditableListItem.razor" />
   </ItemGroup>
 
   <ItemGroup>
-    <AdditionalFiles Include="UI\Shared\ErrorCatching\GlobalErrorBoundary.razor" />
     <AdditionalFiles Include="UI\Shared\MainLayout.razor" />
-    <AdditionalFiles Include="UI\Shared\ReuseableComponents\EditableList\EditableList.razor" />
-    <AdditionalFiles Include="UI\Shared\ReuseableComponents\EditableList\EditableListItem.razor" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿namespace Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
+﻿namespace Ethachat.Client.UI.Shared.EditableList.Models
 {
     public record BadgeModel
     {

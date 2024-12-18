@@ -4,7 +4,6 @@
 @using Ethachat.Client.Services.HubServices.HubServices.Implementations.UsersService
 @using Ethachat.Client.Services.LocalStorageService;
 @using Ethachat.Client.Services.NotificationService;
-@using Ethachat.Client.UI.Shared.ReuseableComponents.EditableList.Models
 @using EthachatShared.Models.Authentication.Models.Credentials
 @using EthachatShared.Models.Authentication.Models.Credentials.CredentialsDTO
 @using EthachatShared.Models.Authentication.Models.Credentials.Implementation
@@ -17,6 +16,7 @@
 @inject ILocalStorageService LocalStorageService
 @inject IAuthenticationHandler AuthenticationHandler
 @using Ethachat.Client.UI.AuthenticationChecks
+@using Ethachat.Client.UI.Shared.EditableList.Models
 @implements IDisposable
 
 <AuthenticatedView>
